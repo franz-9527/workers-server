@@ -1,6 +1,12 @@
 # workers-server
 
-该仓库用于本轮类目配置与订单号规则的隔离验证，不替代 `franz-9527/workers` 正式仓库。
+该仓库用于 `franz-9527/workers` 正式仓库开发过程中的隔离验证，不替代正式仓库。
+
+## 测试仓库使用规则
+
+- 正式功能代码仍在 `workers` 的指定开发分支完成；需要隔离 CI 时，将本次测试所需的服务端代码、测试脚本或最小测试夹具同步到本仓库后执行。
+- `workers` 为私有仓库时，本仓库 GitHub Actions 的默认 `GITHUB_TOKEN` 无权直接跨仓库 checkout；不要建立依赖默认令牌直接检出 `workers` 的工作流。
+- 测试仓库只承载验证，不作为正式发布代码来源；验证通过后仍以 `workers` 开发分支为准，并按项目规则同步 `main`。
 
 ## 2026-10-11 类目/订单号候选规则
 
@@ -13,4 +19,4 @@
 
 隔离测试脚本：`tests/category-order-number-test.php`。
 
-正式候选开发分支：`franz-9527/workers@dev/2.5.0`，当前候选提交截至 `b6a4ec089e8832da35e06ae800bba75f736f4946`。由于正式仓库当前 Actions/CI 限额问题，本轮不依赖 GitHub Actions；候选规则已用独立 PHP 脚本做格式、非法类目码、随机码与小样本唯一性校验。
+正式候选开发分支：`franz-9527/workers@dev/2.5.0`。由于正式仓库当前 Actions/CI 限额问题，服务端候选规则可同步到本仓库后用独立测试脚本和 Actions 做隔离校验。
