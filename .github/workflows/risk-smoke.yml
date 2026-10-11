@@ -1,4 +1,4 @@
-name: Isolated 2.5.0 Risk Smoke
+name: Isolated 2.5.0 Smoke
 on:
   push:
     branches: [main]
@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 jobs:
-  risk-smoke:
+  isolated-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,3 +21,5 @@ jobs:
           find server/app server/views/admin server/tests tools -type f -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Risk policy and static integration smoke
         run: php tests/risk-smoke.php
+      - name: WeCom admin mini-program entry regression
+        run: php server/tests/v250_wecom_admin_entry_regression.php
