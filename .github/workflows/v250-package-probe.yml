@@ -1,0 +1,26 @@
+name: V2.5.0 Package Probe
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v250-package-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers
+          ref: dev/2.5.0
+          token: ${{ github.token }}
+          path: source
+          fetch-depth: 0
+      - name: Confirm source
+        run: |
+          set -euo pipefail
+          test "$(cat source/server/VERSION)" = "2.5.0"
+          git -C source rev-parse HEAD
