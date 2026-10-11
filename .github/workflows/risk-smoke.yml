@@ -23,3 +23,5 @@ jobs:
         run: php tests/risk-smoke.php
       - name: WeCom admin mini-program entry regression
         run: php server/tests/v250_wecom_admin_entry_regression.php
+      - name: Audit hall demo regression
+        run: php server/tests/v250_review_hall_demo_regression.php
