@@ -17,4 +17,5 @@ check(str_contains($r,'RESTRICTION_ALREADY_ACTIVE'),'duplicate manual restrictio
 $module=file_get_contents(__DIR__.'/../server/app/Http/Admin/Modules/OrderCancellationRiskAdminModule.php');
 check(str_contains($module,'users.order-risk.rules'),'global rule route');
 check(str_contains($module,'users.order-risk.restrict'),'manual restriction route');
+check(str_contains($module,"users.order-risk.settings"),"global settings route");
 echo "risk isolated static/policy smoke OK\n";
