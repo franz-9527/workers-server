@@ -12,7 +12,7 @@ $assert = static function (bool $condition, string $message): void {
 
 $assert(strpos($repo, "o.is_demo=1 AND BINARY o.public_no LIKE BINARY 'BXDEMOHALL%'") !== false,
     'ordinary hall must expose only fixed review-demo prefix in addition to production rows');
-$assert(strpos($repo, "? 'o.is_demo=1'") !== false,
+$assert(strpos($repo, "?'o.is_demo=1':") !== false,
     'demo actor must continue to use the full demo data domain');
 
 $cases = [
