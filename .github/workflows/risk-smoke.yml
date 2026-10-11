@@ -1,0 +1,23 @@
+name: Isolated 2.5.0 Risk Smoke
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/app/**'
+      - 'server/views/admin/**'
+      - 'server/tests/**'
+      - 'tests/risk-smoke.php'
+      - '.github/workflows/risk-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  risk-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax lint
+        run: |
+          find server/app server/views/admin server/tests tools -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Risk policy and static integration smoke
+        run: php tests/risk-smoke.php
