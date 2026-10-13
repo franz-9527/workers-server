@@ -36,6 +36,8 @@ jobs:
           find server/app server/views/admin server/tests tools -type f -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Risk policy and static integration smoke
         run: php tests/risk-smoke.php
+      - name: Proxy and platform unified entry regression
+        run: php server/tests/v250_proxy_platform_entry_regression.php
       - name: Platform external booking fee regression
         run: php server/tests/v250_platform_booking_fee_isolated.php
       - name: Platform external booking verifier regression
