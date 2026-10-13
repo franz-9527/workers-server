@@ -44,7 +44,10 @@ namespace {
     use WorkerAdmin\Domain\Order\OrderOperationException;
 
     final class Settings implements SettingsProvider {
-        public function get(string $key,$default=null){return $key==='order.booking_fee_cents'?5000:$default;}
+        public function get(string $key,$default=null){
+            $values=['order.booking_fee_cents'=>5000,'order.auto_cancel_days'=>7,'platform_order.extra_income_rate_bp'=>2000,'platform_order.worker_balance_freeze_days'=>0,'map.tencent_key'=>'test-key'];
+            return array_key_exists($key,$values)?$values[$key]:$default;
+        }
         public function bool(string $key,bool $default=false):bool{return (bool)$this->get($key,$default);}
         public function int(string $key,int $default=0):int{return (int)$this->get($key,$default);}
     }
@@ -60,17 +63,30 @@ namespace {
     function baseInput(): array { return [
         'user_id'=>11,'category_id'=>22,'title'=>'测试平台单','description'=>'第三方平台订单','city'=>'绍兴市','district'=>'越城区','address'=>'测试路1号',
         'map_lat'=>'29.95','map_lng'=>'120.56','contact_name'=>'测试客户','contact_mobile'=>'13800138000','customer_pricing_mode'=>'fixed_total','customer_total'=>'1000',
-        'dispatch_mode'=>'multi_quote','worker_settlement_mode'=>'worker_collect'
+        'external_prepayment'=>'50','dispatch_mode'=>'multi_quote','worker_settlement_mode'=>'worker_collect'
     ];}
     function same($actual,$expected,string $label): void {if($actual!==$expected){fwrite(STDERR,"[FAIL] $label actual=".var_export($actual,true)." expected=".var_export($expected,true)."\n");exit(1);}echo "[PASS] $label\n";}
 
     $repo=new Repo();$service=new PlatformOrderAdmin($repo,new Settings());
-    $input=baseInput();$input['booking_fee']='88.50';$service->create($input,9);same($repo->command['customer_flow_mode'],'platform_managed','平台托管模式保持独立');same($repo->command['booking_fee_cents'],8850,'平台托管预约费按管理员输入保存');
-    $input=baseInput();$input['booking_fee']='0';$service->create($input,9);same($repo->command['booking_fee_cents'],0,'平台托管允许零预约费');
-    $input=baseInput();$service->create($input,9);same($repo->command['booking_fee_cents'],0,'旧调用未提交预约费字段保持兼容');
-    $input=baseInput();$input['customer_flow_mode']='miniapp_booking';$input['booking_fee']='88.50';$service->create($input,9);same($repo->command['booking_fee_cents'],5000,'小程序预约仍锁定系统预约费配置');
-    $input=baseInput();$input['booking_fee']='1000.01';try{$service->create($input,9);same('accepted','blocked','预约费不能超过成交价');}catch(OrderOperationException $e){same($e->apiCode(),'PLATFORM_TOTAL_BELOW_BOOKING','预约费超过成交价被阻断');}
-    $input=baseInput();$input['booking_fee']='abc';try{$service->create($input,9);same('accepted','blocked','非法预约费格式');}catch(OrderOperationException $e){same($e->apiCode(),'PLATFORM_BOOKING_AMOUNT_INVALID','非法预约费格式被阻断');}
-    same($service->dashboard()['defaultBookingFee'],5000,'后台新增表单获得系统默认预约费');
-    echo "V2.5.0 external platform booking fee isolated regression: OK\n";
+    $input=baseInput();$service->create($input,9);
+    same($repo->command['customer_flow_mode'],'platform_managed','平台承接单固定为托管模式');
+    same($repo->command['external_prepayment_cents'],5000,'外部预付款保存为平台专属金额');
+    same(array_key_exists('booking_fee_cents',$repo->command),false,'平台创建命令不携带普通微信预约费字段');
+
+    $input=baseInput();$input['external_prepayment']='0';$service->create($input,9);same($repo->command['external_prepayment_cents'],0,'平台托管允许零预付款');
+    $input=baseInput();unset($input['external_prepayment']);$service->create($input,9);same($repo->command['external_prepayment_cents'],0,'未提交外部预付款默认按零处理');
+
+    $input=baseInput();$input['customer_flow_mode']='miniapp_booking';$service->create($input,9);
+    same($repo->command['customer_flow_mode'],'platform_managed','旧客户端 miniapp_booking 参数不能恢复平台微信预约模式');
+    same($repo->command['external_prepayment_cents'],5000,'旧客户流参数不改变外部预付款事实');
+
+    $input=baseInput();$input['external_prepayment']='1000.01';try{$service->create($input,9);same('accepted','blocked','预付款不能超过成交价');}catch(OrderOperationException $e){same($e->apiCode(),'PLATFORM_TOTAL_BELOW_BOOKING','外部预付款超过成交价被阻断');}
+    $input=baseInput();$input['external_prepayment']='abc';try{$service->create($input,9);same('accepted','blocked','非法外部预付款格式');}catch(OrderOperationException $e){same($e->apiCode(),'PLATFORM_BOOKING_AMOUNT_INVALID','非法外部预付款格式被阻断');}
+
+    $input=baseInput();$input['dispatch_mode']='single_grab';$input['worker_labor']='960';try{$service->create($input,9);same('accepted','blocked','师傅代收负差额');}catch(OrderOperationException $e){same($e->apiCode(),'PLATFORM_SETTLEMENT_NEGATIVE','一口价工费结合外部预付款形成负差额时阻断');}
+
+    $dashboard=$service->dashboard();
+    same(array_key_exists('defaultBookingFee',$dashboard),false,'平台后台不再暴露普通预约费默认值');
+    same($dashboard['defaultExtraRate'],2000,'平台加项收入默认比例仍正常');
+    echo "V2.5.0 managed-only platform application isolated regression: OK\n";
 }
