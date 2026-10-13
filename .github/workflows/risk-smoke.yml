@@ -38,6 +38,8 @@ jobs:
         run: php tests/risk-smoke.php
       - name: Platform external booking fee regression
         run: php server/tests/v250_platform_booking_fee_isolated.php
+      - name: Platform external booking verifier regression
+        run: php server/tests/v250_platform_booking_verifier_isolated.php
       - name: WeCom admin mini-program entry regression
         run: php server/tests/v250_wecom_admin_entry_regression.php
       - name: Audit hall merged migration regression
