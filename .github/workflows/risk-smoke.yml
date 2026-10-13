@@ -40,6 +40,15 @@ jobs:
         run: php server/tests/v250_platform_booking_fee_isolated.php
       - name: Platform external booking verifier regression
         run: php server/tests/v250_platform_booking_verifier_isolated.php
+      - name: Platform managed auto publish with shared form media rules
+        env:
+          V250_PLATFORM_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        run: php server/tests/v250_platform_auto_publish_mysql.php
       - name: WeCom admin mini-program entry regression
         run: php server/tests/v250_wecom_admin_entry_regression.php
       - name: Audit hall merged migration regression
