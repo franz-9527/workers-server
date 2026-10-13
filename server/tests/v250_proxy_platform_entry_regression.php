@@ -13,10 +13,10 @@ $payment=sourceText($root,'server/app/Http/Api/Modules/PaymentCreationApiModule.
 
 check(str_contains($proxy,'$this->submission->create($actor,$body)'),'proxy order reuses ordinary OrderSubmission');
 check(!str_contains($proxy,'$this->orders->create($input'),'proxy order does not use legacy fixed-field create path');
-check(str_contains($proxy,"unset($input['approve_now'], $input['publish_now'])"),'proxy order cannot request immediate approve/publish');
-check(str_contains($proxy,"payment_status'] ?? '') !== 'paid'"),'unpaid proxy order cannot be approved or published');
+check(str_contains($proxy,'unset($input[\'approve_now\'], $input[\'publish_now\'])'),'proxy order cannot request immediate approve/publish');
+check(str_contains($proxy,'payment_status\'] ?? \'\') !== \'paid\''),'unpaid proxy order cannot be approved or published');
 
-check(str_contains($platform,"count($categoryIds)>6"),'platform order limits shared categories to six');
+check(str_contains($platform,'count($categoryIds)>6'),'platform order limits shared categories to six');
 check(str_contains($platform,'parent_id IS NULL'),'platform categories use same top-level service category scope');
 check(str_contains($platform,'DELETE FROM order_categories'),'platform order replaces legacy single-category persistence');
 check(str_contains($platform,'category_names_snapshot=:names'),'platform order saves full category snapshot');
@@ -31,6 +31,6 @@ check(str_contains($facts,'expected_visit_at=:expected'),'platform shared visit 
 check(str_contains($facts,'FORM_REQUIRED_FIELD_MISSING'),'platform shared dynamic required fields are enforced');
 
 check(str_contains($payment,"'ORDER_FINALIZE_REQUIRED'"),'proxy booking payment exposes stable finalize-required code');
-check(str_contains($payment,"请先完整提交订单资料和必传图片"),'payment adapter maps only ordinary pre-finalize guard');
+check(str_contains($payment,'请先完整提交订单资料和必传图片'),'payment adapter maps only ordinary pre-finalize guard');
 
 echo "proxy/platform unified entry isolated regression OK\n";
