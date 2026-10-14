@@ -34,6 +34,8 @@ jobs:
       - name: PHP syntax lint
         run: |
           find server/app server/views/admin server/tests tools -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Form rule runtime regression
+        run: php server/tests/v250_form_rule_runtime_isolated.php
       - name: Risk policy and static integration smoke
         run: php tests/risk-smoke.php
       - name: Proxy and platform unified entry regression
