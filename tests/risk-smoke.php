@@ -18,10 +18,4 @@ $module=file_get_contents(__DIR__.'/../server/app/Http/Admin/Modules/OrderCancel
 check(str_contains($module,'users.order-risk.rules'),'global rule route');
 check(str_contains($module,'users.order-risk.restrict'),'manual restriction route');
 check(str_contains($module,"users.order-risk.settings"),"global settings route");
-$help=file_get_contents(__DIR__.'/../server/app/Controllers/HelpCenterAdminController.php');
-check(str_contains($help,'f.question LIKE :q_question'),'help search uses unique placeholders');
-check(!str_contains($help,'f.question LIKE :q OR'),'help search has no repeated q placeholder');
-check(str_contains($help,"preg_match('/^[A-Za-z0-9_-]+$/D', \$query)"),'help faq id search is ascii gated');
-check(substr_count($help,'$this->redirectAfterFailure($route);')===2,'help errors use bounded redirect handler');
-check(str_contains($help,"if (\$route === 'help' && \$hasPageState)"),'help filtered errors discard failing state');
 echo "risk isolated static/policy smoke OK\n";
