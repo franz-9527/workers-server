@@ -1,2 +1,0 @@
-<view class="order-search-wrap"><view class="order-search-box"><input class="order-search-input" value="{{searchText}}" maxlength="80" confirm-type="search" placeholder="搜索订单号、地址、标题或类目" bindinput="inputSearch" bindconfirm="submitSearch" /></view></view>
-<view wx:if="{{!loading && !items.length}}">{{keyword ? '没有找到匹配订单' : '还没有下单记录'}}</view>
