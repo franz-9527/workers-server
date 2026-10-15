@@ -1,8 +1,0 @@
-<view wx:if="{{order.is_merchant_order && actions.is_owner && !actions.is_admin}}" class="card bg-white merchant-role-card">
-  <view class="title"><text class="cuIcon-people text-cyan"></text> 本单角色与确认</view>
-  <view class="row"><text>下单方</text><text class="right">当前商家账号</text></view>
-  <view class="row"><text>现场对接</text><text class="right">{{order.contact_name}} {{order.contact_mobile}}</text></view>
-  <view class="row"><text>付款与确认</text><text class="right">当前下单商家账号</text></view>
-  <view class="description">现场对接人仅用于师傅上门联系，不因填写姓名或手机号获得支付、接受加价、验收等账号权限；这些操作仍以当前下单商家账号在本订单可执行的操作为准。师傅手机号继续按平台隐私规则开放。</view>
-</view>
-<view class="description privacy-tip"><text class="cuIcon-lock"></text> 师傅电话默认隐藏，请等待师傅主动联系并预约。订单完成后仍继续隐藏；提交维修不会自动公开。</view>

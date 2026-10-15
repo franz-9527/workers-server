@@ -1,1 +1,0 @@
-<button wx:if="{{item.can_close_draft}}" class="draft-close-button" data-index="{{index}}" catchtap="closeDraft" loading="{{closingDraftId === item.id}}" disabled="{{!!closingDraftId}}">{{closingDraftId === item.id ? '正在关闭' : '暂不下单'}}</button>
