@@ -1,0 +1,25 @@
+'use strict'
+const assert=require('assert'),path=require('path'),Module=require('module')
+const storage=Object.create(null),requests=[];let navigatedBack=0,pageSpec=null
+const apiEnvironment={storageKey(key){return 'test-env::'+key}}
+const orderApi={request(route){requests.push(route);if(route==='forms.order')return Promise.resolve({data:{merchant:{verification_status:'approved'},steps:[{id:1}],fields:[],rules:[],categories:[]}});return Promise.resolve({data:{}})}}
+const originalLoad=Module._load
+Module._load=function(request,parent,isMain){if(request.endsWith('/utils/ApiEnvironment.js')||request.includes('ApiEnvironment.js'))return apiEnvironment;if(request.endsWith('/utils/OrderApi.js')||request.includes('OrderApi.js'))return orderApi;return originalLoad.call(this,request,parent,isMain)}
+global.Page=spec=>{pageSpec=spec};global.wx={getStorageSync:key=>storage[key],setStorageSync(key,value){storage[key]=JSON.parse(JSON.stringify(value))},removeStorageSync(key){delete storage[key]},navigateBack(){navigatedBack++},showToast(){},showModal(){}}
+function fresh(file){pageSpec=null;const r=require.resolve(file);delete require.cache[r];require(r);assert(pageSpec);return pageSpec}
+function bind(spec,data){const x={data:Object.assign({},JSON.parse(JSON.stringify(spec.data||{})),data||{}),setData(next,cb){Object.assign(this.data,next);if(cb)cb()}};Object.keys(spec).forEach(k=>{if(typeof spec[k]==='function')x[k]=spec[k].bind(x)});return x}
+async function flush(){await new Promise(r=>setImmediate(r));await new Promise(r=>setImmediate(r))}
+async function run(){
+ const root=path.resolve(__dirname,'..'),managerFile=path.join(root,'miniprogram/subpackages/orderTools/productTemplates/index.js'),submitFile=path.join(root,'miniprogram/pages/orderSubmit/index.js')
+ const templateKey=apiEnvironment.storageKey('merchant_product_templates_v2:acctA'),selectionKey=apiEnvironment.storageKey('merchant_product_template_selection_v1:acctA')
+ storage[templateKey]=[{id:'product_old',name:'旧商品',answers:{product_link:'old'},savedAt:100,lastUsedAt:100},{id:'product_recent',name:'常用墙布',answers:{product_link:'https://example.com/p',finish_type:'热胶',category_ids:[2],expected_fee:'1'},selectedCategoryIds:[2],savedAt:200,lastUsedAt:200}]
+ requests.length=0;navigatedBack=0;const manager=bind(fresh(managerFile));manager.onLoad({scope:'acctA',quick:'product_recent'})
+ assert.strictEqual(requests.length,0);assert.strictEqual(navigatedBack,1);assert.strictEqual(storage[selectionKey].id,'product_recent');assert(Number(storage[selectionKey].lastUsedAt)>200);assert.strictEqual(storage[templateKey][0].id,'product_recent')
+ requests.length=0;navigatedBack=0;const missing=bind(fresh(managerFile));missing.onLoad({scope:'acctA',quick:'missing_template'});await flush();assert(requests.includes('forms.order'));assert.strictEqual(navigatedBack,0)
+ storage[selectionKey]={id:'product_recent',answers:{product_link:'https://example.com/new',finish_type:'热胶',category_ids:[2],category_mode:'listed',expected_fee:'1',expected_visit_date:'2099-01-01',contact_mobile:'19999999999'},selectedCategoryIds:[2]}
+ const submit=bind(fresh(submitFile),{merchantTemplateScope:'acctA',steps:[{id:1}],fields:[{id:1,step_id:1,field_key:'product_link',component_type:'text'},{id:2,step_id:1,field_key:'finish_type',component_type:'radio'},{id:3,step_id:1,field_key:'expected_fee',component_type:'number'},{id:4,step_id:1,field_key:'expected_visit_date',component_type:'date'},{id:5,step_id:1,field_key:'contact_mobile',component_type:'phone'}],categories:[{id:1,name:'墙纸',selected:true},{id:2,name:'墙布',selected:false}],selectedCategoryIds:[1],answers:{product_link:'old-link',finish_type:'冷胶',expected_fee:'888',expected_fee_type:'total',expected_visit_date:'2026-11-01',contact_mobile:'13800000000',category_ids:[1],category_mode:'listed'},address:{detail:'本次客户地址',contact_name:'本次客户',contact_mobile:'13800000000'},materialImages:['/tmp/current-product.jpg'],wallImages:['/tmp/current-site.jpg'],agreementsAccepted:true})
+ let saved=0,refreshed=0;submit.saveDraft=()=>saved++;submit.refreshFields=()=>refreshed++;submit.applyPendingProductTemplate()
+ assert.strictEqual(submit.data.answers.product_link,'https://example.com/new');assert.strictEqual(submit.data.answers.finish_type,'热胶');assert.deepStrictEqual(submit.data.selectedCategoryIds,[2]);assert.strictEqual(submit.data.answers.expected_fee,'888');assert.strictEqual(submit.data.answers.expected_visit_date,'2026-11-01');assert.strictEqual(submit.data.answers.contact_mobile,'13800000000');assert.strictEqual(submit.data.address.detail,'本次客户地址');assert.deepStrictEqual(submit.data.materialImages,['/tmp/current-product.jpg']);assert.deepStrictEqual(submit.data.wallImages,['/tmp/current-site.jpg']);assert.strictEqual(submit.data.agreementsAccepted,false);assert.strictEqual(storage[selectionKey],undefined);assert.strictEqual(saved,1);assert.strictEqual(refreshed,1)
+ Module._load=originalLoad;console.log('V2.5.0 recent product quick apply: scoped shortcut + product-only whitelist OK')
+}
+run().catch(e=>{Module._load=originalLoad;console.error(e);process.exit(1)})
