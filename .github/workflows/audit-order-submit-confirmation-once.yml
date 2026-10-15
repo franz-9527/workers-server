@@ -1,0 +1,19 @@
+name: Staged order confirmation summary smoke
+on:
+  push:
+    paths:
+      - 'audit-stage/order-submit-confirmation.txt'
+      - 'audit-stage/order-submit-confirmation-smoke.js'
+      - '.github/workflows/audit-order-submit-confirmation-once.yml'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Syntax check
+        run: node --check audit-stage/order-submit-confirmation-smoke.js
+      - name: Run smoke
+        run: node audit-stage/order-submit-confirmation-smoke.js
