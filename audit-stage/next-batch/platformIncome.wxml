@@ -1,0 +1,14 @@
+<view class="income-page">
+  <fullscreen-nav title="平台收入核账" tone="dark"></fullscreen-nav>
+  <view wx:if="{{loading}}" class="page-state"><text class="cuIcon-loading2 spin"></text>正在读取当前核账事项</view>
+  <block wx:elif="{{stale}}"><view class="state-card"><view class="state-title">当前无需核账</view><view class="state-desc">该收入核账事项已被处理、订单状态已变化，或当前存在需要先处理的资金风险。请返回工作台查看最新状态。</view></view></block>
+  <block wx:elif="{{task}}">
+    <view class="summary-card"><view class="summary-value mono">{{id}}</view><view class="summary-row"><text>当前平台应收</text><text class="money">¥{{dueText}}</text></view><view class="summary-note">仅核实已经真实到账的全额平台收入款。部分到账、金额不一致、退款/争议/售后风险仍由专项财务流程处理。</view></view>
+    <view class="form-card">
+      <view class="field"><view class="field-label">实际到账金额 <text class="required">*</text></view><view class="money-input"><text>¥</text><input type="digit" value="{{confirmedAmount}}" bindinput="amountInput" placeholder="0.00" /></view></view>
+      <view class="field"><view class="field-label">银行/转账流水号 <text class="required">*</text></view><input class="text-input" value="{{paymentReference}}" maxlength="120" bindinput="referenceInput" placeholder="填写真实交易单号或银行流水编号" /></view>
+      <checkbox-group bindchange="checkedChange"><label class="check-row"><checkbox value="confirmed" checked="{{receiptChecked}}" color="#00aebd"></checkbox><view><view class="check-title">我已核对真实到账流水</view><view class="check-desc">不是聊天截图、口头确认或预计到账；提交后将按真实资金事实结清本单平台应收。</view></view></label></checkbox-group>
+    </view>
+    <button class="submit-button" bindtap="submit" loading="{{submitting}}" disabled="{{submitting || !receiptChecked}}">确认真实到账</button>
+  </block>
+</view>
