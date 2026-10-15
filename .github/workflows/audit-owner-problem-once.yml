@@ -1,9 +1,11 @@
-name: Staged owner problem entry smoke
+name: Staged audit UX smoke
 on:
   push:
     paths:
       - 'audit-stage/owner-problem-entry.js'
       - 'audit-stage/owner-problem-smoke.js'
+      - 'audit-stage/worker-ui-markup.txt'
+      - 'audit-stage/worker-ui-markup-smoke.js'
       - '.github/workflows/audit-owner-problem-once.yml'
 jobs:
   smoke:
@@ -17,5 +19,8 @@ jobs:
         run: |
           node --check audit-stage/owner-problem-entry.js
           node --check audit-stage/owner-problem-smoke.js
-      - name: Run smoke
+          node --check audit-stage/worker-ui-markup-smoke.js
+      - name: Run owner problem smoke
         run: node audit-stage/owner-problem-smoke.js
+      - name: Run worker UI markup smoke
+        run: node audit-stage/worker-ui-markup-smoke.js
