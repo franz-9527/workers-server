@@ -49,9 +49,9 @@ jobs:
         run: |
           set -euo pipefail
           grep -F "o.order_source_type='platform' AND o.payment_status IN ('not_required','paid')" server/app/Infrastructure/Persistence/DatabaseOrderDiscoveryRepository.php
-          grep -F "if ($currentStatus === 'refunded') return" server/app/Infrastructure/Persistence/DatabasePaidPaymentSettlement.php
+          grep -F "if (\$currentStatus === 'refunded') return" server/app/Infrastructure/Persistence/DatabasePaidPaymentSettlement.php
           grep -F "AND status<>'refunded'" server/app/Infrastructure/Persistence/DatabasePaidPaymentSettlement.php
-          grep -F "if ((string)$refund['status'] === 'succeeded') return" server/app/Infrastructure/Persistence/DatabaseRefundResultSettlement.php
+          grep -F "if ((string)\$refund['status'] === 'succeeded') return" server/app/Infrastructure/Persistence/DatabaseRefundResultSettlement.php
           grep -F "WHERE id=:id AND status<>'succeeded'" server/app/Infrastructure/Persistence/DatabaseRefundResultSettlement.php
           grep -F "lockPayment" server/app/Application/Money/WebAdminFinance.php
           grep -F "lockWalletRecharge" server/app/Application/Money/WebAdminFinance.php
