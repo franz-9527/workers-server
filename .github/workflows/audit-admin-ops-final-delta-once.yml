@@ -1,0 +1,18 @@
+name: Admin operations final delta smoke
+on:
+  push:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: php -l server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
+      - name: Final safeguards
+        run: |
+          grep -F "template_key='worker_replaced_by_admin_old'" server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
+          grep -F "CAST(JSON_UNQUOTE(JSON_EXTRACT(changes_json,'$.completed_of')) AS UNSIGNED)" server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
+          grep -F "requires_worker_acceptance'=>true" server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
+          grep -F "UPDATE order_role_grants SET status='revoked'" server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
+          grep -F "assignment_status='offered'" server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php
