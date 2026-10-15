@@ -44,7 +44,10 @@ foreach ([
   "lifecycle_status='cancelled'" => 'draft lifecycle close',
   "'draft_closed'" => 'dedicated audit event',
 ] as $needle=>$label) ok(strpos($source,$needle)!==false,$label);
-foreach (['order_cancel_requests','INSERT INTO refunds','captureCancellation('] as $needle) ok(strpos($source,$needle)===false,'no refund/risk side effect '.$needle);
+foreach (['order_cancel_requests','INSERT INTO refunds','captureCancellation(','DELETE FROM orders'] as $needle) ok(strpos($source,$needle)===false,'no refund/risk/delete side effect '.$needle);
+$payment = (string)file_get_contents($root.'/payment-order-lock.php');
+ok(strpos($payment,'SELECT * FROM orders WHERE public_no=:public_no AND user_id=:user_id LIMIT 1 FOR UPDATE')!==false,'payments.create shares order row lock');
+ok(strpos($payment,"(string)\$order['lifecycle_status'] !== 'active'")!==false,'payments.create refuses closed order after lock');
 $module=(string)file_get_contents($root.'/server/app/Http/Api/Modules/OrderDraftClosureApiModule.php');
 ok(strpos($module,"'orders.draft.close'")!==false,'dedicated API route');
 
