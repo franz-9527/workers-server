@@ -107,9 +107,9 @@ async function run() {
     data: { spaces: [{ id: 's1', local_annotations: [] }], busy: false, actions: {}, linkedConstruction: null, detail: {} },
     properties: { showPlatformPricing: true },
     setData(next) { Object.assign(this.data, next) },
-    confirmSubmitMeasurement() { confirmed += 1 },
     triggerEvent() {}
   })
+  measurement.confirmSubmitMeasurement = () => { confirmed += 1 }
   measurement.submitMeasurement()
   assert.strictEqual(modals.length, 0, '没有本地待上传标注时不应因缺少标注图多弹一次确认')
   assert.strictEqual(confirmed, 1, '合法成果只进入一次正式提交确认')
