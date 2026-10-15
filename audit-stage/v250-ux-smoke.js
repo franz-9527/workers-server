@@ -1,4 +1,5 @@
 'use strict'
+// Temporary staged smoke for workers dev/2.5.0 audit UX changes.
 const assert = require('assert')
 const path = require('path')
 const Module = require('module')
