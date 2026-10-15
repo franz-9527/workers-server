@@ -64,6 +64,14 @@ final class DatabaseAdminWorkbenchOperationsRepository implements AdminWorkbench
             $payload=['message'=>'平台已改派师傅；新师傅仍需本人确认接单','old_worker_id'=>(int)$old['worker_id'],'old_worker_name'=>(string)$old['old_worker_name'],'new_worker_id'=>$workerId,'new_worker_name'=>(string)$worker['display_name'],'reason'=>$reason,'operator_user_id'=>$miniUserId,'notify_recipients'=>['user','worker']];
             $db->insert("INSERT INTO order_events(order_id,event_type,event_key,actor_type,actor_id,payload_json,created_at) VALUES(:order_id,'worker_replaced_by_admin',:event_key,'mini_admin',:actor_id,:payload,UTC_TIMESTAMP())",['order_id'=>$order['id'],'event_key'=>substr($eventKey,0,128),'actor_id'=>$miniUserId,'payload'=>$this->json($payload)]);
             OrderNotificationService::queue($db,(int)$order['id'],$eventKey,'worker_replaced_by_admin',$payload);
+
+            $oldNoticeData=$this->json(['order_id'=>(int)$order['id'],'event_key'=>$eventKey,'reassigned_to_worker_id'=>$workerId]);
+            $oldNoticeExists=$db->fetchValue("SELECT id FROM notifications WHERE recipient_type='worker' AND recipient_id=:worker_id AND channel='in_app' AND template_key='worker_replaced_by_admin_old' AND BINARY data_json=BINARY :data LIMIT 1",['worker_id'=>$old['worker_id'],'data'=>$oldNoticeData]);
+            if(!$oldNoticeExists){
+                $db->insert("INSERT INTO notifications(public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(:public_id,'worker',:worker_id,'in_app','worker_replaced_by_admin_old','订单已由平台改派',:content,:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",[
+                    'public_id'=>\public_id(),'worker_id'=>$old['worker_id'],'content'=>'订单 '.(string)$order['public_no'].' 已由平台改派其他师傅，本单访问权限已收回。原因：'.mb_substr($reason,0,120),'data'=>$oldNoticeData,
+                ]);
+            }
             return ['order_id'=>(string)$order['public_no'],'assignment_id'=>$newAssignmentId,'old_worker'=>['id'=>(int)$old['worker_id'],'name'=>(string)$old['old_worker_name']],'new_worker'=>['id'=>$workerId,'name'=>(string)$worker['display_name']],'assignment_status'=>'offered','requires_worker_acceptance'=>true];
         });
     }
@@ -109,7 +117,7 @@ final class DatabaseAdminWorkbenchOperationsRepository implements AdminWorkbench
         $order=$this->db->fetch('SELECT id,public_no FROM orders WHERE BINARY public_no=BINARY :public_no LIMIT 1',['public_no'=>$orderNo]);if(!$order)throw new OrderOperationException('订单不存在','ORDER_NOT_FOUND',404);
         $followup=$this->db->fetch("SELECT id FROM order_revisions WHERE id=:id AND order_id=:order_id AND operator_type='mini_admin' AND JSON_UNQUOTE(JSON_EXTRACT(changes_json,'$.kind'))='admin_internal_followup' LIMIT 1",['id'=>$followupEventId,'order_id'=>$order['id']]);
         if(!$followup)throw new OrderOperationException('跟进事项不存在','ADMIN_FOLLOWUP_NOT_FOUND',404);
-        $completed=(bool)$this->db->fetchValue("SELECT 1 FROM order_revisions WHERE order_id=:order_id AND operator_type='mini_admin' AND JSON_EXTRACT(changes_json,'$.completed_of')=:completed_of LIMIT 1",['order_id'=>$order['id'],'completed_of'=>$followupEventId]);
+        $completed=(bool)$this->db->fetchValue("SELECT 1 FROM order_revisions WHERE order_id=:order_id AND operator_type='mini_admin' AND CAST(JSON_UNQUOTE(JSON_EXTRACT(changes_json,'$.completed_of')) AS UNSIGNED)=:completed_of LIMIT 1",['order_id'=>$order['id'],'completed_of'=>$followupEventId]);
         if(!$completed)$this->internalRevision((int)$order['id'],'admin_internal_followup_completed',(int)($actor['user_id']??0),['completed_of'=>$followupEventId,'note'=>$note]);
         return ['order_id'=>$orderNo,'followup_event_id'=>$followupEventId,'completed'=>true];
     }
@@ -126,7 +134,7 @@ final class DatabaseAdminWorkbenchOperationsRepository implements AdminWorkbench
     public function internalFollowups(string $orderNo,int $limit):array
     {
         $orderId=(int)$this->db->fetchValue('SELECT id FROM orders WHERE BINARY public_no=BINARY :public_no LIMIT 1',['public_no'=>$orderNo]);if($orderId<1)throw new OrderOperationException('订单不存在','ORDER_NOT_FOUND',404);$limit=max(1,min(50,$limit));
-        $rows=$this->db->fetchAll("SELECT r.id,r.changes_json,r.created_at,r.operator_id,EXISTS(SELECT 1 FROM order_revisions c WHERE c.order_id=r.order_id AND c.operator_type='mini_admin' AND JSON_EXTRACT(c.changes_json,'$.completed_of')=r.id) completed FROM order_revisions r WHERE r.order_id=:order_id AND r.operator_type='mini_admin' AND JSON_UNQUOTE(JSON_EXTRACT(r.changes_json,'$.kind'))='admin_internal_followup' ORDER BY r.id DESC LIMIT {$limit}",['order_id'=>$orderId]);
+        $rows=$this->db->fetchAll("SELECT r.id,r.changes_json,r.created_at,r.operator_id,EXISTS(SELECT 1 FROM order_revisions c WHERE c.order_id=r.order_id AND c.operator_type='mini_admin' AND CAST(JSON_UNQUOTE(JSON_EXTRACT(c.changes_json,'$.completed_of')) AS UNSIGNED)=r.id) completed FROM order_revisions r WHERE r.order_id=:order_id AND r.operator_type='mini_admin' AND JSON_UNQUOTE(JSON_EXTRACT(r.changes_json,'$.kind'))='admin_internal_followup' ORDER BY r.id DESC LIMIT {$limit}",['order_id'=>$orderId]);
         $items=[];$now=time();foreach($rows as $row){$payload=json_decode((string)$row['changes_json'],true);if(!is_array($payload))$payload=[];$followAt=trim((string)($payload['follow_up_at']??''));$ts=$followAt!==''?strtotime($followAt.' UTC'):false;$items[]=['id'=>(int)$row['id'],'note'=>(string)($payload['note']??''),'follow_up_at'=>$followAt?:null,'created_at'=>(string)$row['created_at'],'operator_user_id'=>(int)($row['operator_id']??0),'completed'=>(bool)$row['completed'],'due'=>!(bool)$row['completed']&&$ts!==false&&$ts<=$now];}return $items;
     }
 
