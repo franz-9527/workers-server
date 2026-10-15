@@ -1,0 +1,29 @@
+name: Staged next audit batch smoke
+on:
+  push:
+    paths:
+      - 'audit-stage/next-batch/**'
+      - '.github/workflows/audit-next-batch-once.yml'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: PHP syntax
+        run: |
+          php -l audit-stage/next-batch/WorkbenchTaskProjection.php
+          php -l audit-stage/next-batch/PlatformOrderWorkbenchTaskSource.php
+          php -l audit-stage/next-batch/AdminWorkbenchActionApiModule.php
+          php -l audit-stage/next-batch/php-smoke.php
+      - name: PHP contract smoke
+        run: php audit-stage/next-batch/php-smoke.php
+      - name: JavaScript syntax
+        run: |
+          node --check audit-stage/next-batch/order-negotiation-panel.js
+          node --check audit-stage/next-batch/platformIncome.js
+          node --check audit-stage/next-batch/ui-smoke.js
+      - name: UI behavior smoke
+        run: node audit-stage/next-batch/ui-smoke.js
