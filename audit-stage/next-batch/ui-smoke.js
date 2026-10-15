@@ -39,9 +39,9 @@ async function testIncome(){
 }
 
 function testMerchantBoundary(){
-  const required=['本单角色与确认','当前商家账号','现场对接人仅用于师傅上门联系','不因填写姓名或手机号获得支付、接受加价、验收等账号权限','师傅手机号继续按平台隐私规则开放']
-  const currentSource=`本单角色与确认 当前商家账号 现场对接人仅用于师傅上门联系 不因填写姓名或手机号获得支付、接受加价、验收等账号权限 师傅手机号继续按平台隐私规则开放`
-  required.forEach(x=>assert(currentSource.includes(x)))
+  const source=fs.readFileSync(path.join(root,'merchant-role-boundary.wxml'),'utf8')
+  const required=['order.is_merchant_order && actions.is_owner && !actions.is_admin','本单角色与确认','当前商家账号','现场对接人仅用于师傅上门联系','不因填写姓名或手机号获得支付、接受加价、验收等账号权限','师傅手机号继续按平台隐私规则开放','师傅电话默认隐藏，请等待师傅主动联系并预约']
+  required.forEach(x=>assert(source.includes(x),x))
 }
 
 (async()=>{testMerchantBoundary();await testRepair();await testIncome();console.log('V2.5.0 next audit batch UI smoke OK')})().catch(e=>{console.error(e);process.exit(1)})
