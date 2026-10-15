@@ -1,0 +1,1 @@
+.order-search-box{display:flex;align-items:center}.order-search-input{flex:1}@media (prefers-color-scheme:dark){.order-search-input{color:#e7f0f1}}
