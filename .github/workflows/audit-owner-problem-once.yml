@@ -1,0 +1,21 @@
+name: Staged owner problem entry smoke
+on:
+  push:
+    paths:
+      - 'audit-stage/owner-problem-entry.js'
+      - 'audit-stage/owner-problem-smoke.js'
+      - '.github/workflows/audit-owner-problem-once.yml'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Syntax check
+        run: |
+          node --check audit-stage/owner-problem-entry.js
+          node --check audit-stage/owner-problem-smoke.js
+      - name: Run smoke
+        run: node audit-stage/owner-problem-smoke.js
