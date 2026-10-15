@@ -1,0 +1,6 @@
+<view class="card" wx:for="{{items}}" wx:key="id" data-index="{{index}}" bindtap="open">
+  <view class="footer-actions">
+    <button wx:if="{{item.can_close_draft}}" class="draft-close-button" data-index="{{index}}" loading="{{closingDraftId === item.id}}" disabled="{{closingDraftId !== ''}}" catchtap="closeDraft">暂不下单</button>
+    <text>{{item.todo_action || '查看详情'}}</text>
+  </view>
+</view>
