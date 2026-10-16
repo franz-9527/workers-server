@@ -267,7 +267,7 @@ namespace {
         "CREATE TABLE order_deadlines(id BIGINT AUTO_INCREMENT PRIMARY KEY,order_id BIGINT,deadline_type VARCHAR(40),status VARCHAR(24),version INT,due_at DATETIME,created_at DATETIME,updated_at DATETIME) ENGINE=InnoDB",
     ] as $sql) $db->execute($sql);
     $settings=new class implements \WorkerAdmin\Contracts\SettingsProvider {
-        public function get(string $key,$default=null) { return $default; }
+        public function get(string $key,$default=null) { return $key==='wechat.admin_openids' ? ['CI-ADMIN'] : $default; }
         public function bool(string $key,bool $default=false): bool { return $default; }
         public function int(string $key,int $default=0): int { return $default; }
     };
@@ -309,6 +309,12 @@ namespace {
     adminProxyMysqlSame((int)$db->fetchValue('SELECT COUNT(*) FROM order_measurement_spaces'),1,'空间新增超时重试不会生成重复空间');
     $reject(fn()=>$assistance->execute('admin.order.assistance.save',$operator,$command('measurement_submit')),'MEASUREMENT_RESULT_REQUIRED','成果缺图时不能协助提交');
 
+    $db->execute("CREATE TABLE users(id BIGINT PRIMARY KEY,status VARCHAR(24)) ENGINE=InnoDB");
+    $db->execute("CREATE TABLE worker_profiles(id BIGINT PRIMARY KEY,user_id BIGINT) ENGINE=InnoDB");
+    $db->execute("CREATE TABLE wechat_identities(id BIGINT PRIMARY KEY,user_id BIGINT,openid VARCHAR(80),status VARCHAR(24)) ENGINE=InnoDB");
+    $db->execute("INSERT INTO users(id,status) VALUES(77,'active'),(66,'active'),(99,'active'),(901,'active')");
+    $db->execute('INSERT INTO worker_profiles(id,user_id) VALUES(55,66)');
+    $db->execute("INSERT INTO wechat_identities(id,user_id,openid,status) VALUES(1,901,'CI-ADMIN','active')");
     $source=tempnam(sys_get_temp_dir(),'bx_image_');
     file_put_contents($source,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
     $optimizer=new class implements \WorkerAdmin\Contracts\ImageOptimizer {
@@ -321,8 +327,9 @@ namespace {
         }
     };
     $storage=new class implements \WorkerAdmin\Contracts\ObjectStorage {
-        public function enabled(): bool { return false; }
-        public function store(string $path,string $key,string $type='general',string $mime='application/octet-stream'): array { throw new RuntimeException('unexpected cloud upload'); }
+        public bool $enabledFlag=false;
+        public function enabled(): bool { return $this->enabledFlag; }
+        public function store(string $path,string $key,string $type='general',string $mime='application/octet-stream'): array { throw new RuntimeException('simulated cloud outage'); }
         public function downloadUrl(string $key,int $ttl=900): string { return ''; }
         public function usesHttp(): bool { return false; }
         public function read(string $key,int $ttl=900): string { return ''; }
@@ -340,11 +347,25 @@ namespace {
     adminProxyMysqlSame($optimizer->calls,1,'已保存图片重试不重新压缩或占用配额');
     $badSource=tempnam(sys_get_temp_dir(),'bx_bad_image_');file_put_contents($badSource,'<?php echo 1;');
     $reject(fn()=>$uploads->upload($operator,$uploadRequest,$badSource),'INVALID_IMAGE_TYPE','伪装图片 MIME 不能绕过检查');unlink($badSource);
-    $optimizer->during=function() use($db): void { $db->execute('UPDATE orders SET current_assignment_id=11 WHERE id=1'); };
+    $different=tempnam(sys_get_temp_dir(),'bx_different_');file_put_contents($different,file_get_contents($source).'different');
+    $reject(fn()=>$uploads->upload($operator,$uploadRequest,$different),'ASSISTANCE_REQUEST_CONFLICT','同幂等键不能替换为另一张真实图片');unlink($different);
+    $optimizer->during=function() use($db): void {
+        adminProxyMysqlSame($db->pdo()->inTransaction(),false,'图片压缩期间不持有订单事务');
+        $db->execute('UPDATE orders SET current_assignment_id=11 WHERE id=1');
+    };
     $reject(fn()=>$uploads->upload($operator,$command('upload_media',['purpose'=>'measurement_photo','space_id'=>$spaceId]),$source),'ASSIGNMENT_CHANGED','压缩期间改派后，落库时再次拒绝旧关系');
     adminProxyMysqlSame((int)$db->fetchValue('SELECT COUNT(*) FROM media_files'),1,'改派竞争不留下孤立媒体记录');
     adminProxyMysqlSame(is_file(end($optimizer->paths)),false,'落库失败清理本地优化副本');
     $optimizer->during=null; $db->execute('UPDATE orders SET current_assignment_id=10 WHERE id=1');
+    $temporaryUpload=$uploads->upload($operator,$command('upload_media',['purpose'=>'measurement_photo','space_id'=>$spaceId]),$source);
+    $deleteRequest=$command('media_delete',['purpose'=>'measurement_photo','space_id'=>$spaceId,'media_id'=>$temporaryUpload['id']]);
+    $assistance->execute('admin.order.assistance.save',$operator,$deleteRequest);
+    $assistance->execute('admin.order.assistance.save',$operator,$deleteRequest);
+    adminProxyMysqlSame((string)$db->fetchValue('SELECT status FROM media_files WHERE public_id=:id',['id'=>$temporaryUpload['id']]),'pending_delete','未提交管理员图片可整理删除且保留延迟删除副本');
+    adminProxyMysqlSame((int)$db->fetchValue('SELECT COUNT(*) FROM media_links'),1,'图片删除重放不破坏其他成果');
+    $emptySpace=$assistance->execute('admin.order.assistance.save',$operator,$command('measurement_space',['name'=>'未填空间']));
+    $reject(fn()=>$assistance->execute('admin.order.assistance.save',$operator,$command('measurement_submit')),'MEASUREMENT_SPACE_IMAGE_REQUIRED','每个空间都必须有成果图片');
+    $assistance->execute('admin.order.assistance.save',$operator,$command('space_delete',['space_id'=>$emptySpace['result']['id']]));
     $submitMeasurement=$command('measurement_submit');
     $notifyBefore=count(OrderNotificationService::$queued);
     $assistance->execute('admin.order.assistance.save',$operator,$submitMeasurement);
@@ -363,6 +384,10 @@ namespace {
     adminProxyMysqlSame((string)$db->fetchValue('SELECT workflow_profile FROM orders WHERE id=1'),'measurement','平台测量协助提交不直接转施工或代核价');
     adminProxyMysqlSame((int)$db->fetchValue("SELECT COUNT(*) FROM order_events WHERE event_type='platform_measurement_pricing_confirmed'"),0,'不伪造客户核价确认');
 
+    $db->execute("UPDATE orders SET workflow_profile='construction' WHERE id=1");
+    $spaceDbId=(int)$db->fetchValue('SELECT id FROM order_measurement_spaces WHERE public_id=:id',['id'=>$spaceId]);
+    $originalMedia=$mediaRepository->findPrivateMedia($uploaded['id']);
+    adminProxyMysqlSame($mediaRepository->canAccessPrivateMedia($originalMedia,['actor_type'=>'user','actor_id'=>77,'user_id'=>77,'entity_type'=>'order_measurement_space','entity_id'=>$spaceDbId,'order_id'=>1]),true,'平台转施工后测量图片仍可只读回看');
     $db->execute("UPDATE orders SET order_source_type='consumer',workflow_profile='construction',fulfillment_status='not_started',completion_submitted_at=NULL,
         warranty_months=6,warranty_note='师傅已约定保障',warranty_expires_at='2027-01-10 12:00:00' WHERE id=1");
     $completionUpload=$uploads->upload($operator,$command('upload_media',['purpose'=>'completion']),$source);
@@ -381,7 +406,17 @@ namespace {
     adminProxyMysqlSame((string)$db->fetchValue('SELECT warranty_note FROM orders WHERE id=1'),'师傅已约定保障','保障说明保持原事实');
     adminProxyMysqlSame((int)$db->fetchValue('SELECT final_amount_cents FROM orders WHERE id=1'),12345,'协助完工不修改成交金额');
     $reject(fn()=>$assistance->execute('admin.order.assistance.save',$operator,$command('media_delete',['purpose'=>'completion','media_id'=>$completionUpload['id']])),'ASSISTANCE_MEDIA_LOCKED','完工提交后管理员也不能删除完工证据');
-    $uploads->upload($operator,$command('upload_media',['purpose'=>'collection_material']),$source);
+    $storage->enabledFlag=true;
+    $collectionMaterial=$uploads->upload($operator,$command('upload_media',['purpose'=>'collection_material']),$source);
+    adminProxyMysqlSame($collectionMaterial['cloud_synced'],false,'七牛失败不伪报云同步成功');
+    adminProxyMysqlSame(is_file(end($optimizer->paths)),true,'七牛失败保留本站私有副本');
+    $storage->enabledFlag=false;
+    $privateMedia=$mediaRepository->findPrivateMedia($collectionMaterial['id']);
+    adminProxyMysqlSame($mediaRepository->canAccessPrivateMedia($privateMedia,['actor_type'=>'user','actor_id'=>99,'user_id'=>99,'entity_type'=>'order','entity_id'=>1,'order_id'=>1]),false,'履约及收款材料不对普通浏览者公开');
+    adminProxyMysqlSame($mediaRepository->canAccessPrivateMedia($privateMedia,['actor_type'=>'user','actor_id'=>77,'user_id'=>77,'entity_type'=>'order','entity_id'=>1,'order_id'=>1]),true,'订单客户可查看私有补充材料');
+    $db->execute('UPDATE orders SET assigned_worker_id=99 WHERE id=1');
+    adminProxyMysqlSame($mediaRepository->canAccessPrivateMedia($privateMedia,['actor_type'=>'worker','actor_id'=>55,'user_id'=>66,'entity_type'=>'order','entity_id'=>1,'order_id'=>1]),false,'改派后旧师傅的图片访问立即失效');
+    $db->execute('UPDATE orders SET assigned_worker_id=55 WHERE id=1');
     adminProxyMysqlSame((int)$db->fetchValue("SELECT COUNT(*) FROM media_links WHERE purpose='collection_receipt'"),0,'收款材料不能冒充师傅确认收款凭证');
 
     $db->execute("UPDATE orders SET lifecycle_status='completed',fulfillment_status='accepted' WHERE id=1");
