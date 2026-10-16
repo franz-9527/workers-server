@@ -1,6 +1,6 @@
 -- V2.5.0：评价模块正式采用“服务态度 / 施工手艺”双维度评分。
 -- 当前环境尚未正式运营，因此运行时代码不保留旧 rating 兼容；升级时仅做一次性旧行搬迁后删除旧列。
--- MySQL 5.7 可重复执行，也兼容此前 2.5.0 迁移执行到一半后重试。
+-- MySQL 5.7 幂等语句逐条执行；DDL 中断须人工核对后恢复，不允许自动整段重试。
 SET NAMES utf8mb4;
 
 SET @v250_attitude_exists := (
@@ -72,7 +72,7 @@ ON DUPLICATE KEY UPDATE `chinese_name`=VALUES(`chinese_name`),`description`=VALU
 -- V2.5.0：平台承接单继续复用统一 orders 主档，只增加来源专属条件与结构化开单明细。
 CREATE TABLE IF NOT EXISTS `order_platform_terms` (
   `order_id` bigint(20) unsigned NOT NULL COMMENT '订单ID',
-  `customer_flow_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'platform_managed' COMMENT '客户参与方式：platform_managed平台托管、miniapp_booking小程序预约',
+  `customer_flow_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'platform_managed' COMMENT '客户参与方式：仅platform_managed平台托管（miniapp_booking已停用）',
   `customer_pricing_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'fixed_total' COMMENT '客户计价方式：fixed_total固定总价、itemized明细计价',
   `customer_contract_total_cents` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '客户当前最终成交金额（分）',
   `worker_settlement_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'worker_collect' COMMENT '师傅工费结算：worker_collect师傅代收、platform_balance平台余额',
@@ -99,7 +99,7 @@ SET @v250_customer_flow_mode_exists := (
 SET @v250_customer_flow_mode_ddl := IF(
   @v250_customer_flow_mode_exists > 0,
   'SELECT 1',
-  'ALTER TABLE `order_platform_terms` ADD COLUMN `customer_flow_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT ''platform_managed'' COMMENT ''客户参与方式：platform_managed平台托管、miniapp_booking小程序预约'' AFTER `order_id`'
+  'ALTER TABLE `order_platform_terms` ADD COLUMN `customer_flow_mode` varchar(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT ''platform_managed'' COMMENT ''客户参与方式：仅platform_managed平台托管（miniapp_booking已停用）'' AFTER `order_id`'
 );
 PREPARE v250_customer_flow_mode_stmt FROM @v250_customer_flow_mode_ddl;
 EXECUTE v250_customer_flow_mode_stmt;
@@ -142,7 +142,7 @@ INSERT INTO `database_field_dictionary`
   (`table_name`,`field_name`,`chinese_name`,`description`,`created_at`,`updated_at`)
 VALUES
   ('order_platform_terms','order_id','订单ID','平台承接条件与统一 orders 主档一对一关联',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
-  ('order_platform_terms','customer_flow_mode','客户参与方式','platform_managed 平台托管；miniapp_booking 小程序预约。该字段为唯一事实来源，不根据预约费金额推断',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
+  ('order_platform_terms','customer_flow_mode','客户参与方式','仅platform_managed平台托管；miniapp_booking已停用，不根据预约费金额推断',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
   ('order_platform_terms','customer_pricing_mode','客户计价方式','fixed_total 固定总价；itemized 按结构化项目/实际用量计价',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
   ('order_platform_terms','customer_contract_total_cents','客户成交金额','客户当前最终成交金额，单位分',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
   ('order_platform_terms','worker_settlement_mode','工费结算方式','worker_collect 师傅代收；platform_balance 平台余额结算',UTC_TIMESTAMP(),UTC_TIMESTAMP()),
@@ -363,7 +363,7 @@ SET @demo_user_id := (
   ORDER BY u.id DESC LIMIT 1
 );
 
-START TRANSACTION;
+-- 在线升级逐条自动提交；以下种子写入使用唯一键和重复键更新保持幂等。
 
 INSERT INTO orders
 (public_no,user_id,category_id,workflow_profile,dispatch_mode,expected_fee_type,expected_fee_cents,expected_fee_text,
@@ -456,5 +456,3 @@ ON DUPLICATE KEY UPDATE
  service_payment_status='paid',result_status='editing',settlement_status='not_applicable',
  gross_amount_cents=0,refunded_amount_cents=0,service_rate_bp_snapshot=0,service_min_cents_snapshot=0,
  service_fee_cents=0,worker_net_cents=0,hold_until=NULL,max_hold_until=NULL,settled_at=NULL,updated_at=UTC_TIMESTAMP();
-
-COMMIT;
