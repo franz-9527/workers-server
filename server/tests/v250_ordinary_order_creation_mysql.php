@@ -116,7 +116,8 @@ try {
     // 使用真实媒体仓储插入；外部压缩/七牛链路由 Media 原有专项覆盖。
     foreach(['product'=>'product-file','wall'=>'wall-file'] as $purpose=>$publicId){
         $context=$media->prepareOrderUpload($admin,$created['id'],$purpose);
-        $db->transaction(static function()use($media,$context,$optimized,$publicId){$media->storeOrderMedia($context,$optimized,[],$publicId);});
+        $image = array_replace($optimized, ['storage_key'=>'private/'.$publicId.'.jpg']);
+        $db->transaction(static function()use($media,$context,$image,$publicId){$media->storeOrderMedia($context,$image,[],$publicId);});
     }
     ordinaryBlocked(static function()use($submission,$actor,$created){$submission->finalize($actor,['order_id'=>$created['id'],'agreements'=>['accepted'=>true,'versions'=>['rules'=>'1']]]);},'PROXY_DRAFT_INCOMPLETE','资料未交付前不能提前确认付款');
     $ready=$proxy->ready($admin,['order_id'=>$created['id']]);$proxy->ready($admin,['order_id'=>$created['id']]);
@@ -152,6 +153,10 @@ try {
     ordinarySame((int)$db->fetchValue("SELECT reference_count FROM media_files WHERE public_id='product-file'"),1,'移除新单商品图只减少新引用');
     ordinarySame($db->fetchValue("SELECT status FROM media_files WHERE public_id='product-file'"),'active','历史图片仍有引用时不能进入待删除状态');
     ordinarySame((int)$db->fetchValue("SELECT COUNT(*) FROM media_links WHERE entity_type='order' AND entity_id=:id AND purpose='product'",['id'=>$id]),1,'新单删除不破坏历史证据');
+    $reuseBody['client_request_id']='reuse_web_delete_123456';
+    $webReused=$submission->create($actor,$reuseBody);
+    (new \WorkerAdmin\Infrastructure\Persistence\DatabaseAdminOrderMediaStore($db))->delete((int)$webReused['data']['internal_id'],(int)$db->fetchValue("SELECT id FROM media_files WHERE public_id='product-file'"));
+    ordinarySame($db->fetchValue("SELECT status FROM media_files WHERE public_id='product-file'"),'active','后台移除新单引用同样保留历史图片');
     // 两个独立 PHP/MySQL 连接并发重复创建，必须只生成一张普通订单。
     $parallel=$body;$parallel['client_request_id']='parallel_ordinary_123456';
     $env=getenv();$env['ORDINARY_CHILD_DB']=$name;$env['ORDINARY_CHILD_BODY']=json_encode($parallel);$children=[];
