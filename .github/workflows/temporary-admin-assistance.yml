@@ -1,0 +1,41 @@
+name: Temporary administrator assistance audit
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-admin-assistance.yml']
+permissions:
+  contents: read
+jobs:
+  assistance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h127.0.0.1 -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring,pdo_mysql
+          coverage: none
+      - name: PHP syntax and assistance policy
+        run: |
+          find server/app -name '*.php' -print0 | xargs -0 -n1 php -l
+          php server/tests/v250_admin_proxy_action_regression.php
+      - name: MySQL 5.7 assistance state and retry regression
+        env:
+          V250_PLATFORM_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        run: php server/tests/v250_admin_proxy_action_mysql.php
