@@ -251,7 +251,7 @@ namespace {
 
 
     // 同一真实 MySQL 事务夹具扩展到图片、普通/平台测量、完工和维修，经济命令桩一旦调用即失败。
-    $db->execute("ALTER TABLE orders ADD user_id BIGINT NOT NULL DEFAULT 77,
+    $db->execute("ALTER TABLE orders ADD user_id BIGINT NOT NULL DEFAULT 77,ADD audit_status VARCHAR(24) NOT NULL DEFAULT 'approved',
         ADD completion_submitted_at DATETIME NULL,ADD auto_accept_at DATETIME NULL,
         ADD accepted_at DATETIME NULL,ADD closed_at DATETIME NULL,
         ADD warranty_months INT NULL,ADD warranty_note VARCHAR(500) NULL,ADD warranty_expires_at DATETIME NULL,
