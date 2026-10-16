@@ -39,3 +39,19 @@ jobs:
           V250_DB_USER: root
           V250_DB_PASSWORD: root
         run: php server/tests/v250_admin_proxy_action_mysql.php
+      - name: Administrator source and appointment recipients
+        run: |
+          php <<'PHP'
+          <?php
+          require 'server/app/Domain/Messaging/OrderProgressMessageCatalog.php';
+          require 'server/app/Domain/Messaging/MessageEventCatalog.php';
+          require 'server/app/Domain/Messaging/OrderMessageDefinition.php';
+          foreach (['appointment_recorded','appointment_waiting_customer_notice','repair_appointment_recorded','repair_waiting_customer_notice'] as $type) {
+              $assisted = WorkerAdmin\Domain\Messaging\OrderMessageDefinition::definition($type,['assisted'=>true]);
+              $normal = WorkerAdmin\Domain\Messaging\OrderMessageDefinition::definition($type,[]);
+              if (strpos($assisted['status'],'管理员') !== 0 || $assisted['recipients'] !== ['user','worker'] || $normal['recipients'] !== ['user']) {
+                  throw new RuntimeException('Appointment source or recipients invalid: '.$type);
+              }
+          }
+          echo "Appointment source and recipients: OK\n";
+          PHP
