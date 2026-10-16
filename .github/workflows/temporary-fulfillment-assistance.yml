@@ -2,7 +2,7 @@ name: Temporary remaining fulfillment assistance audit
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/temporary-fulfillment-assistance.yml']
+    paths: ['server/app/**', 'server/tests/v250_admin_proxy_action_mysql.php', '.github/workflows/temporary-fulfillment-assistance.yml']
 permissions:
   contents: read
 jobs:
