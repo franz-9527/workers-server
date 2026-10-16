@@ -77,6 +77,8 @@ try {
         foreach($matches as $match)if(!$db->tableExists($match[1]))$db->pdo()->exec($match[0]);
     }
     $db->pdo()->exec('SET FOREIGN_KEY_CHECKS=1');
+    // 表单 UI 配置由后续升级添加；最小建表夹具补齐正式字段。
+    if (!$db->columnExists('form_schema_versions','ui_config_json')) $db->pdo()->exec('ALTER TABLE form_schema_versions ADD COLUMN ui_config_json JSON NULL');
     $cipher=ordinaryCipher();
     foreach([11=>'管理员',22=>'真实客户',33=>'无微信客户',44=>'另一客户'] as $id=>$nickname){
         $db->execute("INSERT INTO users(id,public_id,nickname,mobile_masked,mobile_ciphertext,mobile_hmac,status,created_at,updated_at) VALUES(:id,:ref,:nickname,'138******00',:cipher,:hmac,'active',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['id'=>$id,'ref'=>str_pad((string)$id,26,'0',STR_PAD_LEFT),'nickname'=>$nickname,'cipher'=>$cipher->encrypt('13800138000','user-mobile'),'hmac'=>$id===22?$cipher->hmac('13800138000','user-mobile'):null]);

@@ -63,6 +63,8 @@ final class DatabaseMiniOrdinaryOrderCreationRepository implements MiniOrdinaryO
                 if (!hash_equals((string)($payload['input_digest'] ?? ''), $digest)) throw new OrderOperationException('相同请求的客户或资料已变化，请先核对原订单', 'IDEMPOTENCY_CONFLICT', 409);
                 return ['id'=>(string)$prior['public_no'],'restored'=>true];
             }
+            $version = (int)$db->fetchValue("SELECT v.id FROM form_schema_versions v JOIN form_schemas s ON s.id=v.schema_id WHERE s.schema_key='order_submit' AND v.status='published' ORDER BY v.version_no DESC,v.id DESC LIMIT 1");
+            if ((int)($input['schema_version_id'] ?? 0) !== $version) throw new OrderOperationException('下单表单已更新，请重新加载当前资料', 'FORM_VERSION_EXPIRED', 409);
             $customer = $this->customer(trim((string)($input['customer_ref'] ?? '')), true);
             $body = array_diff_key($input, ['customer_ref'=>true]);
             $body['client_request_id'] = 'PROXY_'.hash('sha256', $key);
