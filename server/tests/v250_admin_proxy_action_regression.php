@@ -143,4 +143,17 @@ adminProxySame(count($facts->saved),2,'被拒绝的动作没有进入持久化�
 adminProxySame(strpos($repository,'UPDATE assignments')===false,true,'旧 Repository 删除接单推进 SQL');
 adminProxySame(strpos($contentGate,"'admin.order.assistance.save'=>2")!==false,true,'协助说明进入内容安全门禁');
 
+foreach (['Core/Database.php','Http/Api/ApiModule.php','Http/Api/Modules/OrderApiModuleSupport.php',
+    'Http/Api/Modules/AdminWorkbenchModuleSupport.php','Foundation/OrderApplicationContainer.php',
+    'Foundation/AdminOrderProxyComposition.php','Http/Api/Modules/AdminOrderProxyApiModule.php',
+    'Http/Api/Modules/LegacyApiModule.php'] as $file) require_once $root.'/server/app/'.$file;
+$httpModule = new \WorkerAdmin\Http\Api\Modules\AdminOrderProxyApiModule(new \WorkerAdmin\Core\Database([]));
+$legacyModule = new \WorkerAdmin\Http\Api\Modules\LegacyApiModule(new \WorkerAdmin\Core\Database([]));
+foreach (['admin.proxy.action','admin.order.assistance.context','admin.order.assistance.save'] as $route) {
+    adminProxySame($httpModule->supports($route),true,'模块路由真实接管 '.$route);
+    adminProxySame($legacyModule->supports($route),false,'路由不回退旧模块 '.$route);
+}
+adminProxySame($httpModule->requiresContentSecurity('admin.order.assistance.save'),true,'补录写接口实际启用内容安全');
+adminProxySame($httpModule->requiresContentSecurity('admin.order.assistance.context'),false,'补录只读接口不运行提交检测');
+
 echo "V2.5.0 admin assistance application regression: OK\n";
