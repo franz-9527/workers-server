@@ -29,7 +29,7 @@ final class DatabaseMediaRepository implements MediaRepository
     {
         $order = $this->order($orderPublicNo);
         $isAdmin = !empty($actor['is_admin']);
-        if ($isAdmin && in_array($purpose, ['product','wall'], true)) $this->assertProxyEditable($order);
+        if ($isAdmin && !$isOwner && in_array($purpose, ['product','wall'], true)) $this->assertProxyEditable($order);
         $isOwner = (int)$order['user_id'] === (int)($actor['user_id'] ?? 0);
         $imageRule = in_array($purpose, ['product','wall'], true)
             ? $this->orderImageRule((int)($order['form_schema_version_id'] ?? 0), $purpose) : null;
@@ -67,7 +67,7 @@ final class DatabaseMediaRepository implements MediaRepository
         }
         return [
             'order'=>$order,'purpose'=>$purpose,'image_rule'=>$imageRule,'is_admin'=>$isAdmin,
-            'creator_type'=>$creatorType,'creator_id'=>$creatorId,
+            'creator_type'=>$creatorType,'creator_id'=>$creatorId,'is_proxy_operator'=>$isAdmin && !$isOwner,
             'defer_qiniu'=>in_array($purpose,['product','wall'],true)
                 && in_array((string)$order['audit_status'],['draft','supplement_required'],true)
                 && (string)$order['lifecycle_status']==='active',
@@ -80,7 +80,7 @@ final class DatabaseMediaRepository implements MediaRepository
         $order = $context['order']; $purpose = (string)$context['purpose'];
         $locked = $this->db->fetch('SELECT * FROM orders WHERE id=:id FOR UPDATE',['id'=>$order['id']]);
         if (!$locked) throw new RuntimeException('订单不存在或已删除');
-        if (!empty($context['is_admin']) && in_array($purpose,['product','wall'],true)) $this->assertProxyEditable($locked);
+        if (!empty($context['is_proxy_operator']) && in_array($purpose,['product','wall'],true)) $this->assertProxyEditable($locked);
         if (in_array($purpose,['product','wall'],true) && empty($context['is_admin']) && !in_array((string)$locked['audit_status'],['draft','supplement_required'],true)) {
             throw new RuntimeException('订单已提交，不能再上传下单图片');
         }
@@ -100,14 +100,16 @@ final class DatabaseMediaRepository implements MediaRepository
     public function deleteOrderMedia(array $actor, string $orderPublicNo, string $mediaPublicId): string
     {
         $order = $this->order($orderPublicNo);
-        if (!empty($actor['is_admin'])) {
+        if (!empty($actor['is_admin']) && (int)$order['user_id'] !== (int)($actor['user_id']??0)) {
             $locked = $this->db->fetch('SELECT * FROM orders WHERE id=:id FOR UPDATE', ['id'=>$order['id']]);
             if (!$locked) return '';
-            $this->assertProxyEditable($locked);
-            if ($locked['lifecycle_status'] !== 'active' || !in_array($locked['audit_status'], ['draft','supplement_required'], true)) return '';
             $row = $this->db->fetch("SELECT m.id,l.id link_id FROM media_links l JOIN media_files m ON m.id=l.media_file_id AND m.status='active' WHERE l.entity_type='order' AND l.entity_id=:id AND l.purpose IN ('product','wall') AND m.public_id=:media LIMIT 1 FOR UPDATE", ['id'=>$order['id'],'media'=>$mediaPublicId]);
-            if ($row) { $this->unlinkMedia((int)$row['link_id'], (int)$row['id']); return 'order_image'; }
-            return '';
+            if ($row) {
+                $this->assertProxyEditable($locked);
+                if ($locked['lifecycle_status'] !== 'active' || !in_array($locked['audit_status'], ['draft','supplement_required'], true)) return '';
+                $this->unlinkMedia((int)$row['link_id'], (int)$row['id']);
+                return 'order_image';
+            }
         }
         if ((int)$order['user_id'] === (int)($actor['user_id']??0)) {
             $locked = $this->db->fetch('SELECT * FROM orders WHERE id=:id FOR UPDATE',['id'=>$order['id']]);

@@ -124,6 +124,13 @@ try {
     ordinarySame($ready['ready'],true,'资料完整后交付客户');
     ordinarySame((int)$db->fetchValue("SELECT COUNT(*) FROM order_events WHERE order_id=:id AND event_type='mini_ordinary_ready'",['id'=>$id]),1,'重复交付只记一次经办事件');
     try{$media->prepareOrderUpload($admin,$created['id'],'product');throw new RuntimeException('upload was accepted');}catch(\WorkerAdmin\Domain\Media\MediaOperationException $error){ordinarySame($error->apiCode(),'PROXY_DRAFT_LOCKED','交付后管理员上传被锁定');}
+    try{$db->transaction(static function()use($media,$context,$optimized){$media->storeOrderMedia($context,$optimized,[],'late-upload');});throw new RuntimeException('late upload accepted');}catch(\WorkerAdmin\Domain\Media\MediaOperationException $error){ordinarySame($error->apiCode(),'PROXY_DRAFT_LOCKED','交付前准备的迟到上传在落库时再次阻断');}
+    $counts=$base->mediaCounts($id);
+    $db->transaction(static function()use($media,$actor,$created){$media->deleteOrderMedia($actor,$created['id'],'wall-file');});
+    ordinaryBlocked(static function()use($base,$actor,$order,$counts){$base->markReadyForPayment($actor,$order,['rules'=>'1'],$counts);},'ORDER_IMAGES_REQUIRED','客户确认事务内重验图片，旧计数不能绕过');
+    $ownerContext=$media->prepareOrderUpload($actor,$created['id'],'wall');
+    $ownerImage=array_replace($optimized,['storage_key'=>'private/owner-wall.jpg']);
+    $db->transaction(static function()use($media,$ownerContext,$ownerImage){$media->storeOrderMedia($ownerContext,$ownerImage,[],'owner-wall-file');});
     ordinaryBlocked(static function()use($submission,$actor,$created){$submission->finalize($actor,['order_id'=>$created['id']]);},'ORDER_AGREEMENT_REQUIRED','客户本人仍须确认协议');
     $submission->finalize($actor,['order_id'=>$created['id'],'agreements'=>['accepted'=>true,'versions'=>['rules'=>'1']]]);
     ordinarySame($db->fetchValue('SELECT payment_status FROM orders WHERE id=:id',['id'=>$id]),'awaiting_payment','客户确认后才进入待支付');
