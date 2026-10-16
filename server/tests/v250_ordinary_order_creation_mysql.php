@@ -164,6 +164,14 @@ try {
     $webReused=$submission->create($actor,$reuseBody);
     (new \WorkerAdmin\Infrastructure\Persistence\DatabaseAdminOrderMediaStore($db))->delete((int)$webReused['data']['internal_id'],(int)$db->fetchValue("SELECT id FROM media_files WHERE public_id='product-file'"));
     ordinarySame($db->fetchValue("SELECT status FROM media_files WHERE public_id='product-file'"),'active','后台移除新单引用同样保留历史图片');
+    $db->execute("UPDATE orders SET order_source_type='platform' WHERE id=:id",['id'=>$id]);
+    ordinarySame(count($products->history($actor,['source_id'=>$created['id']])['items']),1,'已绑定本人的平台完成单也可复用商品');
+    $reuseBody['client_request_id']='reuse_platform_product_123';
+    $platformReuse=$submission->create($actor,$reuseBody);
+    ordinarySame($db->fetchValue('SELECT order_source_type FROM orders WHERE id=:id',['id'=>$platformReuse['data']['internal_id']]),'consumer','复用平台商品不继承平台资金或来源');
+    $db->execute("UPDATE orders SET is_demo=1 WHERE id=:id",['id'=>$id]);
+    ordinarySame(count($products->history($actor,['source_id'=>$created['id']])['items']),0,'演示订单不进入真实历史商品');
+    $db->execute("UPDATE orders SET is_demo=0 WHERE id=:id",['id'=>$id]);
     // 两个独立 PHP/MySQL 连接并发重复创建，必须只生成一张普通订单。
     $parallel=$body;$parallel['client_request_id']='parallel_ordinary_123456';
     $env=getenv();$env['ORDINARY_CHILD_DB']=$name;$env['ORDINARY_CHILD_BODY']=json_encode($parallel);$children=[];

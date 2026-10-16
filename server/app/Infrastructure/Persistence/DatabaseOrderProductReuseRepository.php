@@ -23,7 +23,7 @@ final class DatabaseOrderProductReuseRepository implements OrderProductReuseRepo
         if ($source !== '') $params['source'] = $source;
         $rows = $this->db->fetchAll(
             "SELECT id,public_no,category_names_snapshot,updated_at FROM orders
-             WHERE user_id=:user AND order_source_type IN ('consumer','merchant') AND lifecycle_status IN ('completed','closed')
+             WHERE user_id=:user AND COALESCE(is_demo,0)=0 AND lifecycle_status IN ('completed','closed')
                AND fulfillment_status='accepted' {$filter} ORDER BY id DESC LIMIT 11 OFFSET {$offset}",
             $params
         );
@@ -59,7 +59,7 @@ final class DatabaseOrderProductReuseRepository implements OrderProductReuseRepo
     {
         $source = $this->db->fetch(
             "SELECT id,public_no FROM orders WHERE BINARY public_no=BINARY :no AND user_id=:user
-             AND order_source_type IN ('consumer','merchant') AND lifecycle_status IN ('completed','closed') AND fulfillment_status='accepted' LIMIT 1 FOR UPDATE",
+             AND COALESCE(is_demo,0)=0 AND lifecycle_status IN ('completed','closed') AND fulfillment_status='accepted' LIMIT 1 FOR UPDATE",
             ['no'=>$sourceNo,'user'=>(int)$actor['user_id']]
         );
         if (!$source) throw new OrderOperationException('历史商品来源已不可用，请重新选择', 'REUSE_ORDER_INVALID', 409);
