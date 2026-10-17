@@ -119,6 +119,11 @@ jobs:
         run: |
           set -euo pipefail
           php tests/v260/snapshot/server/tests/v260_test_center_m2_repair_contract.php
+      - name: Execute mirrored M2 admin adjudication contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_m2_admin_adjudication_contract.php
       - name: Assert testing deploy SHA health probe
         shell: bash
         run: |
