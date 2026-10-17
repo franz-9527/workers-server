@@ -9,6 +9,7 @@ use WorkerAdmin\Application\Testing\TestScenarioCatalog;
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Infrastructure\Persistence\DatabaseTestCenterRepository;
 use WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterCleanupGuardRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterM1Repository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegativeQuoteRepository;
@@ -21,9 +22,11 @@ final class TestCenterComposition
         $base=new DatabaseTestCenterRepository($db,$cipher);
         $m1=new DatabaseTestCenterM1Repository($db,$cipher,$base);
         $negative=new DatabaseTestCenterNegativeQuoteRepository($db,$m1);
+        $repository=new DatabaseTestCenterCleanupGuardRepository($db,$negative);
         return new TestCenter(
-            new DatabaseTestCenterCleanupGuardRepository($db,$negative),
-            new TestScenarioCatalog()
+            $repository,
+            new TestScenarioCatalog(),
+            new DatabaseTestCenterActionRunner($db)
         );
     }
 }
