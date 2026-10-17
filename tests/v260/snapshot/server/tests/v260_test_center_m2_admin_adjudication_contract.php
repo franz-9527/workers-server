@@ -40,8 +40,11 @@ m2adAssert(strpos($negotiationCleanup,"handled_by']??0)>0")!==false,'resolved di
 $composition=m2adFile($root,'server/app/Foundation/TestCenterComposition.php');
 foreach(['DatabaseTestCenterAdminAdjudicationActionRunner','DatabaseTestCenterAdminAdjudicationVerificationRepository'] as$class)m2adAssert(strpos($composition,$class)!==false,'composition wires '.$class);
 m2adAssert(strpos($composition,'new DatabaseTestCenterAdminAdjudicationVerificationRepository($db,$repairProgress)')!==false,'admin verifier wraps repair verifier');
-m2adAssert(strpos($composition,'new DatabaseTestCenterFulfillmentCleanupRepository($db,$adminProgress)')!==false,'cleanup chain receives latest verification layer');
-m2adAssert(strpos($composition,'new DatabaseTestCenterAdminAdjudicationActionRunner($db,$repairActions)')!==false,'admin adjudication is outer action boundary');
+m2adAssert(strpos($composition,'new DatabaseTestCenterDisputeFinanceVerificationRepository($db,$adminProgress)')!==false,'later finance verifier wraps admin verifier');
+m2adAssert(strpos($composition,'new DatabaseTestCenterDisputeFinanceCleanupRepository($db,$financeProgress)')!==false,'finance cleanup receives latest verification layer');
+m2adAssert(strpos($composition,'new DatabaseTestCenterFulfillmentCleanupRepository($db,$financeCleanup)')!==false,'generic cleanup remains outside finance cleanup');
+m2adAssert(strpos($composition,'new DatabaseTestCenterAdminAdjudicationActionRunner($db,$repairActions)')!==false,'admin adjudication remains directly outside repair actions');
+m2adAssert(strpos($composition,'new DatabaseTestCenterDisputeFinanceActionRunner($db,$adminActions)')!==false,'later finance action wraps admin adjudication');
 
 $repair=m2adFile($root,'server/app/Application/Admin/AdminRepairResolution.php');
 foreach(["'continue'","'resolved'","'closed'"] as$decision)m2adAssert(strpos($repair,$decision)!==false,'formal repair resolution supports '.$decision);
