@@ -35,11 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP 7.4 for finance E2E
+      - name: Setup PHP 7.4 for test-center E2E
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
-          extensions: pdo_mysql, mbstring
+          extensions: pdo_mysql, mbstring, pcntl
           coverage: none
 
       - name: Verify MySQL 5.7 and prepare minimum dependency
@@ -85,6 +85,19 @@ jobs:
           [[ "$(${MYSQL[@]} -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='test_runs' AND index_name='uniq_test_runs_idempotency' AND non_unique=0")" == "2" ]]
           [[ "$(${MYSQL[@]} -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='test_payment_facts' AND index_name='uniq_test_payment_request' AND non_unique=0")" == "1" ]]
           echo "test center schema assertions passed"
+
+      - name: Execute single-grab MySQL race E2E
+        shell: bash
+        env:
+          V260_SINGLE_GRAB_MYSQL_TEST: '1'
+          V260_DB_NAME: worker_test
+          V260_DB_HOST: 127.0.0.1
+          V260_DB_PORT: '3306'
+          V260_DB_USER: root
+          V260_DB_PASSWORD: root
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_single_grab_mysql_strict.php
 
       - name: Execute ordinary construction MySQL E2E
         shell: bash
