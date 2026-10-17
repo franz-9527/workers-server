@@ -46,3 +46,51 @@ jobs:
             foreach(["platform.construction.multi_quote.waiting.zero_prepayment","platform.construction.multi_quote.waiting.with_prepayment"] as $k){if(empty($m[$k]["buildable"]))exit(13);}
             echo "scenario catalog assertions passed\n";
           '
+      - name: Assert M2 real-flow contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=tests/v260/snapshot/server
+          RUNNER="$ROOT/app/Infrastructure/Testing/DatabaseTestCenterActionRunner.php"
+          PROGRESS="$ROOT/app/Infrastructure/Testing/DatabaseTestCenterProgressVerificationRepository.php"
+          REPO="$ROOT/app/Infrastructure/Testing/DatabaseTestCenterM1Repository.php"
+          CENTER="$ROOT/app/Application/Testing/TestCenter.php"
+          COMPOSITION="$ROOT/app/Foundation/TestCenterComposition.php"
+          ADMIN="$ROOT/app/Http/Admin/Modules/TestCenterAdminModule.php"
+          VIEW="$ROOT/views/admin/test-center-detail.php"
+
+          grep -Fq "TestingEnvironmentPolicy::active()" "$RUNNER"
+          grep -Fq "deal()->execute('quotes.create'" "$RUNNER"
+          grep -Fq "quoteSelection()->execute" "$RUNNER"
+          grep -Fq "'real_service'" "$RUNNER"
+          grep -Fq "'is_admin'=>false" "$RUNNER"
+          grep -Fq "'business_admin'=>false" "$RUNNER"
+          grep -Fq "TEST_ACTION_IDEMPOTENCY_CONFLICT" "$RUNNER"
+          grep -Fq "SELECT * FROM test_runs WHERE instance_id=:instance" "$RUNNER"
+          grep -Fq "BXDEMOHALL" "$RUNNER"
+
+          grep -Fq "action_key IN ('worker_quote','customer_select_quote')" "$PROGRESS"
+          grep -Fq "real_worker_quote_versions" "$PROGRESS"
+          grep -Fq "assignment_accepted" "$PROGRESS"
+          grep -Fq "selection_confirmed" "$PROGRESS"
+          grep -Fq "commission_rule_snapshot" "$PROGRESS"
+          grep -Fq "no_external_outbox" "$PROGRESS"
+
+          grep -Fq "appointment_records" "$REPO"
+          grep -Fq "commission_receivables" "$REPO"
+          grep -Fq "scheduled_job_claims" "$REPO"
+          grep -Fq "DELETE ah FROM assignment_history" "$REPO"
+          grep -Fq "DELETE FROM assignments WHERE order_id" "$REPO"
+          grep -Fq "DELETE FROM quote_selections WHERE order_id" "$REPO"
+          grep -Fq "DELETE FROM commission_rule_versions WHERE order_id" "$REPO"
+
+          grep -Fq "TestCenterActionRunner" "$CENTER"
+          grep -Fq "runAction" "$CENTER"
+          grep -Fq "DatabaseTestCenterProgressVerificationRepository" "$COMPOSITION"
+          grep -Fq "DatabaseTestCenterActionRunner" "$COMPOSITION"
+          grep -Fq "'test-center.action'" "$ADMIN"
+          grep -Fq "verifyRequest()" "$ADMIN"
+          grep -Fq "真实流程推进（M2）" "$VIEW"
+          grep -Fq "执行真实报价" "$VIEW"
+          grep -Fq "执行真实选报价" "$VIEW"
+          echo "M2 real-flow contract assertions passed"
