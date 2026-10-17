@@ -143,6 +143,9 @@ namespace {
     }
     foreach($pids as$pid)pcntl_waitpid($pid,$status);
     putenv('V260_SINGLE_GRAB_BARRIER_DIR');
+    // PDO sockets inherited across fork are not safe to reuse in the parent. Reconnect before assertions/cleanup.
+    $db=new Database($config);
+    $rootConfig=$config;$rootConfig['database']='worker_test';$rootDb=new Database($rootConfig);
     $results=[];foreach($files as$file){$decoded=json_decode((string)file_get_contents($file),true);if(!is_array($decoded)){fwrite(STDERR,"missing child result\n");exit(1);}$results[]=$decoded;}
     $successes=array_values(array_filter($results,static function(array $row):bool{return!empty($row['success']);}));
     $losers=array_values(array_filter($results,static function(array $row):bool{return empty($row['success']);}));
