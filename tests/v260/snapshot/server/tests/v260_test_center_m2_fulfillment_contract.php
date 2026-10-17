@@ -32,8 +32,13 @@ m2fAssert(strpos($verify,"action_key IN ('worker_appointment','worker_complete',
 m2fAssert(strpos($verify,'service_appointment')!==false&&strpos($verify,'completion_submitted')!==false,'appointment and completion postconditions are asserted');
 m2fAssert(strpos($verify,'commission_estimate')!==false,'completion asserts provisional commission receivable');
 m2fAssert(strpos($verify,'commission_finalized')!==false,'acceptance asserts finalized commission receivable');
+m2fAssert(strpos($verify,'auto_accept_closed')!==false,'manual acceptance asserts auto-accept deadline is closed');
 m2fAssert(strpos($verify,'worker_completed_orders')!==false,'acceptance asserts derived worker completed count');
 m2fAssert(strpos($verify,'no_external_outbox')!==false,'fulfillment demo flow asserts no external outbox');
+
+$completion=m2fFile($root,'server/app/Infrastructure/Persistence/DatabaseOrderCompletionRepository.php');
+m2fAssert(substr_count($completion,'$this->closeAutoAcceptDeadline($db, (int)$locked[\'id\']);')===2,'ordinary and platform manual acceptance both close auto-accept deadlines');
+m2fAssert(strpos($completion,"deadline_type IN ('auto_accept','auto_accept_completion')")!==false,'manual acceptance closes both legacy and current auto-accept deadline types');
 
 $cleanup=m2fFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterFulfillmentCleanupRepository.php');
 m2fAssert(strpos($cleanup,'return$this->db->transaction')!==false,'stage-two cleanup wraps nested base cleanup in one shared transaction');
