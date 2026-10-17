@@ -97,7 +97,7 @@ jobs:
           V260_DB_PASSWORD: root
         run: |
           set -euo pipefail
-          php tests/v260/snapshot/server/tests/v260_test_center_dispute_finance_mysql.php
+          php tests/v260/snapshot/server/tests/v260_test_center_dispute_finance_mysql_strict.php
 
       - name: Candidate checksum
         shell: bash
