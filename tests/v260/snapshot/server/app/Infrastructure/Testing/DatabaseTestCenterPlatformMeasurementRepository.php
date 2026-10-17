@@ -58,7 +58,7 @@ final class DatabaseTestCenterPlatformMeasurementRepository implements TestCente
             ['funds','external_prepayment_only','平台外部预付款；无普通支付链',$t&&$t['customer_flow_mode']==='platform_managed'&&$o['payment_status']==='not_required'&&(int)$o['booking_fee_cents']===0&&$this->count('payment_orders',$id)===0&&$this->count('test_payment_facts',(int)$i['id'],'instance_id')===0,'payments='.$this->count('payment_orders',$id)],
             ['funds','customer_snapshot','客户金额与平台条款一致；扣除预付款和工费不形成负差额',$t&&(int)$o['final_amount_cents']===(int)$t['customer_contract_total_cents']&&(int)$t['booking_paid_cents']>=0&&(int)$t['worker_labor_cents']>0&&(int)$t['worker_labor_cents']+(int)$t['booking_paid_cents']<=(int)$t['customer_contract_total_cents'],'customer='.(int)$o['final_amount_cents']],
             ['funds','no_measurement_income','平台测量不产生普通测量冻结收入',$s&&$s['settlement_status']==='not_applicable'&&(int)($s['worker_net_cents']??0)===0&&$this->ledgerCount($id)===0,'ledger='.$this->ledgerCount($id)],
-            ['structure','no_second_order','不建立 measurement_construction 或其它跨单关系',$this->relationCount($id)===0,'relations='.$this->relationCount($id)],
+            ['structure','no_second_order','不建立 measurement_construction 或其它跨单关系',empty($o['pending_measurement_order_id'])&&$this->relationCount($id)===0,'relations='.$this->relationCount($id)],
             ['safety','no_external_outbox','demo 不产生真实渠道发件箱',$this->outboxCount($id,(string)$o['public_no'])===0,'outbox='.$this->outboxCount($id,(string)$o['public_no'])],
             ['progress','rework_once','平台测量最多退回补测一次',count($this->events($id,'measurement_rework_requested'))<=1,'reworks='.count($this->events($id,'measurement_rework_requested'))],
             ['progress','appointments_owned','测量/施工预约属于原成交师傅',$ownedAppointments&&$service<=1&&$archived<=1,'service='.$service.'; measurement='.$archived],
@@ -111,6 +111,8 @@ final class DatabaseTestCenterPlatformMeasurementRepository implements TestCente
             if(!in_array($table,self::OWNED,true))$blocking['unadapted:'.$table]=count($rows);
         }
         if($this->relationCount($id)>0)$blocking['order_relations']=$this->relationCount($id);
+        if(!empty($o['pending_measurement_order_id']))$blocking['pending_measurement_relation']=1;
+        if($this->count('test_payment_facts',(int)$i['id'],'instance_id')>0)$blocking['test_payment_facts_unexpected']=1;
         if($this->ledgerCount($id)>0)$blocking['worker_balance_ledger']=$this->ledgerCount($id);
         $outbox=$this->outboxCount($id,(string)$o['public_no']);if($outbox>0)$blocking['message_outbox']=$outbox;
         foreach(['scheduled_job_claims','scheduled_job_failures']as$table)if($this->db->tableExists($table)&&$this->db->columnExists($table,'business_key')){
@@ -119,10 +121,17 @@ final class DatabaseTestCenterPlatformMeasurementRepository implements TestCente
         }
         $facts['test_participants']=$this->db->fetchAll('SELECT * FROM test_participants WHERE instance_id=:id ORDER BY id',['id'=>(int)$i['id']]);
         $workerIds=array_map('intval',array_column($facts['test_participants'],'worker_id'));
+        $validWorkers=(int)$this->db->fetchValue("SELECT COUNT(*) FROM test_participants tp JOIN worker_profiles w ON w.id=tp.worker_id AND w.user_id=tp.user_id WHERE tp.instance_id=:id AND tp.expected_status='approved' AND w.cloud_record_mode='demo_local'",['id'=>(int)$i['id']]);
+        if($validWorkers!==count($facts['test_participants']))$blocking['participant_unowned']=1;
         foreach(['quotes','assignments','appointment_records','assignment_history']as$table)foreach($facts[$table]??[]as$r)if(!in_array((int)($r['worker_id']??0),$workerIds,true))$blocking[$table.'_worker_unowned']=1;
         foreach($facts['appointment_records']??[]as$r)if(!in_array((string)$r['context_type'],['service','measurement'],true)||!empty($r['after_sale_id']))$blocking['appointment_unowned']=1;
         $facts['quote_versions']=$this->db->fetchAll('SELECT v.* FROM quote_versions v JOIN quotes q ON q.id=v.quote_id WHERE q.order_id=:id ORDER BY v.id',['id'=>$id]);
         $facts['media']=$this->db->fetchAll('SELECT tm.*,mf.storage_disk,mf.storage_key FROM test_media_facts tm JOIN media_files mf ON mf.id=tm.media_file_id WHERE tm.instance_id=:id ORDER BY tm.id',['id'=>(int)$i['id']]);
+        if($this->count('test_media_facts',(int)$i['id'],'instance_id')!==count($facts['media']))$blocking['media_fact_orphaned']=1;
+        $foreignPointers=(int)$this->db->fetchValue('SELECT COUNT(*) FROM orders WHERE id<>:id AND ((selected_quote_id IS NOT NULL AND selected_quote_id IN (SELECT id FROM quotes WHERE order_id=:id)) OR (current_assignment_id IS NOT NULL AND current_assignment_id IN (SELECT id FROM assignments WHERE order_id=:id)) OR (commission_rule_version_id IS NOT NULL AND commission_rule_version_id IN (SELECT id FROM commission_rule_versions WHERE order_id=:id)))',['id'=>$id]);
+        if($foreignPointers>0)$blocking['foreign_order_pointers']=$foreignPointers;
+        $foreignAssignments=(int)$this->db->fetchValue('SELECT COUNT(*) FROM assignments WHERE order_id<>:id AND (quote_id IN (SELECT id FROM quotes WHERE order_id=:id) OR commission_rule_version_id IN (SELECT id FROM commission_rule_versions WHERE order_id=:id))',['id'=>$id]);
+        if($foreignAssignments>0)$blocking['foreign_assignment_pointers']=$foreignAssignments;
         $spaceIds=array_map('intval',array_column($facts['order_measurement_spaces']??[],'id'));$mediaIds=array_map('intval',array_column($facts['media'],'media_file_id'));
         $facts['media_links']=[];
         foreach($facts['media']as$m){

@@ -172,6 +172,13 @@ namespace {
     pmAssert((int)$db->fetchValue("SELECT COUNT(*) FROM appointment_records WHERE order_id=1 AND context_type='service'")===1,'construction appointment separate');
     $db->pdo()->exec('CREATE TABLE future_relation(id BIGINT AUTO_INCREMENT PRIMARY KEY,order_id BIGINT) ENGINE=InnoDB');$db->execute('INSERT INTO future_relation(order_id) VALUES(1)');
     pmAssert(empty($repo->cleanupPreview('PMINSTANCE')['allowed']),'unknown dependency blocks cleanup');$db->execute('DELETE FROM future_relation');
+    $db->execute('INSERT INTO test_payment_facts(instance_id,payment_order_id) VALUES(1,999)');
+    pmAssert(empty($repo->cleanupPreview('PMINSTANCE')['allowed']),'foreign payment fact blocks platform cleanup');$db->execute('DELETE FROM test_payment_facts');
+    $quoteId=(int)$db->fetchValue('SELECT selected_quote_id FROM orders WHERE id=1');$db->execute('UPDATE orders SET selected_quote_id=:quote WHERE id=10',['quote'=>$quoteId]);
+    pmAssert(empty($repo->cleanupPreview('PMINSTANCE')['allowed']),'foreign order referencing owned quote blocks deletion');$db->execute('UPDATE orders SET selected_quote_id=NULL WHERE id=10');
+    $mediaId=(int)$db->fetchValue('SELECT media_file_id FROM test_media_facts WHERE instance_id=1 LIMIT 1');
+    $foreignLink=$db->insert("INSERT INTO media_links(media_file_id,entity_type,entity_id,purpose) VALUES(:media,'order',10,'wall')",['media'=>$mediaId]);
+    pmAssert(empty($repo->cleanupPreview('PMINSTANCE')['allowed']),'media shared with another order blocks deletion');$db->execute('DELETE FROM media_links WHERE id=:id',['id'=>$foreignLink]);
     $p=$repo->cleanupPreview('PMINSTANCE');pmAssert(!empty($p['allowed']),'owned platform graph cleanup allowed');
     $db->execute("UPDATE appointment_records SET note='changed after preview' WHERE order_id=1 AND context_type='service'");
     pmReject(static function()use($repo,$p){$repo->cleanup('PMINSTANCE',7,$p['plan_digest']);},'TEST_CLEANUP_PREVIEW_STALE');
