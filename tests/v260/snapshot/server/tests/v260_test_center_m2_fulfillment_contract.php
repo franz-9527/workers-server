@@ -55,7 +55,8 @@ $composition=m2fFile($root,'server/app/Foundation/TestCenterComposition.php');
 foreach(['DatabaseTestCenterFulfillmentActionRunner','DatabaseTestCenterFulfillmentVerificationRepository','DatabaseTestCenterFulfillmentCleanupRepository'] as $class){m2fAssert(strpos($composition,$class)!==false,'composition wires '.$class);}
 m2fAssert(strpos($composition,'new DatabaseTestCenterNegotiationCleanupRepository($db,$fulfillmentCleanup)')!==false,'fulfillment cleanup remains inside later negotiation cleanup');
 m2fAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'negotiation cleanup remains inside later refund cleanup');
-m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$refundCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
+m2fAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
+m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
 
 $view=m2fFile($root,'server/views/admin/test-center-detail.php');
 foreach(['执行真实预约','执行真实完工','执行真实验收'] as $label)m2fAssert(strpos($view,$label)!==false,'detail exposes '.$label);
