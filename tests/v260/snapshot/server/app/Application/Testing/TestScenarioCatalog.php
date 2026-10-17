@@ -6,12 +6,14 @@ namespace WorkerAdmin\Application\Testing;
 
 final class TestScenarioCatalog
 {
+    /** @return array<int,array<string,mixed>> */
     public function all(): array
     {
         return [
             $this->ordinary('ordinary.construction.multi_quote.waiting.zero_quotes','普通施工 · 待报价（0 人）',0),
             $this->ordinary('ordinary.construction.multi_quote.waiting.one_quote','普通施工 · 待报价（1 人）',1),
             $this->ordinary('ordinary.construction.multi_quote.waiting.three_quotes','普通施工 · 待报价（3 人）',3),
+            $this->singleGrab(),
             $this->negative('ordinary.construction.multi_quote.waiting.far_distance','普通施工 · 超距离未确认报价','far_distance','DISTANCE_ACK_REQUIRED'),
             $this->negative('ordinary.construction.multi_quote.waiting.pending_worker','普通施工 · 待审核师傅报价','pending_worker','WORKER_NOT_APPROVED'),
             $this->platform('platform.construction.multi_quote.waiting.zero_prepayment','平台施工 · 待报价（无外部预付款）',0),
@@ -24,11 +26,15 @@ final class TestScenarioCatalog
             ],
         ];
     }
+
+    /** @return array<string,mixed>|null */
     public function find(string $key): ?array
     {
         foreach($this->all() as $scenario)if(($scenario['key']??'')===$key)return$scenario;
         return null;
     }
+
+    /** @return array<string,mixed> */
     private function ordinary(string $key,string $name,int $quoteCount): array
     {
         return [
@@ -41,6 +47,24 @@ final class TestScenarioCatalog
             'editable'=>['title','description','province','city','district','address','lat','lng'],
         ];
     }
+
+    /** @return array<string,mixed> */
+    private function singleGrab(): array
+    {
+        return [
+            'key'=>'ordinary.construction.single_grab.waiting.open','version'=>1,'name'=>'普通施工 · 单师傅抢单（待抢）',
+            'family'=>'ordinary','source'=>'consumer','workflow'=>'construction','dispatch_mode'=>'single_grab','node'=>'waiting_grab',
+            'purpose'=>'固定期望总价抢单 / 两师傅竞争 / assignment 唯一性 / 正式失败码','buildable'=>true,'read_only'=>false,'blocked_reason'=>'','quote_count'=>0,
+            'expected_fee_type'=>'total','expected_fee_cents'=>52000,
+            'defaults'=>[
+                'title'=>'测试普通施工单（单师傅抢单）','description'=>'TEST 单师傅抢单场景；第一位师傅抢单即按期望总价成交，第二位师傅必须收到正式已被抢错误。',
+                'province'=>'浙江省','city'=>'杭州市','district'=>'拱墅区','address'=>'测试路 88 号（虚构地址）','lat'=>30.3192,'lng'=>120.1506,'expected_fee_cents'=>52000,
+            ],
+            'editable'=>['title','description','province','city','district','address','lat','lng','expected_fee_cents'],
+        ];
+    }
+
+    /** @return array<string,mixed> */
     private function negative(string $key,string $name,string $probe,string $expectedCode): array
     {
         return [
@@ -54,6 +78,8 @@ final class TestScenarioCatalog
             'editable'=>['title','description','province','city','district','address','lat','lng'],
         ];
     }
+
+    /** @return array<string,mixed> */
     private function platform(string $key,string $name,int $externalPrepaymentCents): array
     {
         return [
