@@ -86,6 +86,19 @@ jobs:
           [[ "$(${MYSQL[@]} -Nse "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='test_payment_facts' AND index_name='uniq_test_payment_request' AND non_unique=0")" == "1" ]]
           echo "test center schema assertions passed"
 
+      - name: Execute ordinary construction MySQL E2E
+        shell: bash
+        env:
+          V260_ORDINARY_FLOW_MYSQL_TEST: '1'
+          V260_DB_NAME: worker_test
+          V260_DB_HOST: 127.0.0.1
+          V260_DB_PORT: '3306'
+          V260_DB_USER: root
+          V260_DB_PASSWORD: root
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_ordinary_flow_mysql_strict.php
+
       - name: Execute dispute finance MySQL E2E
         shell: bash
         env:
