@@ -42,6 +42,7 @@ namespace {
       "CREATE TABLE payment_orders(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,public_no VARCHAR(80),business_type VARCHAR(32),business_id BIGINT UNSIGNED,order_id BIGINT UNSIGNED,payer_user_id BIGINT UNSIGNED,app_id VARCHAR(80),mch_id VARCHAR(80),amount_cents BIGINT UNSIGNED,status VARCHAR(24),wechat_prepay_id VARCHAR(128) NULL,wechat_transaction_id VARCHAR(128) NULL,created_at DATETIME) ENGINE=InnoDB",
       "CREATE TABLE test_payment_facts(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,instance_id BIGINT UNSIGNED,payment_order_id BIGINT UNSIGNED,business_type VARCHAR(32),simulated_provider VARCHAR(32)) ENGINE=InnoDB",
       "CREATE TABLE quotes(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED,worker_id BIGINT UNSIGNED,quote_type VARCHAR(24),status VARCHAR(24)) ENGINE=InnoDB",
+      "CREATE TABLE quote_selections(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED,status VARCHAR(24)) ENGINE=InnoDB",
       "CREATE TABLE assignments(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED,worker_id BIGINT UNSIGNED,status VARCHAR(24)) ENGINE=InnoDB",
       "CREATE TABLE appointment_records(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED,worker_id BIGINT UNSIGNED,context_type VARCHAR(24)) ENGINE=InnoDB",
       "CREATE TABLE worker_balance_ledger(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,worker_id BIGINT UNSIGNED,amount_cents BIGINT UNSIGNED,frozen_delta_cents BIGINT,business_type VARCHAR(40),business_id BIGINT UNSIGNED,status VARCHAR(24)) ENGINE=InnoDB",
