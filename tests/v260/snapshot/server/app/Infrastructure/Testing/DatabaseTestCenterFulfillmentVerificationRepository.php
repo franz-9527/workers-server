@@ -47,10 +47,18 @@ final class DatabaseTestCenterFulfillmentVerificationRepository implements TestC
         $runId=$this->db->insert(
             "INSERT INTO test_runs(public_id,instance_id,action_key,actor_role,operation_mode,idempotency_key,request_digest,request_id,before_summary_json,result,created_by_admin_id,started_at,created_at)
              VALUES(:public_id,:instance,'verify_fulfillment','admin','inspect',:idem,:digest,:request_id,:before_json,'running',:admin,UTC_TIMESTAMP(),UTC_TIMESTAMP())",
-            ['public_id'=>$runPublic,'instance'=>(int)$instance['id'],'idem'=>'verify-fulfillment:'.bin2hex(random_bytes(8)),'digest'=>hash('sha256',$publicId.'|'.(string)$latest['action_key']),'request_id'=>\request_id(),'before_json'=>$this->json(['latest_real_action'=>(string)$latest['action_key'],'latest_real_run'=>(string)$latest['public_id']]),'admin'=>$adminId]
+            [
+                'public_id'=>$runPublic,'instance'=>(int)$instance['id'],'idem'=>'verify-fulfillment:'.bin2hex(random_bytes(8)),
+                'digest'=>hash('sha256',$publicId.'|'.(string)$latest['action_key']),'request_id'=>\request_id(),
+                'before_json'=>$this->json(['latest_real_action'=>(string)$latest['action_key'],'latest_real_run'=>(string)$latest['public_id']]),'admin'=>$adminId,
+            ]
         );
 
-        $payment=$this->db->fetch("SELECT p.*,tf.simulated_provider FROM test_payment_facts tf JOIN payment_orders p ON p.id=tf.payment_order_id WHERE tf.instance_id=:instance AND tf.business_type='order_booking' AND p.order_id=:order_id LIMIT 1",['instance'=>(int)$instance['id'],'order_id'=>$orderId]);
+        $payment=$this->db->fetch(
+            "SELECT p.*,tf.simulated_provider FROM test_payment_facts tf JOIN payment_orders p ON p.id=tf.payment_order_id
+             WHERE tf.instance_id=:instance AND tf.business_type='order_booking' AND p.order_id=:order_id LIMIT 1",
+            ['instance'=>(int)$instance['id'],'order_id'=>$orderId]
+        );
         $selectedQuotes=(int)$this->db->fetchValue("SELECT COUNT(*) FROM quotes WHERE order_id=:id AND quote_type='worker' AND status='selected'",['id'=>$orderId]);
         $acceptedAssignments=(int)$this->db->fetchValue("SELECT COUNT(*) FROM assignments WHERE order_id=:id AND status='accepted'",['id'=>$orderId]);
         $appointments=(int)$this->db->fetchValue("SELECT COUNT(*) FROM appointment_records WHERE order_id=:id AND context_type='service' AND appointment_at IS NOT NULL AND wait_customer_notice=0",['id'=>$orderId]);
@@ -79,6 +87,7 @@ final class DatabaseTestCenterFulfillmentVerificationRepository implements TestC
             ['media','owned_test_media','所有测试媒体仍位于 test/',$allMedia===$ownedMedia,'owned='.$ownedMedia.'/'.$allMedia],
             ['safety','no_external_outbox','演示测试订单不得产生外部消息 outbox',$outbox===0,'outbox='.$outbox],
         ];
+
         $action=(string)$latest['action_key'];
         if($action==='worker_appointment'){
             $checks[]=['fulfillment','service_appointment','存在正式施工预约且为明确时间',$appointments>=1,'appointments='.$appointments];
@@ -98,6 +107,7 @@ final class DatabaseTestCenterFulfillmentVerificationRepository implements TestC
             $checks[]=['media','completion_fixture','testing 完工图片仍存在',$completionMedia>=1,'completion_media='.$completionMedia];
             $checks[]=['media','collection_receipt_fixture','存在当前实例拥有的 testing 收款凭证',$receiptMedia>=1,'receipt_media='.$receiptMedia];
             $checks[]=['funds','commission_finalized','服务费应收已从 provisional 正式化',$receivable&&(int)$receivable['is_provisional']===0&&!empty($receivable['finalized_at']),'receivable='.(int)($receivable['id']??0).'; provisional='.(int)($receivable['is_provisional']??-1).'; finalized='.(string)($receivable['finalized_at']??'').'; ledger='.$commissionLedger];
+            $checks[]=['deadline','auto_accept_closed','人工验收后不得残留待执行自动验收期限',$pendingAutoAccept===0,'pending_auto_accept='.$pendingAutoAccept];
             $checks[]=['deadline','auto_review','验收后存在待评价期限',$pendingAutoReview>=1,'pending_auto_review='.$pendingAutoReview];
             $checks[]=['derived','worker_completed_orders','测试师傅完工单数与订单事实重算一致',$assignedWorker>0&&$workerCompleted===$derivedCompleted,'worker='.$assignedWorker.'; stored='.$workerCompleted.'; derived='.$derivedCompleted];
         }
@@ -106,24 +116,43 @@ final class DatabaseTestCenterFulfillmentVerificationRepository implements TestC
 
     private function ownedMediaCount(int $instanceId,int $orderId,string $purpose): int
     {
-        return(int)$this->db->fetchValue("SELECT COUNT(*) FROM test_media_facts tm JOIN media_links ml ON ml.media_file_id=tm.media_file_id JOIN media_files mf ON mf.id=tm.media_file_id AND mf.status='active' WHERE tm.instance_id=:instance AND tm.purpose=:purpose_fact AND ml.entity_type='order' AND ml.entity_id=:order_id AND ml.purpose=:purpose_link",['instance'=>$instanceId,'purpose_fact'=>$purpose,'order_id'=>$orderId,'purpose_link'=>$purpose]);
+        return(int)$this->db->fetchValue(
+            "SELECT COUNT(*) FROM test_media_facts tm JOIN media_links ml ON ml.media_file_id=tm.media_file_id
+             JOIN media_files mf ON mf.id=tm.media_file_id AND mf.status='active'
+             WHERE tm.instance_id=:instance AND tm.purpose=:purpose_fact AND ml.entity_type='order' AND ml.entity_id=:order_id AND ml.purpose=:purpose_link",
+            ['instance'=>$instanceId,'purpose_fact'=>$purpose,'order_id'=>$orderId,'purpose_link'=>$purpose]
+        );
     }
 
+    /** @param array<int,array<int,mixed>> $checks @return array<string,mixed> */
     private function storeChecks(int $instanceId,int $runId,string $runPublic,array $checks,float $started,string $latestAction): array
     {
         $this->db->execute('DELETE FROM test_assertion_results WHERE instance_id=:id',['id'=>$instanceId]);$failed=0;
-        foreach($checks as $check){[$group,$key,$expected,$passed,$actual]=$check;if(!$passed)$failed++;$this->db->insert("INSERT INTO test_assertion_results(instance_id,run_id,assertion_group,assertion_key,status,expected_text,actual_text,details_json,created_at) VALUES(:instance,:run,:group_name,:assertion_key,:status,:expected,:actual,:details,UTC_TIMESTAMP())",['instance'=>$instanceId,'run'=>$runId,'group_name'=>$group,'assertion_key'=>$key,'status'=>$passed?'passed':'failed','expected'=>$expected,'actual'=>$actual,'details'=>$this->json(['latest_real_action'=>$latestAction])]);}
+        foreach($checks as $check){
+            [$group,$key,$expected,$passed,$actual]=$check;if(!$passed)$failed++;
+            $this->db->insert(
+                "INSERT INTO test_assertion_results(instance_id,run_id,assertion_group,assertion_key,status,expected_text,actual_text,details_json,created_at)
+                 VALUES(:instance,:run,:group_name,:assertion_key,:status,:expected,:actual,:details,UTC_TIMESTAMP())",
+                ['instance'=>$instanceId,'run'=>$runId,'group_name'=>$group,'assertion_key'=>$key,'status'=>$passed?'passed':'failed','expected'=>$expected,'actual'=>$actual,'details'=>$this->json(['latest_real_action'=>$latestAction])]
+            );
+        }
         $status=$failed===0?'passed':'failed';$duration=(int)round((microtime(true)-$started)*1000);
         $this->db->execute("UPDATE test_instances SET verification_status=:status,updated_at=UTC_TIMESTAMP(),version=version+1 WHERE id=:id",['status'=>$status,'id'=>$instanceId]);
-        $this->db->execute("UPDATE test_runs SET result=:result,after_summary_json=:summary,duration_ms=:duration,finished_at=UTC_TIMESTAMP() WHERE id=:id",['result'=>$status,'summary'=>$this->json(['latest_real_action'=>$latestAction,'assertions'=>count($checks),'failed'=>$failed]),'duration'=>$duration,'id'=>$runId]);
+        $this->db->execute(
+            "UPDATE test_runs SET result=:result,after_summary_json=:summary,duration_ms=:duration,finished_at=UTC_TIMESTAMP() WHERE id=:id",
+            ['result'=>$status,'summary'=>$this->json(['latest_real_action'=>$latestAction,'assertions'=>count($checks),'failed'=>$failed]),'duration'=>$duration,'id'=>$runId]
+        );
         return['status'=>$status,'total'=>count($checks),'failed'=>$failed,'run_public_id'=>$runPublic,'mode'=>'fulfillment_progress','latest_real_action'=>$latestAction];
     }
 
     private function outboxCount(int $orderId,string $orderNo): int
     {
         if(!$this->db->tableExists('message_outbox'))return 0;
-        return(int)$this->db->fetchValue('SELECT COUNT(*) FROM message_outbox WHERE payload_json LIKE :id_needle OR payload_json LIKE :no_needle OR business_key LIKE :business_needle',['id_needle'=>'%"order_id":'.$orderId.'%','no_needle'=>'%'.$orderNo.'%','business_needle'=>'%'.$orderNo.'%']);
+        return(int)$this->db->fetchValue(
+            'SELECT COUNT(*) FROM message_outbox WHERE payload_json LIKE :id_needle OR payload_json LIKE :no_needle OR business_key LIKE :business_needle',
+            ['id_needle'=>'%"order_id":'.$orderId.'%','no_needle'=>'%'.$orderNo.'%','business_needle'=>'%'.$orderNo.'%']
+        );
     }
 
-    private function json($value): string{$json=json_encode($value,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);return is_string($json)?$json:'{}';}
+    /** @param mixed $value */ private function json($value): string{$json=json_encode($value,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);return is_string($json)?$json:'{}';}
 }
