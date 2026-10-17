@@ -13,6 +13,7 @@ use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterCleanupGuardRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterM1Repository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegativeQuoteRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterProgressVerificationRepository;
 
 final class TestCenterComposition
 {
@@ -22,7 +23,8 @@ final class TestCenterComposition
         $base=new DatabaseTestCenterRepository($db,$cipher);
         $m1=new DatabaseTestCenterM1Repository($db,$cipher,$base);
         $negative=new DatabaseTestCenterNegativeQuoteRepository($db,$m1);
-        $repository=new DatabaseTestCenterCleanupGuardRepository($db,$negative);
+        $progress=new DatabaseTestCenterProgressVerificationRepository($db,$negative);
+        $repository=new DatabaseTestCenterCleanupGuardRepository($db,$progress);
         return new TestCenter(
             $repository,
             new TestScenarioCatalog(),
