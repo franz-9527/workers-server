@@ -1,6 +1,11 @@
 <?php
 $viewData=get_defined_vars();
 $base=\view('admin/test-center-detail',$viewData,null);
+$base=str_replace(
+    '已覆盖报价、成交、预约、完工、验收、加价介入与退款协商；不提供自由改状态，真实微信退款和维修仍分阶段接入',
+    '已覆盖报价、成交、预约、完工、验收、加价/退款协商与售后维修；不提供自由改状态，真实微信退款和平台管理员裁决仍保持安全边界',
+    $base
+);
 $repair=\view('admin/test-center-repair-actions',$viewData,null);
 if($repair===''){echo $base;return;}
 $marker='<section class="admin-card admin-mb-3">'."\n".'  <div class="admin-card__header"><div><strong>数据检查</strong>';
