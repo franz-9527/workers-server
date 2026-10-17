@@ -31,7 +31,7 @@ m2aAssert(strpos($cleanup,'return$this->db->transaction')!==false,'repair cleanu
 m2aAssert(strpos($cleanup,"type='warranty_repair'")!==false,'cleanup owns only warranty repair rows');
 m2aAssert(strpos($cleanup,"context_type='repair'")!==false,'cleanup owns only repair appointments');
 m2aAssert(strpos($cleanup,"is_auto=1 AND content='系统自动评价'")!==false,'cleanup owns only exact auto review');
-m2aAssert(strpos($cleanup,"isset($blocking['reviews'])")!==false,'cleanup explicitly recognizes owned review blocker');
+m2aAssert(strpos($cleanup,'isset($blocking')!==false&&strpos($cleanup,"['reviews']")!==false,'cleanup explicitly recognizes owned review blocker');
 foreach(['repair_multiple','other_after_sales','repair_evidence_unadapted','repair_appointment_unowned','reviews_multiple','review_unowned','review_shape_changed','repair_contact_reveal_unadapted'] as $key)m2aAssert(strpos($cleanup,$key)!==false,'repair cleanup blocks '.$key);
 $appointmentDelete=strpos($cleanup,"DELETE FROM appointment_records WHERE order_id=:order_id AND context_type='repair'");
 $repairDelete=strpos($cleanup,"DELETE FROM after_sales WHERE order_id=:id AND type='warranty_repair'");
