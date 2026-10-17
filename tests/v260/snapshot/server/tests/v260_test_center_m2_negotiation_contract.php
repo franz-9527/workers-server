@@ -37,7 +37,7 @@ foreach(['DatabaseTestCenterNegotiationActionRunner','DatabaseTestCenterNegotiat
 m2nAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'negotiation cleanup remains inside later refund cleanup');
 m2nAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
 m2nAssert(strpos($composition,'new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup)')!==false,'repair cleanup remains inside later measurement cleanup');
-m2nAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
+m2nAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$platformMeasurement)')!==false,'global cleanup guard remains outside all stage cleanup layers');
 
 $policy=m2nFile($root,'server/app/Domain/Order/NegotiationPolicy.php');
 m2nAssert(strpos($policy,'public const WAIT_HOURS = 48')!==false,'formal negotiation wait remains 48 hours');

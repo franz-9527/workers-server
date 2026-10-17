@@ -57,7 +57,8 @@ m2fAssert(strpos($composition,'new DatabaseTestCenterNegotiationCleanupRepositor
 m2fAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'negotiation cleanup remains inside later refund cleanup');
 m2fAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
 m2fAssert(strpos($composition,'new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup)')!==false,'repair cleanup remains inside the later measurement cleanup');
-m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup)')!==false,'global cleanup guard remains outside every stage cleanup layer');
+m2fAssert(strpos($composition,'new DatabaseTestCenterPlatformMeasurementRepository($db,$measurementCleanup)')!==false,'platform cleanup preserves prior measurement and fulfillment layers');
+m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$platformMeasurement)')!==false,'global cleanup guard remains outside every stage cleanup layer');
 m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupSafetyRepository($db,$cleanupGuard)')!==false,'cleanup safety remains the outermost repository boundary');
 
 $view=m2fFile($root,'server/views/admin/test-center-detail.php');
