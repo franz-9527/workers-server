@@ -40,7 +40,7 @@ $has($booking,'p.order_id=:order_id','booking replay is scoped to exact order');
 $has($balance,"'measurement_balance'",'measurement balance simulator creates correct business type');
 $has($balance,'DatabaseOrderPaidPaymentSettlement','measurement balance simulator reuses production settlement');
 $has($balance,'TEST_INTERNAL','measurement balance remains internal provider');
-$assert(strpos($balance,'wechat_transaction_id')!==false,'measurement balance validates no fake WeChat transaction');
+$assert(strpos($balance,'wechat_prepay_id')===false && strpos($balance,'wechat_transaction_id')===false,'measurement balance simulator never writes fake WeChat identifiers');
 
 $has($evidence,"'order_measurement_space'",'measurement evidence links through measurement space');
 $has($evidence,"'evidence_valid'=>false",'measurement fixture never claims real evidence');
