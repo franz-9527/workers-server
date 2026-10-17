@@ -58,7 +58,6 @@ jobs:
           COMPOSITION="$ROOT/app/Foundation/TestCenterComposition.php"
           ADMIN="$ROOT/app/Http/Admin/Modules/TestCenterAdminModule.php"
           VIEW="$ROOT/views/admin/test-center-detail.php"
-
           grep -Fq "TestingEnvironmentPolicy::active()" "$RUNNER"
           grep -Fq "deal()->execute('quotes.create'" "$RUNNER"
           grep -Fq "quoteSelection()->execute" "$RUNNER"
@@ -68,14 +67,12 @@ jobs:
           grep -Fq "TEST_ACTION_IDEMPOTENCY_CONFLICT" "$RUNNER"
           grep -Fq "SELECT * FROM test_runs WHERE instance_id=:instance" "$RUNNER"
           grep -Fq "BXDEMOHALL" "$RUNNER"
-
           grep -Fq "action_key IN ('worker_quote','customer_select_quote')" "$PROGRESS"
           grep -Fq "real_worker_quote_versions" "$PROGRESS"
           grep -Fq "assignment_accepted" "$PROGRESS"
           grep -Fq "selection_confirmed" "$PROGRESS"
           grep -Fq "commission_rule_snapshot" "$PROGRESS"
           grep -Fq "no_external_outbox" "$PROGRESS"
-
           grep -Fq "appointment_records" "$REPO"
           grep -Fq "commission_receivables" "$REPO"
           grep -Fq "scheduled_job_claims" "$REPO"
@@ -83,7 +80,6 @@ jobs:
           grep -Fq "DELETE FROM assignments WHERE order_id" "$REPO"
           grep -Fq "DELETE FROM quote_selections WHERE order_id" "$REPO"
           grep -Fq "DELETE FROM commission_rule_versions WHERE order_id" "$REPO"
-
           grep -Fq "TestCenterActionRunner" "$CENTER"
           grep -Fq "runAction" "$CENTER"
           grep -Fq "DatabaseTestCenterProgressVerificationRepository" "$COMPOSITION"
@@ -124,6 +120,11 @@ jobs:
         run: |
           set -euo pipefail
           php tests/v260/snapshot/server/tests/v260_test_center_m2_admin_adjudication_contract.php
+      - name: Execute mirrored M2 dispute finance contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_m2_dispute_finance_contract.php
       - name: Assert testing deploy SHA health probe
         shell: bash
         run: |
