@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           php tests/v260/snapshot/server/tests/v260_test_center_single_grab_contract.php
-      - name: Execute mirrored ordinary measurement contract
+      - name: Execute ordinary measurement and platform action rendering contracts
         shell: bash
         run: |
           set -euo pipefail
