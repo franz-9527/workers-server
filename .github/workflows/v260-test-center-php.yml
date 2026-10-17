@@ -99,3 +99,13 @@ jobs:
         run: |
           set -euo pipefail
           php tests/v260/snapshot/server/tests/v260_test_center_m2_contract.php
+      - name: Assert testing deploy SHA health probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEALTH=tests/v260/snapshot/server/api/index.php
+          grep -Fq "app_config('app.env', 'production') === 'testing'" "$HEALTH"
+          grep -Fq "base_path('storage/deploy-sha')" "$HEALTH"
+          grep -Fq "app_config('app.commit_sha', '')" "$HEALTH"
+          grep -Fq "build_sha" "$HEALTH"
+          echo "testing deploy SHA health assertions passed"
