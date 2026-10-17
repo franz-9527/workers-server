@@ -14,6 +14,7 @@ final class TestScenarioCatalog
             $this->ordinary('ordinary.construction.multi_quote.waiting.one_quote','普通施工 · 待报价（1 人）',1),
             $this->ordinary('ordinary.construction.multi_quote.waiting.three_quotes','普通施工 · 待报价（3 人）',3),
             $this->singleGrab(),
+            $this->measurement(),
             $this->negative('ordinary.construction.multi_quote.waiting.far_distance','普通施工 · 超距离未确认报价','far_distance','DISTANCE_ACK_REQUIRED'),
             $this->negative('ordinary.construction.multi_quote.waiting.pending_worker','普通施工 · 待审核师傅报价','pending_worker','WORKER_NOT_APPROVED'),
             $this->platform('platform.construction.multi_quote.waiting.zero_prepayment','平台施工 · 待报价（无外部预付款）',0),
@@ -61,6 +62,21 @@ final class TestScenarioCatalog
                 'province'=>'浙江省','city'=>'杭州市','district'=>'拱墅区','address'=>'测试路 88 号（虚构地址）','lat'=>30.3192,'lng'=>120.1506,'expected_fee_cents'=>52000,
             ],
             'editable'=>['title','description','province','city','district','address','lat','lng','expected_fee_cents'],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function measurement(): array
+    {
+        return [
+            'key'=>'ordinary.measurement.multi_quote.waiting.zero_quotes','version'=>1,'name'=>'普通测量 · 待报价（0 人）',
+            'family'=>'measurement','source'=>'consumer','workflow'=>'measurement','dispatch_mode'=>'multi_quote','node'=>'waiting_quote',
+            'purpose'=>'测量报价 / 补齐测量服务款 / 测量成果 / 冻结结算 / 一对一关联施工','buildable'=>true,'read_only'=>false,'blocked_reason'=>'','quote_count'=>0,
+            'defaults'=>[
+                'title'=>'测试普通测量单（待报价）','description'=>'TEST 普通测量场景；后续真实推进测量报价、服务款、成果确认及关联施工。',
+                'province'=>'浙江省','city'=>'杭州市','district'=>'拱墅区','address'=>'测试路 88 号（虚构地址）','lat'=>30.3192,'lng'=>120.1506,
+            ],
+            'editable'=>['title','description','province','city','district','address','lat','lng'],
         ];
     }
 
