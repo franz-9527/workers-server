@@ -17,8 +17,8 @@ m2fAssert(strpos($runner,"fulfillment()->execute('fulfillment.accept'")!==false,
 m2fAssert(strpos($runner,"'is_admin'=>false")!==false&&strpos($runner,"'business_admin'=>false")!==false,'fulfillment actors do not inherit admin privileges');
 m2fAssert(strpos($runner,'SELECT * FROM test_runs WHERE instance_id=:instance')!==false&&strpos($runner,'TEST_ACTION_IDEMPOTENCY_CONFLICT')!==false,'fulfillment actions keep persistent idempotency');
 m2fAssert(strpos($runner,"'worker_appointment','worker_complete','customer_accept_completion'")!==false,'fulfillment action allowlist is explicit');
-m2fAssert(strpos($runner,"ensureEvidence($instanceId,(int)$order['id'],'completion'")!==false,'completion receives an owned testing media prerequisite');
-m2fAssert(strpos($runner,"ensureEvidence($instanceId,(int)$order['id'],'collection_receipt'")!==false,'acceptance receives an owned testing receipt prerequisite');
+m2fAssert(strpos($runner,"ensureEvidence(\$instanceId,(int)\$order['id'],'completion'")!==false,'completion receives an owned testing media prerequisite');
+m2fAssert(strpos($runner,"ensureEvidence(\$instanceId,(int)\$order['id'],'collection_receipt'")!==false,'acceptance receives an owned testing receipt prerequisite');
 m2fAssert(strpos($runner,'BXDEMOHALL')!==false,'fulfillment runner protects review samples');
 
 $media=m2fFile($root,'server/app/Infrastructure/Testing/TestingMediaFixtureFactory.php');
