@@ -27,7 +27,7 @@ final class DatabaseTestCenterMeasurementVerificationRepository implements TestC
     {
         $instance=$this->db->fetch('SELECT * FROM test_instances WHERE BINARY public_id=BINARY :id LIMIT 1',['id'=>trim($publicId)]);
         if(!$instance||(string)($instance['scenario_key']??'')!==self::SCENARIO||empty($instance['order_id']))return$this->inner->verify($publicId,$adminId);
-        $latest=$this->db->fetch("SELECT * FROM test_runs WHERE instance_id=:instance AND result='passed' AND action_key IN ('worker_measurement_quote','customer_select_measurement_quote','customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other') ORDER BY id DESC LIMIT 1",['instance'=>(int)$instance['id']]);
+        $latest=$this->db->fetch("SELECT * FROM test_runs WHERE instance_id=:instance AND result='passed' AND action_key IN ('worker_measurement_quote','customer_select_measurement_quote','customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_measurement_rework','customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other') ORDER BY id DESC LIMIT 1",['instance'=>(int)$instance['id']]);
         if(!$latest)return$this->inner->verify($publicId,$adminId);
         if(!TestingEnvironmentPolicy::active())throw new TestCenterException('测量流程检查只允许 testing 环境。','TEST_CENTER_NOT_AVAILABLE_IN_PRODUCTION',403);
         $orderId=(int)$instance['order_id'];$order=$this->db->fetch('SELECT * FROM orders WHERE id=:id',['id'=>$orderId]);$state=$this->db->fetch('SELECT * FROM order_measurement_states WHERE order_id=:id',['id'=>$orderId]);
@@ -37,6 +37,8 @@ final class DatabaseTestCenterMeasurementVerificationRepository implements TestC
         $selection=$this->db->fetch('SELECT * FROM quote_selections WHERE order_id=:id ORDER BY id DESC LIMIT 1',['id'=>$orderId]);
         $assignments=(int)$this->db->fetchValue('SELECT COUNT(*) FROM assignments WHERE order_id=:id',['id'=>$orderId]);
         $accepted=(int)$this->db->fetchValue("SELECT COUNT(*) FROM assignments WHERE order_id=:id AND status IN ('accepted','completed')",['id'=>$orderId]);
+        $reworks=(int)$this->db->fetchValue("SELECT COUNT(*) FROM order_events WHERE order_id=:id AND event_type='measurement_rework_requested'",['id'=>$orderId]);
+        $checks[]=['progress','measurement_rework_limit','普通测量补测次数不得超过一次',$reworks<=1,'reworks='.$reworks];
         if($action==='worker_measurement_quote')$checks[]=['progress','measurement_quote_active','至少一个正式有效测量报价',$activeQuotes>=1,'active_quotes='.$activeQuotes];
         if($action==='customer_select_measurement_quote'){
             $balanceFacts=(int)$this->db->fetchValue("SELECT COUNT(*) FROM test_payment_facts WHERE instance_id=:instance AND business_type='measurement_balance'",['instance'=>(int)$instance['id']]);
@@ -44,27 +46,38 @@ final class DatabaseTestCenterMeasurementVerificationRepository implements TestC
             $checks[]=['progress','measurement_balance_waiting','状态等待测量补款',(string)$state['service_payment_status']==='awaiting_payment',(string)$state['service_payment_status']];
             $checks[]=['funds','no_balance_before_payment','选报价不会伪造 measurement_balance',$balanceFacts===0,'balance_facts='.$balanceFacts];
         }
-        if(in_array($action,['customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'],true)){
+        $postPayment=['customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_measurement_rework','customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
+        if(in_array($action,$postPayment,true)){
             $balance=$this->paymentFacts((int)$instance['id'],$orderId,'measurement_balance');
             $checks[]=['funds','measurement_balance_internal','恰有 1 笔 TEST_INTERNAL measurement_balance',count($balance)===1&&$this->allInternal($balance),'rows='.count($balance)];
-            $checks[]=['progress','measurement_dealt','补款后 selected + accepted assignment',(string)$state['service_payment_status']==='paid'&&(string)$order['quote_status']==='selected'&&$assignments===1&&$accepted===1,'service='.(string)$state['service_payment_status'].'; quote='.(string)$order['quote_status'].'; assignments='.$assignments.'; accepted='.$accepted];
+            $checks[]=['progress','measurement_dealt','补款后 selected + accepted/completed assignment',(string)$state['service_payment_status']==='paid'&&(string)$order['quote_status']==='selected'&&$assignments===1&&$accepted===1,'service='.(string)$state['service_payment_status'].'; quote='.(string)$order['quote_status'].'; assignments='.$assignments.'; accepted='.$accepted];
         }
-        if(in_array($action,['worker_measurement_appointment','worker_submit_measurement','customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'],true)){
+        $postAppointment=['worker_measurement_appointment','worker_submit_measurement','customer_measurement_rework','customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
+        if(in_array($action,$postAppointment,true)){
             $appointments=(int)$this->db->fetchValue("SELECT COUNT(*) FROM appointment_records WHERE order_id=:id AND context_type='service'",['id'=>$orderId]);
             $checks[]=['progress','measurement_appointment','正式测量预约恰有 1 条',$appointments===1,'appointments='.$appointments];
         }
-        if(in_array($action,['worker_submit_measurement','customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'],true)){
+        $postEvidence=['worker_submit_measurement','customer_measurement_rework','customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
+        if(in_array($action,$postEvidence,true)){
             $spaces=(int)$this->db->fetchValue("SELECT COUNT(*) FROM order_measurement_spaces WHERE order_id=:id AND status='active'",['id'=>$orderId]);
             $images=(int)$this->db->fetchValue("SELECT COUNT(*) FROM media_links ml JOIN order_measurement_spaces s ON s.id=ml.entity_id JOIN test_media_facts tm ON tm.media_file_id=ml.media_file_id AND tm.instance_id=:instance WHERE ml.entity_type='order_measurement_space' AND s.order_id=:order AND s.status='active' AND tm.purpose='measurement_result'",['instance'=>(int)$instance['id'],'order'=>$orderId]);
             $checks[]=['media','measurement_result_fixture','至少 1 个空间且每个测试空间有归属图片',$spaces>=1&&$images>=$spaces,'spaces='.$spaces.'; owned_images='.$images];
         }
         if($action==='worker_submit_measurement')$checks[]=['progress','measurement_submitted','成果正式进入 submitted',(string)$state['result_status']==='submitted'&&(string)$order['fulfillment_status']==='submitted',(string)$state['result_status'].'/'.(string)$order['fulfillment_status']];
-        if(in_array($action,['customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'],true)){
+        if($action==='customer_measurement_rework'){
+            $checks[]=['progress','measurement_rework_editing','一次补测正式退回 editing/in_progress',$reworks===1&&(string)$state['result_status']==='editing'&&(string)$order['fulfillment_status']==='in_progress','reworks='.$reworks.'; state='.(string)$state['result_status'].'/'.(string)$order['fulfillment_status']];
+        }
+        $postAccept=['customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
+        if(in_array($action,$postAccept,true)){
             $ledger=$this->db->fetchAll("SELECT * FROM worker_balance_ledger WHERE business_type='order_measurement' AND business_id=:id",['id'=>$orderId]);
             $ledgerOk=count($ledger)===((int)$state['worker_net_cents']>0?1:0);if($ledgerOk&&$ledger){$ledgerOk=(int)$ledger[0]['worker_id']===(int)$order['assigned_worker_id']&&(int)$ledger[0]['amount_cents']===(int)$state['worker_net_cents']&&(int)$ledger[0]['frozen_delta_cents']===(int)$state['worker_net_cents']&&(string)$ledger[0]['status']==='effective';}
             $checks[]=['progress','measurement_accepted_frozen','成果 accepted + settlement frozen + 主单 completed',(string)$state['result_status']==='accepted'&&(string)$state['settlement_status']==='frozen'&&(string)$order['fulfillment_status']==='accepted'&&(string)$order['lifecycle_status']==='completed',implode('/',[(string)$state['result_status'],(string)$state['settlement_status'],(string)$order['fulfillment_status'],(string)$order['lifecycle_status']])];
             $checks[]=['funds','measurement_frozen_ledger','冻结净收入与 measurement state 精确一致',$ledgerOk,'ledger='.count($ledger).'; net='.(int)$state['worker_net_cents']];
             $checks[]=['progress','measurement_hold_valid','关联施工冻结窗口仍有效',!empty($state['hold_until'])&&strtotime((string)$state['hold_until'].' UTC')>time(),(string)($state['hold_until']??'')];
+            $extensions=$this->db->tableExists('order_measurement_hold_extensions')?$this->db->fetchAll('SELECT * FROM order_measurement_hold_extensions WHERE order_id=:id ORDER BY id',['id'=>$orderId]):[];
+            if($extensions){$ext=count($extensions)===1?$extensions[0]:null;$approved=$ext?(string)($ext['approved_hold_until']??''):'';$max=(string)($state['max_hold_until']??'');$extensionOk=$ext&&(int)$ext['requested_by_user_id']===(int)$order['user_id']&&(string)$ext['status']==='approved'&&empty($ext['reviewed_by'])&&!empty($approved)&&$approved===(string)$state['hold_until']&&strtotime($approved.' UTC')>strtotime((string)$ext['old_hold_until'].' UTC')&&(!empty($max)&&strtotime($approved.' UTC')<=strtotime($max.' UTC'));
+                $checks[]=['progress','measurement_hold_extension_auto_approved','首次小范围延期由正式规则自动批准且不突破 max_hold_until',$extensionOk,'rows='.count($extensions).'; status='.(string)($ext['status']??'missing').'; hold='.(string)$state['hold_until'].'; max='.$max];
+            }
         }
         if(in_array($action,['customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'],true))$checks=array_merge($checks,$this->relationChecks((int)$instance['id'],$order,$state,$latest));
         return$this->storeChecks((int)$instance['id'],(int)$latest['id'],(string)$latest['public_id'],$checks,$action,$adminId);
