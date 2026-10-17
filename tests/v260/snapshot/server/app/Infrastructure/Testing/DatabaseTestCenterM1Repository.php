@@ -13,8 +13,8 @@ use WorkerAdmin\Infrastructure\Persistence\OrderFormMediaRules;
 use WorkerAdmin\Infrastructure\Safety\TestingEnvironmentPolicy;
 
 /**
- * 2.6.0 M1 组合仓储：基础仓储负责平台 preset，本装饰器补齐普通待报价 0/1/3 的
- * 内部支付、报价版本、测试媒体和参与者归属检查/清理。
+ * 2.6.0 组合仓储：基础仓储负责平台 preset，本装饰器补齐普通待报价 0/1/3 的
+ * 内部支付、报价版本、测试媒体和参与者归属，并安全回收 M2 报价/成交事实。
  */
 final class DatabaseTestCenterM1Repository implements TestCenterRepository
 {
@@ -32,7 +32,7 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
         $diagnostics=$this->base->environmentDiagnostics();
         $ready=true;
         foreach(['test_payment_facts','test_participants','test_media_facts'] as $table){if(!$this->db->tableExists($table)){$ready=false;break;}}
-        $diagnostics['items'][]=['key'=>'m1_owned_facts','label'=>'M1 支付/参与者/媒体归属','status'=>$ready?'passed':'failed','message'=>$ready?'扩展归属表已就绪':'请先执行完整 2.6.0 migration'];
+        $diagnostics['items'][]=['key'=>'m1_owned_facts','label'=>'M1/M2 支付/参与者/媒体归属','status'=>$ready?'passed':'failed','message'=>$ready?'扩展归属表已就绪':'请先执行完整 2.6.0 migration'];
         if(!$ready)$diagnostics['writable']=false;
         return$diagnostics;
     }
@@ -149,7 +149,17 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
         $order=$this->db->fetch('SELECT id,public_no,is_demo,order_source_type FROM orders WHERE id=:id',['id'=>$orderId]);
         if(!$order||(int)$order['is_demo']!==1||strpos((string)$order['public_no'],'BXDEMOHALL')===0||(string)$order['order_source_type']!=='consumer')return['allowed'=>false,'reason'=>'目标不是可清理的普通测试中心订单。','counts'=>[],'plan_digest'=>''];
         $blocking=[];
-        foreach(['assignments','refunds','disputes','after_sales','change_requests','order_cancel_requests','quote_selections','order_relations'] as $table){if($this->db->tableExists($table)&&$this->db->columnExists($table,'order_id')){$count=(int)$this->db->fetchValue("SELECT COUNT(*) FROM `{$table}` WHERE order_id=:id",['id'=>$orderId]);if($count>0)$blocking[$table]=$count;}}
+        $blockedOrderTables=[
+            'refunds','disputes','after_sales','change_requests','order_cancel_requests','order_cancel_decisions',
+            'appointment_records','exceptional_arrivals','order_role_grants','reviews','run_empty_fee_claims',
+            'offline_collection_adjustment_requests','order_worker_contact_reveal_requests','invite_tokens','share_contexts',
+            'commission_receivables','offline_collection_records','order_repair_requests','order_warranty_records'
+        ];
+        foreach($blockedOrderTables as $table){
+            if(!$this->db->tableExists($table)||!$this->db->columnExists($table,'order_id'))continue;
+            $count=(int)$this->db->fetchValue("SELECT COUNT(*) FROM `{$table}` WHERE order_id=:id",['id'=>$orderId]);if($count>0)$blocking[$table]=$count;
+        }
+        $scheduled=$this->scheduledJobCount($orderId,(string)$order['public_no']);if($scheduled>0)$blocking['scheduled_job_claims']=$scheduled;
         $paymentCount=(int)$this->db->fetchValue('SELECT COUNT(*) FROM payment_orders WHERE order_id=:id',['id'=>$orderId]);
         $ownedPayments=(int)$this->db->fetchValue('SELECT COUNT(*) FROM test_payment_facts tf JOIN payment_orders p ON p.id=tf.payment_order_id WHERE tf.instance_id=:instance AND p.order_id=:order_id AND p.wechat_prepay_id IS NULL AND p.wechat_transaction_id IS NULL',['instance'=>(int)$instance['id'],'order_id'=>$orderId]);
         if($paymentCount!==$ownedPayments)$blocking['payment_orders_unowned']=$paymentCount-$ownedPayments;
@@ -158,9 +168,12 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
         if($mediaLinkCount!==$ownedMedia)$blocking['media_links_unowned']=$mediaLinkCount-$ownedMedia;
         $outbox=$this->outboxCount($orderId,(string)$order['public_no']);if($outbox>0)$blocking['message_outbox']=$outbox;
         $counts=['orders'=>1,'payment_orders'=>$paymentCount,'test_payment_facts'=>$ownedPayments,'media_links'=>$mediaLinkCount,'test_media_facts'=>$ownedMedia,'notifications'=>$this->notificationCount($orderId,(string)$order['public_no'])];
-        foreach(['quotes','order_events','order_categories','order_addresses','order_answers','order_pricing_items','order_measurement_states'] as $table){if($this->db->tableExists($table)&&$this->db->columnExists($table,'order_id'))$counts[$table]=(int)$this->db->fetchValue("SELECT COUNT(*) FROM `{$table}` WHERE order_id=:id",['id'=>$orderId]);}
+        foreach(['quotes','assignments','quote_selections','commission_rule_versions','order_events','order_categories','order_addresses','order_answers','order_pricing_items','order_measurement_states'] as $table){
+            if($this->db->tableExists($table)&&$this->db->columnExists($table,'order_id'))$counts[$table]=(int)$this->db->fetchValue("SELECT COUNT(*) FROM `{$table}` WHERE order_id=:id",['id'=>$orderId]);
+        }
+        if($this->db->tableExists('assignment_history'))$counts['assignment_history']=(int)$this->db->fetchValue('SELECT COUNT(*) FROM assignment_history ah JOIN assignments a ON a.id=ah.assignment_id WHERE a.order_id=:id',['id'=>$orderId]);
         $plan=['instance_id'=>(int)$instance['id'],'instance_version'=>(int)$instance['version'],'order_id'=>$orderId,'order_no'=>(string)$order['public_no'],'counts'=>$counts,'blocking'=>$blocking];
-        return['allowed'=>empty($blocking),'reason'=>empty($blocking)?'普通 M1 测试实例的支付、媒体和订单关系均可证明归属于当前实例。':'发现未知、外部通知或复杂业务关系，清理器拒绝盲删。','counts'=>$counts,'blocking_relations'=>$blocking,'plan_digest'=>$this->digest($plan),'instance_version'=>(int)$instance['version']];
+        return['allowed'=>empty($blocking),'reason'=>empty($blocking)?'普通测试实例的 M1 数据及已适配 M2 报价/成交事实均可证明归属于当前实例。':'发现外部通知、计划任务或尚未适配的深层业务关系，清理器拒绝盲删。','counts'=>$counts,'blocking_relations'=>$blocking,'plan_digest'=>$this->digest($plan),'instance_version'=>(int)$instance['version']];
     }
 
     public function cleanup(string $publicId,int $adminId,string $expectedPlanDigest): array
@@ -179,6 +192,10 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
             $fresh=$this->cleanupPreview($publicId);
             if(empty($fresh['allowed'])||!hash_equals((string)$fresh['plan_digest'],$expectedPlanDigest))throw new TestCenterException('清理范围在进入删除事务后发生变化，请重新预览。','TEST_CLEANUP_PREVIEW_STALE',409,$fresh);
             $db->execute("UPDATE test_instances SET build_status='cleaning',updated_at=UTC_TIMESTAMP(),version=version+1 WHERE id=:id",['id'=>$instanceId]);
+            if($db->tableExists('assignment_history'))$db->execute('DELETE ah FROM assignment_history ah JOIN assignments a ON a.id=ah.assignment_id WHERE a.order_id=:order',['order'=>$orderId]);
+            if($db->tableExists('assignments'))$db->execute('DELETE FROM assignments WHERE order_id=:order',['order'=>$orderId]);
+            if($db->tableExists('quote_selections'))$db->execute('DELETE FROM quote_selections WHERE order_id=:order',['order'=>$orderId]);
+            if($db->tableExists('commission_rule_versions'))$db->execute('DELETE FROM commission_rule_versions WHERE order_id=:order',['order'=>$orderId]);
             if($db->tableExists('quote_versions'))$db->execute('DELETE qv FROM quote_versions qv JOIN quotes q ON q.id=qv.quote_id WHERE q.order_id=:order',['order'=>$orderId]);
             $db->execute('DELETE FROM quotes WHERE order_id=:id',['id'=>$orderId]);
             $this->deleteNotifications($db,$orderId,(string)$order['public_no']);
@@ -191,7 +208,7 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
             $db->execute('DELETE FROM orders WHERE id=:id',['id'=>$orderId]);
             $db->execute("UPDATE test_instances SET order_id=NULL,order_no_snapshot=:order_no,build_status='deleted',verification_status='pending',deleted_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP(),version=version+1 WHERE id=:id",['order_no'=>$orderNo,'id'=>$instanceId]);
             $db->execute("UPDATE test_batches tb JOIN test_instances ti ON ti.batch_id=tb.id SET tb.status='cleaned',tb.cleanup_at=UTC_TIMESTAMP(),tb.updated_at=UTC_TIMESTAMP() WHERE ti.id=:instance AND NOT EXISTS(SELECT 1 FROM test_instances remain_i WHERE remain_i.batch_id=tb.id AND remain_i.order_id IS NOT NULL)",['instance'=>$instanceId]);
-            \audit('test_center.cleanup','test_instance',$instanceId,'清理普通测试实例 '.$orderNo.'；支付/媒体/站内通知均已证明归属当前实例');
+            \audit('test_center.cleanup','test_instance',$instanceId,'清理普通测试实例 '.$orderNo.'；M1 数据及已适配 M2 报价/成交事实均已按订单归属清理');
             return['ok'=>true,'public_id'=>(string)$instance['public_id'],'order_no'=>$orderNo,'deleted_counts'=>$fresh['counts'],'operator_admin_id'=>$adminId];
         });
         foreach($mediaRows as $media){$key=str_replace('\\','/',(string)$media['storage_key_snapshot']);if(strpos($key,'test/')!==0)continue;$path=\base_path('storage/private/'.$key);if(is_file($path)&&!@unlink($path))\write_log('test-center','['.date('c').'] failed to remove test media '.$path."\n");}
@@ -232,6 +249,12 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
     {
         if(!$this->db->tableExists('message_outbox'))return 0;
         return(int)$this->db->fetchValue('SELECT COUNT(*) FROM message_outbox WHERE payload_json LIKE :id_needle OR payload_json LIKE :no_needle OR business_key LIKE :business_needle',['id_needle'=>'%"order_id":'.$orderId.'%','no_needle'=>'%'.$orderNo.'%','business_needle'=>'%'.$orderNo.'%']);
+    }
+    private function scheduledJobCount(int $orderId,string $orderNo): int
+    {
+        if(!$this->db->tableExists('scheduled_job_claims'))return 0;
+        if(!$this->db->columnExists('scheduled_job_claims','business_key'))return 0;
+        return(int)$this->db->fetchValue('SELECT COUNT(*) FROM scheduled_job_claims WHERE business_key=:exact OR business_key LIKE :prefix OR business_key LIKE :order_no',['exact'=>'order:'.$orderId,'prefix'=>'order:'.$orderId.':%','order_no'=>'%'.$orderNo.'%']);
     }
     private function cleanupTransientMediaDirectory(int $instanceId): void
     {
