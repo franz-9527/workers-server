@@ -38,7 +38,7 @@ m2fAssert(strpos($verify,'no_external_outbox')!==false,'fulfillment demo flow as
 
 $completion=m2fFile($root,'server/app/Infrastructure/Persistence/DatabaseOrderCompletionRepository.php');
 m2fAssert(substr_count($completion,'$this->closeAutoAcceptDeadline($db, (int)$locked[\'id\']);')===2,'ordinary and platform manual acceptance both close auto-accept deadlines');
-m2fAssert(strpos($completion,"deadline_type IN ('auto_accept','auto_accept_completion')")!==false,'manual acceptance closes both legacy and current auto-accept deadlines');
+m2fAssert(strpos($completion,"deadline_type IN ('auto_accept','auto_accept_completion')")!==false,'manual acceptance closes both legacy and current auto-accept deadline types');
 
 $cleanup=m2fFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterFulfillmentCleanupRepository.php');
 m2fAssert(strpos($cleanup,'return$this->db->transaction')!==false,'stage-two cleanup wraps nested base cleanup in one shared transaction');
@@ -56,7 +56,9 @@ foreach(['DatabaseTestCenterFulfillmentActionRunner','DatabaseTestCenterFulfillm
 m2fAssert(strpos($composition,'new DatabaseTestCenterNegotiationCleanupRepository($db,$fulfillmentCleanup)')!==false,'fulfillment cleanup remains inside later negotiation cleanup');
 m2fAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'negotiation cleanup remains inside later refund cleanup');
 m2fAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
-m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
+m2fAssert(strpos($composition,'new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup)')!==false,'repair cleanup remains inside the later measurement cleanup');
+m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup)')!==false,'global cleanup guard remains outside every stage cleanup layer');
+m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupSafetyRepository($db,$cleanupGuard)')!==false,'cleanup safety remains the outermost repository boundary');
 
 $view=m2fFile($root,'server/views/admin/test-center-detail.php');
 foreach(['执行真实预约','执行真实完工','执行真实验收'] as $label)m2fAssert(strpos($view,$label)!==false,'detail exposes '.$label);
