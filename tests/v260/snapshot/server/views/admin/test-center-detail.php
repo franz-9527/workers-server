@@ -18,22 +18,221 @@ $orderNo=$order?(string)($order['public_no']??''):'';
 $userPage=$orderNo!==''?'pages/userOrder/detail?id='.$orderNo:'';
 $workerPage=$orderNo!==''?'pages/workerOrder/detail?id='.$orderNo:'';
 ?>
-<div class="admin-page-head"><div><div class="admin-inline-actions"><span class="admin-badge admin-badge--warning">TEST</span><h1 style="margin:0"><?= e($orderNo!==''?$orderNo:($instance['order_no_snapshot']??'已清理实例')) ?></h1></div><p><?= e($instance['scenario_key']??'') ?>@<?= (int)($instance['scenario_version']??1) ?> · 实例 <span class="admin-mono"><?= e($instance['public_id']??'') ?></span></p></div><div class="admin-page-actions"><a class="admin-btn" href="<?= e(admin_url('test-center')) ?>"><i class="ri-arrow-left-line"></i> 返回测试中心</a></div></div>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>实例状态</strong><small>preset 只表示完整目标状态快照；未执行的前序接口会通过 TEST 事件明确标记，不能当成真实业务执行记录</small></div></div><div class="admin-card__body"><div class="admin-stats"><article class="admin-stat"><div class="admin-stat__head"><span>构建</span></div><div class="admin-stat__value" style="font-size:22px"><?= e($instance['build_status']??'') ?></div><div class="admin-stat__meta"><?= e($instance['build_mode']??'') ?></div></article><article class="admin-stat"><div class="admin-stat__head"><span>检查</span></div><div class="admin-stat__value" style="font-size:22px"><?= e($instance['verification_status']??'pending') ?></div><div class="admin-stat__meta"><?= $passed ?> 通过 / <?= $failed ?> 失败</div></article><article class="admin-stat"><div class="admin-stat__head"><span>批次</span></div><div class="admin-stat__value admin-mono" style="font-size:14px"><?= e($instance['batch_public_id']??'') ?></div><div class="admin-stat__meta"><?= e($instance['batch_status']??'') ?></div></article></div><?php if($order): ?><div class="admin-inline-actions admin-mt-3"><form method="post" action="<?= e(admin_url('test-center.verify')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><button class="admin-btn admin-btn--primary" type="submit"><i class="ri-shield-check-line"></i> 重新检查</button></form><form method="post" action="<?= e(admin_url('test-center.copy')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="request_key" value="<?= e($copyRequestKey??'') ?>"><button class="admin-btn" type="submit"><i class="ri-file-copy-line"></i> 复制</button></form><form method="post" action="<?= e(admin_url('test-center.rebuild')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="request_key" value="<?= e($rebuildRequestKey??'') ?>"><button class="admin-btn" type="submit" data-confirm="重建会创建新的订单和实例，旧实例不会倒退或覆盖。确认继续？"><i class="ri-restart-line"></i> 重建</button></form><a class="admin-btn" href="<?= e(admin_url('orders.view',['id'=>(int)$order['id']])) ?>"><i class="ri-external-link-line"></i> 后台订单详情</a></div><?php endif; ?></div></section>
+<div class="admin-page-head">
+  <div>
+    <div class="admin-inline-actions"><span class="admin-badge admin-badge--warning">TEST</span><h1 style="margin:0"><?= e($orderNo!==''?$orderNo:($instance['order_no_snapshot']??'已清理实例')) ?></h1></div>
+    <p><?= e($instance['scenario_key']??'') ?>@<?= (int)($instance['scenario_version']??1) ?> · 实例 <span class="admin-mono"><?= e($instance['public_id']??'') ?></span></p>
+  </div>
+  <div class="admin-page-actions"><a class="admin-btn" href="<?= e(admin_url('test-center')) ?>"><i class="ri-arrow-left-line"></i> 返回测试中心</a></div>
+</div>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>实例状态</strong><small>preset 只表示完整目标状态快照；未执行的前序接口会通过 TEST 事件明确标记，不能当成真实业务执行记录</small></div></div>
+  <div class="admin-card__body">
+    <div class="admin-stats">
+      <article class="admin-stat"><div class="admin-stat__head"><span>构建</span></div><div class="admin-stat__value" style="font-size:22px"><?= e($instance['build_status']??'') ?></div><div class="admin-stat__meta"><?= e($instance['build_mode']??'') ?></div></article>
+      <article class="admin-stat"><div class="admin-stat__head"><span>检查</span></div><div class="admin-stat__value" style="font-size:22px"><?= e($instance['verification_status']??'pending') ?></div><div class="admin-stat__meta"><?= $passed ?> 通过 / <?= $failed ?> 失败</div></article>
+      <article class="admin-stat"><div class="admin-stat__head"><span>批次</span></div><div class="admin-stat__value admin-mono" style="font-size:14px"><?= e($instance['batch_public_id']??'') ?></div><div class="admin-stat__meta"><?= e($instance['batch_status']??'') ?></div></article>
+    </div>
+    <?php if($order): ?>
+    <div class="admin-inline-actions admin-mt-3">
+      <form method="post" action="<?= e(admin_url('test-center.verify')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><button class="admin-btn admin-btn--primary" type="submit"><i class="ri-shield-check-line"></i> 重新检查</button></form>
+      <form method="post" action="<?= e(admin_url('test-center.copy')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="request_key" value="<?= e($copyRequestKey??'') ?>"><button class="admin-btn" type="submit"><i class="ri-file-copy-line"></i> 复制</button></form>
+      <form method="post" action="<?= e(admin_url('test-center.rebuild')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="request_key" value="<?= e($rebuildRequestKey??'') ?>"><button class="admin-btn" type="submit" data-confirm="重建会创建新的订单和实例，旧实例不会倒退或覆盖。确认继续？"><i class="ri-restart-line"></i> 重建</button></form>
+      <a class="admin-btn" href="<?= e(admin_url('orders.view',['id'=>(int)$order['id']])) ?>"><i class="ri-external-link-line"></i> 后台订单详情</a>
+    </div>
+    <?php endif; ?>
+  </div>
+</section>
+
 <?php if($order): ?>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>页面查看入口</strong><small>不把网页管理员 session 伪装成小程序用户；这里给出真实页面路径与订单号，避免手工查参数</small></div></div><div class="admin-card__body"><div class="admin-alert admin-alert--info admin-mb-2"><strong>使用前确认</strong><div>小程序先切换到 testing PHP API，再按需要切换演示用户或演示师傅身份。辅助测试师傅只有数据/API 夹具，没有单独会话映射。</div></div><div class="admin-grid admin-grid--2"><div><strong>客户订单详情</strong><p class="admin-mono"><?= e($userPage) ?></p><small>使用演示用户身份检查“我的下单”详情、报价卡片和客户侧按钮。</small></div><div><strong>师傅订单详情</strong><p class="admin-mono"><?= e($workerPage) ?></p><small>使用主演示师傅身份检查可见字段和师傅侧能力；辅助报价师傅仅用于数据结构/接口断言。</small></div></div><p class="admin-text-muted admin-mt-2">测试订单号：<span class="admin-mono"><?= e($orderNo) ?></span></p></div></section>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>业务状态</strong><small>服务端事实组合，不用单一 status 字符串替代</small></div></div><div class="admin-card__body"><div class="admin-grid admin-grid--2"><div><strong>订单来源</strong><p><?= e($order['order_source_type']??'') ?> · <?= e($order['workflow_profile']??'') ?> · <?= e($order['dispatch_mode']??'') ?></p></div><div><strong>主状态</strong><p><?= e(($order['audit_status']??'').'/'.($order['publish_status']??'').'/'.($order['quote_status']??'').'/'.($order['assignment_status']??'').'/'.($order['fulfillment_status']??'').'/'.($order['lifecycle_status']??'')) ?></p></div><div><strong>演示域</strong><p><span class="admin-badge <?= !empty($order['is_demo'])?'admin-badge--success':'admin-badge--danger' ?>">is_demo=<?= (int)($order['is_demo']??0) ?></span></p></div><div><strong>支付口径</strong><p><?= e($order['payment_status']??'') ?> · 普通预约费 <?= e(money((int)($order['booking_fee_cents']??0))) ?></p></div></div><?php if($terms): ?><div class="admin-alert admin-alert--info admin-mt-2"><strong>平台条款</strong><div>客户合同价 <?= e(money((int)($terms['customer_contract_total_cents']??0))) ?> · 外部已收预付款 <?= e(money((int)($terms['booking_paid_cents']??0))) ?> · <?= e($terms['customer_flow_mode']??'') ?> / <?= e($terms['worker_settlement_mode']??'') ?></div></div><?php endif; ?><?php if($testPayment): ?><div class="admin-alert admin-alert--warning admin-mt-2"><strong>testing 内部预约费事实</strong><div>支付单 <?= e($testPayment['public_no']??'') ?> · <?= e(money((int)($testPayment['amount_cents']??0))) ?> · provider=<?= e($testPayment['simulated_provider']??'') ?></div><small>只用于测试普通订单的“已付预约费”前置条件；微信 prepay_id / transaction_id 必须为空，不会调用真实支付渠道。</small></div><?php endif; ?></div></section>
-<?php if($participants): ?><section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>测试参与者</strong><small>共享 testing 主档通过 slot 绑定到当前实例；清理订单不会删除这些主档</small></div></div><div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>槽位</th><th>师傅</th><th>期望状态</th><th>当前状态</th><th>Worker ID</th></tr></thead><tbody><?php foreach($participants as $row): ?><tr><td data-label="槽位" class="admin-mono"><?= e($row['slot_key']??'') ?></td><td data-label="师傅"><?= e($row['display_name']??'') ?></td><td data-label="期望状态"><?= e($row['expected_status']??'') ?></td><td data-label="当前状态"><span class="admin-badge <?= ($row['verification_status']??'')===($row['expected_status']??'')?'admin-badge--success':'admin-badge--danger' ?>"><?= e($row['verification_status']??'') ?></span></td><td data-label="Worker ID" class="admin-mono"><?= (int)($row['worker_id']??0) ?></td></tr><?php endforeach; ?></tbody></table></div></section><?php endif; ?>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>真实流程推进（M2）</strong><small>已覆盖报价、选报价、施工预约、完工提交和客户验收；不提供自由改状态，退款/售后仍分阶段接入</small></div></div><div class="admin-card__body"><div class="admin-alert admin-alert--warning admin-mb-2"><strong>这不是状态模拟</strong><div><?= e($actions['message']??'') ?> 管理员只是测试发起人，业务 actor 仍分别是测试师傅或订单客户。</div></div><?php if(!$actionItems): ?><p class="admin-text-muted">当前状态没有已开放的真实动作。正向履约闭环完成后请使用“重新检查”核对事实；退款、售后和结算将在后续阶段接入。</p><?php else: ?><div class="admin-grid admin-grid--2">
-<?php if(isset($actionItems['worker_quote'])): $action=(array)$actionItems['worker_quote']; ?><article class="admin-card" style="margin:0"><div class="admin-card__body"><strong><?= e($action['label']??'真实师傅报价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p><form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_quote"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_quote']??'') ?>"><div class="admin-field admin-mb-2"><label class="admin-label">测试师傅</label><select class="admin-control" name="worker_slot" required><?php foreach((array)($action['workers']??[]) as $worker): ?><option value="<?= e($worker['slot_key']??'') ?>" <?= ($worker['slot_key']??'')===($action['default_worker_slot']??'')?'selected':'' ?>><?= e(($worker['display_name']??'测试师傅').' · '.($worker['slot_key']??'').(!empty($worker['active_quote_id'])?' · 已有报价':'')) ?></option><?php endforeach; ?></select></div><div class="admin-field admin-mb-2"><label class="admin-label">报价金额（元）</label><input class="admin-control" name="amount_yuan" type="number" min="0.01" max="1000000" step="0.01" value="<?= e(number_format(((int)($action['default_amount_cents']??52000))/100,2,'.','')) ?>" required></div><input type="hidden" name="description" value="测试中心 M2 真实报价"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认调用正式师傅报价服务？该操作会真实写入报价版本和订单事件。">执行真实报价</button></form></div></article><?php endif; ?>
-<?php if(isset($actionItems['customer_select_quote'])): $action=(array)$actionItems['customer_select_quote']; ?><article class="admin-card" style="margin:0"><div class="admin-card__body"><strong><?= e($action['label']??'真实客户选择报价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p><form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_select_quote"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_select_quote']??'') ?>"><div class="admin-field admin-mb-2"><label class="admin-label">选择报价</label><select class="admin-control" name="quote_id" required><?php foreach((array)($action['quotes']??[]) as $quote): ?><option value="<?= e($quote['public_id']??'') ?>"><?= e(($quote['worker_name']??'测试师傅').' · '.money((int)($quote['amount_cents']??0)).' · v'.(int)($quote['current_version']??1)) ?></option><?php endforeach; ?></select></div><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份调用正式选报价服务？成功后会进入成交/自动接单状态，不能在原实例上倒退。">执行真实选报价</button></form></div></article><?php endif; ?>
-<?php if(isset($actionItems['worker_appointment'])): $action=(array)$actionItems['worker_appointment']; ?><article class="admin-card" style="margin:0"><div class="admin-card__body"><strong><?= e($action['label']??'真实师傅预约施工') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p><form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_appointment"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_appointment']??'') ?>"><div class="admin-field admin-mb-2"><label class="admin-label">施工预约时间</label><input class="admin-control" name="appointment_at" type="datetime-local" value="<?= e($action['default_appointment_at']??'') ?>" required></div><input type="hidden" name="note" value="测试中心 M2 正向施工预约"><small class="admin-text-muted">业务师傅：<?= e($action['worker_name']??'') ?>。会调用正式预约服务并记录订单事件。</small><div class="admin-mt-2"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以成交测试师傅身份提交正式施工预约？">执行真实预约</button></div></form></div></article><?php endif; ?>
-<?php if(isset($actionItems['worker_complete'])): $action=(array)$actionItems['worker_complete']; ?><article class="admin-card" style="margin:0"><div class="admin-card__body"><strong><?= e($action['label']??'真实师傅提交完工') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p><div class="admin-alert admin-alert--info admin-mb-2"><small>测试中心会创建 1 张 private_local 完工夹具，只验证正式完工状态机与媒体前置条件；这一步不代表七牛/上传 API 已通过。</small></div><form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_complete"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_complete']??'') ?>"><input type="hidden" name="description" value="测试中心 M2 正向完工提交"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认调用正式完工提交？会生成完工记录、自动验收期限和预计服务费。">执行真实完工</button></form></div></article><?php endif; ?>
-<?php if(isset($actionItems['customer_accept_completion'])): $action=(array)$actionItems['customer_accept_completion']; ?><article class="admin-card" style="margin:0"><div class="admin-card__body"><strong><?= e($action['label']??'真实客户验收') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p><div class="admin-alert admin-alert--info admin-mb-2"><small>测试中心会创建 1 张 private_local 收款凭证夹具，仅满足正式验收前置条件；不会伪装成真实上传或真实线下收款核验。</small></div><form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_accept_completion"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_accept_completion']??'') ?>"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份调用正式验收？订单将完成，预计服务费会转为正式应收。">执行真实验收</button></form></div></article><?php endif; ?>
-</div><?php endif; ?></div></section>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>数据检查</strong><small>自动层验证结构、状态、资金、媒体归属与安全边界；具体页面文案/按钮仍需人工或后续 UI 自动化确认</small></div></div><div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>分组</th><th>断言</th><th>结果</th><th>预期</th><th>实际</th></tr></thead><tbody><?php if(!$assertions): ?><tr><td colspan="5" class="admin-empty">尚未执行检查</td></tr><?php endif; ?><?php foreach($assertions as $row): ?><tr><td data-label="分组"><?= e($row['assertion_group']??'') ?></td><td data-label="断言" class="admin-mono"><?= e($row['assertion_key']??'') ?></td><td data-label="结果"><span class="admin-badge <?= ($row['status']??'')==='passed'?'admin-badge--success':'admin-badge--danger' ?>"><?= e($row['status']??'') ?></span></td><td data-label="预期"><?= e($row['expected_text']??'') ?></td><td data-label="实际"><?= e($row['actual_text']??'') ?></td></tr><?php endforeach; ?></tbody></table></div></section>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>报价</strong><small>preset 报价用于目标页面快照；real_service 报价则来自正式业务服务，均落入 quotes / quote_versions</small></div></div><div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>师傅</th><th>Worker ID</th><th>报价</th><th>状态</th><th>创建时间</th></tr></thead><tbody><?php if(!$quotes): ?><tr><td colspan="5" class="admin-empty">当前场景没有报价</td></tr><?php endif; ?><?php foreach($quotes as $quote): ?><tr><td data-label="师傅"><?= e($quote['worker_name']??'平台/未知') ?></td><td data-label="Worker ID" class="admin-mono"><?= (int)($quote['worker_id']??0) ?></td><td data-label="报价"><?= e(money((int)($quote['amount_cents']??0))) ?></td><td data-label="状态"><?= e($quote['status']??'') ?></td><td data-label="创建时间"><?= e(local_datetime($quote['created_at']??'')) ?></td></tr><?php endforeach; ?></tbody></table></div></section>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>订单事件</strong><small>TEST preset 事件会明确标记未执行真实前序接口；真实动作则写入生产业务事件</small></div></div><div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>事件</th><th>操作者</th><th>时间</th><th>摘要</th></tr></thead><tbody><?php if(!$events): ?><tr><td colspan="4" class="admin-empty">暂无订单事件</td></tr><?php endif; ?><?php foreach($events as $event): ?><tr><td data-label="事件" class="admin-mono"><?= e($event['event_type']??'') ?></td><td data-label="操作者"><?= e(($event['actor_type']??'').':'.($event['actor_id']??'')) ?></td><td data-label="时间"><?= e(local_datetime($event['created_at']??'')) ?></td><td data-label="摘要"><small class="admin-mono"><?= e(mb_substr((string)($event['payload_json']??''),0,180)) ?></small></td></tr><?php endforeach; ?></tbody></table></div></section>
-<section class="admin-card admin-mb-3"><div class="admin-card__header"><div><strong>测试执行记录</strong><small>经办管理员和业务 actor 分开记录；real_service 表示正式领域服务真实执行</small></div></div><div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>动作</th><th>模式</th><th>结果</th><th>耗时</th><th>请求</th><th>时间</th></tr></thead><tbody><?php if(!$runs): ?><tr><td colspan="6" class="admin-empty">暂无执行记录</td></tr><?php endif; ?><?php foreach($runs as $run): ?><tr><td data-label="动作"><?= e($run['action_key']??'') ?></td><td data-label="模式"><?= e($run['operation_mode']??'') ?></td><td data-label="结果"><?= e($run['result']??'') ?></td><td data-label="耗时"><?= isset($run['duration_ms'])?(int)$run['duration_ms'].' ms':'-' ?></td><td data-label="请求" class="admin-mono"><?= e($run['request_id']??'') ?></td><td data-label="时间"><?= e(local_datetime($run['created_at']??'')) ?></td></tr><?php endforeach; ?></tbody></table></div></section>
-<section class="admin-card admin-card--danger"><div class="admin-card__header"><div><strong>清理测试业务数据</strong><small>服务端重新计算删除范围；审核样例、真实订单、未知支付/媒体或未适配的深层业务关系会强制阻断</small></div></div><div class="admin-card__body"><p><?= e($cleanup['reason']??'') ?></p><?php if(!empty($cleanup['counts'])): ?><div class="admin-inline-actions admin-mb-2"><?php foreach($cleanup['counts'] as $table=>$count): ?><span class="admin-badge"><?= e($table) ?> <?= (int)$count ?></span><?php endforeach; ?></div><?php endif; ?><?php if(!empty($cleanup['blocking_relations'])): ?><div class="admin-alert admin-alert--danger admin-mb-2"><strong>阻断关系</strong><div><?php foreach($cleanup['blocking_relations'] as $table=>$count): ?><?= e($table) ?> <?= (int)$count ?>；<?php endforeach; ?></div></div><?php endif; ?><?php if(!empty($cleanup['allowed'])): ?><form method="post" action="<?= e(admin_url('test-center.cleanup')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="plan_digest" value="<?= e($cleanup['plan_digest']??'') ?>"><button class="admin-btn admin-btn--danger" type="submit" data-confirm="确认清理此测试实例的业务数据？订单将物理删除，但实例 tombstone 与检查记录保留。">清理业务数据</button></form><?php endif; ?></div></section>
-<?php else: ?><section class="admin-alert admin-alert--warning"><strong>业务数据已清理</strong><div>该实例只保留 tombstone、场景参数与测试报告，不能继续执行业务动作。</div></section><?php endif; ?>
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>页面查看入口</strong><small>不把网页管理员 session 伪装成小程序用户；这里给出真实页面路径与订单号，避免手工查参数</small></div></div>
+  <div class="admin-card__body">
+    <div class="admin-alert admin-alert--info admin-mb-2"><strong>使用前确认</strong><div>小程序先切换到 testing PHP API，再按需要切换演示用户或演示师傅身份。辅助测试师傅只有数据/API 夹具，没有单独会话映射。</div></div>
+    <div class="admin-grid admin-grid--2">
+      <div><strong>客户订单详情</strong><p class="admin-mono"><?= e($userPage) ?></p><small>使用演示用户身份检查“我的下单”详情、报价卡片和客户侧按钮。</small></div>
+      <div><strong>师傅订单详情</strong><p class="admin-mono"><?= e($workerPage) ?></p><small>使用主演示师傅身份检查可见字段和师傅侧能力；辅助报价师傅仅用于数据结构/接口断言。</small></div>
+    </div>
+    <p class="admin-text-muted admin-mt-2">测试订单号：<span class="admin-mono"><?= e($orderNo) ?></span></p>
+  </div>
+</section>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>业务状态</strong><small>服务端事实组合，不用单一 status 字符串替代</small></div></div>
+  <div class="admin-card__body">
+    <div class="admin-grid admin-grid--2">
+      <div><strong>订单来源</strong><p><?= e($order['order_source_type']??'') ?> · <?= e($order['workflow_profile']??'') ?> · <?= e($order['dispatch_mode']??'') ?></p></div>
+      <div><strong>主状态</strong><p><?= e(($order['audit_status']??'').'/'.($order['publish_status']??'').'/'.($order['quote_status']??'').'/'.($order['assignment_status']??'').'/'.($order['fulfillment_status']??'').'/'.($order['lifecycle_status']??'')) ?></p></div>
+      <div><strong>演示域</strong><p><span class="admin-badge <?= !empty($order['is_demo'])?'admin-badge--success':'admin-badge--danger' ?>">is_demo=<?= (int)($order['is_demo']??0) ?></span></p></div>
+      <div><strong>支付口径</strong><p><?= e($order['payment_status']??'') ?> · 普通预约费 <?= e(money((int)($order['booking_fee_cents']??0))) ?></p></div>
+    </div>
+    <?php if($terms): ?>
+      <div class="admin-alert admin-alert--info admin-mt-2"><strong>平台条款</strong><div>客户合同价 <?= e(money((int)($terms['customer_contract_total_cents']??0))) ?> · 外部已收预付款 <?= e(money((int)($terms['booking_paid_cents']??0))) ?> · <?= e($terms['customer_flow_mode']??'') ?> / <?= e($terms['worker_settlement_mode']??'') ?></div></div>
+    <?php endif; ?>
+    <?php if($testPayment): ?>
+      <div class="admin-alert admin-alert--warning admin-mt-2">
+        <strong>testing 内部预约费事实</strong>
+        <div>支付单 <?= e($testPayment['public_no']??'') ?> · <?= e(money((int)($testPayment['amount_cents']??0))) ?> · provider=<?= e($testPayment['simulated_provider']??'') ?></div>
+        <small>只用于测试普通订单的“已付预约费”前置条件；微信 prepay_id / transaction_id 必须为空，不会调用真实支付渠道。</small>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
+
+<?php if($participants): ?>
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>测试参与者</strong><small>共享 testing 主档通过 slot 绑定到当前实例；清理订单不会删除这些主档</small></div></div>
+  <div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>槽位</th><th>师傅</th><th>期望状态</th><th>当前状态</th><th>Worker ID</th></tr></thead><tbody>
+  <?php foreach($participants as $row): ?><tr><td data-label="槽位" class="admin-mono"><?= e($row['slot_key']??'') ?></td><td data-label="师傅"><?= e($row['display_name']??'') ?></td><td data-label="期望状态"><?= e($row['expected_status']??'') ?></td><td data-label="当前状态"><span class="admin-badge <?= ($row['verification_status']??'')===($row['expected_status']??'')?'admin-badge--success':'admin-badge--danger' ?>"><?= e($row['verification_status']??'') ?></span></td><td data-label="Worker ID" class="admin-mono"><?= (int)($row['worker_id']??0) ?></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+<?php endif; ?>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>真实流程推进（M2）</strong><small>已覆盖报价、成交、预约、完工、验收，以及加价拒绝后申请平台介入；不提供自由改状态，退款资金与维修仍分阶段接入</small></div></div>
+  <div class="admin-card__body">
+    <div class="admin-alert admin-alert--warning admin-mb-2"><strong>这不是状态模拟</strong><div><?= e($actions['message']??'') ?> 管理员只是测试发起人，业务 actor 仍分别是测试师傅或订单客户。</div></div>
+    <?php if(!$actionItems): ?>
+      <p class="admin-text-muted">当前状态没有已开放的真实动作。若已进入 open dispute，本阶段停在“平台介入已发起”，不会伪造平台裁决；退款资金、维修和平台裁决将在后续阶段接入。</p>
+    <?php else: ?>
+      <div class="admin-grid admin-grid--2">
+      <?php if(isset($actionItems['worker_quote'])): $action=(array)$actionItems['worker_quote']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实师傅报价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_quote"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_quote']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">测试师傅</label><select class="admin-control" name="worker_slot" required><?php foreach((array)($action['workers']??[]) as $worker): ?><option value="<?= e($worker['slot_key']??'') ?>" <?= ($worker['slot_key']??'')===($action['default_worker_slot']??'')?'selected':'' ?>><?= e(($worker['display_name']??'测试师傅').' · '.($worker['slot_key']??'').(!empty($worker['active_quote_id'])?' · 已有报价':'')) ?></option><?php endforeach; ?></select></div>
+            <div class="admin-field admin-mb-2"><label class="admin-label">报价金额（元）</label><input class="admin-control" name="amount_yuan" type="number" min="0.01" max="1000000" step="0.01" value="<?= e(number_format(((int)($action['default_amount_cents']??52000))/100,2,'.','')) ?>" required></div>
+            <input type="hidden" name="description" value="测试中心 M2 真实报价">
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认调用正式师傅报价服务？该操作会真实写入报价版本和订单事件。">执行真实报价</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['customer_select_quote'])): $action=(array)$actionItems['customer_select_quote']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实客户选择报价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_select_quote"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_select_quote']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">选择报价</label><select class="admin-control" name="quote_id" required><?php foreach((array)($action['quotes']??[]) as $quote): ?><option value="<?= e($quote['public_id']??'') ?>"><?= e(($quote['worker_name']??'测试师傅').' · '.money((int)($quote['amount_cents']??0)).' · v'.(int)($quote['current_version']??1)) ?></option><?php endforeach; ?></select></div>
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份调用正式选报价服务？成功后会进入成交/自动接单状态，不能在原实例上倒退。">执行真实选报价</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['worker_appointment'])): $action=(array)$actionItems['worker_appointment']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实师傅预约施工') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_appointment"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_appointment']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">施工预约时间</label><input class="admin-control" name="appointment_at" type="datetime-local" value="<?= e($action['default_appointment_at']??'') ?>" required></div>
+            <input type="hidden" name="note" value="测试中心 M2 正向施工预约">
+            <small class="admin-text-muted">业务师傅：<?= e($action['worker_name']??'') ?>。会调用正式预约服务并记录订单事件。</small>
+            <div class="admin-mt-2"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以成交测试师傅身份提交正式施工预约？">执行真实预约</button></div>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['worker_change_request'])): $action=(array)$actionItems['worker_change_request']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实师傅申请加价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_change_request"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_change_request']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">增加金额（元）</label><input class="admin-control" name="added_amount_yuan" type="number" min="0.01" max="1000000" step="0.01" value="<?= e(number_format(((int)($action['default_added_amount_cents']??10000))/100,2,'.','')) ?>" required></div>
+            <div class="admin-field admin-mb-2"><label class="admin-label">加价原因</label><textarea class="admin-control" name="reason" rows="3" required>测试中心：现场新增施工内容，需要增加施工费用</textarea></div>
+            <small class="admin-text-muted">业务师傅：<?= e($action['worker_name']??'') ?>。提交后仍先由双方协商，不会自动生成平台争议。</small>
+            <div class="admin-mt-2"><button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以成交测试师傅身份调用正式加价申请？该动作只进入双方协商，不会直接申请平台介入。">执行真实加价申请</button></div>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['customer_reject_change'])): $action=(array)$actionItems['customer_reject_change']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实客户拒绝加价') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <div class="admin-alert admin-alert--info admin-mb-2"><small>加价事项 <span class="admin-mono"><?= e($action['change_id']??'') ?></span> · 增加 <?= e(money((int)($action['added_amount_cents']??0))) ?>。拒绝只改变双方协商事实，不自动创建平台争议。</small></div>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_reject_change"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_reject_change']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">拒绝说明</label><textarea class="admin-control" name="note" rows="3" required>测试中心：客户拒绝本次加价，继续双方协商</textarea></div>
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份拒绝本次加价？拒绝后才会开放“申请平台介入”。">执行真实拒绝</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['customer_escalate_change'])): $action=(array)$actionItems['customer_escalate_change']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实申请平台介入') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <div class="admin-alert admin-alert--warning admin-mb-2"><small>正式 NegotiationPolicy 会再次校验“已拒绝或超时”。本阶段只创建 open 平台争议，不执行管理员裁决或退款资金。</small></div>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_escalate_change"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_escalate_change']??'') ?>">
+            <div class="admin-field admin-mb-2"><label class="admin-label">介入说明</label><textarea class="admin-control" name="note" rows="3" required>测试中心：加价协商已被拒绝，现申请平台介入处理</textarea></div>
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份调用正式平台介入申请？成功后订单进入 open dispute，本阶段不会继续模拟平台裁决。">执行真实平台介入申请</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['worker_complete'])): $action=(array)$actionItems['worker_complete']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实师傅提交完工') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <div class="admin-alert admin-alert--info admin-mb-2"><small>测试中心会创建 1 张 private_local 完工夹具，只验证正式完工状态机与媒体前置条件；这一步不代表七牛/上传 API 已通过。</small></div>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="worker_complete"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['worker_complete']??'') ?>"><input type="hidden" name="description" value="测试中心 M2 正向完工提交">
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认调用正式完工提交？会生成完工记录、自动验收期限和预计服务费。">执行真实完工</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      <?php if(isset($actionItems['customer_accept_completion'])): $action=(array)$actionItems['customer_accept_completion']; ?>
+        <article class="admin-card" style="margin:0"><div class="admin-card__body">
+          <strong><?= e($action['label']??'真实客户验收') ?></strong><p class="admin-text-muted"><?= e($action['description']??'') ?></p>
+          <div class="admin-alert admin-alert--info admin-mb-2"><small>测试中心会创建 1 张 private_local 收款凭证夹具，仅满足正式验收前置条件；不会伪装成真实上传或真实线下收款核验。</small></div>
+          <form method="post" action="<?= e(admin_url('test-center.action')) ?>" data-loading>
+            <?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="action_key" value="customer_accept_completion"><input type="hidden" name="request_key" value="<?= e($actionRequestKeys['customer_accept_completion']??'') ?>">
+            <button class="admin-btn admin-btn--primary" type="submit" data-confirm="确认以订单客户身份调用正式验收？订单将完成，预计服务费会转为正式应收。">执行真实验收</button>
+          </form>
+        </div></article>
+      <?php endif; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>数据检查</strong><small>自动层验证结构、状态、资金、媒体归属与安全边界；具体页面文案/按钮仍需人工或后续 UI 自动化确认</small></div></div>
+  <div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>分组</th><th>断言</th><th>结果</th><th>预期</th><th>实际</th></tr></thead><tbody>
+  <?php if(!$assertions): ?><tr><td colspan="5" class="admin-empty">尚未执行检查</td></tr><?php endif; ?>
+  <?php foreach($assertions as $row): ?><tr><td data-label="分组"><?= e($row['assertion_group']??'') ?></td><td data-label="断言" class="admin-mono"><?= e($row['assertion_key']??'') ?></td><td data-label="结果"><span class="admin-badge <?= ($row['status']??'')==='passed'?'admin-badge--success':'admin-badge--danger' ?>"><?= e($row['status']??'') ?></span></td><td data-label="预期"><?= e($row['expected_text']??'') ?></td><td data-label="实际"><?= e($row['actual_text']??'') ?></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>报价</strong><small>preset 报价用于目标页面快照；real_service 报价则来自正式业务服务，均落入 quotes / quote_versions</small></div></div>
+  <div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>师傅</th><th>Worker ID</th><th>报价</th><th>状态</th><th>创建时间</th></tr></thead><tbody>
+  <?php if(!$quotes): ?><tr><td colspan="5" class="admin-empty">当前场景没有报价</td></tr><?php endif; ?>
+  <?php foreach($quotes as $quote): ?><tr><td data-label="师傅"><?= e($quote['worker_name']??'平台/未知') ?></td><td data-label="Worker ID" class="admin-mono"><?= (int)($quote['worker_id']??0) ?></td><td data-label="报价"><?= e(money((int)($quote['amount_cents']??0))) ?></td><td data-label="状态"><?= e($quote['status']??'') ?></td><td data-label="创建时间"><?= e(local_datetime($quote['created_at']??'')) ?></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>订单事件</strong><small>TEST preset 事件会明确标记未执行真实前序接口；真实动作则写入生产业务事件</small></div></div>
+  <div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>事件</th><th>操作者</th><th>时间</th><th>摘要</th></tr></thead><tbody>
+  <?php if(!$events): ?><tr><td colspan="4" class="admin-empty">暂无订单事件</td></tr><?php endif; ?>
+  <?php foreach($events as $event): ?><tr><td data-label="事件" class="admin-mono"><?= e($event['event_type']??'') ?></td><td data-label="操作者"><?= e(($event['actor_type']??'').':'.($event['actor_id']??'')) ?></td><td data-label="时间"><?= e(local_datetime($event['created_at']??'')) ?></td><td data-label="摘要"><small class="admin-mono"><?= e(mb_substr((string)($event['payload_json']??''),0,180)) ?></small></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+
+<section class="admin-card admin-mb-3">
+  <div class="admin-card__header"><div><strong>测试执行记录</strong><small>经办管理员和业务 actor 分开记录；real_service 表示正式领域服务真实执行</small></div></div>
+  <div class="admin-table-wrap"><table class="admin-table admin-table--responsive"><thead><tr><th>动作</th><th>模式</th><th>结果</th><th>耗时</th><th>请求</th><th>时间</th></tr></thead><tbody>
+  <?php if(!$runs): ?><tr><td colspan="6" class="admin-empty">暂无执行记录</td></tr><?php endif; ?>
+  <?php foreach($runs as $run): ?><tr><td data-label="动作"><?= e($run['action_key']??'') ?></td><td data-label="模式"><?= e($run['operation_mode']??'') ?></td><td data-label="结果"><?= e($run['result']??'') ?></td><td data-label="耗时"><?= isset($run['duration_ms'])?(int)$run['duration_ms'].' ms':'-' ?></td><td data-label="请求" class="admin-mono"><?= e($run['request_id']??'') ?></td><td data-label="时间"><?= e(local_datetime($run['created_at']??'')) ?></td></tr><?php endforeach; ?>
+  </tbody></table></div>
+</section>
+
+<section class="admin-card admin-card--danger">
+  <div class="admin-card__header"><div><strong>清理测试业务数据</strong><small>服务端重新计算删除范围；审核样例、真实订单、未知支付/媒体或未适配的深层业务关系会强制阻断</small></div></div>
+  <div class="admin-card__body">
+    <p><?= e($cleanup['reason']??'') ?></p>
+    <?php if(!empty($cleanup['counts'])): ?><div class="admin-inline-actions admin-mb-2"><?php foreach($cleanup['counts'] as $table=>$count): ?><span class="admin-badge"><?= e($table) ?> <?= (int)$count ?></span><?php endforeach; ?></div><?php endif; ?>
+    <?php if(!empty($cleanup['blocking_relations'])): ?><div class="admin-alert admin-alert--danger admin-mb-2"><strong>阻断关系</strong><div><?php foreach($cleanup['blocking_relations'] as $table=>$count): ?><?= e($table) ?> <?= (int)$count ?>；<?php endforeach; ?></div></div><?php endif; ?>
+    <?php if(!empty($cleanup['allowed'])): ?>
+      <form method="post" action="<?= e(admin_url('test-center.cleanup')) ?>"><?= csrf()->input() ?><input type="hidden" name="id" value="<?= e($instance['public_id']) ?>"><input type="hidden" name="plan_digest" value="<?= e($cleanup['plan_digest']??'') ?>"><button class="admin-btn admin-btn--danger" type="submit" data-confirm="确认清理此测试实例的业务数据？订单将物理删除，但实例 tombstone 与检查记录保留。">清理业务数据</button></form>
+    <?php endif; ?>
+  </div>
+</section>
+<?php else: ?>
+<section class="admin-alert admin-alert--warning"><strong>业务数据已清理</strong><div>该实例只保留 tombstone、场景参数与测试报告，不能继续执行业务动作。</div></section>
+<?php endif; ?>
