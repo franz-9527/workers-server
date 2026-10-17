@@ -34,7 +34,8 @@ m2nAssert(strpos($cleanup,'if(!$this->adaptable')!==false,'non-adapted scenarios
 
 $composition=m2nFile($root,'server/app/Foundation/TestCenterComposition.php');
 foreach(['DatabaseTestCenterNegotiationActionRunner','DatabaseTestCenterNegotiationVerificationRepository','DatabaseTestCenterNegotiationCleanupRepository'] as $class){m2nAssert(strpos($composition,$class)!==false,'composition wires '.$class);}
-m2nAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$negotiationCleanup)')!==false,'global cleanup guard remains outermost after negotiation cleanup');
+m2nAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'negotiation cleanup remains inside later refund cleanup');
+m2nAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$refundCleanup)')!==false,'global cleanup guard remains outermost after refund cleanup');
 
 $policy=m2nFile($root,'server/app/Domain/Order/NegotiationPolicy.php');
 m2nAssert(strpos($policy,'public const WAIT_HOURS = 48')!==false,'formal negotiation wait remains 48 hours');
