@@ -99,6 +99,19 @@ jobs:
           set -euo pipefail
           php tests/v260/snapshot/server/tests/v260_test_center_dispute_finance_mysql_strict.php
 
+      - name: Execute dispute finance cleanup MySQL E2E
+        shell: bash
+        env:
+          V260_DISPUTE_FINANCE_CLEANUP_MYSQL_TEST: '1'
+          V260_DB_NAME: worker_test
+          V260_DB_HOST: 127.0.0.1
+          V260_DB_PORT: '3306'
+          V260_DB_USER: root
+          V260_DB_PASSWORD: root
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_dispute_finance_cleanup_mysql_strict.php
+
       - name: Candidate checksum
         shell: bash
         run: |
