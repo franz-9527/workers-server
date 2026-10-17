@@ -44,8 +44,9 @@ $composition=m2aFile($root,'server/app/Foundation/TestCenterComposition.php');
 foreach(['DatabaseTestCenterRepairActionRunner','DatabaseTestCenterRepairVerificationRepository','DatabaseTestCenterRepairCleanupRepository'] as $class)m2aAssert(strpos($composition,$class)!==false,'composition wires '.$class);
 m2aAssert(strpos($composition,'new DatabaseTestCenterRepairVerificationRepository($db,$refundProgress)')!==false,'repair verifier wraps refund verifier');
 m2aAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'repair cleanup wraps refund cleanup');
-m2aAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup)')!==false,'global cleanup guard remains outermost');
-m2aAssert(strpos($composition,'new DatabaseTestCenterRepairActionRunner($db,$refundActions)')!==false,'repair runner is outer action boundary');
+m2aAssert(strpos($composition,'new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup)')!==false,'repair cleanup remains inside later measurement cleanup');
+m2aAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
+m2aAssert(strpos($composition,'new DatabaseTestCenterRepairActionRunner($db,$refundActions)')!==false,'repair runner remains in its existing action position');
 
 $policy=m2aFile($root,'server/app/Domain/Order/RepairInterventionPolicy.php');
 m2aAssert(strpos($policy,'public const WAIT_HOURS = 48')!==false,'repair wait remains 48 hours');
