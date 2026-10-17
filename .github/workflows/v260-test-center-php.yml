@@ -41,6 +41,8 @@ jobs:
             $c=new \WorkerAdmin\Application\Testing\TestScenarioCatalog();
             $m=[]; foreach($c->all() as $s){$m[$s["key"]]=$s;}
             foreach(["ordinary.construction.multi_quote.waiting.zero_quotes"=>0,"ordinary.construction.multi_quote.waiting.one_quote"=>1,"ordinary.construction.multi_quote.waiting.three_quotes"=>3] as $k=>$n){if(empty($m[$k]["buildable"])||(int)$m[$k]["quote_count"]!==$n)exit(10);}
+            $sg=$m["ordinary.construction.single_grab.waiting.open"]??[];
+            if(empty($sg["buildable"])||($sg["dispatch_mode"]??"")!=="single_grab"||($sg["expected_fee_type"]??"")!=="total"||(int)($sg["expected_fee_cents"]??0)<1)exit(14);
             if(empty($m["ordinary.construction.multi_quote.waiting.far_distance"]["buildable"])||$m["ordinary.construction.multi_quote.waiting.far_distance"]["expected_error_code"]!=="DISTANCE_ACK_REQUIRED")exit(11);
             if(empty($m["ordinary.construction.multi_quote.waiting.pending_worker"]["buildable"])||$m["ordinary.construction.multi_quote.waiting.pending_worker"]["expected_error_code"]!=="WORKER_NOT_APPROVED")exit(12);
             foreach(["platform.construction.multi_quote.waiting.zero_prepayment","platform.construction.multi_quote.waiting.with_prepayment"] as $k){if(empty($m[$k]["buildable"]))exit(13);}
@@ -90,6 +92,11 @@ jobs:
           grep -Fq "执行真实报价" "$VIEW"
           grep -Fq "执行真实选报价" "$VIEW"
           echo "M2 real-flow contract assertions passed"
+      - name: Execute mirrored single-grab contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          php tests/v260/snapshot/server/tests/v260_test_center_single_grab_contract.php
       - name: Execute mirrored M2 contract
         shell: bash
         run: |
