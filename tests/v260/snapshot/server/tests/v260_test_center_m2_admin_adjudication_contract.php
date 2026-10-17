@@ -48,7 +48,6 @@ foreach(["'continue'","'resolved'","'closed'"] as$decision)m2adAssert(strpos($re
 $repairRepo=m2adFile($root,'server/app/Infrastructure/Persistence/DatabaseAdminRepairResolutionRepository.php');
 m2adAssert(strpos($repairRepo,'资金补偿/退款继续走退款与争议领域')!==false,'repair admin resolution remains nonfinancial');
 m2adAssert(strpos($repairRepo,'REPAIR_PLATFORM_INTERVENTION_REQUIRED')!==false,'repair admin resolution still requires prior intervention');
-m2adAssert(strpos($repairRepo,"$channel==='web_admin'")===false,'contract itself avoids interpolated source literals');
 m2adAssert(strpos($repairRepo,"channel==='web_admin'")!==false||strpos($repairRepo,"channel === 'web_admin'")!==false,'web admin is recorded in repair resolution');
 
 $partial=m2adFile($root,'server/views/admin/test-center-admin-adjudication-actions.php');
