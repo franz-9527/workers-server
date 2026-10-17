@@ -42,7 +42,8 @@ foreach(['DatabaseTestCenterRefundActionRunner','DatabaseTestCenterRefundVerific
 m2rAssert(strpos($composition,'new DatabaseTestCenterRefundVerificationRepository($db,$negotiationProgress)')!==false,'refund verifier wraps negotiation verification');
 m2rAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'refund cleanup wraps earlier cleanup layers');
 m2rAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
-m2rAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup)')!==false,'global cleanup guard remains outermost after repair cleanup');
+m2rAssert(strpos($composition,'new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup)')!==false,'repair cleanup remains inside later measurement cleanup');
+m2rAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup)')!==false,'global cleanup guard remains outside all stage cleanup layers');
 m2rAssert(strpos($composition,'new DatabaseTestCenterRefundActionRunner($db,$negotiationActions)')!==false,'refund action runner still wraps negotiation actions');
 m2rAssert(strpos($composition,'new DatabaseTestCenterRepairActionRunner($db,$refundActions)')!==false,'refund action runner remains inside later repair action boundary');
 
