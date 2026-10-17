@@ -8,6 +8,14 @@ $base=str_replace(
 );
 $repair=\view('admin/test-center-repair-actions',$viewData,null);
 if($repair===''){echo $base;return;}
+
+$flowMarker='<section class="admin-card admin-mb-3">'."\n".'  <div class="admin-card__header"><div><strong>真实流程推进（M2）</strong>';
+$flowPosition=strpos($base,$flowMarker);
+if($flowPosition!==false){
+    $flowEnd=strpos($base,'</section>',$flowPosition);
+    if($flowEnd!==false)$base=substr($base,0,$flowPosition).substr($base,$flowEnd+strlen('</section>'));
+}
+
 $marker='<section class="admin-card admin-mb-3">'."\n".'  <div class="admin-card__header"><div><strong>数据检查</strong>';
 $position=strpos($base,$marker);
 if($position===false){
