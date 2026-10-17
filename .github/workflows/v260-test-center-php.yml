@@ -1,0 +1,48 @@
+name: V2.6.0 Test Center PHP Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/v260/snapshot/**'
+      - '.github/workflows/v260-test-center-php.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v260-test-center-php-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php74-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+      - name: Lint V2.6.0 critical snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -v
+          find tests/v260/snapshot -type f -name '*.php' -print0 | sort -z | xargs -0 -n1 php -l
+      - name: Assert scenario catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '
+            require "tests/v260/snapshot/server/app/Application/Testing/TestScenarioCatalog.php";
+            $c=new \WorkerAdmin\Application\Testing\TestScenarioCatalog();
+            $m=[]; foreach($c->all() as $s){$m[$s["key"]]=$s;}
+            foreach(["ordinary.construction.multi_quote.waiting.zero_quotes"=>0,"ordinary.construction.multi_quote.waiting.one_quote"=>1,"ordinary.construction.multi_quote.waiting.three_quotes"=>3] as $k=>$n){if(empty($m[$k]["buildable"])||(int)$m[$k]["quote_count"]!==$n)exit(10);}
+            if(empty($m["ordinary.construction.multi_quote.waiting.far_distance"]["buildable"])||$m["ordinary.construction.multi_quote.waiting.far_distance"]["expected_error_code"]!=="DISTANCE_ACK_REQUIRED")exit(11);
+            if(empty($m["ordinary.construction.multi_quote.waiting.pending_worker"]["buildable"])||$m["ordinary.construction.multi_quote.waiting.pending_worker"]["expected_error_code"]!=="WORKER_NOT_APPROVED")exit(12);
+            foreach(["platform.construction.multi_quote.waiting.zero_prepayment","platform.construction.multi_quote.waiting.with_prepayment"] as $k){if(empty($m[$k]["buildable"]))exit(13);}
+            echo "scenario catalog assertions passed\n";
+          '
