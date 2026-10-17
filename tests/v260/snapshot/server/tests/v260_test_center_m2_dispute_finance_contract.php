@@ -14,8 +14,11 @@ m2dfAssert(strpos($guard,'TestingEnvironmentPolicy::active()')!==false,'finance 
 m2dfAssert(strpos($guard,"status IN ('open','processing')")!==false,'finance guard requires active escalated dispute');
 
 $runner=m2dfFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterDisputeFinanceActionRunner.php');
-foreach(['TestCenterActionRunner $inner','admin_dispute_financial_resolve',"dispute()->execute('admin.dispute.resolve'","'channel'=>'web_admin'","'refund_amount_cents'=>0","'run_empty_fee_cents'",'$cents>=$available',"'admin','real_service'",'TEST_ACTION_IDEMPOTENCY_CONFLICT'] as$key)m2dfAssert(strpos($runner,$key)!==false,'finance runner contains '.$key);
+foreach(['TestCenterActionRunner $inner','admin_dispute_financial_resolve',"dispute()->execute('admin.dispute.resolve'","'channel'=>'web_admin'","'refund_amount_cents'=>0","'run_empty_fee_cents'",'$cents>=$available',"'admin','real_service'",'TEST_ACTION_IDEMPOTENCY_CONFLICT','normalizeReplayInput','TEST_ACTION_REPLAY_METADATA_MISSING',"'request'=>\$normalized"] as$key)m2dfAssert(strpos($runner,$key)!==false,'finance runner contains '.$key);
 m2dfAssert(strpos($runner,"'responsibility'=>'user'")!==false,'run-empty adjudication records user responsibility');
+$existingPos=strpos($runner,'$existing=$this->db->fetch');
+$normalizePos=strpos($runner,'$normalized=$this->normalizeInput');
+m2dfAssert($existingPos!==false&&$normalizePos!==false&&$existingPos<$normalizePos,'persistent idempotency replay is checked before current-state normalization');
 
 $verify=m2dfFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterDisputeFinanceVerificationRepository.php');
 foreach(['financial_dispute_resolved','allocation_exact','single_internal_refund','wechat_refund_not_executed','single_run_empty_ledger','same_admin_owns_allocation','financial_decision_stops_order','demo_does_not_score','no_external_outbox',':run_empty_fee'] as$key)m2dfAssert(strpos($verify,$key)!==false,'finance verifier contains '.$key);
