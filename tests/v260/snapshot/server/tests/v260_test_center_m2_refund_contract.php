@@ -41,8 +41,10 @@ $composition=m2rFile($root,'server/app/Foundation/TestCenterComposition.php');
 foreach(['DatabaseTestCenterRefundActionRunner','DatabaseTestCenterRefundVerificationRepository','DatabaseTestCenterRefundCleanupRepository'] as $class)m2rAssert(strpos($composition,$class)!==false,'composition wires '.$class);
 m2rAssert(strpos($composition,'new DatabaseTestCenterRefundVerificationRepository($db,$negotiationProgress)')!==false,'refund verifier wraps negotiation verification');
 m2rAssert(strpos($composition,'new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup)')!==false,'refund cleanup wraps earlier cleanup layers');
-m2rAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$refundCleanup)')!==false,'global cleanup guard stays outermost after refund cleanup');
-m2rAssert(strpos($composition,'new DatabaseTestCenterRefundActionRunner($db,$negotiationActions)')!==false,'refund action runner is outer action boundary');
+m2rAssert(strpos($composition,'new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup)')!==false,'refund cleanup remains inside later repair cleanup');
+m2rAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup)')!==false,'global cleanup guard remains outermost after repair cleanup');
+m2rAssert(strpos($composition,'new DatabaseTestCenterRefundActionRunner($db,$negotiationActions)')!==false,'refund action runner still wraps negotiation actions');
+m2rAssert(strpos($composition,'new DatabaseTestCenterRepairActionRunner($db,$refundActions)')!==false,'refund action runner remains inside later repair action boundary');
 
 $policy=m2rFile($root,'server/app/Infrastructure/Safety/TestingEnvironmentPolicy.php');
 m2rAssert(strpos($policy,'return self::active() ? false : $configuredEnabled;')!==false,'testing environment always disables real payment service');
