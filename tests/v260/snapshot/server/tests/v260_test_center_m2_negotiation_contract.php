@@ -38,7 +38,16 @@ m2nAssert(strpos($composition,'new DatabaseTestCenterCleanupGuardRepository($db,
 
 $policy=m2nFile($root,'server/app/Domain/Order/NegotiationPolicy.php');
 m2nAssert(strpos($policy,'public const WAIT_HOURS = 48')!==false,'formal negotiation wait remains 48 hours');
-m2nAssert(strpos($policy,'if ($status === \'rejected\')')!==false&&strpos($policy,"'reason'=>'counterparty_rejected'")!==false,'formal policy makes counterparty rejection immediately eligible');
+m2nAssert(strpos($policy,'if ($status === \'rejected\')')!==false&&strpos($policy,"'reason'=>'counterparty_rejected'")!==false,'formal policy source keeps rejection eligibility');
+require_once $root.'/server/app/Domain/Order/NegotiationPolicy.php';
+$policyClass='WorkerAdmin\\Domain\\Order\\NegotiationPolicy';
+$now=new DateTimeImmutable('2026-10-17 12:00:00',new DateTimeZone('UTC'));
+$rejected=$policyClass::evaluate('rejected',null,'UTC',$now);
+m2nAssert(!empty($rejected['eligible'])&&($rejected['reason']??'')==='counterparty_rejected','formal policy executes rejected as immediately eligible');
+$waiting=$policyClass::evaluate('pending','2026-10-17 11:00:00','UTC',$now);
+m2nAssert(empty($waiting['eligible'])&&($waiting['reason']??'')==='waiting_counterparty','formal policy blocks pending negotiation before 48 hours');
+$timeout=$policyClass::evaluate('pending','2026-10-15 11:00:00','UTC',$now);
+m2nAssert(!empty($timeout['eligible'])&&($timeout['reason']??'')==='response_timeout','formal policy makes pending negotiation eligible after 48 hours');
 
 $notifications=m2nFile($root,'server/app/Services/OrderNotificationService.php');
 m2nAssert(strpos($notifications,'$lines[\'订单号\']')!==false,'admin task safety checks an order number when present');
