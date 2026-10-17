@@ -13,8 +13,8 @@ use WorkerAdmin\Infrastructure\Persistence\OrderFormMediaRules;
 use WorkerAdmin\Infrastructure\Safety\TestingEnvironmentPolicy;
 
 /**
- * 2.6.0 组合仓储：基础仓储负责平台 preset，本装饰器补齐普通待报价 0/1/3 的
- * 内部支付、报价版本、测试媒体和参与者归属，并安全回收 M2 报价/成交事实。
+ * 2.6.0 组合仓储：基础仓储负责平台 preset，本装饰器补齐普通施工多报价与单抢起点的
+ * 内部支付、报价版本、测试媒体和参与者归属，并安全回收已适配成交事实。
  */
 final class DatabaseTestCenterM1Repository implements TestCenterRepository
 {
@@ -123,9 +123,11 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
         $mediaOwned=true;foreach($mediaFacts as $media){if(strpos((string)$media['storage_key_snapshot'],'test/')!==0){$mediaOwned=false;break;}}
         $schemaId=(int)($order['form_schema_version_id']??0);$mediaReady=OrderFormMediaRules::readiness($this->db,$orderId,$schemaId,(string)$order['workflow_profile']);
         $expected=$this->expectedQuoteCount((string)$instance['scenario_key']);
+        $expectedDispatch=$this->isSingleGrab((string)$instance['scenario_key'])?'single_grab':'multi_quote';
         $checks=[
             ['structure','test_domain','is_demo=1',(int)($order['is_demo']??0)===1,'is_demo='.(int)($order['is_demo']??0)],
             ['structure','consumer_source','order_source_type=consumer',(string)$order['order_source_type']==='consumer',(string)$order['order_source_type']],
+            ['structure','dispatch_mode','dispatch_mode='.$expectedDispatch,(string)($order['dispatch_mode']??'')===$expectedDispatch,(string)($order['dispatch_mode']??'')],
             ['funds','payment_registered','payment_orders + test_payment_facts',is_array($payment),$payment?'已登记':'缺失'],
             ['funds','payment_paid','内部支付单 status=paid',$payment&&$payment['status']==='paid',(string)($payment['status']??'missing')],
             ['funds','no_wechat_ids','wechat_prepay_id / transaction_id 均为空',$payment&&empty($payment['wechat_prepay_id'])&&empty($payment['wechat_transaction_id']),'prepay='.(string)($payment['wechat_prepay_id']??'').';transaction='.(string)($payment['wechat_transaction_id']??'')],
@@ -138,6 +140,7 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
             ['media','owned_test_prefix','测试中心创建图片 storage key 必须位于 test/',$mediaOwned,'owned_media='.count($mediaFacts)],
             ['safety','not_review_sample','订单号不得进入 BXDEMOHALL 命名空间',strpos((string)$order['public_no'],'BXDEMOHALL')!==0,(string)$order['public_no']],
         ];
+        if($expectedDispatch==='single_grab')$checks[]=['state','fixed_grab_price','单抢场景必须有固定期望总价',(string)($order['expected_fee_type']??'')==='total'&&(int)($order['expected_fee_cents']??0)>=(int)$order['booking_fee_cents'],'type='.(string)($order['expected_fee_type']??'').'; amount='.(int)($order['expected_fee_cents']??0)];
         return$this->storeChecks($instanceId,$runId,$runPublic,$checks,$started);
     }
 
@@ -233,7 +236,8 @@ final class DatabaseTestCenterM1Repository implements TestCenterRepository
     {
         $row=$this->db->fetch('SELECT * FROM test_instances WHERE BINARY public_id=BINARY :id LIMIT 1',['id'=>$publicId]);if(!$row)throw new TestCenterException('测试实例不存在。','TEST_INSTANCE_NOT_FOUND',404);if($mustHaveOrder&&empty($row['order_id']))throw new TestCenterException('测试实例业务数据已经清理。','TEST_INSTANCE_DELETED',409);return$row;
     }
-    private function isOrdinary(string $scenarioKey): bool{return strpos($scenarioKey,'ordinary.construction.multi_quote.waiting.')===0;}
+    private function isOrdinary(string $scenarioKey): bool{return strpos($scenarioKey,'ordinary.construction.multi_quote.waiting.')===0||$this->isSingleGrab($scenarioKey);}
+    private function isSingleGrab(string $scenarioKey): bool{return $scenarioKey==='ordinary.construction.single_grab.waiting.open';}
     private function expectedQuoteCount(string $key): int{if(strpos($key,'.three_quotes')!==false)return 3;if(strpos($key,'.one_quote')!==false)return 1;return 0;}
     private function notificationCount(int $orderId,string $orderNo): int
     {
