@@ -15,6 +15,7 @@ final class TestScenarioCatalog
             $this->ordinary('ordinary.construction.multi_quote.waiting.three_quotes','普通施工 · 待报价（3 人）',3),
             $this->singleGrab(),
             $this->measurement(),
+            $this->platformMeasurement(),
             $this->negative('ordinary.construction.multi_quote.waiting.far_distance','普通施工 · 超距离未确认报价','far_distance','DISTANCE_ACK_REQUIRED'),
             $this->negative('ordinary.construction.multi_quote.waiting.pending_worker','普通施工 · 待审核师傅报价','pending_worker','WORKER_NOT_APPROVED'),
             $this->platform('platform.construction.multi_quote.waiting.zero_prepayment','平台施工 · 待报价（无外部预付款）',0),
@@ -81,6 +82,18 @@ final class TestScenarioCatalog
     }
 
     /** @return array<string,mixed> */
+    private function platformMeasurement(): array
+    {
+        $scenario=$this->platform('platform.measurement.single_grab.waiting.open','平台测量 · 同单核价转施工',10000);
+        $scenario['workflow']='measurement';
+        $scenario['dispatch_mode']='single_grab';
+        $scenario['purpose']='正式抢单 / 测量预约与成果 / 平台核价自动确认 / 同一订单施工预约';
+        $scenario['defaults']['title']='测试平台测量单（同单转施工）';
+        $scenario['defaults']['worker_labor_cents']=20000;
+        $scenario['editable'][]='worker_labor_cents';
+        return $scenario;
+    }
+
     private function negative(string $key,string $name,string $probe,string $expectedCode): array
     {
         return [

@@ -89,3 +89,28 @@ $has($measurementCompletion,'measurement_income_frozen','production measurement 
 $has($measurementCompletion,"'order_measurement'",'production measurement ledger uses order_measurement business type');
 
 fwrite(STDOUT,"V2.6.0 ordinary measurement + linked construction contract: OK\n");
+
+// 实际渲染详情包装页，防止子模板丢失 instance/actions 上下文导致按钮静默消失。
+require_once $root.'/app/Application/Testing/TestScenarioCatalog.php';
+$platformScenario=(new \WorkerAdmin\Application\Testing\TestScenarioCatalog())->find('platform.measurement.single_grab.waiting.open');
+$assert($platformScenario!==null&&!empty($platformScenario['buildable'])&&$platformScenario['workflow']==='measurement'&&$platformScenario['dispatch_mode']==='single_grab','catalog exposes platform same-order measurement');
+function e($value):string{return htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8');}
+function admin_url(string $route):string{return'/admin/?route='.$route;}
+function money(int $cents):string{return number_format($cents/100,2);}
+function csrf(){return new class{public function input():string{return'<input name="csrf" value="test">';}};}
+function view(string $name,array $data=[],$layout=null):string {
+    if($name==='admin/test-center-detail')return'<section class="admin-card admin-mb-3">'."\n".'  <div class="admin-card__header"><div><strong>真实流程推进（M2）</strong></div></div></section><section class="admin-card admin-mb-3">'."\n".'  <div class="admin-card__header"><div><strong>数据检查</strong></div></div></section>';
+    if(!in_array($name,['admin/test-center-platform-measurement-actions','admin/test-center-single-grab-actions','admin/test-center-measurement-actions'],true))return'';
+    extract($data,EXTR_SKIP);ob_start();require dirname(__DIR__).'/views/'.$name.'.php';return(string)ob_get_clean();
+}
+$render=static function(array $actions)use($root):string{
+    $detail=['instance'=>['public_id'=>'RENDERINSTANCE'],'actions'=>['items'=>$actions]];
+    $actionRequestKeys=array_fill_keys(array_keys($actions),'render-request');
+    ob_start();require$root.'/views/admin/test-center-detail-v260.php';return(string)ob_get_clean();
+};
+$html=$render(['admin_platform_pricing_review'=>['label'=>'管理员核价并转施工','customer_total_cents'=>65000,'worker_labor_cents'=>30000]]);
+$assert(strpos($html,'name="action_key" value="admin_platform_pricing_review"')!==false&&strpos($html,'value="RENDERINSTANCE"')!==false&&strpos($html,'value="render-request"')!==false,'platform card receives instance action and idempotency key');
+$html=$render(['worker_grab'=>['workers'=>[['slot_key'=>'worker_1','display_name'=>'测试师傅']]]]);
+$assert(strpos($html,'name="action_key" value="worker_grab"')!==false,'existing single-grab action remains visible through wrapper');
+$html=$render(['worker_submit_measurement'=>['label'=>'真实提交测量成果']]);
+$assert(strpos($html,'name="action_key" value="worker_submit_measurement"')!==false,'existing ordinary measurement action remains visible through wrapper');

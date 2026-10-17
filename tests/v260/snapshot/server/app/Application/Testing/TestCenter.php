@@ -172,7 +172,7 @@ final class TestCenter
             if (in_array($key, ['lat','lng'], true)) {
                 if (!is_numeric($value)) throw new TestCenterException('测试坐标格式不正确。', 'TEST_COORDINATE_INVALID', 422);
                 $params[$key] = (float)$value;
-            } elseif ($key === 'customer_total_cents') {
+            } elseif (in_array($key, ['customer_total_cents','worker_labor_cents'], true)) {
                 $amount = (int)$value;
                 if ($amount < 100 || $amount > 100000000) throw new TestCenterException('测试客户总价必须在 1 元到 100 万元之间。', 'TEST_AMOUNT_INVALID', 422);
                 $params[$key] = $amount;

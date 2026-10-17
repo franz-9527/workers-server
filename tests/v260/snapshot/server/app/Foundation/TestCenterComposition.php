@@ -40,6 +40,8 @@ use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterRepairCleanupRepository
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterRepairVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterSingleGrabActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterSingleGrabVerificationRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterPlatformMeasurementRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterPlatformMeasurementActionRunner;
 
 final class TestCenterComposition
 {
@@ -65,7 +67,8 @@ final class TestCenterComposition
         $refundCleanup=new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup);
         $repairCleanup=new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup);
         $measurementCleanup=new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup);
-        $cleanupGuard=new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup);
+        $platformMeasurement=new DatabaseTestCenterPlatformMeasurementRepository($db,$measurementCleanup);
+        $cleanupGuard=new DatabaseTestCenterCleanupGuardRepository($db,$platformMeasurement);
         $repository=new DatabaseTestCenterCleanupSafetyRepository($db,$cleanupGuard);
 
         $dealActions=new DatabaseTestCenterActionRunner($db);
@@ -78,7 +81,8 @@ final class TestCenterComposition
         $adminActions=new DatabaseTestCenterAdminAdjudicationActionRunner($db,$repairActions);
         $financeActions=new DatabaseTestCenterDisputeFinanceActionRunner($db,$adminActions);
         $adminReplayActions=new DatabaseTestCenterAdminRefundReplayRunner($db,$financeActions);
-        $actions=new DatabaseTestCenterActionSafetyRunner($db,$adminReplayActions);
+        $platformActions=new DatabaseTestCenterPlatformMeasurementActionRunner($db,$adminReplayActions);
+        $actions=new DatabaseTestCenterActionSafetyRunner($db,$platformActions);
         return new TestCenter($repository,new TestScenarioCatalog(),$actions);
     }
 }

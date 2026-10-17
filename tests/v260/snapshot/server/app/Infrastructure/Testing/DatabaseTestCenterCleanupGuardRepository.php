@@ -69,7 +69,10 @@ final class DatabaseTestCenterCleanupGuardRepository implements TestCenterReposi
             if($outbox>0){$blocking['message_outbox']=$outbox;$extra['message_outbox']=$outbox;}
         }
 
-        if((string)($order['order_source_type']??'')==='platform'){
+        // 当前平台 preset 不创建媒体或站内消息。若未来扩展场景后出现这些关系，
+        // 必须先给平台清理器增加明确所有权逻辑，而不是由通用删除器猜测。
+        $platformMeasurement=(string)($detail['instance']['scenario_key']??'')===DatabaseTestCenterPlatformMeasurementActionRunner::SCENARIO;
+        if((string)($order['order_source_type']??'')==='platform'&&!$platformMeasurement){
             if($this->db->tableExists('media_links')){
                 $media=(int)$this->db->fetchValue("SELECT COUNT(*) FROM media_links WHERE entity_type='order' AND entity_id=:id",['id'=>$orderId]);
                 if($media>0){$blocking['media_links_unowned']=$media;$extra['media_links_unowned']=$media;}
@@ -104,6 +107,7 @@ final class DatabaseTestCenterCleanupGuardRepository implements TestCenterReposi
         $guard=$this->cleanupPreview($publicId);
         if(empty($guard['allowed']))throw new TestCenterException((string)($guard['reason']??'清理已被统一所有权门禁阻断。'),'TEST_CLEANUP_GUARD_BLOCKED',409,$guard);
         if(!hash_equals((string)$guard['plan_digest'],$expectedPlanDigest))throw new TestCenterException('统一清理范围在预览后发生变化，请重新预览。','TEST_CLEANUP_GUARD_PREVIEW_STALE',409,$guard);
+        // 重新读取底层计划摘要；底层普通仓储还会在自己的删除事务内再次验证摘要。
         $inner=$this->inner->cleanupPreview($publicId);
         if(empty($inner['allowed'])||empty($inner['plan_digest']))throw new TestCenterException('底层清理计划已变化，请重新预览。','TEST_CLEANUP_PREVIEW_STALE',409,$inner);
         return $this->inner->cleanup($publicId,$adminId,(string)$inner['plan_digest']);
@@ -111,6 +115,7 @@ final class DatabaseTestCenterCleanupGuardRepository implements TestCenterReposi
 
     public function rebuildSource(string $publicId): array{return $this->inner->rebuildSource($publicId);}
 
+    /** @param mixed $value */
     private function digest($value): string
     {
         $json=json_encode($value,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
