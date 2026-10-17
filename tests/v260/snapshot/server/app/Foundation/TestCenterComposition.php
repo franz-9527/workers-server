@@ -13,6 +13,9 @@ use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterAdminAdjudicationActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterAdminAdjudicationVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterCleanupGuardRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterDisputeFinanceActionRunner;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterDisputeFinanceCleanupRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterDisputeFinanceVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentCleanupRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentVerificationRepository;
@@ -43,7 +46,9 @@ final class TestCenterComposition
         $refundProgress=new DatabaseTestCenterRefundVerificationRepository($db,$negotiationProgress);
         $repairProgress=new DatabaseTestCenterRepairVerificationRepository($db,$refundProgress);
         $adminProgress=new DatabaseTestCenterAdminAdjudicationVerificationRepository($db,$repairProgress);
-        $fulfillmentCleanup=new DatabaseTestCenterFulfillmentCleanupRepository($db,$adminProgress);
+        $financeProgress=new DatabaseTestCenterDisputeFinanceVerificationRepository($db,$adminProgress);
+        $financeCleanup=new DatabaseTestCenterDisputeFinanceCleanupRepository($db,$financeProgress);
+        $fulfillmentCleanup=new DatabaseTestCenterFulfillmentCleanupRepository($db,$financeCleanup);
         $negotiationCleanup=new DatabaseTestCenterNegotiationCleanupRepository($db,$fulfillmentCleanup);
         $refundCleanup=new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup);
         $repairCleanup=new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup);
@@ -53,7 +58,8 @@ final class TestCenterComposition
         $negotiationActions=new DatabaseTestCenterNegotiationActionRunner($db,$fulfillmentActions);
         $refundActions=new DatabaseTestCenterRefundActionRunner($db,$negotiationActions);
         $repairActions=new DatabaseTestCenterRepairActionRunner($db,$refundActions);
-        $actions=new DatabaseTestCenterAdminAdjudicationActionRunner($db,$repairActions);
+        $adminActions=new DatabaseTestCenterAdminAdjudicationActionRunner($db,$repairActions);
+        $actions=new DatabaseTestCenterDisputeFinanceActionRunner($db,$adminActions);
         return new TestCenter($repository,new TestScenarioCatalog(),$actions);
     }
 }
