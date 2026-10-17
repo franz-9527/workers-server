@@ -51,7 +51,8 @@ final class DatabaseTestCenterRepairCleanupRepository implements TestCenterRepos
         $repair=$this->db->fetch("SELECT * FROM after_sales WHERE order_id=:id AND type='warranty_repair' ORDER BY id DESC LIMIT 1",['id'=>$orderId]);
         if($repair){
             if((int)$repair['user_id']!==(int)$order['user_id'])$ownership['repair_user_unowned']=1;
-            if(!empty($repair['evidence_media_ids_json']))$ownership['repair_evidence_unadapted']=1;
+            $evidenceRaw=trim((string)($repair['evidence_media_ids_json']??''));
+            if($evidenceRaw!==''&&$evidenceRaw!=='[]')$ownership['repair_evidence_unadapted']=1;
             $badAppointments=(int)$this->db->fetchValue(
                 "SELECT COUNT(*) FROM appointment_records WHERE order_id=:order_id AND context_type='repair' AND (after_sale_id<>:after_sale OR worker_id<>:worker)",
                 ['order_id'=>$orderId,'after_sale'=>(int)$repair['id'],'worker'=>$workerId]
