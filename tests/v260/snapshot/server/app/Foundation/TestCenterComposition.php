@@ -23,6 +23,10 @@ use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentActionRunner
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentCleanupRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterM1Repository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterMeasurementActionRunner;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterMeasurementCleanupRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterMeasurementRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterMeasurementVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegativeQuoteRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegotiationActionRunner;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegotiationCleanupRepository;
@@ -44,10 +48,12 @@ final class TestCenterComposition
         $cipher=new GlobalPrivateValueCipher();
         $base=new DatabaseTestCenterRepository($db,$cipher);
         $m1=new DatabaseTestCenterM1Repository($db,$cipher,$base);
-        $negative=new DatabaseTestCenterNegativeQuoteRepository($db,$m1);
+        $measurementBase=new DatabaseTestCenterMeasurementRepository($db,$cipher,$m1);
+        $negative=new DatabaseTestCenterNegativeQuoteRepository($db,$measurementBase);
         $dealProgress=new DatabaseTestCenterProgressVerificationRepository($db,$negative);
         $singleGrabProgress=new DatabaseTestCenterSingleGrabVerificationRepository($db,$dealProgress);
-        $fulfillmentProgress=new DatabaseTestCenterFulfillmentVerificationRepository($db,$singleGrabProgress);
+        $measurementProgress=new DatabaseTestCenterMeasurementVerificationRepository($db,$singleGrabProgress);
+        $fulfillmentProgress=new DatabaseTestCenterFulfillmentVerificationRepository($db,$measurementProgress);
         $negotiationProgress=new DatabaseTestCenterNegotiationVerificationRepository($db,$fulfillmentProgress);
         $refundProgress=new DatabaseTestCenterRefundVerificationRepository($db,$negotiationProgress);
         $repairProgress=new DatabaseTestCenterRepairVerificationRepository($db,$refundProgress);
@@ -58,12 +64,14 @@ final class TestCenterComposition
         $negotiationCleanup=new DatabaseTestCenterNegotiationCleanupRepository($db,$fulfillmentCleanup);
         $refundCleanup=new DatabaseTestCenterRefundCleanupRepository($db,$negotiationCleanup);
         $repairCleanup=new DatabaseTestCenterRepairCleanupRepository($db,$refundCleanup);
-        $cleanupGuard=new DatabaseTestCenterCleanupGuardRepository($db,$repairCleanup);
+        $measurementCleanup=new DatabaseTestCenterMeasurementCleanupRepository($db,$repairCleanup);
+        $cleanupGuard=new DatabaseTestCenterCleanupGuardRepository($db,$measurementCleanup);
         $repository=new DatabaseTestCenterCleanupSafetyRepository($db,$cleanupGuard);
 
         $dealActions=new DatabaseTestCenterActionRunner($db);
         $singleGrabActions=new DatabaseTestCenterSingleGrabActionRunner($db,$dealActions);
-        $fulfillmentActions=new DatabaseTestCenterFulfillmentActionRunner($db,$singleGrabActions);
+        $measurementActions=new DatabaseTestCenterMeasurementActionRunner($db,$singleGrabActions);
+        $fulfillmentActions=new DatabaseTestCenterFulfillmentActionRunner($db,$measurementActions);
         $negotiationActions=new DatabaseTestCenterNegotiationActionRunner($db,$fulfillmentActions);
         $refundActions=new DatabaseTestCenterRefundActionRunner($db,$negotiationActions);
         $repairActions=new DatabaseTestCenterRepairActionRunner($db,$refundActions);
