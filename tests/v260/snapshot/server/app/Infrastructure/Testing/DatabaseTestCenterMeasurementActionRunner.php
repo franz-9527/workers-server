@@ -13,10 +13,12 @@ use WorkerAdmin\Domain\Order\OrderOperationException;
 use WorkerAdmin\Domain\Testing\TestCenterException;
 use WorkerAdmin\Foundation\OrderApplicationContainer;
 use WorkerAdmin\Infrastructure\Agreements\PlatformWorkerAgreementVersionProvider;
+use WorkerAdmin\Infrastructure\Persistence\DatabaseOrderMeasurementHoldExtensionRepository;
 use WorkerAdmin\Infrastructure\Safety\TestingEnvironmentPolicy;
 use WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher;
+use WorkerAdmin\Infrastructure\Settings\GlobalSettingsProvider;
 
-/** 普通测量：报价 → 选报价 → TEST_INTERNAL 补款 → 预约 → 成果 → 确认冻结 → 关联施工。 */
+/** 普通测量：报价 → 选报价 → TEST_INTERNAL 补款 → 预约 → 成果/一次补测 → 确认冻结/延期 → 关联施工。 */
 final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActionRunner
 {
     private const SCENARIO='ordinary.measurement.multi_quote.waiting.zero_quotes';
@@ -41,17 +43,20 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
             if($this->serviceAppointmentCount((int)$o['id'])===0&&(string)$o['fulfillment_status']==='not_started'){
                 $tz=(string)\app_config('app.timezone','Asia/Shanghai');try{$at=(new DateTimeImmutable('tomorrow 10:00',new DateTimeZone($tz)))->format('Y-m-d\TH:i');}catch(Throwable $e){$at=date('Y-m-d\TH:i',time()+86400);}
                 $items['worker_measurement_appointment']=['key'=>'worker_measurement_appointment','label'=>'真实师傅预约测量','default_appointment_at'=>$at,'description'=>'调用正式 OrderAppointment。'];
-            }elseif((string)$o['fulfillment_status']==='scheduled'&&(string)$state['result_status']==='editing'){
+            }elseif(in_array((string)$o['fulfillment_status'],['scheduled','in_progress'],true)&&(string)$state['result_status']==='editing'){
                 $items['worker_submit_measurement']=['key'=>'worker_submit_measurement','label'=>'真实提交测量成果','description'=>'先生成 testing 私有空间+1x1 图片夹具，再调用正式 orders.measurement.submit；夹具不代表真实上传或标注已验证。'];
             }
         }
         if($state&&(string)$state['result_status']==='submitted'&&(string)$o['fulfillment_status']==='submitted'&&(string)$o['lifecycle_status']==='active'){
+            if($this->reworkCount((int)$o['id'])===0)$items['customer_measurement_rework']=['key'=>'customer_measurement_rework','label'=>'真实客户要求一次补测','description'=>'调用正式 orders.measurement.rework；普通测量仅允许一次，退回后师傅重新提交同一测量成果。','default_reason'=>'测试中心验证一次补测流程'];
             $items['customer_accept_measurement']=['key'=>'customer_accept_measurement','label'=>'真实客户确认测量成果','description'=>'调用正式 fulfillment.accept；普通测量完成后生成冻结净收入和关联施工有效期。'];
         }
         if($state&&(string)$state['result_status']==='accepted'&&(string)$state['settlement_status']==='frozen'&&(string)$o['lifecycle_status']==='completed'){
             $relation=$this->relation((int)$o['id']);
-            if(!$relation)$items['customer_create_linked_construction']=['key'=>'customer_create_linked_construction','label'=>'创建并正式关联施工单','description'=>'testing 构造 is_demo 施工草稿；施工预约费由 TEST_INTERNAL 到账，关系必须由生产结算器正式建立。'];
-            else{
+            if(!$relation){
+                if($this->holdExtensionCount((int)$o['id'])===0)$items['customer_extend_measurement_hold']=['key'=>'customer_extend_measurement_hold','label'=>'真实申请延长测量冻结期','description'=>'调用正式冻结延期仓储；默认首次申请 5 天，符合无风险规则时应自动批准，不直接修改 hold_until。','default_days'=>5,'default_reason'=>'测试中心验证首次小范围测量冻结延期'];
+                $items['customer_create_linked_construction']=['key'=>'customer_create_linked_construction','label'=>'创建并正式关联施工单','description'=>'testing 构造 is_demo 施工草稿；施工预约费由 TEST_INTERNAL 到账，关系必须由生产结算器正式建立。'];
+            }else{
                 $child=$this->db->fetch('SELECT * FROM orders WHERE id=:id',['id'=>(int)$relation['child_order_id']]);
                 if($child&&$this->linkedWaiting($child)){
                     $items['worker_quote_linked_construction']=['key'=>'worker_quote_linked_construction','label'=>'原测量师傅正式施工报价','description'=>'以 relation.worker_id 调用正式 quotes.create，验证隐藏关联单允许原师傅报价。','default_amount_cents'=>max((int)$child['booking_fee_cents'],52000)];
@@ -64,7 +69,7 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
 
     public function run(string $instancePublicId,string $actionKey,array $input,int $adminId,string $requestKey): array
     {
-        $allowed=['worker_measurement_quote','customer_select_measurement_quote','customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_accept_measurement','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
+        $allowed=['worker_measurement_quote','customer_select_measurement_quote','customer_pay_measurement_balance','worker_measurement_appointment','worker_submit_measurement','customer_measurement_rework','customer_accept_measurement','customer_extend_measurement_hold','customer_create_linked_construction','worker_quote_linked_construction','worker_probe_linked_construction_other'];
         if(!in_array($actionKey,$allowed,true))return$this->inner->run($instancePublicId,$actionKey,$input,$adminId,$requestKey);
         if(!TestingEnvironmentPolicy::active())throw new TestCenterException('普通测量测试动作仅允许 testing 环境。','TEST_ACTION_PRODUCTION_BLOCKED',403);
         $context=$this->context($instancePublicId,true);if((string)$context['scenario_key']!==self::SCENARIO)throw new TestCenterException('当前场景未开放普通测量推进。','TEST_ACTION_SCENARIO_UNSUPPORTED',409);
@@ -82,7 +87,9 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
                 case'customer_pay_measurement_balance':$business=$this->payBalance((int)$i['id'],$o,$adminId);break;
                 case'worker_measurement_appointment':$business=$this->appointment((int)$i['id'],$o,$normalized);break;
                 case'worker_submit_measurement':$business=$this->submitMeasurement((int)$i['id'],$o,$adminId);break;
+                case'customer_measurement_rework':$business=$this->reworkMeasurement($o,$normalized);break;
                 case'customer_accept_measurement':$business=$this->acceptMeasurement($o);break;
+                case'customer_extend_measurement_hold':$business=$this->extendHold($o,$normalized);break;
                 case'customer_create_linked_construction':$business=(new TestingLinkedConstructionBuilder($this->db,new GlobalPrivateValueCipher()))->build((int)$i['id'],(int)$o['id'],$adminId);break;
                 case'worker_quote_linked_construction':$business=$this->quoteLinked((int)$i['id'],$o,$normalized,false);break;
                 default:$business=$this->quoteLinked((int)$i['id'],$o,$normalized,true);break;
@@ -98,7 +105,9 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
     private function payBalance(int $instanceId,array $order,int $adminId): array{$s=$this->pendingSelection((int)$order['id']);if(!$s)throw new TestCenterException('没有待支付测量报价预占。','TEST_MEASUREMENT_SELECTION_INVALID',409);$amount=$this->requiredBalance((int)$order['id'],$s);return(new TestingMeasurementBalancePaymentSimulator($this->db))->settle($instanceId,(int)$order['id'],(int)$order['user_id'],(int)$s['id'],$amount,$adminId);}
     private function appointment(int $instanceId,array $order,array $input): array{return$this->orders->appointment()->save($this->assignedWorkerActor($instanceId,$order),['order_id'=>(string)$order['public_no'],'context_type'=>'service','appointment_at'=>(string)$input['appointment_at'],'wait_customer_notice'=>false,'note'=>'TEST 普通测量预约']);}
     private function submitMeasurement(int $instanceId,array $order,int $adminId): array{$fixture=(new TestingMeasurementEvidenceFactory($this->db))->ensure($instanceId,(int)$order['id'],$adminId);$result=$this->orders->fulfillment()->execute('orders.measurement.submit',$this->assignedWorkerActor($instanceId,$order),['order_id'=>(string)$order['public_no']]);$result['data']['test_measurement_fixture']=$fixture;return$result;}
+    private function reworkMeasurement(array $order,array $input): array{return$this->orders->fulfillment()->execute('orders.measurement.rework',$this->customerActor($order),['order_id'=>(string)$order['public_no'],'reason'=>(string)$input['reason']]);}
     private function acceptMeasurement(array $order): array{return$this->orders->fulfillment()->execute('fulfillment.accept',$this->customerActor($order),['order_id'=>(string)$order['public_no']]);}
+    private function extendHold(array $order,array $input): array{return(new DatabaseOrderMeasurementHoldExtensionRepository($this->db,new GlobalSettingsProvider()))->request($this->customerActor($order),(string)$order['public_no'],(int)$input['days'],(string)$input['reason']);}
 
     private function quoteLinked(int $instanceId,array $measurement,array $input,bool $probe): array
     {
@@ -114,6 +123,8 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
         if($action==='worker_measurement_quote'){$slot=trim((string)($input['worker_slot']??''));if($slot==='')$slot='worker_1';$amount=$this->money((string)($input['amount_yuan']??'120.00'));if($amount<(int)$order['booking_fee_cents'])throw new TestCenterException('测量报价不能低于预约费。','TEST_ACTION_AMOUNT_INVALID',422);return['worker_slot'=>$slot,'amount_cents'=>$amount,'description'=>mb_substr(trim((string)($input['description']??'TEST 普通测量真实报价')),0,300)];}
         if($action==='customer_select_measurement_quote'){$id=trim((string)($input['quote_id']??''));if($id==='')throw new TestCenterException('请选择测量报价。','TEST_ACTION_QUOTE_REQUIRED',422);return['quote_id'=>$id];}
         if($action==='worker_measurement_appointment'){$at=trim((string)($input['appointment_at']??''));if($at==='')throw new TestCenterException('请选择测量预约时间。','TEST_ACTION_APPOINTMENT_REQUIRED',422);return['appointment_at'=>$at];}
+        if($action==='customer_measurement_rework'){$reason=mb_substr(trim((string)($input['reason']??'测试中心验证一次补测流程')),0,500);if(mb_strlen($reason)<4)throw new TestCenterException('补测原因至少填写4个字。','TEST_MEASUREMENT_REWORK_REASON_REQUIRED',422);return['reason'=>$reason];}
+        if($action==='customer_extend_measurement_hold'){$days=(int)($input['days']??5);if($days<1||$days>30)throw new TestCenterException('延期天数需为 1 至 30 天。','TEST_MEASUREMENT_EXTENSION_DAYS_INVALID',422);$reason=mb_substr(trim((string)($input['reason']??'测试中心验证首次小范围测量冻结延期')),0,500);if(mb_strlen($reason)<4)throw new TestCenterException('延期原因至少填写4个字。','TEST_MEASUREMENT_EXTENSION_REASON_REQUIRED',422);return['days'=>$days,'reason'=>$reason];}
         if($action==='worker_quote_linked_construction')return['amount_cents'=>$this->money((string)($input['amount_yuan']??'520.00'))];
         return[];
     }
@@ -124,6 +135,8 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
     private function dealt(array $o,?array $s): bool{return$s&&(string)$s['service_payment_status']==='paid'&&(string)$o['quote_status']==='selected'&&(string)$o['assignment_status']==='accepted'&&(int)$o['assigned_worker_id']>0&&(int)$o['current_assignment_id']>0&&(string)$o['lifecycle_status']==='active';}
     private function linkedWaiting(array $o): bool{return(int)$o['is_demo']===1&&(string)$o['workflow_profile']==='construction'&&(string)$o['dispatch_mode']==='multi_quote'&&(string)$o['audit_status']==='approved'&&(string)$o['publish_status']==='hidden'&&(string)$o['payment_status']==='paid'&&in_array((string)$o['quote_status'],['waiting','quoting','collecting'],true)&&(string)$o['assignment_status']==='unassigned'&&(string)$o['lifecycle_status']==='active';}
     private function serviceAppointmentCount(int $id): int{return(int)$this->db->fetchValue("SELECT COUNT(*) FROM appointment_records WHERE order_id=:id AND context_type='service'",['id'=>$id]);}
+    private function reworkCount(int $id): int{return(int)$this->db->fetchValue("SELECT COUNT(*) FROM order_events WHERE order_id=:id AND event_type='measurement_rework_requested'",['id'=>$id]);}
+    private function holdExtensionCount(int $id): int{return$this->db->tableExists('order_measurement_hold_extensions')?(int)$this->db->fetchValue('SELECT COUNT(*) FROM order_measurement_hold_extensions WHERE order_id=:id',['id'=>$id]):0;}
     private function pendingSelection(int $id): ?array{$r=$this->db->fetch("SELECT * FROM quote_selections WHERE order_id=:id AND status='pending_payment' ORDER BY id DESC LIMIT 1",['id'=>$id]);return$r?:null;}
     private function requiredBalance(int $id,array $s): int{$paid=(int)$this->db->fetchValue("SELECT COALESCE(SUM(amount_cents),0) FROM payment_orders WHERE order_id=:id AND business_type='order_booking' AND status='paid'",['id'=>$id]);$booking=min((int)$s['amount_cents_snapshot'],min((int)$s['booking_fee_cents_snapshot'],$paid));return max(0,(int)$s['amount_cents_snapshot']-$booking);}
     private function relation(int $parent): ?array{$r=$this->db->fetch("SELECT * FROM order_relations WHERE parent_order_id=:id AND relation_type='measurement_construction' AND status='active' LIMIT 1",['id'=>$parent]);return$r?:null;}
@@ -136,7 +149,7 @@ final class DatabaseTestCenterMeasurementActionRunner implements TestCenterActio
     private function customerActor(array $o): array{return['user_id'=>(int)$o['user_id'],'real_user_id'=>(int)$o['user_id'],'worker_id'=>null,'is_demo_actor'=>true,'demo_role'=>'user','is_admin'=>false,'business_admin'=>false];}
     private function otherApprovedWorkerId(int $instance,int $exclude): int{$id=(int)$this->db->fetchValue("SELECT tp.worker_id FROM test_participants tp JOIN worker_profiles w ON w.id=tp.worker_id WHERE tp.instance_id=:instance AND tp.expected_status='approved' AND w.verification_status='approved' AND tp.worker_id<>:exclude ORDER BY tp.id LIMIT 1",['instance'=>$instance,'exclude'=>$exclude]);if($id<1)throw new TestCenterException('没有第二名测试师傅可执行绑定探针。','TEST_ACTION_WORKER_INVALID',409);return$id;}
     private function versions(): array{$v=$this->agreements->currentVersions();if(!$v)throw new TestCenterException('当前没有可确认的师傅协议版本。','TEST_ACTION_AGREEMENTS_UNAVAILABLE',409);return$v;}
-    private function summary(int $instance,int $order): array{$o=$this->db->fetch('SELECT public_no,quote_status,assignment_status,fulfillment_status,payment_status,lifecycle_status,selected_quote_id,assigned_worker_id,current_assignment_id,final_amount_cents FROM orders WHERE id=:id',['id'=>$order]);$s=$this->measurementState($order);$r=$this->relation($order);return['order'=>$o?:[],'measurement'=>$s?:[],'active_quotes'=>(int)$this->db->fetchValue("SELECT COUNT(*) FROM quotes WHERE order_id=:id AND status='active'",['id'=>$order]),'payments'=>(int)$this->db->fetchValue('SELECT COUNT(*) FROM test_payment_facts WHERE instance_id=:id',['id'=>$instance]),'spaces'=>(int)$this->db->fetchValue('SELECT COUNT(*) FROM order_measurement_spaces WHERE order_id=:id',['id'=>$order]),'relation'=>$r?:[]];}
+    private function summary(int $instance,int $order): array{$o=$this->db->fetch('SELECT public_no,quote_status,assignment_status,fulfillment_status,payment_status,lifecycle_status,selected_quote_id,assigned_worker_id,current_assignment_id,final_amount_cents FROM orders WHERE id=:id',['id'=>$order]);$s=$this->measurementState($order);$r=$this->relation($order);return['order'=>$o?:[],'measurement'=>$s?:[],'active_quotes'=>(int)$this->db->fetchValue("SELECT COUNT(*) FROM quotes WHERE order_id=:id AND status='active'",['id'=>$order]),'payments'=>(int)$this->db->fetchValue('SELECT COUNT(*) FROM test_payment_facts WHERE instance_id=:id',['id'=>$instance]),'spaces'=>(int)$this->db->fetchValue('SELECT COUNT(*) FROM order_measurement_spaces WHERE order_id=:id',['id'=>$order]),'reworks'=>$this->reworkCount($order),'hold_extensions'=>$this->holdExtensionCount($order),'relation'=>$r?:[]];}
     private function fail(int $run,float $started,string $code,string $message,int $instance,int $order): void{$this->db->execute("UPDATE test_runs SET result='failed',error_code=:code,error_message=:message,after_summary_json=:after,duration_ms=:duration,finished_at=UTC_TIMESTAMP() WHERE id=:id",['code'=>mb_substr($code,0,80),'message'=>mb_substr($message,0,1000),'after'=>$this->json(['facts'=>$this->summary($instance,$order)]),'duration'=>(int)round((microtime(true)-$started)*1000),'id'=>$run]);}
     private function money(string $v): int{$v=trim($v);if(preg_match('/^\d{1,7}(?:\.\d{1,2})?$/D',$v)!==1)throw new TestCenterException('金额格式不正确。','TEST_ACTION_AMOUNT_INVALID',422);[$y,$d]=array_pad(explode('.',$v,2),2,'');return(int)$y*100+(int)substr(str_pad($d,2,'0'),0,2);}
     /** @param mixed $v */private function json($v): string{$j=json_encode($v,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);return is_string($j)?$j:'{}';}
