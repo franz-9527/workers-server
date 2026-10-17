@@ -47,7 +47,7 @@ final class TestCenterAdminModule implements AdminModule
                 if($method!=='GET')throw new TestCenterException('请求方式不正确。','METHOD_NOT_ALLOWED',405);
                 $id=trim((string)($_GET['id']??''));$detail=$this->testCenter->detail($id);$actionRequestKeys=[];
                 foreach((array)($detail['actions']['items']??[])as$key=>$action){$actionKey=(string)($action['key']??$key);if($actionKey!=='')$actionRequestKeys[$actionKey]='action:'.bin2hex(random_bytes(12));}
-                echo \view('admin/test-center-detail',['pageTitle'=>'测试订单详情','activeMenu'=>'test-center','detail'=>$detail,'copyRequestKey'=>'copy:'.bin2hex(random_bytes(12)),'rebuildRequestKey'=>'rebuild:'.bin2hex(random_bytes(12)),'actionRequestKeys'=>$actionRequestKeys]);return;
+                echo \view('admin/test-center-detail-v260',['pageTitle'=>'测试订单详情','activeMenu'=>'test-center','detail'=>$detail,'copyRequestKey'=>'copy:'.bin2hex(random_bytes(12)),'rebuildRequestKey'=>'rebuild:'.bin2hex(random_bytes(12)),'actionRequestKeys'=>$actionRequestKeys]);return;
             }
             if($route==='test-center.batch-cleanup'){
                 if($method!=='GET')throw new TestCenterException('请求方式不正确。','METHOD_NOT_ALLOWED',405);
@@ -67,10 +67,13 @@ final class TestCenterAdminModule implements AdminModule
             }
             $id=trim((string)($_POST['id']??''));
             if($route==='test-center.action'){
-                $action=trim((string)($_POST['action_key']??''));$result=$this->testCenter->runAction($id,$_POST,$adminId);
-                \audit('test_center.real_action','test_instance',0,'执行测试真实动作 '.$action.'，实例 '.$id.'，run '.(string)($result['run_public_id']??''));
-                \flash('success',!empty($result['replayed'])?'该动作已成功执行，本次返回幂等结果。':'真实业务动作执行成功，订单状态已按正式流程推进。');
-                \redirect(\admin_url('test-center.detail',['id'=>$id]));
+                $action=trim((string)($_POST['action_key']??''));$result=$this->testCenter->runAction($id,$_POST,$adminId);$mode=(string)($result['operation_mode']??'real_service');
+                \audit('test_center.action','test_instance',0,'执行测试动作 '.$action.'，mode='.$mode.'，实例 '.$id.'，run '.(string)($result['run_public_id']??''));
+                if(!empty($result['replayed']))$message='该测试动作此前已成功执行，本次返回幂等结果。';
+                elseif($mode==='real_service')$message='真实业务动作执行成功，订单/售后状态已按正式流程推进。';
+                elseif($mode==='time_fixture')$message='测试时间条件已推进；该步骤不计作真实业务动作。';
+                else $message='测试前置条件已补齐；该步骤不计作真实业务动作。';
+                \flash('success',$message);\redirect(\admin_url('test-center.detail',['id'=>$id]));
             }
             if($route==='test-center.verify'){$result=$this->testCenter->verify($id,$adminId);\flash($result['failed']>0?'danger':'success',$result['failed']>0?'检查发现失败断言，请查看详情。':'测试实例检查通过。');\redirect(\admin_url('test-center.detail',['id'=>$id]));}
             if($route==='test-center.copy'){$result=$this->testCenter->copy($id,$adminId,(string)($_POST['request_key']??''));$newId=(string)($result['instance']['public_id']??'');\audit('test_center.copy','test_instance',(int)($result['instance']['id']??0),'复制测试场景，来源 '.$id);\flash('success','已复制为新的测试实例。');\redirect(\admin_url('test-center.detail',['id'=>$newId]));}
