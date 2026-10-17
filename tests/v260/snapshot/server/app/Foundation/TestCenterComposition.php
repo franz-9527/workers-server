@@ -16,6 +16,9 @@ use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentCleanupRepos
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterFulfillmentVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterM1Repository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegativeQuoteRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegotiationActionRunner;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegotiationCleanupRepository;
+use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterNegotiationVerificationRepository;
 use WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterProgressVerificationRepository;
 
 final class TestCenterComposition
@@ -28,10 +31,13 @@ final class TestCenterComposition
         $negative=new DatabaseTestCenterNegativeQuoteRepository($db,$m1);
         $dealProgress=new DatabaseTestCenterProgressVerificationRepository($db,$negative);
         $fulfillmentProgress=new DatabaseTestCenterFulfillmentVerificationRepository($db,$dealProgress);
-        $fulfillmentCleanup=new DatabaseTestCenterFulfillmentCleanupRepository($db,$fulfillmentProgress);
-        $repository=new DatabaseTestCenterCleanupGuardRepository($db,$fulfillmentCleanup);
+        $negotiationProgress=new DatabaseTestCenterNegotiationVerificationRepository($db,$fulfillmentProgress);
+        $fulfillmentCleanup=new DatabaseTestCenterFulfillmentCleanupRepository($db,$negotiationProgress);
+        $negotiationCleanup=new DatabaseTestCenterNegotiationCleanupRepository($db,$fulfillmentCleanup);
+        $repository=new DatabaseTestCenterCleanupGuardRepository($db,$negotiationCleanup);
         $dealActions=new DatabaseTestCenterActionRunner($db);
-        $actions=new DatabaseTestCenterFulfillmentActionRunner($db,$dealActions);
+        $fulfillmentActions=new DatabaseTestCenterFulfillmentActionRunner($db,$dealActions);
+        $actions=new DatabaseTestCenterNegotiationActionRunner($db,$fulfillmentActions);
         return new TestCenter($repository,new TestScenarioCatalog(),$actions);
     }
 }
