@@ -32,7 +32,7 @@ foreach(['refund_pending','no_refund_before_agreement','refund_rejected','reject
 $cleanup=m2rFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterRefundCleanupRepository.php');
 m2rAssert(strpos($cleanup,'return$this->db->transaction')!==false,'refund cleanup and prior cleanup layers share one transaction');
 m2rAssert(strpos($cleanup,'test_payment_facts')!==false&&strpos($cleanup,"simulated_provider']==='internal_test'")!==false,'cleanup proves refund payment ownership through test facts');
-m2rAssert(strpos($cleanup,"empty($refund['wechat_refund_id'])")!==false,'cleanup refuses refund rows carrying a WeChat refund id');
+m2rAssert(strpos($cleanup,'empty($refund[\'wechat_refund_id\'])')!==false,'cleanup refuses refund rows carrying a WeChat refund id');
 $decisionDelete=strpos($cleanup,'DELETE FROM order_cancel_decisions WHERE order_id');$refundDelete=strpos($cleanup,'DELETE FROM refunds WHERE order_id');$requestDelete=strpos($cleanup,'DELETE FROM order_cancel_requests WHERE order_id');
 m2rAssert($decisionDelete!==false&&$refundDelete!==false&&$requestDelete!==false&&$decisionDelete<$refundDelete&&$refundDelete<$requestDelete,'refund cleanup deletes decisions then refunds then requests');
 foreach(['refund_unowned','refunds_multiple','cancel_request_unowned','cancel_decision_unowned','cancellation_risk_unexpected'] as $key)m2rAssert(strpos($cleanup,$key)!==false,'refund cleanup blocks '.$key);
