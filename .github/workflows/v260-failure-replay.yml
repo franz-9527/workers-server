@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   php74-contract:
@@ -26,6 +26,8 @@ jobs:
             cp "$file" "$target"
           done < <(find .test-center-replay-snapshot -type f -print0)
       - name: PHP 7.4 syntax and replay contract
+        id: verify
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -41,3 +43,20 @@ jobs:
             php -l server/tests/v260_test_center_failure_replay_contract.php
             php server/tests/v260_test_center_failure_replay_contract.php
           '
+      - name: Record verification result
+        if: always()
+        shell: bash
+        env:
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          SOURCE_SHA: 4a6bb4f26c3a81b9910dc7172fa60be72b0d0546
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$VERIFY_OUTCOME" "$GITHUB_SHA" > .test-center-replay-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .test-center-replay-result.json
+          git commit -m "test: record failure replay verification $VERIFY_OUTCOME"
+          git push
+      - name: Fail workflow when verification failed
+        if: steps.verify.outcome != 'success'
+        run: exit 1
