@@ -48,7 +48,7 @@ paidProbeAssert(strpos($runner,'INSERT INTO user_wallet')===false&&strpos($runne
 paidProbeAssert(strpos($runner,'AliyunSmsGateway')===false&&strpos($runner,'querySendDetails(')===false,'paid SMS probe never calls real Aliyun receipt provider');
 paidProbeAssert(strpos($runner,'TEST_PAID_SMS_RECEIPT_REAL_SIDE_EFFECT')!==false,'probe fails closed if real outbox/invite changes');
 paidProbeAssert(strpos($runner,"\$delays!==[30,120,600,1800,3600]||\$facts!==6")!==false,'missing receipt chain verifies bounded retries plus timeout');
-paidProbeAssert(strpos($runner,"'wallet_mutated'=>false")!==false&&strpos($runner,"'provider_query_executed'=>false")!==false,'probe explicitly records wallet/provider boundaries');
+paidProbeAssert(strpos($runner,"\$result['wallet_mutated']=false")!==false&&strpos($runner,"\$result['provider_query_executed']=false")!==false,'probe explicitly records wallet/provider boundaries');
 
 paidProbeAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false,'composition wires paid SMS receipt probe');
 paidProbeAssert(strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,$paidSmsReceiptActions)')!==false,'replay capture wraps paid SMS receipt probe');
