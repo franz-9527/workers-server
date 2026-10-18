@@ -29,7 +29,7 @@ $view=replayFile($root,'server/views/admin/test-center-failure-replay.php');
 
 replayAssert(strpos($contract,'function available')!==false&&strpos($contract,'function replay')!==false,'failure replay has explicit discovery and execution contract');
 
-replayAssert(strpos($capture,"result='failed'")!==false,'capture only enriches persisted failed runs');
+replayAssert(strpos($capture,"result=\\'failed\\'")!==false,'capture only enriches persisted failed runs');
 replayAssert(strpos($capture,"['id','action_key','request_key','_token','_csrf','csrf','csrf_token']")!==false,'capture excludes transport and csrf fields');
 foreach(['password','secret','token','openid','mobile','phone','webhook','private[_-]?key','api[_-]?key','access[_-]?key'] as $needle){
     replayAssert(strpos($capture,$needle)!==false,'capture blocks sensitive key family '.$needle);
