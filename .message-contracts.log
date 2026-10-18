@@ -1,0 +1,50 @@
+No syntax errors detected in server/app/Infrastructure/Testing/TestMessageProjectionRecorder.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterMessageSimulationActionRunner.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/views/admin/test-center-detail.php
+No syntax errors detected in server/views/admin/test-center-detail-v260.php
+No syntax errors detected in server/views/admin/test-center-message-simulation-actions.php
+No syntax errors detected in server/tests/v260_test_center_message_contract.php
+No syntax errors detected in server/tests/v260_test_center_message_fallback_contract.php
+[PASS] migration owns isolated simulated message table
+[PASS] simulated projection has persistent idempotency key
+[PASS] migration dictionary states dispatch boundary
+[PASS] demo path records projection before returning
+[PASS] order notification projector imports test recorder
+[PASS] projection only runs in testing environment
+[PASS] projection requires test instance plus demo order
+[PASS] linked construction can resolve to parent test instance
+[PASS] projection writes only isolated test message table
+[PASS] recorder cannot enqueue real external messages
+[PASS] recorder does not read external delivery addresses or secrets
+[PASS] external projection distinguishes safety suppression from disabled config
+[PASS] subscription simulation does not consume real quota
+[PASS] long projection identities retain deterministic hash suffix instead of colliding on truncated prefix
+[PASS] long identities with equal first 190 bytes remain distinct
+[PASS] long idempotency keys fit schema and remain stable
+[PASS] environment preflight requires message projection schema
+[PASS] instance detail exposes message projections
+[PASS] admin detail renders simulated inbox
+[PASS] admin UI states delivery boundary
+Test-center message projection contract passed.
+[PASS] probe has dedicated allow-listed action key
+[PASS] probe exposes only three bounded delivery outcomes
+[PASS] probe only targets configured subscription fallback projections
+[PASS] probe requires subscription plus SMS projection pair
+[PASS] probe is audited as simulated external action
+[PASS] probe reuses test instance boundary and persistent idempotency execution
+[PASS] probe writes isolated test message outbox
+[PASS] probe never enqueues real message outbox
+[PASS] probe does not instantiate production subscription or SMS delivery services
+[PASS] probe explicitly records that no external delivery executed
+[PASS] probe verifies real outbox remains unchanged
+[PASS] successful subscription path suppresses SMS fallback
+[PASS] authorization/quota failure path simulates SMS fallback
+[PASS] probe idempotency business key preserves long-key uniqueness
+[PASS] composition wires message simulation decorator
+[PASS] replay capture wraps message simulation action chain
+[PASS] v260 detail renders message simulation panel
+[PASS] UI submits only server-selected source and bounded outcome
+[PASS] UI states external delivery boundary
+[PASS] UI states sensitive delivery addresses are not read
+Test-center message fallback simulation contract passed.
