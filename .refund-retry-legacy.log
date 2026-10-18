@@ -1,2 +1,40 @@
-Could not open input file: server/tests/v250_approved_order_refund_retry_mysql.php
-Could not open input file: server/tests/v250_approved_order_refund_lock_mysql.php
+[PASS] MySQL 5.7 connected
+[PASS] 已批准取消退款进入可靠执行桥
+[PASS] 取消退款提交后进入 processing
+[PASS] 取消退款同步订单退款状态
+[PASS] 取消退款沿用原退款号提交
+[PASS] 最终争议退款无需第二次人工审核即可进入执行桥
+[PASS] 最终争议退款自动提交微信后进入 processing
+[PASS] 最终争议退款使用原退款号提交
+[PASS] 普通 pending_review 不会被自动批准
+[PASS] 普通待审核退款状态保持不变
+[PASS] 普通待审核退款不会调用微信
+[PASS] 争议结构化事实不吻合时拒绝自动执行
+[PASS] 不吻合争议退款保持待审核
+[PASS] 无取消申请但已 approved 的取消待退款订单可恢复提交
+[PASS] approved 退款恢复后进入 processing
+[PASS] 微信提交失败会被调度结果暴露
+[PASS] 争议退款失败恢复可再次抢占状态
+[PASS] 争议退款下一轮可用同一退款号恢复
+[PASS] 争议退款失败重试不生成新退款号
+[PASS] approved 退款提交失败会报告任务失败
+[PASS] 原本 approved 的退款失败后保持 approved 等待幂等重试
+[PASS] 原本 approved 的退款失败后下一轮自动恢复提交
+[PASS] approved 退款恢复提交沿用原退款号
+[PASS] 活动订单 approved 退款不由取消退款桥自动提交
+[PASS] 活动订单退款不会误调用微信
+[PASS] 财务核账完成的双方协议 created 退款进入自动执行
+[PASS] 双方协议退款无需二次人工审核即可进入 processing
+[PASS] 双方协议退款沿用已生成退款号提交微信
+[PASS] 非 prepared 的 created 退款不自动提交
+[PASS] 其它 created 退款保持原人工/专用链路
+[PASS] 其它 created 退款不会误调用微信
+V2.5.0 approved order refund retry MySQL 5.7 integration: OK
+[PASS] MySQL 5.7 connected
+[PASS] 外部连接成功占用退款执行锁
+[PASS] 锁冲突属于安全跳过而不是任务失败
+[PASS] 锁冲突返回 skipped 语义
+[PASS] 锁冲突时不扫描退款业务表
+[PASS] 锁冲突时不会向微信提交退款
+[PASS] 测试释放退款执行锁
+V2.5.0 approved order refund retry lock MySQL 5.7 integration: OK

@@ -1,12 +1,58 @@
-Could not open input file: server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryProcessor.php
-Could not open input file: server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryBridge.php
-Could not open input file: server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
-Could not open input file: server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
-Could not open input file: server/app/Infrastructure/Testing/DatabaseTestCenterRefundRetryVerificationRepository.php
-Could not open input file: server/app/Foundation/TestCenterComposition.php
-Could not open input file: server/views/admin/test-center-scheduler-diagnostics.php
-Could not open input file: server/tests/v260_test_center_refund_retry_contract.php
-Could not open input file: server/tests/v260_approved_refund_retry_processor_mysql.php
-Could not open input file: server/tests/v250_approved_order_refund_retry_mysql.php
-Could not open input file: server/tests/v250_approved_order_refund_lock_mysql.php
-Could not open input file: server/tests/v260_test_center_refund_retry_contract.php
+No syntax errors detected in server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryProcessor.php
+No syntax errors detected in server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryBridge.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterRefundRetryVerificationRepository.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/views/admin/test-center-scheduler-diagnostics.php
+No syntax errors detected in server/tests/v260_test_center_refund_retry_contract.php
+No syntax errors detected in server/tests/v260_approved_refund_retry_processor_mysql.php
+No syntax errors detected in server/tests/v250_approved_order_refund_retry_mysql.php
+No syntax errors detected in server/tests/v250_approved_order_refund_lock_mysql.php
+[PASS] bridge delegates refund retry to processor
+[PASS] bridge uses processor candidate and single-refund execution
+[PASS] bridge keeps global named lock
+[PASS] production bridge still owns real provider adapter
+[PASS] processor exposes production candidate query
+[PASS] processor exposes single production execution
+[PASS] processor exposes scoped testing probe
+[PASS] processor exposes read-only scoped eligibility
+[PASS] production scanner excludes demo
+[PASS] production retry requires pending-refund lifecycle
+[PASS] production candidate set covers pending approved and prepared created
+[PASS] prepared bilateral refund remains explicit
+[PASS] resolved dispute eligibility preserves admin amount and time binding
+[PASS] pending/created refund is atomically claimed as approved
+[PASS] production provider acceptance writes processing and provider id
+[PASS] provider failure restores claim state
+[PASS] only transiently claimed statuses are restored
+[PASS] scoped probe is testing-only
+[PASS] scoped probe blocks demo hall
+[PASS] scoped probe fails closed on zero or multiple retry candidates
+[PASS] scoped probe proves internal payment ownership
+[PASS] scoped probe models provider failure before acceptance
+[PASS] scoped probe explicitly records no external refund
+[PASS] scoped probe explicitly records no global scan
+[PASS] processor testing path has no direct WeChat service dependency
+[PASS] processor does not enqueue provider refund outbox
+[PASS] test-center runner exposes refund retry probe
+[PASS] runner uses shared retry processor
+[PASS] probe run is marked simulated_external
+[PASS] runner checks no external refund outbox
+[PASS] runner surfaces unowned payment guard
+[PASS] scheduler diagnostics includes refund retry
+[PASS] scheduler diagnostics exposes scoped probe action
+[PASS] diagnostics states no-WeChat boundary
+[PASS] admin diagnostics renders refund retry probe
+[PASS] admin confirmation explains external boundary
+[PASS] dedicated verifier recognizes refund retry probe
+[PASS] verifier checks TEST_INTERNAL ownership
+[PASS] verifier checks claim restoration
+[PASS] verifier checks no provider refund id
+[PASS] verifier checks no provider outbox
+[PASS] verifier prevents fake processing state
+[PASS] composition wires refund retry verifier
+[PASS] MySQL regression covers production provider failure
+[PASS] MySQL regression covers refund number idempotency
+[PASS] MySQL regression covers prepared created restoration
+[FAIL] MySQL regression covers scoped restoration

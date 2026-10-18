@@ -1,1 +1,31 @@
-Could not open input file: server/tests/v260_approved_refund_retry_processor_mysql.php
+[PASS] MySQL 5.7 connected
+[PASS] production candidate scanner finds approved cancellation refund
+[PASS] production approved cancellation refund submitted
+[PASS] production refund enters processing
+[PASS] production provider refund id persisted
+[PASS] production order refund status enters processing
+[PASS] production uses original out_refund_no
+[PASS] production provider failure surfaces
+[PASS] claimed pending_review restores after provider failure
+[PASS] production failed refund retries on next pass
+[PASS] production retry reuses same out_refund_no
+[PASS] originally approved provider failure surfaces
+[PASS] originally approved refund remains approved after failure
+[PASS] prepared agreed refund provider failure surfaces
+[PASS] prepared agreed refund restores created after failure
+[PASS] ordinary pending_review is ineligible
+[PASS] ineligible refund never calls provider
+[PASS] scoped inspector finds unique owned retry refund
+[PASS] scoped probe simulates provider pre-accept timeout
+[PASS] scoped probe remains retryable
+[PASS] scoped probe never executes external refund
+[PASS] scoped probe restores pending_review
+[PASS] scoped probe leaves wechat_refund_id empty
+[PASS] scoped probe does not fake order processing
+[PASS] neighbor refund remains unchanged
+[PASS] unowned testing payment is not exposed by inspector
+[PASS] unowned testing payment blocks scoped probe
+[PASS] multiple eligible refunds are not exposed
+[PASS] multiple eligible refunds fail closed
+[PASS] production candidate scanner excludes demo refund
+V2.6.0 approved refund retry processor MySQL 5.7 integration: OK
