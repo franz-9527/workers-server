@@ -36,7 +36,7 @@ msgFallbackAssert(strpos($runner,"external_delivery_executed'=>false")!==false,'
 msgFallbackAssert(strpos($runner,'realOutboxCount')!==false&&strpos($runner,'TEST_MESSAGE_PROBE_REAL_OUTBOX_CHANGED')!==false,'probe verifies real outbox remains unchanged');
 msgFallbackAssert(strpos($runner,"'subscription_delivered_no_fallback'")!==false,'successful subscription path suppresses SMS fallback');
 msgFallbackAssert(strpos($runner,"'subscription_fallback_simulated'")!==false,'authorization/quota failure path simulates SMS fallback');
-msgFallbackAssert(strpos($runner,"hash('sha256',$identity)")!==false,'probe idempotency business key preserves long-key uniqueness');
+msgFallbackAssert(strpos($runner,"hash('sha256',\$identity)")!==false,'probe idempotency business key preserves long-key uniqueness');
 
 msgFallbackAssert(strpos($composition,'DatabaseTestCenterMessageSimulationActionRunner')!==false,'composition wires message simulation decorator');
 msgFallbackAssert(strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,$messageSimulationActions)')!==false,'replay capture wraps message simulation action chain');
