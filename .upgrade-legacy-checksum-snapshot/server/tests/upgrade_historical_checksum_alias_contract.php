@@ -34,9 +34,8 @@ legacyChecksumAssert((string)$row['checksum']===$canonical,'2.5.0 canonical chec
 legacyChecksumAssert(in_array($legacy,(array)($row['accepted_applied_checksums']??[]),true),'verified legacy checksum is explicitly whitelisted');
 legacyChecksumAssert(hash_file('sha256',$root.'/server/database/upgrades/2.5.0.sql')===$canonical,'current 2.5.0 SQL bytes still match canonical checksum');
 
-$pdo=new PDO('sqlite::memory:');
-$service=new UpgradeService($pdo,$root);
-$reflection=new ReflectionClass($service);
+$reflection=new ReflectionClass(UpgradeService::class);
+$service=$reflection->newInstanceWithoutConstructor();
 
 $normalize=$reflection->getMethod('normalizeAppliedChecksums');
 $normalize->setAccessible(true);
