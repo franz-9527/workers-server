@@ -1,0 +1,106 @@
+Unable to find image 'php:7.4-cli' locally
+7.4-cli: Pulling from library/php
+a603fa5e3b41: Pulling fs layer
+c428f1a49423: Pulling fs layer
+156740b07ef8: Pulling fs layer
+fb5a4c8af82f: Pulling fs layer
+972155ae644b: Pulling fs layer
+a8e3b94fe6c1: Pulling fs layer
+c77004105467: Pulling fs layer
+d3e4898bfd25: Pulling fs layer
+30f377be4678: Pulling fs layer
+fb5a4c8af82f: Waiting
+972155ae644b: Waiting
+a8e3b94fe6c1: Waiting
+c77004105467: Waiting
+d3e4898bfd25: Waiting
+30f377be4678: Waiting
+c428f1a49423: Verifying Checksum
+c428f1a49423: Download complete
+fb5a4c8af82f: Verifying Checksum
+fb5a4c8af82f: Download complete
+a603fa5e3b41: Verifying Checksum
+a603fa5e3b41: Download complete
+156740b07ef8: Verifying Checksum
+156740b07ef8: Download complete
+a8e3b94fe6c1: Verifying Checksum
+a8e3b94fe6c1: Download complete
+972155ae644b: Verifying Checksum
+972155ae644b: Download complete
+d3e4898bfd25: Download complete
+30f377be4678: Verifying Checksum
+30f377be4678: Download complete
+c77004105467: Verifying Checksum
+c77004105467: Download complete
+a603fa5e3b41: Pull complete
+c428f1a49423: Pull complete
+156740b07ef8: Pull complete
+fb5a4c8af82f: Pull complete
+972155ae644b: Pull complete
+a8e3b94fe6c1: Pull complete
+c77004105467: Pull complete
+d3e4898bfd25: Pull complete
+30f377be4678: Pull complete
+Digest: sha256:620a6b9f4d4feef2210026172570465e9d0c1de79766418d3affd09190a7fda5
+Status: Downloaded newer image for php:7.4-cli
+No syntax errors detected in server/app/Infrastructure/Scheduling/AutoReviewProcessor.php
+No syntax errors detected in server/app/Infrastructure/Persistence/DatabaseReviewRepository.php
+No syntax errors detected in server/app/Services/SchedulerService.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterAutoReviewVerificationRepository.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterAutoReviewCleanupRepository.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/views/admin/test-center-scheduler-diagnostics.php
+No syntax errors detected in server/tests/v260_test_center_auto_review_contract.php
+No syntax errors detected in server/tests/v260_auto_review_processor_mysql.php
+No syntax errors detected in server/tests/v260_test_center_m2_refund_contract.php
+No syntax errors detected in server/tests/v260_test_center_m2_repair_contract.php
+No syntax errors detected in server/tests/v260_test_center_m2_negotiation_contract.php
+No syntax errors detected in server/tests/v260_test_center_m2_fulfillment_contract.php
+[PASS] production scheduler delegates auto review to processor
+[PASS] production auto review scanner calls single-order processor
+[PASS] SchedulerService no longer owns auto-review persistence
+[PASS] SchedulerService never writes review rows directly
+[PASS] auto review processor exposes production and scoped test entries
+[PASS] production auto review remains non-demo only
+[PASS] scoped auto review is testing-only
+[PASS] scoped auto review locks exact test instance
+[PASS] scoped auto review enforces demo ownership and review-hall protection
+[PASS] scoped auto review requires accepted completed test order
+[PASS] auto review preserves business blockers
+[PASS] processor reuses formal review repository
+[PASS] processor does not duplicate rating summary logic outside review repository
+[PASS] formal review repository owns rating summary refresh
+[PASS] processor closes both auto-review deadline aliases
+[PASS] production auto review completes scheduler claim
+[PASS] production auto review resolves same-version failures
+[PASS] scoped processor does not use global scheduler run as instance evidence
+[PASS] scoped auto review writes instance event and persisted notification
+[PASS] production auto review retains deterministic scheduler event
+[PASS] test-center runner exposes system auto review
+[PASS] test-center auto review action uses scoped processor
+[PASS] scoped auto review records system real-service run
+[PASS] test-center postconditions verify rating recomputation
+[PASS] scoped auto review never invokes global scheduler gateway
+[PASS] scheduler inspector advertises scoped auto review
+[PASS] admin diagnostics renders auto review control
+[PASS] auto review confirmation states deadline fixture
+[PASS] auto review confirmation states instance-only boundary
+[PASS] dedicated verifier recognizes scoped auto review
+[PASS] dedicated verifier checks auto five-star review
+[PASS] dedicated verifier checks rating projections
+[PASS] dedicated verifier rejects fake global claim
+[PASS] cleanup only deletes exact scoped auto-review content
+[PASS] cleanup requires review shape and owned action run
+[PASS] cleanup fails closed on review attachments or replies
+[PASS] cleanup recalculates shared worker rating after review deletion
+[PASS] cleanup rolls back if downstream cleanup remains blocked
+[PASS] composition wires auto review verifier
+[PASS] composition wires auto review cleanup before cleanup guard
+[PASS] MySQL regression protects neighboring test order
+[PASS] MySQL regression checks production claim completion
+[PASS] MySQL regression checks review idempotency
+[PASS] MySQL regression checks scoped blocker
+[PASS] MySQL regression checks rating summary projection
+Test-center scoped auto review contract passed.
