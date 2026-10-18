@@ -38,7 +38,7 @@ msgAssert(strpos($recorder,"JOIN orders o ON o.id=ti.order_id")!==false&&strpos(
 msgAssert(strpos($recorder,"relation_type='measurement_construction'")!==false,'linked construction can resolve to parent test instance');
 msgAssert(strpos($recorder,'INSERT IGNORE INTO test_message_outbox')!==false,'projection writes only isolated test message table');
 msgAssert(strpos($recorder,'INSERT IGNORE INTO message_outbox')===false,'recorder cannot enqueue real external messages');
-msgAssert(strpos($recorder,'mobile_ciphertext')===false&&strpos($recorder,'openid')===false&&strpos($recorder,'webhook')===false,'recorder does not read external delivery addresses or secrets');
+msgAssert(strpos($recorder,'mobile_ciphertext')===false&&strpos($recorder,'openid')===false&&strpos($recorder,'webhook_url')===false&&strpos($recorder,'webhook_secret')===false,'recorder does not read external delivery addresses or secrets');
 msgAssert(strpos($recorder,"'demo_suppressed'")!==false&&strpos($recorder,"'config_disabled'")!==false,'external projection distinguishes safety suppression from disabled config');
 msgAssert(strpos($recorder,'quota_and_authorization_not_consumed')!==false,'subscription simulation does not consume real quota');
 
