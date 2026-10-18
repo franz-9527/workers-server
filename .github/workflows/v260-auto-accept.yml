@@ -50,8 +50,10 @@ jobs:
             php -l server/app/Infrastructure/Testing/TestingPlatformAutomaticAcceptance.php
             php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
             php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterFulfillmentVerificationRepository.php
             php -l server/views/admin/test-center-scheduler-diagnostics.php
             php -l server/tests/v260_test_center_auto_accept_contract.php
+            php -l server/tests/v260_test_center_m2_fulfillment_contract.php
             php -l server/tests/v260_auto_accept_processor_mysql.php
             php -l server/tests/v260_test_center_expansion_mysql.php
             php server/tests/v260_test_center_auto_accept_contract.php
@@ -83,7 +85,7 @@ jobs:
         env:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
-          SOURCE_SHA: 200cc4853096ba70b686ebb8f24ad1ffde2bf171
+          SOURCE_SHA: e128fc3b9709ae1913f73f15a16442536c1ffc51
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$GITHUB_SHA" > .auto-accept-result.json
