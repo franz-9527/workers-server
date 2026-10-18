@@ -25,6 +25,7 @@ $platform=autoAcceptFile($root,'server/app/Infrastructure/Testing/TestingPlatfor
 $inspector=autoAcceptFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php');
 $view=autoAcceptFile($root,'server/views/admin/test-center-scheduler-diagnostics.php');
 $expansion=autoAcceptFile($root,'server/tests/v260_test_center_expansion_mysql.php');
+$verifier=autoAcceptFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterFulfillmentVerificationRepository.php');
 
 autoAcceptAssert(strpos($scheduler,'new AutoAcceptanceProcessor($this->db)')!==false,'production scheduler delegates auto accept to shared processor');
 autoAcceptAssert(strpos($scheduler,'$processor->acceptProduction')!==false,'production scheduler uses production auto-accept entry');
@@ -61,6 +62,7 @@ autoAcceptAssert(strpos($inspector,"'system_auto_accept_completion'")!==false&&s
 autoAcceptAssert(strpos($inspector,"'scoped_test_action'")!==false,'auto accept diagnostics marks scoped execution');
 autoAcceptAssert(strpos($view,'推进到自动验收')!==false,'admin scheduler diagnostics renders scoped auto accept control');
 autoAcceptAssert(strpos($view,'只处理当前实例')!==false,'admin auto accept confirmation states instance-only boundary');
+autoAcceptAssert(strpos($verifier,"action_key IN ('worker_appointment','worker_complete','customer_accept_completion','system_auto_accept_completion')")!==false,'fulfillment verifier treats scoped system acceptance as a final fulfillment action');
 
 autoAcceptAssert(strpos($expansion,"'system_auto_accept_completion'")!==false,'full expansion regression executes scoped ordinary auto accept');
 autoAcceptAssert(strpos($expansion,'neighbor submitted instance remains untouched by auto accept')!==false,'full expansion regression protects neighboring submitted instance');
