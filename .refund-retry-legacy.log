@@ -1,0 +1,11 @@
+[PASS] MySQL 5.7 connected
+[PASS] 已批准取消退款进入可靠执行桥
+[FAIL] 取消退款提交后进入 processing expected='processing' actual='pending_review'
+[PASS] MySQL 5.7 connected
+[PASS] 外部连接成功占用退款执行锁
+[PASS] 锁冲突属于安全跳过而不是任务失败
+[PASS] 锁冲突返回 skipped 语义
+[PASS] 锁冲突时不扫描退款业务表
+[PASS] 锁冲突时不会向微信提交退款
+[PASS] 测试释放退款执行锁
+V2.5.0 approved order refund retry lock MySQL 5.7 integration: OK

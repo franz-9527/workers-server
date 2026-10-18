@@ -1,0 +1,82 @@
+Unable to find image 'php:7.4-cli' locally
+7.4-cli: Pulling from library/php
+a603fa5e3b41: Pulling fs layer
+c428f1a49423: Pulling fs layer
+156740b07ef8: Pulling fs layer
+fb5a4c8af82f: Pulling fs layer
+972155ae644b: Pulling fs layer
+a8e3b94fe6c1: Pulling fs layer
+c77004105467: Pulling fs layer
+d3e4898bfd25: Pulling fs layer
+30f377be4678: Pulling fs layer
+fb5a4c8af82f: Waiting
+972155ae644b: Waiting
+a8e3b94fe6c1: Waiting
+c77004105467: Waiting
+d3e4898bfd25: Waiting
+30f377be4678: Waiting
+c428f1a49423: Verifying Checksum
+c428f1a49423: Download complete
+fb5a4c8af82f: Verifying Checksum
+fb5a4c8af82f: Download complete
+972155ae644b: Download complete
+a603fa5e3b41: Verifying Checksum
+a603fa5e3b41: Download complete
+a8e3b94fe6c1: Verifying Checksum
+a8e3b94fe6c1: Download complete
+d3e4898bfd25: Verifying Checksum
+d3e4898bfd25: Download complete
+30f377be4678: Verifying Checksum
+30f377be4678: Download complete
+c77004105467: Download complete
+156740b07ef8: Verifying Checksum
+156740b07ef8: Download complete
+a603fa5e3b41: Pull complete
+c428f1a49423: Pull complete
+156740b07ef8: Pull complete
+fb5a4c8af82f: Pull complete
+972155ae644b: Pull complete
+a8e3b94fe6c1: Pull complete
+c77004105467: Pull complete
+d3e4898bfd25: Pull complete
+30f377be4678: Pull complete
+Digest: sha256:620a6b9f4d4feef2210026172570465e9d0c1de79766418d3affd09190a7fda5
+Status: Downloaded newer image for php:7.4-cli
+No syntax errors detected in server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryProcessor.php
+No syntax errors detected in server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryBridge.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterRefundRetryVerificationRepository.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/views/admin/test-center-scheduler-diagnostics.php
+No syntax errors detected in server/tests/v260_test_center_refund_retry_contract.php
+No syntax errors detected in server/tests/v260_approved_refund_retry_processor_mysql.php
+No syntax errors detected in server/tests/v250_approved_order_refund_retry_mysql.php
+No syntax errors detected in server/tests/v250_approved_order_refund_lock_mysql.php
+No syntax errors detected in server/tests/v250_order_cancellation_regression.php
+No syntax errors detected in server/tests/v250_agreed_refund_execution_regression.php
+[FAIL] scoped processor contains no direct WeChat provider dependency
+[PASS] global refund retry bridge delegates to processor
+[PASS] global bridge obtains production candidates from processor
+[PASS] global bridge delegates each refund execution
+[PASS] global bridge retains named lock semantics
+[PASS] production bridge retains real provider adapter
+[PASS] processor owns production candidate eligibility
+[PASS] processor owns single-refund production execution
+[PASS] processor exposes scoped testing retry probe
+[PASS] processor exposes read-only scoped eligibility inspection
+[PASS] production candidates exclude demo orders
+[PASS] production eligibility requires pending-refund lifecycle
+[PASS] processor covers approved retry source states
+[PASS] processor recognizes prepared bilateral refunds
+[PASS] processor preserves final-dispute evidence matching
+[PASS] processor atomically claims pending/created refund before provider call
+[PASS] production success persists provider acceptance
+[PASS] processor restores claimed source status on provider failure
+[PASS] scoped retry probe is testing-only
+[PASS] scoped retry probe protects review-hall fixtures
+[PASS] scoped retry probe requires exact internal payment ownership
+[PASS] scoped retry probe fails closed on zero or multiple targets
+[PASS] scoped probe models provider failure before acceptance
+[PASS] scoped probe records no external refund execution
+[PASS] scoped probe never fakes a provider refund id
