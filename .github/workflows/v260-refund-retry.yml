@@ -1,0 +1,131 @@
+name: V2.6.0 Scoped Refund Retry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-refund-retry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refund-retry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql, json
+          coverage: none
+
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="\${file#.test-center-refund-retry-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-refund-retry-snapshot -type f -print0)
+
+      - name: PHP 7.4 syntax and safety contract
+        id: contract
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          {
+            php -l server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryProcessor.php
+            php -l server/app/Infrastructure/Scheduling/ApprovedOrderRefundRetryBridge.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterRefundRetryVerificationRepository.php
+            php -l server/app/Foundation/TestCenterComposition.php
+            php -l server/views/admin/test-center-scheduler-diagnostics.php
+            php -l server/tests/v260_test_center_refund_retry_contract.php
+            php -l server/tests/v260_approved_refund_retry_processor_mysql.php
+            php -l server/tests/v250_approved_order_refund_retry_mysql.php
+            php -l server/tests/v250_approved_order_refund_lock_mysql.php
+            php server/tests/v260_test_center_refund_retry_contract.php
+          } > .refund-retry-contract.log 2>&1
+          status=$?
+          cat .refund-retry-contract.log
+          exit "$status"
+
+      - name: MySQL 5.7 scoped processor integration
+        id: mysql
+        continue-on-error: true
+        env:
+          V260_REFUND_RETRY_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: |
+          set +e
+          php server/tests/v260_approved_refund_retry_processor_mysql.php > .refund-retry-mysql.log 2>&1
+          status=$?
+          cat .refund-retry-mysql.log
+          exit "$status"
+
+      - name: MySQL 5.7 legacy retry regressions
+        id: legacy
+        continue-on-error: true
+        env:
+          V250_PLATFORM_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: |
+          set +e
+          {
+            php server/tests/v250_approved_order_refund_retry_mysql.php
+            php server/tests/v250_approved_order_refund_lock_mysql.php
+          } > .refund-retry-legacy.log 2>&1
+          status=$?
+          cat .refund-retry-legacy.log
+          exit "$status"
+
+      - name: Record verification result
+        if: always()
+        shell: bash
+        env:
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
+          LEGACY_OUTCOME: ${{ steps.legacy.outcome }}
+          SOURCE_SHA: 1e8227d924e8109a3fbd6e0451d009684345d28d
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","mysql57_legacy":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$LEGACY_OUTCOME" "$GITHUB_SHA" > .refund-retry-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .refund-retry-result.json .refund-retry-contract.log .refund-retry-mysql.log .refund-retry-legacy.log
+          git commit -m "test: record scoped refund retry verification $CONTRACT_OUTCOME/$MYSQL_OUTCOME/$LEGACY_OUTCOME"
+          git push
+
+      - name: Fail workflow when verification failed
+        if: steps.contract.outcome != 'success' || steps.mysql.outcome != 'success' || steps.legacy.outcome != 'success'
+        run: exit 1
