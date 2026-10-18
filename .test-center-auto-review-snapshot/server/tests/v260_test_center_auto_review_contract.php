@@ -25,6 +25,7 @@ $cleanup=arFile($root,'server/app/Infrastructure/Testing/DatabaseTestCenterAutoR
 $composition=arFile($root,'server/app/Foundation/TestCenterComposition.php');
 $view=arFile($root,'server/views/admin/test-center-scheduler-diagnostics.php');
 $mysql=arFile($root,'server/tests/v260_auto_review_processor_mysql.php');
+$cleanupMysql=arFile($root,'server/tests/v260_auto_review_cleanup_mysql.php');
 
 arAssert(strpos($scheduler,'new AutoReviewProcessor($this->db)')!==false,'production scheduler delegates auto review to processor');
 arAssert(strpos($scheduler,'$processor->reviewProduction')!==false,'production auto review scanner calls single-order processor');
@@ -77,5 +78,8 @@ arAssert(strpos($mysql,'production auto review claim completed')!==false,'MySQL 
 arAssert(strpos($mysql,'existing review blocks production auto review')!==false,'MySQL regression checks review idempotency');
 arAssert(strpos($mysql,'blocking dispute prevents scoped auto review')!==false,'MySQL regression checks scoped blocker');
 arAssert(strpos($mysql,'rating summary matches visible reviews')!==false,'MySQL regression checks rating summary projection');
+arAssert(strpos($cleanupMysql,'owned scoped auto review deleted')!==false,'cleanup MySQL regression deletes only owned scoped auto review');
+arAssert(strpos($cleanupMysql,'shared rating summary recomputed after cleanup')!==false,'cleanup MySQL regression recomputes shared rating summary');
+arAssert(strpos($cleanupMysql,'review attachment blocks scoped auto-review cleanup')!==false,'cleanup MySQL regression blocks review attachments');
 
 fwrite(STDOUT,"Test-center scoped auto review contract passed.\n");
