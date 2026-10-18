@@ -1,0 +1,7 @@
+PHP Warning:  require_once(/home/runner/work/workers-server/workers-server/server/app/Contracts/TestCenterRepository.php): Failed to open stream: No such file or directory in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php on line 19
+PHP Stack trace:
+PHP   1. {main}() /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php:0
+PHP Fatal error:  Uncaught Error: Failed opening required '/home/runner/work/workers-server/workers-server/server/app/Contracts/TestCenterRepository.php' (include_path='.:/usr/share/php') in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php:19
+Stack trace:
+#0 {main}
+  thrown in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php on line 19
