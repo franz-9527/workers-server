@@ -25,6 +25,8 @@ $admin=entryContractFile($root,'server/app/Http/Admin/Modules/TestCenterAdminMod
 $detail=entryContractFile($root,'server/views/admin/test-center-detail.php');
 $page=entryContractFile($root,'miniprogram/pages/testEntry/index.js');
 $app=entryContractFile($root,'miniprogram/app.json');
+$messagingFake=entryContractFile($root,'tools/test-messaging-migration.php');
+$paymentFake=entryContractFile($root,'server/tests/support/payment_http_router.php');
 
 entryContractAssert(strpos($migration,'test_entry_tokens')!==false&&strpos($migration,'CREATE TABLE IF NOT EXISTS')!==false,'2.6.0 migration creates test entry token table');
 entryContractAssert(strpos($migration,'token_hash')!==false&&strpos($migration,'`token` varchar')===false&&strpos($migration,'`token` char')===false,'entry table persists token hash rather than plaintext token column');
@@ -58,5 +60,7 @@ entryContractAssert(strpos($page,"ApiEnvironment.switchTo('testing')")!==false,'
 entryContractAssert(strpos($page,"OrderApi.request('admin.test-entry.redeem'")!==false,'miniapp redeems token through authenticated PHP API');
 entryContractAssert(strpos($page,'userOrder|workerOrder')!==false&&strpos($page,'detail\\?id=')!==false,'miniapp accepts only user or worker detail destination shape');
 entryContractAssert(strpos($app,'pages/testEntry/index')!==false,'miniapp registers test entry page');
+entryContractAssert(strpos($messagingFake,'findTestActor')!==false&&strpos($messagingFake,'clearTestActor')!==false,'messaging ApiActorRepository fake follows extended interface');
+entryContractAssert(strpos($paymentFake,'findTestActor')!==false&&strpos($paymentFake,'clearTestActor')!==false,'payment ApiActorRepository fake follows extended interface');
 
 fwrite(STDOUT,"Test-center short miniapp entry contract passed.\n");
