@@ -42,7 +42,7 @@ stcAssert(strpos($processor,"COALESCE(is_demo,0)=0")!==false,'production process
 stcAssert(strpos($processor,"deadline_type='audit_supplement_timeout'")!==false,'processor locks exact supplement deadline');
 stcAssert(strpos($processor,"'reminder'")!==false&&strpos($processor,"'expired'")!==false,'reminder and expiration use separate event phases');
 stcAssert(strpos($processor,'supplement_deadline_reminder')!==false&&strpos($processor,'supplement_timeout_refunded')!==false,'processor preserves business event types');
-stcAssert(strpos($processor,"refund_status=:refund_status")!==false&&strpos($processor,"$refundStatus=$refundAmount>0?'pending_review':'none'")!==false,'supplement timeout no longer fakes processing before provider acceptance');
+stcAssert(strpos($processor,"refund_status=:refund_status")!==false&&strpos($processor,'$refundStatus=$refundAmount>0?\'pending_review\':\'none\'')!==false,'supplement timeout no longer fakes processing before provider acceptance');
 stcAssert(strpos($processor,"IF(:close_now=1,UTC_TIMESTAMP(),NULL)")!==false,'cancel request stays open while refund is outstanding');
 stcAssert(strpos($processor,"'supplement_timeout'")!==false&&strpos($processor,"'platform'")!==false,'processor records formal system cancellation and platform responsibility');
 stcAssert(strpos($processor,'scheduled_job_claims')!==false&&strpos($processor,'completeClaim')!==false,'production expiration uses scheduler claim');
@@ -57,8 +57,8 @@ stcAssert(strpos($processor,'WeChatPayService')===false,'processor contains no W
 stcAssert(strpos($processor,'scheduler_runs')===false,'processor does not use global scheduler runs as instance evidence');
 
 stcAssert(strpos($proxy,'admin_proxy_supplement')!==false,'proxy test flow exposes formal supplement preparation');
-stcAssert(strpos($proxy,"->audit((int)$o['id'],$decision,$reason,$admin)")!==false,'proxy supplement preparation goes through formal WebAdminOrder audit');
-stcAssert(strpos($proxy,"$decision=$key==='admin_proxy_supplement'?'supplement':'approve'")!==false,'proxy action maps to formal supplement decision');
+stcAssert(strpos($proxy,'->audit((int)$o[\'id\'],$decision,$reason,$admin)')!==false,'proxy supplement preparation goes through formal WebAdminOrder audit');
+stcAssert(strpos($proxy,'$decision=$key===\'admin_proxy_supplement\'?\'supplement\':\'approve\'')!==false,'proxy action maps to formal supplement decision');
 
 stcAssert(strpos($runner,'system_supplement_timeout')!==false,'scheduler runner exposes supplement timeout');
 stcAssert(strpos($runner,'SupplementTimeoutProcessor')!==false&&strpos($runner,'expireTestInstance')!==false,'runner invokes scoped supplement processor');
