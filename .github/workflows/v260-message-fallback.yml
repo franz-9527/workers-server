@@ -55,7 +55,7 @@ jobs:
         shell: bash
         env:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
-          SOURCE_SHA: 44ff906611608cf27ef950e489bb82a43e6c61c3
+          SOURCE_SHA: 91b7193274194a8a1f4a5f013537177cd40bcc0b
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$GITHUB_SHA" > .message-fallback-result.json
