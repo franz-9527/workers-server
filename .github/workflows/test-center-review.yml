@@ -70,6 +70,7 @@ jobs:
           V260_SHORT_ENTRY_MYSQL_TEST=1 php server/tests/v260_test_center_short_entry_mysql.php
           V260_SINGLE_GRAB_MYSQL_TEST=1 php server/tests/v260_test_center_single_grab_mysql_strict.php
       - name: Full production-service expansion and cleanup
+        if: always()
         env:
           V260_EXPANSION_MYSQL_TEST: '1'
         run: |
