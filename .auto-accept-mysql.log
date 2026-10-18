@@ -1,0 +1,28 @@
+[PASS] MySQL 5.7 connected
+[PASS] production processor accepts due non-demo order
+[PASS] production order completed
+[PASS] production fulfillment accepted
+[PASS] completion submission marked auto accepted
+[PASS] auto review deadline created
+[PASS] production scheduler claim completed
+[PASS] same-version scheduler failure resolved
+[PASS] production commission finalizer invoked once
+[PASS] production deterministic auto-accept event written
+[PASS] production notification projection queued once
+[PASS] production re-run is idempotent after acceptance
+[PASS] blocking dispute prevents production auto accept
+[PASS] blocked production order creates no claim
+[PASS] scoped test auto accept succeeds after deadline clock fixture
+[PASS] scoped result declares test-instance scope
+[PASS] target test order completed
+[PASS] target test fulfillment accepted
+[PASS] neighbor test order remains active
+[PASS] neighbor test order remains submitted
+[PASS] neighbor test order remains unaccepted
+[PASS] scoped test execution does not fabricate global scheduler claim
+[PASS] scoped auto accept writes instance event key
+[PASS] scoped notification projection uses persisted event
+[PASS] scoped ordinary auto accept invokes commission finalizer
+[PASS] review hall sample is blocked from scoped auto accept
+[PASS] scoped auto accept requires active collection receipt evidence
+V2.6.0 auto acceptance processor MySQL 5.7 integration: OK
