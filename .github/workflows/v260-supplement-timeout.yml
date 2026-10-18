@@ -69,6 +69,7 @@ jobs:
             php -l server/tests/v260_supplement_timeout_cleanup_mysql.php
             php -l server/tests/v260_test_center_expansion_mysql.php
             php server/tests/v260_test_center_supplement_timeout_contract.php
+            php -r '$c=file_get_contents("server/app/Foundation/TestCenterComposition.php"); foreach(["DatabaseTestCenterSupplementTimeoutVerificationRepository","DatabaseTestCenterSupplementTimeoutCleanupRepository","DatabaseTestCenterMessageSimulationActionRunner","DatabaseTestCenterMessageProviderFailureActionRunner","DatabaseTestCenterPaidSmsReceiptActionRunner"] as $n){if(strpos($c,$n)===false){fwrite(STDERR,"missing ".$n.PHP_EOL);exit(1);}} echo "composition coexistence: OK".PHP_EOL;'
           } > .supplement-timeout-contract.log 2>&1
           status=$?
           cat .supplement-timeout-contract.log
@@ -117,7 +118,7 @@ jobs:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
-          SOURCE_SHA: bb5293c368642c0426af6dd890cdad21643100a9
+          SOURCE_SHA: db2bb819042628845c712c38c1b337e3b9ca139b
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","mysql57_cleanup":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$CLEANUP_OUTCOME" "$GITHUB_SHA" > .supplement-timeout-result.json
