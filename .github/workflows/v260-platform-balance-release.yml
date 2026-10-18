@@ -108,7 +108,7 @@ jobs:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           SCOPED_OUTCOME: ${{ steps.scoped_mysql.outcome }}
           LEGACY_OUTCOME: ${{ steps.legacy_mysql.outcome }}
-          SOURCE_SHA: f27bd3fcd5bce37b03f5166a9c91ab82fe317393
+          SOURCE_SHA: 25635e29b27861c7fd765153fd318e2b8eed40c4
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","mysql57_scoped":"%s","mysql57_legacy":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$SCOPED_OUTCOME" "$LEGACY_OUTCOME" "$GITHUB_SHA" > .platform-balance-result.json
