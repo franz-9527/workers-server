@@ -1,0 +1,54 @@
+Unable to find image 'php:7.4-cli' locally
+7.4-cli: Pulling from library/php
+a603fa5e3b41: Pulling fs layer
+c428f1a49423: Pulling fs layer
+156740b07ef8: Pulling fs layer
+fb5a4c8af82f: Pulling fs layer
+972155ae644b: Pulling fs layer
+a8e3b94fe6c1: Pulling fs layer
+c77004105467: Pulling fs layer
+d3e4898bfd25: Pulling fs layer
+30f377be4678: Pulling fs layer
+a8e3b94fe6c1: Waiting
+c77004105467: Waiting
+d3e4898bfd25: Waiting
+30f377be4678: Waiting
+fb5a4c8af82f: Waiting
+972155ae644b: Waiting
+c428f1a49423: Verifying Checksum
+c428f1a49423: Download complete
+fb5a4c8af82f: Verifying Checksum
+fb5a4c8af82f: Download complete
+972155ae644b: Verifying Checksum
+972155ae644b: Download complete
+a603fa5e3b41: Download complete
+a8e3b94fe6c1: Download complete
+d3e4898bfd25: Download complete
+30f377be4678: Verifying Checksum
+30f377be4678: Download complete
+c77004105467: Verifying Checksum
+c77004105467: Download complete
+156740b07ef8: Verifying Checksum
+156740b07ef8: Download complete
+a603fa5e3b41: Pull complete
+c428f1a49423: Pull complete
+156740b07ef8: Pull complete
+fb5a4c8af82f: Pull complete
+972155ae644b: Pull complete
+a8e3b94fe6c1: Pull complete
+c77004105467: Pull complete
+d3e4898bfd25: Pull complete
+30f377be4678: Pull complete
+Digest: sha256:620a6b9f4d4feef2210026172570465e9d0c1de79766418d3affd09190a7fda5
+Status: Downloaded newer image for php:7.4-cli
+No syntax errors detected in server/app/Contracts/TestCenterFailureReplay.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterReplayCaptureRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterFailureReplay.php
+No syntax errors detected in server/app/Application/Testing/TestCenter.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/app/Http/Admin/Modules/TestCenterAdminModule.php
+No syntax errors detected in server/views/admin/test-center-detail-v260.php
+No syntax errors detected in server/views/admin/test-center-failure-replay.php
+No syntax errors detected in server/tests/v260_test_center_failure_replay_contract.php
+[FAIL] capture only enriches persisted failed runs
+[PASS] failure replay has explicit discovery and execution contract
