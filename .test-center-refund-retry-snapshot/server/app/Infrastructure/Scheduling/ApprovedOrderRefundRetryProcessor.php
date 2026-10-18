@@ -189,7 +189,7 @@ final class ApprovedOrderRefundRetryProcessor
             throw new RuntimeException('退款状态已变化，未能取得逐笔重试资格');
         }
 
-        // 等价模拟 provider 在受理前网络失败：验证抢占后恢复逻辑，但绝不调用 WeChatPayService。
+        // 等价模拟 provider 在受理前网络失败：验证抢占后恢复逻辑；不触达任何外部退款 provider。
         $this->restoreClaim((int)$row['id'],$claimedOriginalStatus);
 
         $after=$this->db->fetch(
@@ -275,17 +275,18 @@ final class ApprovedOrderRefundRetryProcessor
             "SELECT r.id,r.public_no,r.order_id,r.cancel_request_id,r.amount_cents,r.reason,r.status,
                     r.requested_by_admin_id,r.requested_at,r.wechat_refund_id,
                     p.id payment_order_id,p.public_no payment_no,p.amount_cents payment_total_cents,
-                    p.api_version,p.status payment_status,p.app_id,p.mch_id,p.payer_openid,
-                    p.wechat_prepay_id,p.wechat_transaction_id,
+                    p.api_version,p.status payment_status,
                     o.lifecycle_status,o.refund_status,o.is_demo,
                     c.id cancel_id,c.status cancel_status,c.reason_code cancel_reason_code,c.closed_at cancel_closed_at,
                     d.id dispute_id,d.status dispute_status,d.handled_by dispute_handled_by,
                     d.refund_amount_cents dispute_refund_cents,d.resolved_at dispute_resolved_at";
         $params=['id'=>$refundId];
         if($instanceId!==null){
-            $sql.=",tf.id test_fact_id,tf.instance_id test_instance_id,tf.simulated_provider";
+            $sql.=",p.app_id,p.mch_id,p.payer_openid,p.wechat_prepay_id,p.wechat_transaction_id,
+                    tf.id test_fact_id,tf.instance_id test_instance_id,tf.simulated_provider";
         }else{
-            $sql.=",NULL test_fact_id,NULL test_instance_id,NULL simulated_provider";
+            $sql.=",NULL app_id,NULL mch_id,NULL payer_openid,NULL wechat_prepay_id,NULL wechat_transaction_id,
+                    NULL test_fact_id,NULL test_instance_id,NULL simulated_provider";
         }
         $sql.=
             " FROM refunds r
