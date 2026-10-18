@@ -57,7 +57,7 @@ stcAssert(strpos($processor,'WeChatPayService')===false,'processor contains no W
 stcAssert(strpos($processor,'scheduler_runs')===false,'processor does not use global scheduler runs as instance evidence');
 
 stcAssert(strpos($proxy,'admin_proxy_supplement')!==false,'proxy test flow exposes formal supplement preparation');
-stcAssert(strpos($proxy,"->audit((int)$o['id'],$decision,$reason,$admin)")!==false,'proxy supplement preparation goes through formal WebAdminOrder audit');
+stcAssert(strpos($proxy,"->audit((int)\$o['id'],\$decision,\$reason,\$admin)")!==false,'proxy supplement preparation goes through formal WebAdminOrder audit');
 stcAssert(strpos($proxy,"\$decision=\$key==='admin_proxy_supplement'?'supplement':'approve'")!==false,'proxy action maps to formal supplement decision');
 
 stcAssert(strpos($runner,'system_supplement_timeout')!==false,'scheduler runner exposes supplement timeout');
