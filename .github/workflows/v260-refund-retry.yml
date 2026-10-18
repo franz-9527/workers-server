@@ -112,7 +112,7 @@ jobs:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           MYSQL_SCOPED_OUTCOME: ${{ steps.mysql_scoped.outcome }}
           MYSQL_LEGACY_OUTCOME: ${{ steps.mysql_legacy.outcome }}
-          SOURCE_SHA: d1cdf367b607c0abc2ab19ba22c2751b6260af5f
+          SOURCE_SHA: 77eddefa14aa38564349efbb4dd42440e519cd0c
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","mysql57_scoped":"%s","mysql57_legacy":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_SCOPED_OUTCOME" "$MYSQL_LEGACY_OUTCOME" "$GITHUB_SHA" > .refund-retry-result.json
