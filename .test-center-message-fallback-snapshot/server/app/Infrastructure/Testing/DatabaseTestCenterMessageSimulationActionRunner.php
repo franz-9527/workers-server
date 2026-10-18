@@ -178,7 +178,7 @@ final class DatabaseTestCenterMessageSimulationActionRunner implements TestCente
         return(int)$this->db->fetchValue(
             'SELECT COUNT(*) FROM message_outbox WHERE payload_json LIKE :id_needle OR payload_json LIKE :no_needle OR business_key LIKE :business_needle',
             [
-                'id_needle'=>'%\"order_id\":'.$orderId.'%',
+                'id_needle'=>'%"order_id":'.$orderId.'%',
                 'no_needle'=>'%'.$orderNo.'%',
                 'business_needle'=>'%'.$orderNo.'%',
             ]
