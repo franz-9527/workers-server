@@ -83,7 +83,7 @@ jobs:
         env:
           CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
           MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
-          SOURCE_SHA: 0fbfac746aa9a1d3ca4b8236e782270f0eeaa51c
+          SOURCE_SHA: e7cfa41d722ccb43383f577243b0982dbb0a58eb
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$GITHUB_SHA" > .assignment-timeout-result.json
