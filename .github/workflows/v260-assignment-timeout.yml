@@ -1,0 +1,97 @@
+name: V2.6.0 Scoped Assignment Timeout
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-assignment-timeout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  assignment-timeout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.test-center-assignment-timeout-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-assignment-timeout-snapshot -type f -print0)
+      - name: PHP 7.4 syntax and safety contract
+        id: contract
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          docker run --rm -v "$PWD:/app" -w /app php:7.4-cli bash -lc '
+            php -l server/app/Infrastructure/Scheduling/AssignmentTimeoutProcessor.php
+            php -l server/app/Services/SchedulerService.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterActionSafetyRunner.php
+            php -l server/app/Foundation/TestCenterComposition.php
+            php -l server/views/admin/test-center-scheduler-diagnostics.php
+            php -l server/tests/v260_test_center_assignment_timeout_contract.php
+            php -l server/tests/v260_assignment_timeout_processor_mysql.php
+            php server/tests/v260_test_center_assignment_timeout_contract.php
+          ' > .assignment-timeout-contract.log 2>&1
+          status=$?
+          cat .assignment-timeout-contract.log
+          exit "$status"
+      - name: MySQL 5.7 processor integration
+        id: mysql
+        continue-on-error: true
+        env:
+          V260_ASSIGNMENT_TIMEOUT_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: |
+          set -uo pipefail
+          php -m | grep -qi pdo_mysql
+          php server/tests/v260_assignment_timeout_processor_mysql.php > .assignment-timeout-mysql.log 2>&1
+          status=$?
+          cat .assignment-timeout-mysql.log
+          exit "$status"
+      - name: Record verification result
+        if: always()
+        shell: bash
+        env:
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
+          SOURCE_SHA: 0fbfac746aa9a1d3ca4b8236e782270f0eeaa51c
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$GITHUB_SHA" > .assignment-timeout-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .assignment-timeout-result.json .assignment-timeout-contract.log .assignment-timeout-mysql.log
+          git commit -m "test: record scoped assignment timeout verification $CONTRACT_OUTCOME/$MYSQL_OUTCOME"
+          git push
+      - name: Fail workflow when verification failed
+        if: steps.contract.outcome != 'success' || steps.mysql.outcome != 'success'
+        run: exit 1
