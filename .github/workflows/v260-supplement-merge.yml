@@ -1,0 +1,93 @@
+# source_candidate: 1981e1dde627ab2e541dd625827334a752b9026c
+name: V2.6.0 Supplement Merge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-supplement-merge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v260-supplement-merge
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql, json
+          coverage: none
+
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.supplement-merge-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .supplement-merge-snapshot -type f -print0)
+
+      - name: PHP 7.4 syntax and contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l server/app/Infrastructure/Scheduling/SupplementTimeoutProcessor.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterSupplementTimeoutVerificationRepository.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterSupplementTimeoutCleanupRepository.php
+          php -l server/app/Services/SchedulerService.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterProxyOrderActionRunner.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+          php -l server/app/Foundation/TestCenterComposition.php
+          php -l server/views/admin/test-center-scheduler-diagnostics.php
+          php -l server/tests/v260_test_center_supplement_timeout_contract.php
+          php -l server/tests/v260_supplement_timeout_processor_mysql.php
+          php -l server/tests/v260_supplement_timeout_cleanup_mysql.php
+          php server/tests/v260_test_center_supplement_timeout_contract.php
+          php -r '$c=file_get_contents("server/app/Foundation/TestCenterComposition.php"); foreach(["DatabaseTestCenterSupplementTimeoutVerificationRepository","DatabaseTestCenterSupplementTimeoutCleanupRepository","DatabaseTestCenterMessageSimulationActionRunner","DatabaseTestCenterMessageProviderFailureActionRunner","DatabaseTestCenterPaidSmsReceiptActionRunner"] as $n){if(strpos($c,$n)===false){fwrite(STDERR,"missing ".$n.PHP_EOL);exit(1);}} echo "composition coexistence: OK".PHP_EOL;'
+
+      - name: MySQL 5.7 supplement processor
+        env:
+          V260_SUPPLEMENT_TIMEOUT_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: php server/tests/v260_supplement_timeout_processor_mysql.php
+
+      - name: MySQL 5.7 supplement cleanup
+        env:
+          V260_SUPPLEMENT_CLEANUP_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: php server/tests/v260_supplement_timeout_cleanup_mysql.php
