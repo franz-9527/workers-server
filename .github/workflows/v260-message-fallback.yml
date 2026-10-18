@@ -1,0 +1,70 @@
+name: V2.6.0 Message Fallback Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-message-fallback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  message-fallback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.test-center-message-fallback-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-message-fallback-snapshot -type f -print0)
+
+      - name: PHP 7.4 syntax and safety contract
+        id: contract
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          {
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterMessageSimulationActionRunner.php
+            php -l server/app/Foundation/TestCenterComposition.php
+            php -l server/views/admin/test-center-detail-v260.php
+            php -l server/views/admin/test-center-message-simulation-actions.php
+            php -l server/tests/v260_test_center_message_fallback_contract.php
+            php server/tests/v260_test_center_message_fallback_contract.php
+          } > .message-fallback-contract.log 2>&1
+          status=$?
+          cat .message-fallback-contract.log
+          exit "$status"
+
+      - name: Record verification result
+        if: always()
+        shell: bash
+        env:
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          SOURCE_SHA: fd3d8e33771cc28c34591e9c5e6cd5765e682ae6
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$GITHUB_SHA" > .message-fallback-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898242+github-actions[bot]@users.noreply.github.com"
+          git add .message-fallback-result.json .message-fallback-contract.log
+          git commit -m "test: record message fallback verification $CONTRACT_OUTCOME"
+          git push
+
+      - name: Fail workflow when verification failed
+        if: steps.contract.outcome != 'success'
+        run: exit 1
