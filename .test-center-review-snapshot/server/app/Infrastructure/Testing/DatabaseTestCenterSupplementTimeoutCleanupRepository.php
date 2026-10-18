@@ -46,6 +46,11 @@ final class DatabaseTestCenterSupplementTimeoutCleanupRepository implements Test
         if(!$recognized)return$base;
 
         $ownership=$this->ownership($instance,(array)$order);
+        $ownedDeadlines=count((array)$ownership['deadlines']);
+        if($ownedDeadlines>0&&empty($ownership['blocking']['supplement_timeout_deadline_unowned'])&&isset($blocking['order_deadlines_unadapted'])){
+            $remaining=(int)$blocking['order_deadlines_unadapted']-$ownedDeadlines;
+            if($remaining<=0)unset($blocking['order_deadlines_unadapted']);else $blocking['order_deadlines_unadapted']=$remaining;
+        }
         foreach((array)$ownership['blocking']as$key=>$count)$blocking[$key]=$count;
         $allowed=empty($blocking);
         $plan=[
@@ -54,6 +59,7 @@ final class DatabaseTestCenterSupplementTimeoutCleanupRepository implements Test
             'instance_version'=>(int)($instance['version']??0),
             'order_id'=>(int)$order['id'],
             'recognized'=>$recognized,
+            'deadlines'=>$ownership['deadlines'],
             'request_id'=>(int)$ownership['request_id'],
             'decision_id'=>(int)$ownership['decision_id'],
             'refund_id'=>(int)$ownership['refund_id'],
@@ -66,6 +72,7 @@ final class DatabaseTestCenterSupplementTimeoutCleanupRepository implements Test
             'decision_id'=>(int)$ownership['decision_id'],
             'refund_id'=>(int)$ownership['refund_id'],
             'refund_amount_cents'=>(int)$ownership['refund_amount_cents'],
+            'deadline_digest'=>$this->digest($ownership['deadlines']),
         ];
         $base['inner_plan_digest']=(string)$base['plan_digest'];
         $base['plan_digest']=$this->digest($plan);
@@ -111,12 +118,17 @@ final class DatabaseTestCenterSupplementTimeoutCleanupRepository implements Test
 
             $ownership=$this->ownership($instance,$order);
             if(!empty($ownership['blocking'])
+                ||!hash_equals((string)$fresh['supplement_timeout_cleanup']['deadline_digest'],$this->digest($ownership['deadlines']))
                 ||(int)$ownership['request_id']!==(int)$fresh['supplement_timeout_cleanup']['request_id']
                 ||(int)$ownership['decision_id']!==(int)$fresh['supplement_timeout_cleanup']['decision_id']
                 ||(int)$ownership['refund_id']!==(int)$fresh['supplement_timeout_cleanup']['refund_id']){
                 throw new TestCenterException('补资料超时清理最终所有权校验失败。','TEST_SUPPLEMENT_TIMEOUT_CLEANUP_BOUNDARY',409,$ownership);
             }
 
+            foreach($ownership['deadlines'] as $deadline){
+                $removed=$db->execute("DELETE FROM order_deadlines WHERE id=:deadline AND order_id=:order_id AND deadline_type='audit_supplement_timeout' AND status='cancelled'",['deadline'=>(int)$deadline['id'],'order_id'=>$orderId]);
+                if($removed!==1)throw new TestCenterException('补资料期限在清理时发生变化。','TEST_SUPPLEMENT_TIMEOUT_CLEANUP_BOUNDARY',409);
+            }
             $db->execute('DELETE FROM order_cancel_decisions WHERE order_id=:id',['id'=>$orderId]);
             $db->execute('DELETE FROM refunds WHERE order_id=:id',['id'=>$orderId]);
             $db->execute('DELETE FROM order_cancel_requests WHERE order_id=:id',['id'=>$orderId]);
@@ -201,7 +213,22 @@ final class DatabaseTestCenterSupplementTimeoutCleanupRepository implements Test
             $risk=(int)$this->db->fetchValue('SELECT COUNT(*) FROM order_cancellation_risk_scores WHERE order_id=:id',['id'=>$orderId]);
             if($risk>0)$blocking['supplement_timeout_risk_unexpected']=$risk;
         }
+        $deadlines=[];
+        if($this->db->tableExists('order_deadlines')){
+            $deadlines=$this->db->fetchAll("SELECT * FROM order_deadlines WHERE order_id=:id AND deadline_type='audit_supplement_timeout' ORDER BY id",['id'=>$orderId]);
+            $run=$this->db->fetch("SELECT after_summary_json FROM test_runs WHERE instance_id=:instance AND action_key='system_supplement_timeout' AND actor_role='system' AND operation_mode='real_service' AND result='passed' ORDER BY id DESC LIMIT 1",['instance'=>$instanceId]);
+            $summary=json_decode((string)($run['after_summary_json']??''),true);$business=(array)($summary['business']??[]);
+            $deadline=count($deadlines)===1?$deadlines[0]:null;
+            if(!$deadline||(string)$deadline['status']!=='cancelled'||empty($deadline['processed_at'])
+                ||(string)($business['scope']??'')!=='test_instance'
+                ||(int)($business['test_instance_id']??0)!==$instanceId||(int)($business['order_id']??0)!==$orderId
+                ||(int)($business['deadline_id']??0)!==(int)$deadline['id']
+                ||(string)($business['deadline_at']??'')!==(string)$deadline['due_at']){
+                $blocking['supplement_timeout_deadline_unowned']=max(1,count($deadlines));
+            }
+        }
         return[
+            'deadlines'=>$deadlines,
             'request_id'=>(int)($request['id']??0),
             'decision_id'=>(int)($decision['id']??0),
             'refund_id'=>(int)($refund['id']??0),
