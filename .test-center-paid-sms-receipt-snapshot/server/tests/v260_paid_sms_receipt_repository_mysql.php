@@ -161,7 +161,8 @@ namespace {
 
     $statuses=[1=>'provider_accepted',2=>'uncertain',3=>'provider_accepted',4=>'delivered',5=>'provider_accepted'];
     foreach($statuses as$id=>$status){
-        $deadline=$id===3?'DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 HOUR)':'DATE_ADD(UTC_TIMESTAMP(),INTERVAL 6 HOUR)';
+        $attempted=$id===3?'DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 DAY)':'DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 HOUR)';
+        $deadline=$id===3?'DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 DAY)':'DATE_ADD(UTC_TIMESTAMP(),INTERVAL 6 HOUR)';
         $db->execute(
             "INSERT INTO order_worker_sms_invites(
                 id,public_no,order_id,user_id,batch_id,wallet_reservation_id,outbox_id,delivery_status,billing_status,
@@ -169,7 +170,7 @@ namespace {
                 active_dedupe_key,fee_cents_snapshot,updated_at
              ) VALUES(
                 :id,:public,900,42,1,:reservation,NULL,:delivery,'held',
-                :mobile,0,DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 HOUR),".$deadline.",NULL,:dedupe,100,UTC_TIMESTAMP()
+                :mobile,0,".$attempted.",".$deadline.",NULL,:dedupe,100,UTC_TIMESTAMP()
              )",
             [
                 'id'=>$id,'public'=>'PAID-'.$id,'reservation'=>$id,'delivery'=>$status,
