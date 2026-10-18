@@ -1,0 +1,48 @@
+name: Historical checksum upgrade review
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/upgrade-checksum-review.yml', '.upgrade-checksum-review-snapshot/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: upgrade-checksum-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mysql57-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: upgrade_checksum_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    defaults:
+      run:
+        working-directory: .upgrade-checksum-review-snapshot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: pdo_mysql, mbstring, openssl, fileinfo, curl, simplexml
+          coverage: none
+      - name: Verify all canonical migration checksums
+        run: php server/tests/upgrade_manifest_checksums_contract.php
+      - name: Verify V2.6.0 migration contract
+        run: php server/tests/v260_upgrade_manifest_contract.php
+      - name: Upgrade actual pre-hall V2.5.0 history to V2.6.0
+        env:
+          UPGRADE_HISTORICAL_MYSQL_TEST: '1'
+          UPGRADE_HISTORICAL_SCHEMA: fixtures/pre250-schema.sql
+          UPGRADE_HISTORICAL_SQL: fixtures/legacy-2.5.0.sql
+          UPGRADE_DB_PASSWORD: root
+        run: php server/tests/upgrade_historical_checksum_alias_contract.php
