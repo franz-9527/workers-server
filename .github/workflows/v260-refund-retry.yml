@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r -d '' file; do
-            target="\${file#.test-center-refund-retry-snapshot/}"
+            target="${file#.test-center-refund-retry-snapshot/}"
             mkdir -p "$(dirname "$target")"
             cp "$file" "$target"
           done < <(find .test-center-refund-retry-snapshot -type f -print0)
