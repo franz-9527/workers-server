@@ -42,4 +42,6 @@ jobs:
         run: |
           actual="$(sha256sum server/database/upgrades/2.6.0.sql | awk '{print $1}')"
           expected="$(php -r '$m=json_decode(file_get_contents("server/database/upgrades/manifest.json"),true); foreach($m as $row){ if(($row["version"]??"")==="2.6.0"){echo $row["checksum"]; exit;}} exit(1);')"
+          echo "actual=$actual"
+          echo "expected=$expected"
           test "$actual" = "$expected"
