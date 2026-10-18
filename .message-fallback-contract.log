@@ -16,5 +16,11 @@ No syntax errors detected in server/tests/v260_test_center_message_fallback_cont
 [PASS] probe verifies real outbox remains unchanged
 [PASS] successful subscription path suppresses SMS fallback
 [PASS] authorization/quota failure path simulates SMS fallback
-PHP Notice:  Undefined variable: identity in /home/runner/work/workers-server/workers-server/server/tests/v260_test_center_message_fallback_contract.php on line 39
-[FAIL] probe idempotency business key preserves long-key uniqueness
+[PASS] probe idempotency business key preserves long-key uniqueness
+[PASS] composition wires message simulation decorator
+[PASS] replay capture wraps message simulation action chain
+[PASS] v260 detail renders message simulation panel
+[PASS] UI submits only server-selected source and bounded outcome
+[PASS] UI states external delivery boundary
+[PASS] UI states sensitive delivery addresses are not read
+Test-center message fallback simulation contract passed.
