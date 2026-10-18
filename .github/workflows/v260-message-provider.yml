@@ -1,0 +1,80 @@
+name: V2.6.0 Message Provider Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-message-provider.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  message-provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql, json
+          coverage: none
+
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.test-center-message-provider-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-message-provider-snapshot -type f -print0)
+
+      - name: PHP 7.4 syntax and message policy contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l server/app/Domain/Messaging/MessageDeliveryFailurePolicy.php
+          php -l server/app/Application/Messaging/MessageOutboxDispatch.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterMessageProviderFailureActionRunner.php
+          php -l server/app/Infrastructure/Testing/DatabaseTestCenterMessageSimulationActionRunner.php
+          php -l server/app/Foundation/TestCenterComposition.php
+          php -l server/views/admin/test-center-detail-v260.php
+          php -l server/views/admin/test-center-message-provider-actions.php
+          php -l server/views/admin/test-center-message-simulation-actions.php
+          php -l server/tests/v260_message_delivery_failure_policy.php
+          php -l server/tests/v260_message_outbox_dispatch_policy.php
+          php -l server/tests/v260_test_center_message_fallback_contract.php
+          php -l server/tests/v260_test_center_message_provider_contract.php
+          php -l server/tests/v260_test_center_message_provider_mysql.php
+          php server/tests/v260_message_delivery_failure_policy.php
+          php server/tests/v260_message_outbox_dispatch_policy.php
+          php server/tests/v260_test_center_message_fallback_contract.php
+          php server/tests/v260_test_center_message_provider_contract.php
+
+      - name: MySQL 5.7 provider probe integration
+        env:
+          V260_MESSAGE_PROVIDER_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: php server/tests/v260_test_center_message_provider_mysql.php
