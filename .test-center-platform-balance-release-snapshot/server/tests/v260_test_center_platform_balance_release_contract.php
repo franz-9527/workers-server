@@ -32,18 +32,18 @@ pbrAssert(strpos($releaser,'function releaseOne(Database $db,int $orderId)')!==f
 pbrAssert(strpos($releaser,'function releaseTestInstance(Database $db,int $instanceId,bool $advanceClock=false)')!==false,'scoped test-instance release entry added');
 pbrAssert(strpos($releaser,'TestingEnvironmentPolicy::active()')!==false,'scoped release is testing-only');
 pbrAssert(strpos($releaser,"SELECT * FROM test_instances WHERE id=:id FOR UPDATE")!==false,'scoped release locks exact test instance');
-pbrAssert(strpos($releaser,"(int)($order['is_demo']??0)!=$demoExpected")!==false,'shared release enforces production/demo domain');
+pbrAssert(strpos($releaser,"(int)(\$order['is_demo']??0)!=\$demoExpected")!==false,'shared release enforces production/demo domain');
 pbrAssert(strpos($releaser,'BXDEMOHALL')!==false,'review hall fixtures are protected');
 pbrAssert(strpos($releaser,'$dueTs=$acceptedTs+(int)$row[\'worker_balance_freeze_days_snapshot\']*86400')!==false,'scoped release derives due time from accepted_at plus frozen snapshot');
 pbrAssert(strpos($releaser,'$asOf=$advanceClock?max(time(),$dueTs+1):time()')!==false,'scoped release uses deadline plus one second clock fixture');
 pbrAssert(strpos($releaser,"entry_type='platform_order_income_frozen'")!==false,'release requires exact frozen source ledger');
 pbrAssert(strpos($releaser,"'platform_order_income_release'")!==false,'release writes dedicated transfer ledger');
-pbrAssert(strpos($releaser,"'available'=>$amount")!==false&&strpos($releaser,"'frozen'=>-$amount")!==false,'release moves frozen amount to available balance');
+pbrAssert(strpos($releaser,"'available'=>\$amount")!==false&&strpos($releaser,"'frozen'=>-\$amount")!==false,'release moves frozen amount to available balance');
 pbrAssert(strpos($releaser,'hasBlockingBusiness')!==false,'release preserves business blockers');
 pbrAssert(strpos($releaser,'test-platform-balance-release:')!==false,'scoped release writes instance-keyed event');
 pbrAssert(strpos($releaser,'if($testInstanceId<1)')!==false&&strpos($releaser,"job_name='platform_balance_release'")!==false,'only production release resolves scheduler failures');
 
-pbrAssert(strpos($builder,"$freezeDays=$variant['settlement']==='platform_balance'?3:0")!==false,'platform balance test scenarios use deterministic three-day freeze snapshot');
+pbrAssert(strpos($builder,"\$freezeDays=\$variant['settlement']==='platform_balance'?3:0")!==false,'platform balance test scenarios use deterministic three-day freeze snapshot');
 pbrAssert(strpos($builder,'worker_balance_freeze_days_snapshot=:freeze_days')!==false,'test builder persists freeze snapshot without schema changes');
 
 pbrAssert(strpos($runner,"'system_platform_balance_release'")!==false,'platform test runner exposes balance release action');
@@ -60,7 +60,7 @@ pbrAssert(strpos($view,'system_platform_balance_release')!==false&&strpos($view,
 pbrAssert(strpos($view,'不扫描其它平台订单')!==false,'scheduler diagnostics confirmation states instance-only scope');
 pbrAssert(strpos($platformView,'system_platform_balance_release')!==false,'platform flow card exposes balance release action');
 
-pbrAssert(strpos($ownership,"platform-order:'.$id.':worker-income-release")!==false,'platform finance ownership recognizes release ledger idempotency key');
+pbrAssert(strpos($ownership,"platform-order:'.\$id.':worker-income-release")!==false,'platform finance ownership recognizes release ledger idempotency key');
 pbrAssert(strpos($ownership,"'platform_order_income_release'")!==false,'platform finance ownership validates release entry type');
 pbrAssert(strpos($ownership,'(int)$release[\'available_delta_cents\']===$credit')!==false,'platform finance ownership validates available transfer');
 pbrAssert(strpos($ownership,'(int)$release[\'frozen_delta_cents\']===-$credit')!==false,'platform finance ownership validates frozen reversal');
