@@ -1,4 +1,5 @@
 name: V2.6.0 Scoped Auto Review
+# Cleanup regression dependencies staged explicitly for isolated verification.
 
 on:
   push:
