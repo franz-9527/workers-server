@@ -51,7 +51,7 @@ jobs:
         shell: bash
         env:
           VERIFY_OUTCOME: ${{ steps.verify.outcome }}
-          SOURCE_SHA: 4a6bb4f26c3a81b9910dc7172fa60be72b0d0546
+          SOURCE_SHA: 17977e221faa2bb55eb63a8ac82e3f83b32d8de4
         run: |
           set -euo pipefail
           printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$VERIFY_OUTCOME" "$GITHUB_SHA" > .test-center-replay-result.json
