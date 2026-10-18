@@ -108,7 +108,7 @@ namespace {
         'order_pricing_items'=>"order_id BIGINT,item_source VARCHAR(32),description VARCHAR(100),note VARCHAR(500),quantity DECIMAL(12,3),unit VARCHAR(20),unit_price_cents BIGINT,amount_cents BIGINT,sort_order INT,status VARCHAR(32),updated_at DATETIME NULL",
         'payment_orders'=>"order_id BIGINT,business_type VARCHAR(32),status VARCHAR(32),amount_cents BIGINT",
         'test_payment_facts'=>"instance_id BIGINT,payment_order_id BIGINT",
-        'worker_balance_ledger'=>"business_type VARCHAR(64),business_id BIGINT",
+        'worker_balance_ledger'=>"business_type VARCHAR(64),business_id BIGINT,entry_type VARCHAR(64),amount_cents BIGINT,available_delta_cents BIGINT,frozen_delta_cents BIGINT,idempotency_key VARCHAR(160),status VARCHAR(24)",
         'message_outbox'=>"payload_json LONGTEXT,business_key VARCHAR(128)",
         'notifications'=>"recipient_type VARCHAR(32),recipient_id BIGINT,channel VARCHAR(32),data_json LONGTEXT",
         'order_worker_contact_reveal_requests'=>"order_id BIGINT,worker_id BIGINT,context_type VARCHAR(32),after_sale_id BIGINT NULL,status VARCHAR(32),review_note VARCHAR(500),reviewed_at DATETIME NULL,updated_at DATETIME NULL",
