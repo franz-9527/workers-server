@@ -32,7 +32,7 @@ pbrAssert(strpos($releaser,'function releaseOne(Database $db,int $orderId)')!==f
 pbrAssert(strpos($releaser,'function releaseTestInstance(Database $db,int $instanceId,bool $advanceClock=false)')!==false,'scoped test-instance release entry added');
 pbrAssert(strpos($releaser,'TestingEnvironmentPolicy::active()')!==false,'scoped release is testing-only');
 pbrAssert(strpos($releaser,"SELECT * FROM test_instances WHERE id=:id FOR UPDATE")!==false,'scoped release locks exact test instance');
-pbrAssert(strpos($releaser,"(int)(\$order['is_demo']??0)!=\$demoExpected")!==false,'shared release enforces production/demo domain');
+pbrAssert(strpos($releaser,"(int)(\$order['is_demo']??0)!==\$demoExpected")!==false,'shared release enforces production/demo domain');
 pbrAssert(strpos($releaser,'BXDEMOHALL')!==false,'review hall fixtures are protected');
 pbrAssert(strpos($releaser,'$dueTs=$acceptedTs+(int)$row[\'worker_balance_freeze_days_snapshot\']*86400')!==false,'scoped release derives due time from accepted_at plus frozen snapshot');
 pbrAssert(strpos($releaser,'$asOf=$advanceClock?max(time(),$dueTs+1):time()')!==false,'scoped release uses deadline plus one second clock fixture');
