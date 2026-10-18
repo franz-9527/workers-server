@@ -1,0 +1,103 @@
+name: V2.6.0 Scoped Auto Review
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-auto-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.test-center-auto-review-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-auto-review-snapshot -type f -print0)
+      - name: PHP 7.4 syntax and safety contract
+        id: contract
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          docker run --rm -v "$PWD:/app" -w /app php:7.4-cli bash -lc '
+            php -l server/app/Infrastructure/Scheduling/AutoReviewProcessor.php
+            php -l server/app/Infrastructure/Persistence/DatabaseReviewRepository.php
+            php -l server/app/Services/SchedulerService.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterAutoReviewVerificationRepository.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterAutoReviewCleanupRepository.php
+            php -l server/app/Foundation/TestCenterComposition.php
+            php -l server/views/admin/test-center-scheduler-diagnostics.php
+            php -l server/tests/v260_test_center_auto_review_contract.php
+            php -l server/tests/v260_auto_review_processor_mysql.php
+            php -l server/tests/v260_test_center_m2_refund_contract.php
+            php -l server/tests/v260_test_center_m2_repair_contract.php
+            php -l server/tests/v260_test_center_m2_negotiation_contract.php
+            php -l server/tests/v260_test_center_m2_fulfillment_contract.php
+            php server/tests/v260_test_center_auto_review_contract.php
+          ' > .auto-review-contract.log 2>&1
+          status=$?
+          cat .auto-review-contract.log
+          exit "$status"
+      - name: MySQL 5.7 processor integration
+        id: mysql
+        continue-on-error: true
+        env:
+          V260_AUTO_REVIEW_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        shell: bash
+        run: |
+          set -uo pipefail
+          php -m | grep -qi pdo_mysql
+          php server/tests/v260_auto_review_processor_mysql.php > .auto-review-mysql.log 2>&1
+          status=$?
+          cat .auto-review-mysql.log
+          exit "$status"
+      - name: Record verification result
+        if: always()
+        shell: bash
+        env:
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          MYSQL_OUTCOME: ${{ steps.mysql.outcome }}
+          SOURCE_SHA: 82fd323fd54c330532627e4bbba41223700bf552
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","mysql57_processor":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$CONTRACT_OUTCOME" "$MYSQL_OUTCOME" "$GITHUB_SHA" > .auto-review-result.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .auto-review-result.json .auto-review-contract.log .auto-review-mysql.log
+          git commit -m "test: record scoped auto review verification $CONTRACT_OUTCOME/$MYSQL_OUTCOME"
+          git push
+      - name: Fail workflow when verification failed
+        if: steps.contract.outcome != 'success' || steps.mysql.outcome != 'success'
+        run: exit 1
