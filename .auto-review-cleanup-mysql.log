@@ -1,7 +1,13 @@
-PHP Warning:  require_once(/home/runner/work/workers-server/workers-server/server/app/Contracts/TestCenterRepository.php): Failed to open stream: No such file or directory in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php on line 19
-PHP Stack trace:
-PHP   1. {main}() /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php:0
-PHP Fatal error:  Uncaught Error: Failed opening required '/home/runner/work/workers-server/workers-server/server/app/Contracts/TestCenterRepository.php' (include_path='.:/usr/share/php') in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php:19
-Stack trace:
-#0 {main}
-  thrown in /home/runner/work/workers-server/workers-server/server/tests/v260_auto_review_cleanup_mysql.php on line 19
+[PASS] cleanup MySQL 5.7 connected
+[PASS] owned scoped auto review is adapted out of base cleanup blocker
+[PASS] cleanup preview records exact owned review
+[PASS] owned auto review deletion continues into inner cleanup
+[PASS] inner cleanup receives clean post-review plan
+[PASS] owned scoped auto review deleted
+[PASS] unrelated prior review preserved
+[PASS] shared rating summary recomputed after cleanup
+[PASS] shared rating average restored after cleanup
+[PASS] worker profile rating restored after cleanup
+[PASS] review attachment blocks scoped auto-review cleanup
+[PASS] cleanup reports unowned review attachment
+V2.6.0 auto review cleanup MySQL 5.7 integration: OK
