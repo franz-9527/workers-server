@@ -52,7 +52,7 @@ assignmentTimeoutAssert(strpos($runner,'expireTestInstance')!==false,'test-cente
 assignmentTimeoutAssert(strpos($runner,'LegacySchedulerGateway')===false&&strpos($runner,'SchedulerRunner')===false,'test-center runner cannot invoke global scheduler gateway');
 
 assignmentTimeoutAssert(strpos($inspector,"'system_assignment_timeout'")!==false&&strpos($inspector,"'scoped_test_action'")!==false,'scheduler diagnostics advertises scoped timeout capability');
-assignmentTimeoutAssert(strpos($safety,"strpos($actionKey,'system_')===0")!==false,'outer action safety records scheduler actor as system');
+assignmentTimeoutAssert(strpos($safety,"strpos(\$actionKey,'system_')===0")!==false,'outer action safety records scheduler actor as system');
 assignmentTimeoutAssert(strpos($composition,'new DatabaseTestCenterSchedulerActionRunner')!==false,'composition inserts scoped scheduler runner inside shared safety chain');
 assignmentTimeoutAssert(strpos($view,'推进到超时并执行')!==false,'admin scheduler diagnostics renders scoped timeout control');
 assignmentTimeoutAssert(strpos($view,'不会扫描其它订单')!==false,'admin confirmation states instance-only execution boundary');
