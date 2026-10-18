@@ -1,0 +1,80 @@
+name: Test center review PHP74 MySQL57
+on:
+  push:
+    branches: [main]
+    paths: ['.test-center-review-snapshot/**', '.github/workflows/test-center-review.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: test-center-review-main
+  cancel-in-progress: true
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      V250_DB_NAME: worker_test
+      V260_DB_NAME: worker_test
+      V250_DB_HOST: 127.0.0.1
+      V260_DB_HOST: 127.0.0.1
+      V250_DB_USER: root
+      V260_DB_USER: root
+      V250_DB_PASSWORD: root
+      V260_DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql, json, fileinfo
+          coverage: none
+      - name: Materialize audited source
+        run: cp -R .test-center-review-snapshot/server/. server/
+      - name: PHP 7.4 lint
+        run: find server/app -name '*.php' -print0 | xargs -0 -n1 php -l > /tmp/test-center-review-lint.log
+      - name: MySQL 5.7 integration suites
+        run: |
+          set -euo pipefail
+          V260_REFUND_RETRY_MYSQL_TEST=1 php server/tests/v260_approved_refund_retry_processor_mysql.php
+          V260_ASSIGNMENT_TIMEOUT_MYSQL_TEST=1 php server/tests/v260_assignment_timeout_processor_mysql.php
+          V260_AUTO_ACCEPT_MYSQL_TEST=1 php server/tests/v260_auto_accept_processor_mysql.php
+          V260_AUTO_CANCEL_CLEANUP_MYSQL_TEST=1 php server/tests/v260_auto_cancel_cleanup_mysql.php
+          V260_AUTO_CANCEL_MYSQL_TEST=1 php server/tests/v260_auto_cancel_processor_mysql.php
+          V260_AUTO_REVIEW_CLEANUP_MYSQL_TEST=1 php server/tests/v260_auto_review_cleanup_mysql.php
+          V260_AUTO_REVIEW_MYSQL_TEST=1 php server/tests/v260_auto_review_processor_mysql.php
+          V260_MEASUREMENT_ACCEPT_MYSQL_TEST=1 php server/tests/v260_measurement_accept_processor_mysql.php
+          V260_PAID_SMS_REPOSITORY_MYSQL_TEST=1 php server/tests/v260_paid_sms_receipt_repository_mysql.php
+          V260_PLATFORM_BALANCE_RELEASE_MYSQL_TEST=1 php server/tests/v260_platform_balance_release_mysql.php
+          V260_SUPPLEMENT_CLEANUP_MYSQL_TEST=1 php server/tests/v260_supplement_timeout_cleanup_mysql.php
+          V260_SUPPLEMENT_TIMEOUT_MYSQL_TEST=1 php server/tests/v260_supplement_timeout_processor_mysql.php
+          V260_DISPUTE_FINANCE_CLEANUP_MYSQL_TEST=1 php server/tests/v260_test_center_dispute_finance_cleanup_mysql_strict.php
+          V260_DISPUTE_FINANCE_MYSQL_TEST=1 php server/tests/v260_test_center_dispute_finance_mysql_strict.php
+          V260_M2_SAFETY_MYSQL_TEST=1 php server/tests/v260_test_center_m2_safety_mysql_strict.php
+          V260_MEASUREMENT_MYSQL_TEST=1 php server/tests/v260_test_center_measurement_mysql_strict.php
+          V260_MEASUREMENT_TAIL_MYSQL_TEST=1 php server/tests/v260_test_center_measurement_tail_mysql_strict.php
+          V260_MESSAGE_PROVIDER_MYSQL_TEST=1 php server/tests/v260_test_center_message_provider_mysql.php
+          V260_ORDINARY_FLOW_MYSQL_TEST=1 php server/tests/v260_test_center_ordinary_flow_mysql_strict.php
+          V260_PAID_SMS_RECEIPT_MYSQL_TEST=1 php server/tests/v260_test_center_paid_sms_receipt_mysql.php
+          V260_PLATFORM_MEASUREMENT_MYSQL_TEST=1 php server/tests/v260_test_center_platform_measurement_mysql_strict.php
+          V260_SHORT_ENTRY_MYSQL_TEST=1 php server/tests/v260_test_center_short_entry_mysql.php
+          V260_SINGLE_GRAB_MYSQL_TEST=1 php server/tests/v260_test_center_single_grab_mysql_strict.php
+      - name: Full production-service expansion and cleanup
+        env:
+          V260_EXPANSION_MYSQL_TEST: '1'
+        run: |
+          set -euo pipefail
+          mysql -h127.0.0.1 -uroot -proot -e 'CREATE DATABASE worker_test_expansion CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          mysql -h127.0.0.1 -uroot -proot worker_test_expansion < server/tests/fixtures/review-schema-only.sql
+          mysql -h127.0.0.1 -uroot -proot worker_test_expansion < server/database/upgrades/2.6.0.sql
+          php server/tests/v260_test_center_expansion_mysql_strict.php
