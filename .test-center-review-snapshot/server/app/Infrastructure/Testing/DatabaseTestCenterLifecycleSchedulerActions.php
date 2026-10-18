@@ -119,8 +119,8 @@ final class DatabaseTestCenterLifecycleSchedulerActions
                 $event=(int)$this->db->fetchValue(
                     "SELECT COUNT(*) FROM order_events
                      WHERE order_id=:order AND event_type='assignment_expired'
-                       AND event_key LIKE 'scheduler:assignment_timeout:order:%'",
-                    ['order'=>(int)$order['id']]
+                       AND event_key LIKE :event_key",
+                    ['order'=>(int)$order['id'],'event_key'=>'scheduler:assignment_timeout:order:%']
                 );
 
                 if(!$after
