@@ -1,0 +1,35 @@
+PHP Warning:  The use statement with non-compound name 'RuntimeException' has no effect in /home/runner/work/workers-server/workers-server/server/tests/v260_supplement_timeout_processor_mysql.php on line 22
+[PASS] MySQL 5.7 connected
+[PASS] production future deadline sends reminder
+[PASS] reminder timestamp recorded
+[PASS] reminder event recorded
+[PASS] reminder does not claim terminal job
+[PASS] production due supplement order expires
+[PASS] production paid supplement timeout waits for refund
+[PASS] production order stays pending_review before provider acceptance
+[PASS] production refund row starts pending_review
+[PASS] processor never creates provider refund id
+[PASS] cancel request remains open while refund outstanding
+[PASS] production supplement claim completed
+[PASS] successful expiration resolves same-version failure
+[PASS] reminder and expiration keep distinct events
+[PASS] production reminder and expiration both queue notifications
+[PASS] production no-payment supplement timeout expires
+[PASS] no-payment timeout closes order
+[PASS] no-payment timeout has no refund state
+[PASS] no-payment cancel request closes immediately
+[PASS] scoped inspector binds exact supplement deadline
+[PASS] scoped deadline+1 fixture expires target
+[PASS] scoped target audit rejected
+[PASS] scoped target refund remains pending_review
+[PASS] scoped target internal refund recorded
+[PASS] scoped action creates no global claim
+[PASS] scoped event is instance keyed
+[PASS] neighbor supplement order remains unchanged
+[PASS] neighbor deadline remains pending
+[PASS] neighbor creates no refund
+[PASS] scoped timeout uses persisted event notification
+[PASS] unowned payment not exposed by scoped inspector
+[PASS] unowned payment blocks scoped supplement timeout
+[PASS] BXDEMOHALL supplement sample is blocked
+V2.6.0 supplement timeout processor MySQL 5.7 integration: OK

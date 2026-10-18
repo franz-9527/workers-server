@@ -1,0 +1,18 @@
+No syntax errors detected in server/app/Infrastructure/Scheduling/SupplementTimeoutProcessor.php
+No syntax errors detected in server/app/Services/SchedulerService.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterProxyOrderActionRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSupplementTimeoutVerificationRepository.php
+No syntax errors detected in server/app/Infrastructure/Testing/DatabaseTestCenterSupplementTimeoutCleanupRepository.php
+No syntax errors detected in server/app/Foundation/TestCenterComposition.php
+No syntax errors detected in server/app/Domain/Messaging/MessageEventCatalog.php
+No syntax errors detected in server/views/admin/test-center-proxy-invitation-actions.php
+No syntax errors detected in server/views/admin/test-center-scheduler-diagnostics.php
+PHP Parse error:  syntax error, unexpected '' (T_ENCAPSED_AND_WHITESPACE), expecting '-' or identifier (T_STRING) or variable (T_VARIABLE) or number (T_NUM_STRING) in server/tests/v260_test_center_supplement_timeout_contract.php on line 60
+Errors parsing server/tests/v260_test_center_supplement_timeout_contract.php
+PHP Warning:  The use statement with non-compound name 'RuntimeException' has no effect in server/tests/v260_supplement_timeout_processor_mysql.php on line 22
+No syntax errors detected in server/tests/v260_supplement_timeout_processor_mysql.php
+No syntax errors detected in server/tests/v260_supplement_timeout_cleanup_mysql.php
+No syntax errors detected in server/tests/v260_test_center_expansion_mysql.php
+PHP Parse error:  syntax error, unexpected '' (T_ENCAPSED_AND_WHITESPACE), expecting '-' or identifier (T_STRING) or variable (T_VARIABLE) or number (T_NUM_STRING) in /home/runner/work/workers-server/workers-server/server/tests/v260_test_center_supplement_timeout_contract.php on line 60
