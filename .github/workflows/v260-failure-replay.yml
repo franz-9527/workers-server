@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           docker run --rm -v "$PWD:/app" -w /app php:7.4-cli bash -lc '
             php -l server/app/Contracts/TestCenterFailureReplay.php
             php -l server/app/Infrastructure/Testing/DatabaseTestCenterReplayCaptureRunner.php
@@ -42,7 +42,10 @@ jobs:
             php -l server/views/admin/test-center-failure-replay.php
             php -l server/tests/v260_test_center_failure_replay_contract.php
             php server/tests/v260_test_center_failure_replay_contract.php
-          '
+          ' > .test-center-replay-verify.log 2>&1
+          status=$?
+          cat .test-center-replay-verify.log
+          exit "$status"
       - name: Record verification result
         if: always()
         shell: bash
@@ -54,7 +57,7 @@ jobs:
           printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$VERIFY_OUTCOME" "$GITHUB_SHA" > .test-center-replay-result.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .test-center-replay-result.json
+          git add .test-center-replay-result.json .test-center-replay-verify.log
           git commit -m "test: record failure replay verification $VERIFY_OUTCOME"
           git push
       - name: Fail workflow when verification failed
