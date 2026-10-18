@@ -1,0 +1,64 @@
+name: V2.6.0 Assignment Timeout Contract Only
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v260-assignment-timeout-contract-only.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize candidate snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            target="${file#.test-center-assignment-timeout-snapshot/}"
+            mkdir -p "$(dirname "$target")"
+            cp "$file" "$target"
+          done < <(find .test-center-assignment-timeout-snapshot -type f -print0)
+      - name: PHP 7.4 safety contract
+        id: verify
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          docker run --rm -v "$PWD:/app" -w /app php:7.4-cli bash -lc '
+            php -l server/app/Infrastructure/Scheduling/AssignmentTimeoutProcessor.php
+            php -l server/app/Services/SchedulerService.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerActionRunner.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterSchedulerInspector.php
+            php -l server/app/Infrastructure/Testing/DatabaseTestCenterActionSafetyRunner.php
+            php -l server/app/Foundation/TestCenterComposition.php
+            php -l server/views/admin/test-center-scheduler-diagnostics.php
+            php -l server/tests/v260_test_center_assignment_timeout_contract.php
+            php server/tests/v260_test_center_assignment_timeout_contract.php
+          ' > .assignment-timeout-contract-only.log 2>&1
+          status=$?
+          cat .assignment-timeout-contract-only.log
+          exit "$status"
+      - name: Record contract result
+        if: always()
+        shell: bash
+        env:
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          SOURCE_SHA: e7cfa41d722ccb43383f577243b0982dbb0a58eb
+        run: |
+          set -euo pipefail
+          printf '{"source_sha":"%s","php74_contract":"%s","workflow_sha":"%s"}\n' "$SOURCE_SHA" "$VERIFY_OUTCOME" "$GITHUB_SHA" > .assignment-timeout-contract-only.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .assignment-timeout-contract-only.json .assignment-timeout-contract-only.log
+          git commit -m "test: record assignment timeout contract $VERIFY_OUTCOME"
+          git push
+      - name: Fail when contract failed
+        if: steps.verify.outcome != 'success'
+        run: exit 1
