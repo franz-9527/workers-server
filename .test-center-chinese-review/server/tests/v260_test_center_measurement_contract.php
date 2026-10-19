@@ -94,6 +94,7 @@ fwrite(STDOUT,"V2.6.0 ordinary measurement + linked construction contract: OK\n"
 
 // 实际渲染详情包装页，防止子模板丢失 instance/actions 上下文导致按钮静默消失。
 require_once $root.'/app/Application/Testing/TestScenarioCatalog.php';
+require_once $root.'/app/Infrastructure/Testing/TestingPresentation.php';
 $platformScenario=(new \WorkerAdmin\Application\Testing\TestScenarioCatalog())->find('platform.measurement.single_grab.waiting.open');
 $assert($platformScenario!==null&&!empty($platformScenario['buildable'])&&$platformScenario['workflow']==='measurement'&&$platformScenario['dispatch_mode']==='single_grab','catalog exposes platform same-order measurement');
 function e($value):string{return htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8');}
