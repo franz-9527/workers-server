@@ -24,5 +24,8 @@ jobs:
           coverage: none
       - name: PHP syntax
         run: find server -type f -name '*.php' -print0 | xargs -0 -n1 php -l
-      - name: Real templates and Chinese presentation
-        run: php server/tests/v260_test_center_coverage_contract.php
+      - name: Test center contracts and real template rendering
+        run: |
+          for test in server/tests/v260_test_center_*contract.php; do
+            php "$test" || exit 1
+          done
