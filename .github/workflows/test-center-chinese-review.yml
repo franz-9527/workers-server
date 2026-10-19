@@ -1,0 +1,28 @@
+name: Test center Chinese presentation review
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/test-center-chinese-review.yml', '.test-center-chinese-review/**']
+permissions:
+  contents: read
+concurrency:
+  group: test-center-chinese-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  php74-presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: .test-center-chinese-review
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring
+          coverage: none
+      - name: PHP syntax
+        run: find server -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Real templates and Chinese presentation
+        run: php server/tests/v260_test_center_coverage_contract.php
