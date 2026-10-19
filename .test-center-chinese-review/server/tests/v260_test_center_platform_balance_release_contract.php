@@ -55,7 +55,7 @@ pbrAssert(strpos($runner,"'system_platform_balance_release'=>'推进平台工费
 
 pbrAssert(strpos($inspector,"'platform_balance_release','平台单工费冻结解冻'")!==false,'scheduler inspector exposes platform balance release');
 pbrAssert(strpos($inspector,"'system_platform_balance_release'")!==false,'scheduler inspector routes scoped platform balance action');
-pbrAssert(strpos($inspector,'验收时间加冻结天数后一秒')!==false,'scheduler inspector documents virtual deadline boundary');
+pbrAssert(strpos($inspector,'accepted_at + 冻结天数后一秒')!==false,'scheduler inspector documents virtual deadline boundary');
 pbrAssert(strpos($view,'system_platform_balance_release')!==false&&strpos($view,'推进平台工费解冻')!==false,'scheduler diagnostics renders platform balance release control');
 pbrAssert(strpos($view,'不扫描其它平台订单')!==false,'scheduler diagnostics confirmation states instance-only scope');
 pbrAssert(strpos($platformView,'system_platform_balance_release')!==false,'platform flow card exposes balance release action');
