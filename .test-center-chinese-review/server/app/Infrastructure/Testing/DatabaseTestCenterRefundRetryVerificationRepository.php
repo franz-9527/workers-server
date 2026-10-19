@@ -111,7 +111,7 @@ final class DatabaseTestCenterRefundRetryVerificationRepository implements TestC
                 &&empty($refund['wechat_prepay_id'])
                 &&empty($refund['wechat_transaction_id']),
                 $refund?'refund='.(int)$refund['id']:'missing'],
-            ['state','refund_retry_status_restored','模拟消息渠道失败后退款状态和退款号恢复原值',
+            ['state','refund_retry_status_restored','模拟支付渠道失败后退款状态和退款号恢复原值',
                 $refund
                 &&(string)$refund['public_no']===(string)($business['out_refund_no']??'')
                 &&(string)$refund['status']===(string)($business['original_status']??'')
