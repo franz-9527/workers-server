@@ -1,5 +1,5 @@
 name: Temporary S09 completion acceptance
-# Exact source: 0820c3d
+# Exact source: 9e898c0
 
 on:
   push:
@@ -51,6 +51,7 @@ jobs:
           echo "940facc84d98f258363a5999daf17f8e66027d8fad05d5e3a49ce361d253a7ef  .chat-s09-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-s09-validation/work
           tar -xzf .chat-s09-validation/source.tar.gz -C .chat-s09-validation/work
+          cp .chat-s09-validation/overrides/schema.php .chat-s09-validation/work/server/tests/chat_schema_contract.php
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-s09-validation/work')
