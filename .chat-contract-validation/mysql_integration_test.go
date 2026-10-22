@@ -380,7 +380,9 @@ func TestLateCommitWithoutWakeAndConcurrentClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer late.Rollback()
-	if _, err = late.ExecContext(f.ctx, `UPDATE chat_policy_guards SET policy_version=2,state='open',snapshot_json=?,snapshot_hash=? WHERE order_id=401`, string(raw), digest(string(raw))); err != nil {
+	// Use the unique scope, not the order range index: the fixture must not gap
+	// lock the independent scope that is meant to commit first.
+	if _, err = late.ExecContext(f.ctx, `UPDATE chat_policy_guards SET policy_version=2,state='open',snapshot_json=?,snapshot_hash=? WHERE scope_key='order:401:assignment:401'`, string(raw), digest(string(raw))); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = late.ExecContext(f.ctx, `INSERT INTO chat_business_events(event_id,aggregate_key,aggregate_version,schema_version,event_type,payload_json,created_at)

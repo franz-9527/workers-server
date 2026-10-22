@@ -53,6 +53,7 @@ jobs:
           tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
           cp .chat-contract-validation/store.go .chat-contract-validation/work/chat/internal/conversation/store.go
           cp .chat-contract-validation/mysql_integration_test.go .chat-contract-validation/work/chat/internal/conversation/mysql_integration_test.go
+          cp .chat-contract-validation/chat_platform_fixture.php .chat-contract-validation/work/server/tests/chat_platform_fixture.php
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-contract-validation/work')
