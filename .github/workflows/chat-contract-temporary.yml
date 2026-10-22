@@ -51,6 +51,8 @@ jobs:
           echo "d5d1e42ce63bc44813dd9fc09155d9a065af3bbbfc6e32205f0f1497540b1dfd  .chat-contract-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-contract-validation/work
           tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
+          cp .chat-contract-validation/store.go .chat-contract-validation/work/chat/internal/conversation/store.go
+          cp .chat-contract-validation/mysql_integration_test.go .chat-contract-validation/work/chat/internal/conversation/mysql_integration_test.go
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-contract-validation/work')
@@ -100,5 +102,4 @@ jobs:
           go vet ./...
           sh build.sh
           go test -race -count=1 ./...
-
 
