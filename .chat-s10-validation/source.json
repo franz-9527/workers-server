@@ -1,0 +1,885 @@
+{
+  "source_sha": "f7d8cbaa6575bf19452144c3725a02a91b299947",
+  "files": [
+    {
+      "path": "chat/.gitignore",
+      "sha": "41788653a7731efe1368e050de4d0556af33b6bf"
+    },
+    {
+      "path": "chat/build.sh",
+      "sha": "c9d2e8c654fac590d6533b2dfaa9d6e31e3d1aaa"
+    },
+    {
+      "path": "chat/cmd/chatd/main.go",
+      "sha": "ecd53d4d9b8d37dd714e8148a8e606a52801870f"
+    },
+    {
+      "path": "chat/config.example.json",
+      "sha": "85a2ed3675d98cc6bd1767b1b3cc6e000f5b50b7"
+    },
+    {
+      "path": "chat/go.mod",
+      "sha": "9e5d6b33a9a9fd732dcd518a1e8a8a3c7af2deba"
+    },
+    {
+      "path": "chat/go.sum",
+      "sha": "fb24675236722882b2484e1d8be224fa18a08a0e"
+    },
+    {
+      "path": "chat/internal/auth/auth_test.go",
+      "sha": "ee4c10778cc9abd6326ed781f4e924379c137eb3"
+    },
+    {
+      "path": "chat/internal/auth/config.go",
+      "sha": "0e0744e04da056a2450467411c085136ab5e76f7"
+    },
+    {
+      "path": "chat/internal/auth/http.go",
+      "sha": "09e194a71335c5c52cb408c5bbcf0d437b48fafd"
+    },
+    {
+      "path": "chat/internal/auth/http_test.go",
+      "sha": "b9706f2cc2085772a30f4cb3fcf3fafbf19c6e36"
+    },
+    {
+      "path": "chat/internal/auth/internal.go",
+      "sha": "cec8f20d0c11e88d71bb957a36412c3d397bd566"
+    },
+    {
+      "path": "chat/internal/auth/mysql.go",
+      "sha": "e7310d3146898983c392e1d06fee5e91ada6cea0"
+    },
+    {
+      "path": "chat/internal/auth/mysql_integration_test.go",
+      "sha": "776a082729c0a8dcb5ba6ddf5c05274fb914a372"
+    },
+    {
+      "path": "chat/internal/auth/redis.go",
+      "sha": "fe336a69de2e4b3874fa0c4ff72c8ed70ce65447"
+    },
+    {
+      "path": "chat/internal/auth/redis_integration_test.go",
+      "sha": "556e926da0f9c646bc49248eadc7a13bc95979bc"
+    },
+    {
+      "path": "chat/internal/auth/service.go",
+      "sha": "5319d102c890f047273248734b50c1ae18d075f1"
+    },
+    {
+      "path": "chat/internal/auth/token.go",
+      "sha": "4050903fe0b3ef4f8367f15a8a474f62a8eeb7bf"
+    },
+    {
+      "path": "chat/internal/bootstrap/app.go",
+      "sha": "68b86f5beef4cc7e734d2fc025b9b2326d24f685"
+    },
+    {
+      "path": "chat/internal/bootstrap/app_test.go",
+      "sha": "58abeb03ea1ff68bdcd97294dae88d8d1eab764f"
+    },
+    {
+      "path": "chat/internal/bootstrap/config.go",
+      "sha": "5b651c5ebf0af2dd397e3870e10f3061b9a72f43"
+    },
+    {
+      "path": "chat/internal/bootstrap/config_test.go",
+      "sha": "43799ac000aaa866ab283b187e8500c44f110008"
+    },
+    {
+      "path": "chat/internal/bootstrap/server.go",
+      "sha": "95e9e03bf8fe6a419bd09c705633eec66a41e034"
+    },
+    {
+      "path": "chat/internal/bootstrap/server_test.go",
+      "sha": "bb68154744ea50d7c960e28af179731e7f294d84"
+    },
+    {
+      "path": "chat/internal/bootstrap/socket_test.go",
+      "sha": "fafadd924ea42799d905928f7ecad3ea66e0535b"
+    },
+    {
+      "path": "chat/internal/conversation/consumer.go",
+      "sha": "0883c63a453070256642f43442cf4b056d0359f6"
+    },
+    {
+      "path": "chat/internal/conversation/mysql_integration_test.go",
+      "sha": "b721ed56022655db69b4c69197476c3a8d945d6c"
+    },
+    {
+      "path": "chat/internal/conversation/store.go",
+      "sha": "d09b5efa04f151ffe2c5772cdf66125c50271b04"
+    },
+    {
+      "path": "chat/internal/dependencies/dependencies_test.go",
+      "sha": "9eb2ddd5bbbb50df0ea6575add6ec8cd4f40a8e8"
+    },
+    {
+      "path": "chat/internal/dependencies/history.go",
+      "sha": "d29c0fff349a8830875967b4a5e4b67ce8e94dba"
+    },
+    {
+      "path": "chat/internal/dependencies/http.go",
+      "sha": "44c329a26a94dd3b1b8bdb3ef56ab5e22186980e"
+    },
+    {
+      "path": "chat/internal/dependencies/identity.go",
+      "sha": "2119caee1def254c65f1759acbb4cc18946e425d"
+    },
+    {
+      "path": "chat/internal/dependencies/integration_test.go",
+      "sha": "6a4896d2ebe4ac6b3afb5c120397ec494336b0cc"
+    },
+    {
+      "path": "chat/internal/dependencies/mysql.go",
+      "sha": "f9fb20fbcd53f0089438b74268efdc3595c1a256"
+    },
+    {
+      "path": "chat/internal/dependencies/providers.go",
+      "sha": "b2ddddfc103c42bef9b45885cc3841c2446156a1"
+    },
+    {
+      "path": "chat/internal/dependencies/redis.go",
+      "sha": "f8009e1b86617d3759be176a4f0fb830f81fa595"
+    },
+    {
+      "path": "chat/internal/dependencies/runtime.go",
+      "sha": "e4ce528e59d65bc4ed6fbd914ab013350d1e109b"
+    },
+    {
+      "path": "chat/internal/dependencies/settings.go",
+      "sha": "6ec5a14021463bd05ca88fd210bf49cbaffdb2ba"
+    },
+    {
+      "path": "chat/internal/dependencies/socket.go",
+      "sha": "ab911d9d306fa3f8aaa4b77ac02290126a080277"
+    },
+    {
+      "path": "chat/internal/message/digests.go",
+      "sha": "ab4fb48829a0a681fd223d797021aa6872e19686"
+    },
+    {
+      "path": "chat/internal/message/history.go",
+      "sha": "a0d84cb7d7eee76732ad0900462919a887627982"
+    },
+    {
+      "path": "chat/internal/message/history_cursor.go",
+      "sha": "033c5f92d2a37bc9b6d69aaa20ce614984d109bb"
+    },
+    {
+      "path": "chat/internal/message/history_http.go",
+      "sha": "d7140bb961c3b498e24cc18a732811748171113a"
+    },
+    {
+      "path": "chat/internal/message/history_http_integration_test.go",
+      "sha": "b8cdd19075234caedd361b188d59b32405e5c61f"
+    },
+    {
+      "path": "chat/internal/message/history_integration_test.go",
+      "sha": "effae15f475cc703835f3e41aa9092d64e81f503"
+    },
+    {
+      "path": "chat/internal/message/history_locate.go",
+      "sha": "e11c07f222036eaad1552837a27f897123e59d78"
+    },
+    {
+      "path": "chat/internal/message/history_test.go",
+      "sha": "2ec44ef5e671242e97f9599672903c3ec04363a3"
+    },
+    {
+      "path": "chat/internal/message/http.go",
+      "sha": "2086482128d402b740f38b1a3b39f75954219fc4"
+    },
+    {
+      "path": "chat/internal/message/http_integration_test.go",
+      "sha": "f6ec3e820e9dfa18b7cb136506d372c97acdf7ae"
+    },
+    {
+      "path": "chat/internal/message/moderation_integration_test.go",
+      "sha": "88005b1b2b6841cf7027b4530b1892c1aaa49282"
+    },
+    {
+      "path": "chat/internal/message/mysql_integration_test.go",
+      "sha": "7052331df31fc2a0f49100fad44d0e3769a7169e"
+    },
+    {
+      "path": "chat/internal/message/read_progress.go",
+      "sha": "4a6fb01d9c77a38a00adb7e81b4227b9d5d8a9ce"
+    },
+    {
+      "path": "chat/internal/message/risk.go",
+      "sha": "145c05720c0f2c19a126a5a5770ac0cbdcaedd63"
+    },
+    {
+      "path": "chat/internal/message/s09_completion_integration_test.go",
+      "sha": "1a76403535165993f180922e91a1215828641918"
+    },
+    {
+      "path": "chat/internal/message/s09_http.go",
+      "sha": "cad0f0a0f94208f2e71411d863f2bfbcc6ca0813"
+    },
+    {
+      "path": "chat/internal/message/s09_http_integration_test.go",
+      "sha": "8eb26bb2f40eb3e650e212f915f9361fb04f2806"
+    },
+    {
+      "path": "chat/internal/message/s09_integration_test.go",
+      "sha": "cd46e41d137d9f4a4b58f3580db3b7a246ee2b88"
+    },
+    {
+      "path": "chat/internal/message/s09_test.go",
+      "sha": "5c42541ce3c8687b175b409da049d6255fa146a7"
+    },
+    {
+      "path": "chat/internal/message/service.go",
+      "sha": "c5f1983d29625c8c2385f9a553d1b573daf64e7b"
+    },
+    {
+      "path": "chat/internal/message/service_test.go",
+      "sha": "bafb515897d326fed4c89ba246f4636a3698db08"
+    },
+    {
+      "path": "chat/internal/message/socket.go",
+      "sha": "bf3d83cd114785dc29f84c61de837bdc0e39e9bc"
+    },
+    {
+      "path": "chat/internal/message/socket_integration_test.go",
+      "sha": "97b167105560e40d934cd9b4d8be4ff29fc84aa6"
+    },
+    {
+      "path": "chat/internal/message/socket_test.go",
+      "sha": "5764604225705793762cd39cc74b67fd5b7635e2"
+    },
+    {
+      "path": "chat/internal/message/unread.go",
+      "sha": "923401ac1e8d008ad2fe5f8f3c73fab61cacb384"
+    },
+    {
+      "path": "chat/internal/message/unread_integration_test.go",
+      "sha": "d28741818a3c087bb51c1bf2a4b180e6517b6745"
+    },
+    {
+      "path": "chat/internal/moderation/rules.go",
+      "sha": "75d9b3daf7445fa9b9015957e8aec36beef0cab2"
+    },
+    {
+      "path": "chat/internal/moderation/rules_test.go",
+      "sha": "491f1f12a46e719d0a6f6f8c801e7f9380b0f8fc"
+    },
+    {
+      "path": "chat/internal/moderation/service.go",
+      "sha": "7829facfc3208b0de393ef18987f2f429b57f16a"
+    },
+    {
+      "path": "chat/internal/moderation/service_test.go",
+      "sha": "e2e250890788de833abb2a3942b62e17d4dcf42e"
+    },
+    {
+      "path": "chat/internal/moderation/token.go",
+      "sha": "5003cd9529c9d0f2c6bc36fed0b5f22750ca46f6"
+    },
+    {
+      "path": "chat/internal/policy/guard.go",
+      "sha": "7bcc2a119d468bbd39b14a5e23fd92f93e4a80f1"
+    },
+    {
+      "path": "chat/internal/policy/guard_test.go",
+      "sha": "b4531d8fb94d1f5e4121b50d6189cac469080ec7"
+    },
+    {
+      "path": "chat/internal/policy/mysql_integration_test.go",
+      "sha": "45dfd6bae181963ece5f9aad626a2d0c38fed7f4"
+    },
+    {
+      "path": "chat/internal/policy/projection.go",
+      "sha": "2b508cb04a4cfb54f173c76c93acd08e57523e93"
+    },
+    {
+      "path": "chat/internal/ports/contracts.go",
+      "sha": "0070f0a50d384d03d12f1d42b18c3116f22233db"
+    },
+    {
+      "path": "chat/internal/ports/contracts_test.go",
+      "sha": "98abbe87b7b3258d9ec03ce56ef43b18274a652e"
+    },
+    {
+      "path": "chat/internal/socket/gateway.go",
+      "sha": "33c1a7fd3668283839ae35afc7b14a3426098d77"
+    },
+    {
+      "path": "chat/internal/socket/gateway_test.go",
+      "sha": "78817adb4f9c59e3ac070e76a97cd569bac12c50"
+    },
+    {
+      "path": "chat/internal/socket/protocol.go",
+      "sha": "5eaa56fd2e10197f2d1498cb3bbb44162f30e36c"
+    },
+    {
+      "path": "chat/scripts/verify-s09.sh",
+      "sha": "c5b1ed9198573639b48385d6d7c7bd8aa3d39efa"
+    },
+    {
+      "path": "chat/scripts/verify-s10.sh",
+      "sha": "6f94748a47eda895962e44bfca2a0c9d92b514c1"
+    },
+    {
+      "path": "server/VERSION",
+      "sha": "24ba9a38de68d00674ec97b283a967699716b9f4"
+    },
+    {
+      "path": "server/app/Application/Chat/ChatCredentialIssuer.php",
+      "sha": "5ccfee96c2c5b3ade8b5a29c0210d6037642cb61"
+    },
+    {
+      "path": "server/app/Application/Identity/ActorCapabilityResolver.php",
+      "sha": "616da3fb19120de984fa559990871ec52a1d6ee7"
+    },
+    {
+      "path": "server/app/Contracts/AdminRepairResolutionRepository.php",
+      "sha": "8933e69f46613809e00442539bb741391cd64782"
+    },
+    {
+      "path": "server/app/Contracts/AdminWorkbenchOperationsRepository.php",
+      "sha": "6a14c4d04135731a84e92970584bccf160641a10"
+    },
+    {
+      "path": "server/app/Contracts/MiniAdminOrderRepository.php",
+      "sha": "6a876046c156a73457f6c6969cf752250c3cda68"
+    },
+    {
+      "path": "server/app/Contracts/OrderCancellationRepository.php",
+      "sha": "c965277ed5d9c677875f9c8e6f103f1617930a8b"
+    },
+    {
+      "path": "server/app/Contracts/OrderCompletionRepository.php",
+      "sha": "4b3e6420fd12987a823a418e93623a954b026d69"
+    },
+    {
+      "path": "server/app/Contracts/OrderDealRepository.php",
+      "sha": "81512524601cfa116c4d82e007a06436512dab98"
+    },
+    {
+      "path": "server/app/Contracts/OrderDisputeRepository.php",
+      "sha": "36e0b49905924f09fe7325fe092608326910cf0f"
+    },
+    {
+      "path": "server/app/Contracts/OrderFulfillmentAuxiliaryRepository.php",
+      "sha": "7baff42c0ef672f0a0e1bce5e68a00a919a08bee"
+    },
+    {
+      "path": "server/app/Contracts/OrderInvitationRepository.php",
+      "sha": "f7d493a4393aa9efc44489fd40d84aee555e24d9"
+    },
+    {
+      "path": "server/app/Contracts/OrderMeasurementCompletionRepository.php",
+      "sha": "5bfaddc2e25f96dbb0de9ff15cad2d371a586f17"
+    },
+    {
+      "path": "server/app/Contracts/OrderNegotiationRepository.php",
+      "sha": "f0600728f1fd6305abc576838dfa8d260e168d76"
+    },
+    {
+      "path": "server/app/Contracts/OrderQuoteSelectionRepository.php",
+      "sha": "e81665f855155d51310a94dbde0a8dd599311234"
+    },
+    {
+      "path": "server/app/Contracts/OrderQuoteSwitchRepository.php",
+      "sha": "601106aab1cf0312cebf8fa0a71dd7516114e5f4"
+    },
+    {
+      "path": "server/app/Contracts/OrderRunEmptyRepository.php",
+      "sha": "92333112f84dcb00ae4e8150a34e67b6e2711918"
+    },
+    {
+      "path": "server/app/Contracts/PaidPaymentSettlement.php",
+      "sha": "a5f1c8e764d40a719bc55ad778bbedc4197b3e14"
+    },
+    {
+      "path": "server/app/Contracts/PaymentCreationRepository.php",
+      "sha": "6f356f4470f35f6b45286a2056cffac29c0b00e3"
+    },
+    {
+      "path": "server/app/Contracts/PlatformOrderAdminRepository.php",
+      "sha": "e76a8f6af0d16eeeb663d2b6ccf674e7d9e52c8f"
+    },
+    {
+      "path": "server/app/Contracts/PlatformOrderCustomerShareRepository.php",
+      "sha": "28d45113fedf7b90755590645027cb940ff0d3bf"
+    },
+    {
+      "path": "server/app/Contracts/PlatformOrderFinanceRepository.php",
+      "sha": "ed5a25f284c59ca54c741a954cbf073f0d500c36"
+    },
+    {
+      "path": "server/app/Contracts/PrivateValueCipher.php",
+      "sha": "e36341a0b3430f2655d61ff929cd7a4709f9961b"
+    },
+    {
+      "path": "server/app/Contracts/SettingsProvider.php",
+      "sha": "b2cd0d71a49ee5d4e45b9989523b7e837f45c6f0"
+    },
+    {
+      "path": "server/app/Contracts/SubscribeMessageGateway.php",
+      "sha": "f53e82eb866b2b1581e39dd2b475c53b93e0760e"
+    },
+    {
+      "path": "server/app/Core/Auth.php",
+      "sha": "d81a02b260c27e4b1476ecd611b9ef885af3b262"
+    },
+    {
+      "path": "server/app/Core/Csrf.php",
+      "sha": "aaf4ab4f1da2947073914696db5e7ec85b328765"
+    },
+    {
+      "path": "server/app/Core/Database.php",
+      "sha": "a671a8326daa9abd8fde041c31716db263fe206a"
+    },
+    {
+      "path": "server/app/Domain/Chat/OrderConversationPolicy.php",
+      "sha": "be808179be02bd24ff7914d89d3fa0dbefc70087"
+    },
+    {
+      "path": "server/app/Domain/Identity/AdminActorPolicy.php",
+      "sha": "88ceb45e6cace86c587522e7e6bdf7fbea37f33a"
+    },
+    {
+      "path": "server/app/Domain/Order/FulfillmentActor.php",
+      "sha": "03a32e20fb9b4913f9bc6db978982036521eb0ce"
+    },
+    {
+      "path": "server/app/Domain/Order/OrderOperationException.php",
+      "sha": "590ba47fb19d468de71ff98fb87231f3bbd03fdc"
+    },
+    {
+      "path": "server/app/Http/Admin/AdminRequestGuard.php",
+      "sha": "48897172a70fbe020feb393cc19d9e085f92dc48"
+    },
+    {
+      "path": "server/app/Infrastructure/External/WeChatAccessTokenProvider.php",
+      "sha": "b7c924913c19d3703c1bb3eb46e8acedf4f001e7"
+    },
+    {
+      "path": "server/app/Infrastructure/External/WeChatSubscribeGateway.php",
+      "sha": "09bb8fb17a3a163248fd777f41a6907462c98833"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseAdminOrderWorkflowStore.php",
+      "sha": "7cc608d5e3f5ca192fb639830f9402120143e49c"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseAdminOrderWriteStore.php",
+      "sha": "9151372aa79c7832c7d4825849aff3c1f8d5b779"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseAdminRepairResolutionRepository.php",
+      "sha": "5844d09df9c9e7dd660bca6c5a4c6b5da7abec7e"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseAdminWorkbenchOperationsRepository.php",
+      "sha": "f09a3a015ee0ea97f2a872d93138613a976712e3"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseAgreedRefundExecutionRepository.php",
+      "sha": "10eaab2bd49601a80eda2c844bd659a4136629aa"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseChatPlatformStaff.php",
+      "sha": "b50c8a00a78180fd6d374f1eefe995c5b6b259a3"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseChatPolicyMaintenance.php",
+      "sha": "23bb1e784c5d3d48534c3742f356a7ede4ca1fa4"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseChatRepairEpisodes.php",
+      "sha": "41da499ffc80614b6ba77dd79401e6df80f156cb"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseMiniAdminOrderRepository.php",
+      "sha": "91e0378b22e5c58ca70b036446f9120a59e4d3cc"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderCancellationRepository.php",
+      "sha": "76be934903ee68c03f7872da40609ac6576b228f"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderCompletionRepository.php",
+      "sha": "9fa7a7048cc800d510b3fd8150ac8652ce5457ee"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderConversationBridge.php",
+      "sha": "a8f6e5785441250e3b077bbee20bb3aab516c73a"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderDealRepository.php",
+      "sha": "bd7d3e59d4d57904ff42613547128dfb56b052da"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderDisputeRepository.php",
+      "sha": "3ac9f480c2bf93815f8f8e69fc322e374950dd54"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderDraftClosureRepository.php",
+      "sha": "4bca15cf26676296877590e98436741b9673d60e"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderFulfillmentAuxiliaryRepository.php",
+      "sha": "ce7e00e40e0751e5159c344a02a678550bd51f0c"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderInvitationRepository.php",
+      "sha": "55af01339a52e298f3227051842ae3e002fce184"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderMeasurementCompletionRepository.php",
+      "sha": "4d94f5112ab55f5d9c78f6630ae2f2eab135feb9"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderNegotiationRepository.php",
+      "sha": "97f9b4ec99c89334e78bf81dff3e2e557b4d88ab"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderPaidPaymentSettlement.php",
+      "sha": "f660fe5df7a15cf378f530dfbb714472bcf7b9a3"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderQuoteSelectionRepository.php",
+      "sha": "18d7744ed25dbcc6a68ef086a33961f28718807a"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderQuoteSwitchRepository.php",
+      "sha": "edfa2ad1dc75f20298fb96e25d9f3c92107cad31"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabaseOrderRunEmptyRepository.php",
+      "sha": "b5e5461b88ac766e4f6101631c9b27c4d14ea59e"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabasePaidPaymentSettlement.php",
+      "sha": "1450c7d02923a77a4a335beb5930ca741e502e7e"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabasePaymentCreationRepository.php",
+      "sha": "d0f3f9b83a1c3276651d737ed42b4e90b6439fa2"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabasePlatformOrderAdminRepository.php",
+      "sha": "980837d3824c433d545e4eb76393d63b20a17f58"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabasePlatformOrderCustomerShareRepository.php",
+      "sha": "b8499abeaed8852cde8acb9cd778614d0bfff8f7"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/DatabasePlatformOrderFinanceRepository.php",
+      "sha": "a0698f00750dad826076ab0f2a45f1eb4d5b2b55"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/OrderAutomaticAcceptanceWriter.php",
+      "sha": "ce4b900792f70d9ba53801c9f8479a6e718dc6ee"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/OrderDealAssignmentOperations.php",
+      "sha": "b5c3da6b25ad267c4f476a034d7f82af0357096c"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/OrderDealQuoteOperations.php",
+      "sha": "f456530ee044b32ed62bc6ee1e57f4e1565bbb23"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/OrdinaryMeasurementAcceptanceWriter.php",
+      "sha": "3be55299b5f4d2a10ca0cd278020e564ed6ebb8b"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/PlatformOrderBookingPaymentVerifier.php",
+      "sha": "b623e7fecc140e1f190bf5da3ca8b96646cf5016"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/PlatformOrderRefundReviewWriter.php",
+      "sha": "e7ff9fce1e568c30dac82ee0561bf54908f307ef"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/PlatformPricingAwareOrderMeasurementCompletionRepository.php",
+      "sha": "bde20cc1a2f8461ec91ebd464093c28abf985b7d"
+    },
+    {
+      "path": "server/app/Infrastructure/Persistence/SchedulerOrderEventWriter.php",
+      "sha": "be10b4457cbcfef176b9bed15e38adca979c9d06"
+    },
+    {
+      "path": "server/app/Infrastructure/Scheduling/AssignmentTimeoutProcessor.php",
+      "sha": "84afaca1336e600c1dc82bf6fef6ac466fcde85f"
+    },
+    {
+      "path": "server/app/Infrastructure/Scheduling/AutoCancelProcessor.php",
+      "sha": "5ec1039d3b28df5dc1234a54626a6b121b8c0583"
+    },
+    {
+      "path": "server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php",
+      "sha": "8410f5fd92fbc2bccd662b1adcb2e3fef2a06e46"
+    },
+    {
+      "path": "server/app/Infrastructure/Scheduling/SupplementTimeoutProcessor.php",
+      "sha": "90b62d129845b28f2bb2e1b2beed38293fc8f696"
+    },
+    {
+      "path": "server/app/Services/MiniProgramCodeService.php",
+      "sha": "1ace5541f43fdb6c62a8686ba127159db4605a9c"
+    },
+    {
+      "path": "server/app/Services/SchedulerService.php",
+      "sha": "da0fec717711c058ed129d07555ac9cfca7329d2"
+    },
+    {
+      "path": "server/app/Services/WeChatCloudSyncService.php",
+      "sha": "014d6e3b3d9b5f72349fd97d78c44232ed1a8c43"
+    },
+    {
+      "path": "server/app/Services/WeChatContentSecurityService.php",
+      "sha": "c794a1ec3bb01208a96c17f603eebc25da0e0bb5"
+    },
+    {
+      "path": "server/app/Services/WorkerCloudGatewayService.php",
+      "sha": "5acecdb047cf2c276b42e0e513ecfada098171b2"
+    },
+    {
+      "path": "server/app/Support/SqlScriptRunner.php",
+      "sha": "33ac3df54c9a41c61c26772b7b54b8028ec8d791"
+    },
+    {
+      "path": "server/bin/chat-credentials.php",
+      "sha": "644d87a3e55be5e2e363a5ac7c4e98d9828e0c50"
+    },
+    {
+      "path": "server/bin/chat-policy.php",
+      "sha": "5b36955f54453f6b3b2ad7c4981134c5d2e3c60f"
+    },
+    {
+      "path": "server/config/defaults.php",
+      "sha": "bca53a9f136888cd340af6748121e59bff67666a"
+    },
+    {
+      "path": "server/database/database.sql",
+      "sha": "a831b8634dde69cb5a916f6278cfd6897462bf93"
+    },
+    {
+      "path": "server/database/upgrades/1.0.0.sql",
+      "sha": "f47983ecf015a807642bca020be61e93d8214f1f"
+    },
+    {
+      "path": "server/database/upgrades/1.0.1.sql",
+      "sha": "8a0eb87eb55abb8b0d14633fdc6c33797290283b"
+    },
+    {
+      "path": "server/database/upgrades/1.0.2.sql",
+      "sha": "1b4ed2d7af3e9a9d7131bf9a6fa969145cb55161"
+    },
+    {
+      "path": "server/database/upgrades/1.0.3.sql",
+      "sha": "e707cb8e8d91bf0c775e789dcf5c2fbb17edbaf6"
+    },
+    {
+      "path": "server/database/upgrades/1.0.4.sql",
+      "sha": "dc1a1199720bcefbdbd4cf415b8817c95be30169"
+    },
+    {
+      "path": "server/database/upgrades/1.0.5.sql",
+      "sha": "a1cd6d3cbaa4b3ddfa2f56d0ba5dcdb0a66f3f4a"
+    },
+    {
+      "path": "server/database/upgrades/2.0.1.sql",
+      "sha": "7dfb38c0be7704635c016aeb99e2bad46f74ed0a"
+    },
+    {
+      "path": "server/database/upgrades/2.0.2.sql",
+      "sha": "407afbc0ac8b793edc380f2a7529d184a4c66f41"
+    },
+    {
+      "path": "server/database/upgrades/2.0.3.sql",
+      "sha": "3ef9848b1667b5878cc5e3ff88b266026a3d9537"
+    },
+    {
+      "path": "server/database/upgrades/2.0.4.sql",
+      "sha": "409a2c9759d955f5a3eed2b4be04ec98be051c98"
+    },
+    {
+      "path": "server/database/upgrades/2.0.5.sql",
+      "sha": "f4795627eeb4d26378c10c75c8c4e4a037f9c12a"
+    },
+    {
+      "path": "server/database/upgrades/2.0.6.sql",
+      "sha": "40a6ce9afa6e084771a3c6ad81a30e6fb1701f0c"
+    },
+    {
+      "path": "server/database/upgrades/2.0.7.sql",
+      "sha": "764eb03899a513c24ccd4af43ed122c8946e1043"
+    },
+    {
+      "path": "server/database/upgrades/2.0.8.sql",
+      "sha": "f27a8f42183c058eda87267ccd2c0fd2c1c1d9cf"
+    },
+    {
+      "path": "server/database/upgrades/2.0.9.sql",
+      "sha": "1ec8f768a26da207965e7c8b867bba9ef86b5854"
+    },
+    {
+      "path": "server/database/upgrades/2.1.0.sql",
+      "sha": "9131da956273cf3f219933a20674cf4c5b1f1099"
+    },
+    {
+      "path": "server/database/upgrades/2.1.1.sql",
+      "sha": "9af5b578039410eccd91a8364fc673adda14f672"
+    },
+    {
+      "path": "server/database/upgrades/2.1.2.sql",
+      "sha": "c6ef02ae1dab65fa80a39bea47bc60d18772ff32"
+    },
+    {
+      "path": "server/database/upgrades/2.1.3.sql",
+      "sha": "4d09a40f1e718e5659e2f5308975148d7a7aff90"
+    },
+    {
+      "path": "server/database/upgrades/2.1.4.sql",
+      "sha": "729c8599189090ddee32855e6a9b71cce461761e"
+    },
+    {
+      "path": "server/database/upgrades/2.1.5.sql",
+      "sha": "2105cebe81c05fcf5ad0c8c41fd209ee4cec8cd4"
+    },
+    {
+      "path": "server/database/upgrades/2.1.6.sql",
+      "sha": "b686bbb8b150b1cdb1d3941dd8a583b56ccc8ab1"
+    },
+    {
+      "path": "server/database/upgrades/2.1.7.sql",
+      "sha": "4975051387a122b7a96807b0c3c13fa9af8d7b4d"
+    },
+    {
+      "path": "server/database/upgrades/2.1.8.sql",
+      "sha": "bd89605d42bb8747b355304ea128442e38c75f54"
+    },
+    {
+      "path": "server/database/upgrades/2.1.9.sql",
+      "sha": "ee69781c8d7bba4842390d64b08789a0a8c8433c"
+    },
+    {
+      "path": "server/database/upgrades/2.2.0.sql",
+      "sha": "d64b4726bdcca96e0239c957e0c6e5a38c119963"
+    },
+    {
+      "path": "server/database/upgrades/2.2.1.sql",
+      "sha": "cad19a2b7e1ee8641a13b6fe7a183665bfad64c6"
+    },
+    {
+      "path": "server/database/upgrades/2.2.2.sql",
+      "sha": "7d493620002a876633cb002bbe7696c685e03fe2"
+    },
+    {
+      "path": "server/database/upgrades/2.2.3.sql",
+      "sha": "cc7ad739db6783d5f0c819532b4880a4b9df8cd6"
+    },
+    {
+      "path": "server/database/upgrades/2.2.4.sql",
+      "sha": "97829c6a57419dd21b8107febf911742ea42be48"
+    },
+    {
+      "path": "server/database/upgrades/2.2.5.sql",
+      "sha": "f92201377dec5ce7de8344121333c5f3280254e4"
+    },
+    {
+      "path": "server/database/upgrades/2.2.6.sql",
+      "sha": "52c18c6bf20f56bfadf21629e0d708da1d04fb10"
+    },
+    {
+      "path": "server/database/upgrades/2.2.7.sql",
+      "sha": "4d9bac037ad44e0cffce16ecba2020f02c6c3b36"
+    },
+    {
+      "path": "server/database/upgrades/2.2.8.sql",
+      "sha": "e7b4abbdceed6198376a9107b3d057c8e3e02906"
+    },
+    {
+      "path": "server/database/upgrades/2.2.9.sql",
+      "sha": "794ee22cc978f7ca43e4c7d946a50a8124c4d8ff"
+    },
+    {
+      "path": "server/database/upgrades/2.4.0.sql",
+      "sha": "48f346fef56828a7c62021cadc7509c536334b14"
+    },
+    {
+      "path": "server/database/upgrades/2.4.1.sql",
+      "sha": "8e3360acca4bbf46ea9c3a66dc850142fd98b667"
+    },
+    {
+      "path": "server/database/upgrades/2.5.0.sql",
+      "sha": "8081c8e3c077c6204c5c13691fbfc9620e241cdb"
+    },
+    {
+      "path": "server/database/upgrades/2.6.0.sql",
+      "sha": "d17e3cd295fa762c484e491d6c28904cf0d9c794"
+    },
+    {
+      "path": "server/database/upgrades/2.7.0.sql",
+      "sha": "1e6dd47580fb1fbf64b9c9463c8bcc47da64dec6"
+    },
+    {
+      "path": "server/database/upgrades/manifest.json",
+      "sha": "1b33016eff3ba35ed92882bf364246dabe48d713"
+    },
+    {
+      "path": "server/tests/chat_assignment_contract.php",
+      "sha": "5e912f52c2426b33f6dd4d4ac7b8a2d78da3850f"
+    },
+    {
+      "path": "server/tests/chat_closure_contract.php",
+      "sha": "662a45ae2b6353d889790b1deb87afe048499f96"
+    },
+    {
+      "path": "server/tests/chat_identity_contract.php",
+      "sha": "08aade0661ad447441d644a143cf7599d33bf0a0"
+    },
+    {
+      "path": "server/tests/chat_migration_fixture.php",
+      "sha": "229c0c1fcf39b82b1d3cd6c3349e7fe5579a3ae1"
+    },
+    {
+      "path": "server/tests/chat_platform_contract.php",
+      "sha": "2b0df2406fe59ce9ad48e65a72a8437eafdae98b"
+    },
+    {
+      "path": "server/tests/chat_platform_fixture.php",
+      "sha": "7dad167a66e0b7456e5fbf8dd449866f784dc45e"
+    },
+    {
+      "path": "server/tests/chat_policy_contract.php",
+      "sha": "ee357eb2f928f729c0a343288188ed1499793044"
+    },
+    {
+      "path": "server/tests/chat_policy_fixture.php",
+      "sha": "8a185a76557f9d0ec5547ff9532ed80d3aca4332"
+    },
+    {
+      "path": "server/tests/chat_repair_contract.php",
+      "sha": "f11fa191460140c74528b8da92737a535948a99c"
+    },
+    {
+      "path": "server/tests/chat_schema_contract.php",
+      "sha": "de20e51dbfc40ef8bfb823c5875dec487f52679a"
+    },
+    {
+      "path": "server/tests/chat_text_security_contract.php",
+      "sha": "110a02ce10ab02db32141ab96474d5a08a35ecf0"
+    },
+    {
+      "path": "server/tests/fixtures/schema-2.6.0.json",
+      "sha": "706964d877514bed16b745a52af57b45e0c1dd59"
+    },
+    {
+      "path": "server/tests/fixtures/schema-2.6.0.sql.gz",
+      "sha": "2ccc350617da97eaa0e1b653f1d00cbd59c5a798"
+    },
+    {
+      "path": "server/tests/v250_transaction_mysql.php",
+      "sha": "e5433b7e90345279e810a08e6f1d673e1eb04a0e"
+    }
+  ]
+}
