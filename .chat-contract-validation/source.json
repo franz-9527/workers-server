@@ -1,5 +1,5 @@
 {
-  "source_sha": "47b31cf03ae5a97383d7d2bb542013c5805d7254",
+  "source_sha": "24a0b15b9de7d0fc9809cb69a98a9fff38475c7d",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -347,7 +347,7 @@
     },
     {
       "path": "server/app/Infrastructure/External/WeChatAccessTokenProvider.php",
-      "sha": "aa8f38b7f9182142bb855faf598a8f05c1609068"
+      "sha": "b7c924913c19d3703c1bb3eb46e8acedf4f001e7"
     },
     {
       "path": "server/app/Infrastructure/External/WeChatSubscribeGateway.php",
@@ -539,7 +539,7 @@
     },
     {
       "path": "server/bin/chat-credentials.php",
-      "sha": "9c252a0c633f70903d087ac9443c0e021c427449"
+      "sha": "644d87a3e55be5e2e363a5ac7c4e98d9828e0c50"
     },
     {
       "path": "server/bin/chat-policy.php",
@@ -779,7 +779,7 @@
     },
     {
       "path": "server/tests/chat_text_security_contract.php",
-      "sha": "63429caeed532b45a2eb1c551e248a96bb52cd90"
+      "sha": "110a02ce10ab02db32141ab96474d5a08a35ecf0"
     },
     {
       "path": "server/tests/v250_transaction_mysql.php",
