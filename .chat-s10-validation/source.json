@@ -1,5 +1,5 @@
 {
-  "source_sha": "089007df974e4db5f58abb84785883248538ade2",
+  "source_sha": "430ba558784803d6744e8decadf62b4bab1925a4",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -243,7 +243,7 @@
     },
     {
       "path": "chat/internal/message/socket_integration_test.go",
-      "sha": "97b167105560e40d934cd9b4d8be4ff29fc84aa6"
+      "sha": "99e279c3f9402bd0e08c7a9fbcd879bd5975b68c"
     },
     {
       "path": "chat/internal/message/socket_test.go",
