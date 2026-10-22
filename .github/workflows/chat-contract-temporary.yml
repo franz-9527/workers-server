@@ -55,6 +55,7 @@ jobs:
           cp .chat-contract-validation/overrides/chat_schema_contract.php .chat-contract-validation/work/server/tests/chat_schema_contract.php
           cp .chat-contract-validation/overrides/service.go .chat-contract-validation/work/chat/internal/message/service.go
           cp .chat-contract-validation/overrides/mysql_integration_test.go .chat-contract-validation/work/chat/internal/message/mysql_integration_test.go
+          cp .chat-contract-validation/overrides/http_integration_test.go .chat-contract-validation/work/chat/internal/message/http_integration_test.go
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-contract-validation/work')

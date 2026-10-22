@@ -150,7 +150,7 @@ func setupMessage(t *testing.T, safety ports.Safety) (*fixtureDB, *Service, Requ
 	if e != nil || b.Applied < 1 {
 		t.Fatalf("projection %+v %v", b, e)
 	}
-	id, e := f.store.FindOrder(f.ctx, principal("10201"), "401", "401")
+	id, e := f.store.FindOrder(f.ctx, principal("10202"), "401", "401")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -164,7 +164,7 @@ func setupMessage(t *testing.T, safety ports.Safety) (*fixtureDB, *Service, Requ
 }
 func accepted(t *testing.T, s *Service, r Request) Result {
 	t.Helper()
-	out, e := s.Send(context.Background(), principal("10201"), r)
+	out, e := s.Send(context.Background(), principal("10202"), r)
 	if e != nil || out.State != "accepted" {
 		t.Fatalf("send %+v %v", out, e)
 	}
@@ -188,14 +188,14 @@ func TestMySQLSendIdempotencyAndSafeResult(t *testing.T) {
 	}
 	altered := r
 	altered.Text += " changed"
-	if _, e := s.Send(f.ctx, principal("10201"), altered); e != ErrConflict {
+	if _, e := s.Send(f.ctx, principal("10202"), altered); e != ErrConflict {
 		t.Fatalf("conflict %v", e)
 	}
 	if f.text("SELECT text_body FROM chat_messages WHERE id=?", string(out.MessageID)) != r.Text {
 		t.Fatal("body changed")
 	}
-	f.exec("UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10201")
-	if got, e := s.Query(f.ctx, principal("10201"), r.ConversationID, r.ClientMessageID); e != nil || got.MessageID != out.MessageID {
+	f.exec("UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10202")
+	if got, e := s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID); e != nil || got.MessageID != out.MessageID {
 		t.Fatalf("ban prevented original result %+v %v", got, e)
 	}
 	if got := accepted(t, s, r); got.MessageID != out.MessageID {
@@ -203,11 +203,11 @@ func TestMySQLSendIdempotencyAndSafeResult(t *testing.T) {
 	}
 	newer := r
 	newer.ClientMessageID = client(2)
-	if _, e := s.Send(f.ctx, principal("10201"), newer); e != ErrRestricted {
+	if _, e := s.Send(f.ctx, principal("10202"), newer); e != ErrRestricted {
 		t.Fatalf("ban bypass %v", e)
 	}
 	f.exec("UPDATE chat_messages SET state='recalled',state_version=2 WHERE id=?", string(out.MessageID))
-	got, e := s.Query(f.ctx, principal("10201"), r.ConversationID, r.ClientMessageID)
+	got, e := s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID)
 	if e != nil || got.MessageState != "recalled" || got.StateVersion != "2" {
 		t.Fatalf("unsafe state %+v %v", got, e)
 	}
@@ -215,10 +215,10 @@ func TestMySQLSendIdempotencyAndSafeResult(t *testing.T) {
 	if _, e = f.store.Poll(f.ctx, 100); e != nil {
 		t.Fatal(e)
 	}
-	if got, e = s.Query(f.ctx, principal("10201"), r.ConversationID, r.ClientMessageID); e != nil || got.MessageID != out.MessageID {
+	if got, e = s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID); e != nil || got.MessageID != out.MessageID {
 		t.Fatalf("closure lost result %+v %v", got, e)
 	}
-	if _, e = s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID); e != ErrUnknown {
+	if _, e = s.Query(f.ctx, principal("10203"), r.ConversationID, r.ClientMessageID); e != ErrUnknown {
 		t.Fatalf("other author result leaked %v", e)
 	}
 	if f.text("SELECT COUNT(*) FROM chat_messages") != "1" {
@@ -237,7 +237,7 @@ func TestMySQLUnavailableAndBlockedDoNotPublish(t *testing.T) {
 				}
 				return ports.SafetyResult{Decision: "blocked", RuleVersion: "fixture"}, nil
 			}))
-			out, e := s.Send(f.ctx, principal("10201"), r)
+			out, e := s.Send(f.ctx, principal("10202"), r)
 			if mode == "blocked" {
 				if e != nil || out.State != "rejected" || out.Code != ErrBlocked.Error() {
 					t.Fatalf("blocked %+v %v", out, e)
@@ -246,7 +246,7 @@ func TestMySQLUnavailableAndBlockedDoNotPublish(t *testing.T) {
 				t.Fatalf("fail-open %+v %v", out, e)
 			}
 			noMessages(t, f)
-			got, e := s.Query(f.ctx, principal("10201"), r.ConversationID, r.ClientMessageID)
+			got, e := s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID)
 			if e != nil || got.State == "accepted" {
 				t.Fatalf("result %+v %v", got, e)
 			}
@@ -269,13 +269,13 @@ func TestMySQLFinalRevalidationAndSequenceOrder(t *testing.T) {
 				// long authority/conversation transaction is held over external calls.
 				switch change {
 				case "ban":
-					f.exec("UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10201")
+					f.exec("UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10202")
 				case "close":
 					f.php("close")
 				case "logout":
-					f.exec("UPDATE login_sessions SET status='revoked' WHERE id=10201")
+					f.exec("UPDATE login_sessions SET status='revoked' WHERE id=10202")
 				case "user-inactive":
-					f.exec("UPDATE users SET status='disabled' WHERE id=10201")
+					f.exec("UPDATE users SET status='disabled' WHERE id=10202")
 				case "staff-revoke":
 					f.exec("UPDATE users SET status='disabled' WHERE id=10203")
 				}
@@ -284,7 +284,7 @@ func TestMySQLFinalRevalidationAndSequenceOrder(t *testing.T) {
 			var s *Service
 			var r Request
 			f, s, r = setupMessage(t, safety)
-			if out, e := s.Send(f.ctx, principal("10201"), r); e == nil && out.State == "accepted" {
+			if out, e := s.Send(f.ctx, principal("10202"), r); e == nil && out.State == "accepted" {
 				t.Fatal("changed authority published")
 			}
 			noMessages(t, f)
@@ -309,9 +309,9 @@ func TestMySQLFinalRevalidationAndSequenceOrder(t *testing.T) {
 	slow.Text = "slow"
 	done := make(chan Result, 1)
 	errs := make(chan error, 1)
-	go func() { out, e := s.Send(f.ctx, principal("10201"), slow); done <- out; errs <- e }()
+	go func() { out, e := s.Send(f.ctx, principal("10202"), slow); done <- out; errs <- e }()
 	<-entered
-	concurrent, e := s.Send(f.ctx, principal("10201"), slow)
+	concurrent, e := s.Send(f.ctx, principal("10202"), slow)
 	if e != nil || concurrent.State != "checking" {
 		t.Fatalf("concurrent retry %+v %v", concurrent, e)
 	}
@@ -338,10 +338,10 @@ func TestMySQLExpiredIDsAndLeaseOwner(t *testing.T) {
 	f, s, r := setupMessage(t, safetyFunc(pass))
 	expired := r
 	expired.ClientMessageID = fmt.Sprintf("%d.%032x", time.Now().Add(-25*time.Hour).Unix(), 1)
-	if _, e := s.Send(f.ctx, principal("10201"), expired); e != ErrExpired {
+	if _, e := s.Send(f.ctx, principal("10202"), expired); e != ErrExpired {
 		t.Fatalf("expired ID accepted %v", e)
 	}
-	if _, e := s.Query(f.ctx, principal("10201"), expired.ConversationID, expired.ClientMessageID); e != ErrExpired {
+	if _, e := s.Query(f.ctx, principal("10202"), expired.ConversationID, expired.ClientMessageID); e != ErrExpired {
 		t.Fatalf("missing expired result %v", e)
 	}
 	noMessages(t, f)
@@ -351,7 +351,7 @@ func TestMySQLExpiredIDsAndLeaseOwner(t *testing.T) {
 		f.exec("UPDATE chat_send_intents SET lease_owner=REPEAT('f',32) WHERE id=?", string(r.IntentID))
 		return pass(ctx, r)
 	})
-	if _, e := s.Send(f.ctx, principal("10201"), r); e != ports.ErrBusy {
+	if _, e := s.Send(f.ctx, principal("10202"), r); e != ports.ErrBusy {
 		t.Fatalf("old lease published %v", e)
 	}
 	noMessages(t, f)
@@ -363,7 +363,7 @@ func TestMySQLExpiredIDsAndLeaseOwner(t *testing.T) {
 func TestMySQLPublicationRollbackAndStableRestrictionLock(t *testing.T) {
 	f, s, r := setupMessage(t, safetyFunc(pass))
 	f.exec("CREATE TRIGGER s06_reject_change BEFORE INSERT ON chat_message_changes FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='isolated rollback test'")
-	if _, e := s.Send(f.ctx, principal("10201"), r); e != ports.ErrUnavailable {
+	if _, e := s.Send(f.ctx, principal("10202"), r); e != ports.ErrUnavailable {
 		t.Fatalf("forced rollback %v", e)
 	}
 	noMessages(t, f)
@@ -379,12 +379,12 @@ func TestMySQLPublicationRollbackAndStableRestrictionLock(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer tx.Rollback()
-	if _, e = s.authorize(f.ctx, tx, principal("10201"), r.ConversationID); e != nil {
+	if _, e = s.authorize(f.ctx, tx, principal("10202"), r.ConversationID); e != nil {
 		t.Fatal(e)
 	}
 	blocked := make(chan error, 1)
 	go func() {
-		_, e := f.root.ExecContext(f.ctx, "UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10201")
+		_, e := f.root.ExecContext(f.ctx, "UPDATE chat_restrictions SET permanent=1,version=version+1 WHERE actor_id=10202")
 		blocked <- e
 	}()
 	select {
@@ -399,7 +399,7 @@ func TestMySQLPublicationRollbackAndStableRestrictionLock(t *testing.T) {
 		t.Fatal(e)
 	}
 	r.ClientMessageID = client(3)
-	if _, e = s.Send(f.ctx, principal("10201"), r); e != ErrRestricted {
+	if _, e = s.Send(f.ctx, principal("10202"), r); e != ErrRestricted {
 		t.Fatalf("new ban not authoritative %v", e)
 	}
 }
@@ -415,7 +415,7 @@ func TestMySQLResultDoesNotOutliveCredential(t *testing.T) {
 	if _, e = tx.ExecContext(f.ctx, "UPDATE chat_send_intents SET updated_at=updated_at WHERE conversation_id=?", string(r.ConversationID)); e != nil {
 		t.Fatal(e)
 	}
-	p := principal("10201")
+	p := principal("10202")
 	p.ExpiresAt = time.Now().Add(300 * time.Millisecond)
 	done := make(chan error, 1)
 	go func() { _, e := s.Query(f.ctx, p, r.ConversationID, r.ClientMessageID); done <- e }()
@@ -430,8 +430,8 @@ func TestMySQLResultDoesNotOutliveCredential(t *testing.T) {
 	}
 	// An old nonterminal intent can never remain actionable, even before cleanup.
 	old := fmt.Sprintf("%d.%032x", time.Now().Add(-25*time.Hour).Unix(), 9)
-	f.exec("INSERT INTO chat_send_intents(sender_id,conversation_id,client_message_id,fingerprint,state,attempts,action_expires_at,retain_until,created_at,updated_at) VALUES(10201,?,?,REPEAT('a',64),'retryable',1,UTC_TIMESTAMP()-INTERVAL 1 HOUR,UTC_TIMESTAMP()+INTERVAL 30 DAY,UTC_TIMESTAMP(),UTC_TIMESTAMP())", string(r.ConversationID), old)
-	out, e := s.Query(f.ctx, principal("10201"), r.ConversationID, old)
+	f.exec("INSERT INTO chat_send_intents(sender_id,conversation_id,client_message_id,fingerprint,state,attempts,action_expires_at,retain_until,created_at,updated_at) VALUES(10202,?,?,REPEAT('a',64),'retryable',1,UTC_TIMESTAMP()-INTERVAL 1 HOUR,UTC_TIMESTAMP()+INTERVAL 30 DAY,UTC_TIMESTAMP(),UTC_TIMESTAMP())", string(r.ConversationID), old)
+	out, e := s.Query(f.ctx, principal("10202"), r.ConversationID, old)
 	if e != nil || out.State != "rejected" || out.Code != ErrExpired.Error() {
 		t.Fatalf("expired nonterminal result %+v %v", out, e)
 	}
