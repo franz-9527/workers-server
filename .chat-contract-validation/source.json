@@ -1,5 +1,5 @@
 {
-  "source_sha": "2bc8925e1fe88bc47b014e2d270b01066836c3ef",
+  "source_sha": "0033474e2d78d653f11516fc2bd811bf238466cd",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -147,7 +147,7 @@
     },
     {
       "path": "chat/internal/message/history.go",
-      "sha": "bed37553d06dfdb3382f95a87eeda3c26002473a"
+      "sha": "a0d84cb7d7eee76732ad0900462919a887627982"
     },
     {
       "path": "chat/internal/message/history_cursor.go",
@@ -163,11 +163,11 @@
     },
     {
       "path": "chat/internal/message/history_integration_test.go",
-      "sha": "f7a93ea5d9034e666b97e5061bbf7d4e5daada91"
+      "sha": "effae15f475cc703835f3e41aa9092d64e81f503"
     },
     {
       "path": "chat/internal/message/history_locate.go",
-      "sha": "29f71fb289781242f25d8ea2643f850e8d3ca49e"
+      "sha": "e11c07f222036eaad1552837a27f897123e59d78"
     },
     {
       "path": "chat/internal/message/history_test.go",
