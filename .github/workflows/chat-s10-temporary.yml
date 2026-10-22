@@ -1,3 +1,4 @@
+# Final tested source 430ba558784803d6744e8decadf62b4bab1925a4
 name: Temporary S10 WSS acceptance
 
 on:
@@ -50,6 +51,8 @@ jobs:
           echo "27d32feec1c36d6d5cecd8cb0d0b66500458af220ea0d55cf1a909df025b7962  .chat-s10-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-s10-validation/work
           tar -xzf .chat-s10-validation/source.tar.gz -C .chat-s10-validation/work
+          cp .chat-s10-validation/gateway.go .chat-s10-validation/work/chat/internal/socket/gateway.go
+          cp .chat-s10-validation/socket_integration_test.go .chat-s10-validation/work/chat/internal/message/socket_integration_test.go
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-s10-validation/work')
