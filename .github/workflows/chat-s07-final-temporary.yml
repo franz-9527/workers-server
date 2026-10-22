@@ -1,0 +1,108 @@
+name: Temporary S07 final acceptance
+# S07 exact-source verification: 5cc391a (bounded timeout fixture)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/chat-s07-final-temporary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity-and-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: chat-ci-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pchat-ci-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:7.0.15
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: chat-ci-fixture-only
+      # Docker port publishing exposes a bridge source address to MySQL.
+      # Only random, temporary fixture users use this host grant.
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack exact source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "576940b2fbbf881b16d5747ef5816c50349bcb0faa0ce1b036fc119376b01d6b  .chat-contract-validation/source.tar.gz" | sha256sum -c -
+          mkdir -p .chat-contract-validation/work
+          tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
+          cp .chat-contract-validation/overrides/0.php .chat-contract-validation/work/server/app/Infrastructure/External/WeChatAccessTokenProvider.php
+          cp .chat-contract-validation/overrides/1.php .chat-contract-validation/work/server/bin/chat-credentials.php
+          cp .chat-contract-validation/overrides/2.php .chat-contract-validation/work/server/tests/chat_text_security_contract.php
+          cp .chat-contract-validation/overrides/risk-0.go .chat-contract-validation/work/chat/internal/message/risk.go
+          cp .chat-contract-validation/overrides/risk-1.go .chat-contract-validation/work/chat/internal/message/moderation_integration_test.go
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          root=pathlib.Path('.chat-contract-validation/work')
+          manifest=json.loads(pathlib.Path('.chat-contract-validation/source.json').read_text())
+          for item in manifest['files']:
+              data=(root/item['path']).read_bytes()
+              assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==item['sha'],item['path']
+          print('Verified source',manifest['source_sha'],'files',len(manifest['files']))
+          PY
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .chat-contract-validation/work/chat/go.mod
+          cache-dependency-path: .chat-contract-validation/work/chat/go.sum
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql, sodium, ctype, mbstring
+          coverage: none
+      - name: Verify PHP development target
+        run: php -r 'if (PHP_VERSION !== "8.3.36") { fwrite(STDERR, "Expected PHP 8.3.36, got ".PHP_VERSION."\n"); exit(1); } echo "PHP ".PHP_VERSION." verified\n";'
+      - name: Isolated service endpoints
+        env:
+          CHAT_TEST_MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          CHAT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$CHAT_TEST_REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$CHAT_TEST_REDIS_PORT" >> "$GITHUB_ENV"
+      - name: PHP syntax and chat contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .chat-contract-validation/work
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php server/tests/chat_text_security_contract.php
+          php server/tests/chat_identity_contract.php
+          php server/tests/chat_schema_contract.php
+          php server/tests/chat_policy_contract.php
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: Go module, build, static and race checks
+        working-directory: .chat-contract-validation/work/chat
+        shell: bash
+        run: |
+          set -euo pipefail
+          go mod verify
+          go vet ./...
+          sh build.sh
+          go test -race -count=1 -timeout=7m ./...
