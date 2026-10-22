@@ -1,4 +1,5 @@
 name: Temporary chat server validation
+# S07 exact-source verification: 24a0b15
 
 on:
   push:
