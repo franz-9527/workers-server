@@ -1,5 +1,5 @@
 {
-  "source_sha": "127597ef959275c41eacdf3a54bdcfb72cbebe9d",
+  "source_sha": "5cc391a1e19bac9ad713442a944a249bc8814444",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -151,7 +151,7 @@
     },
     {
       "path": "chat/internal/message/moderation_integration_test.go",
-      "sha": "152960dc222cff60a596400293e3e5cf128b6d02"
+      "sha": "88005b1b2b6841cf7027b4530b1892c1aaa49282"
     },
     {
       "path": "chat/internal/message/mysql_integration_test.go",

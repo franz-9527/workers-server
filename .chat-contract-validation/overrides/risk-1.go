@@ -116,7 +116,13 @@ func TestMySQLS07OfficialRejectionReviewAndFaults(t *testing.T) {
 				case "malformed":
 					io.WriteString(w, `{"errcode":0}`)
 				case "timeout":
-					<-req.Context().Done()
+					// Drain the POST body so net/http can observe a closed peer.
+					// Bound the fixture too: server cleanup must not wait forever.
+					io.Copy(io.Discard, req.Body)
+					select {
+					case <-req.Context().Done():
+					case <-time.After(3 * time.Second):
+					}
 				}
 			})
 			out, e := s.Send(f.ctx, principal("10202"), r)
