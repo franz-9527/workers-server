@@ -1,5 +1,5 @@
 {
-  "source_sha": "0820c3df3c2087a37ce142c6ac7227353d13e0cb",
+  "source_sha": "9e898c0ee301fb359268b630eaa40f1765ff4676",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -827,7 +827,7 @@
     },
     {
       "path": "server/tests/chat_schema_contract.php",
-      "sha": "47ef3c625f136789946558f4c796168b746ed8db"
+      "sha": "de20e51dbfc40ef8bfb823c5875dec487f52679a"
     },
     {
       "path": "server/tests/chat_text_security_contract.php",
