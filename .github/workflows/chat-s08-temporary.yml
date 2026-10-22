@@ -1,5 +1,5 @@
 name: Temporary S08 history acceptance
-# S08 exact-source verification: 2bc8925
+# S08 exact-source verification: 0033474
 
 on:
   push:
@@ -51,6 +51,9 @@ jobs:
           echo "78241c03201054a27b27e305e9886e03112b2133b284a9d8422d962e9f085352  .chat-contract-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-contract-validation/work
           tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
+          cp .chat-contract-validation/overrides/history-0.go .chat-contract-validation/work/chat/internal/message/history.go
+          cp .chat-contract-validation/overrides/history-1.go .chat-contract-validation/work/chat/internal/message/history_locate.go
+          cp .chat-contract-validation/overrides/history-2.go .chat-contract-validation/work/chat/internal/message/history_integration_test.go
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-contract-validation/work')
