@@ -1,5 +1,5 @@
 {
-  "source_sha": "24a0b15b9de7d0fc9809cb69a98a9fff38475c7d",
+  "source_sha": "127597ef959275c41eacdf3a54bdcfb72cbebe9d",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -151,7 +151,7 @@
     },
     {
       "path": "chat/internal/message/moderation_integration_test.go",
-      "sha": "ffb96cf528778c8bbd475a01eb78e5cb656cfe84"
+      "sha": "152960dc222cff60a596400293e3e5cf128b6d02"
     },
     {
       "path": "chat/internal/message/mysql_integration_test.go",
@@ -159,7 +159,7 @@
     },
     {
       "path": "chat/internal/message/risk.go",
-      "sha": "39d48446a1d29610b2c75987a9a62181bd39cbee"
+      "sha": "145c05720c0f2c19a126a5a5770ac0cbdcaedd63"
     },
     {
       "path": "chat/internal/message/service.go",
