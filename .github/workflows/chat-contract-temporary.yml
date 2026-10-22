@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "61c33c6dd5b262ce47e9758c8848e54f11d72cc511faf1180abce07cd4bc1c46  .chat-contract-validation/source.tar.gz" | sha256sum -c -
+          echo "473c425502d366c50135701164acb36da88554d5952a2134139953d2487b15af  .chat-contract-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-contract-validation/work
           tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
           python3 - <<'PY'
