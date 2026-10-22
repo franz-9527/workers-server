@@ -51,6 +51,8 @@ jobs:
           echo "c3cd350155b1a80a85752d3e498eab13d483a9dae050092045ec1d7968888e4e  .chat-contract-validation/source.tar.gz" | sha256sum -c -
           mkdir -p .chat-contract-validation/work
           tar -xzf .chat-contract-validation/source.tar.gz -C .chat-contract-validation/work
+          cp .chat-contract-validation/overrides/store.go .chat-contract-validation/work/chat/internal/conversation/store.go
+          cp .chat-contract-validation/overrides/chat_schema_contract.php .chat-contract-validation/work/server/tests/chat_schema_contract.php
           python3 - <<'PY'
           import json,pathlib,hashlib
           root=pathlib.Path('.chat-contract-validation/work')

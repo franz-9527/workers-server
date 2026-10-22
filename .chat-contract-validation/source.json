@@ -1,5 +1,5 @@
 {
-  "source_sha": "e67c7efe3fc17cd1618151345f8d81c5f8881592",
+  "source_sha": "12cc2f8599ab04220a15f214f4eac597aad01166",
   "files": [
     {
       "path": "chat/.gitignore",
@@ -103,7 +103,7 @@
     },
     {
       "path": "chat/internal/conversation/store.go",
-      "sha": "ac9421b598445f34bd5936d4b686ff9fa5fc0c1f"
+      "sha": "7bada6d71beff675f43201be6f2af50ea12f045c"
     },
     {
       "path": "chat/internal/dependencies/dependencies_test.go",
@@ -707,7 +707,7 @@
     },
     {
       "path": "server/tests/chat_schema_contract.php",
-      "sha": "118903f8b2e448dd4566be368fd02f4fd5ffa610"
+      "sha": "09c678e33fe23bf23d723907c98fe1d16cde2610"
     },
     {
       "path": "server/tests/v250_transaction_mysql.php",
