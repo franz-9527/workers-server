@@ -40,6 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify exact source snapshot and materialize isolated files
+        id: source
         shell: python
         run: |
           import json,hashlib,pathlib
@@ -81,6 +82,7 @@ jobs:
           find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
           php server/tests/v250_messaging_migration_mysql.php
       - name: Go build, vet and message/policy/conversation race integration
+        if: ${{ !cancelled() && steps.source.outcome == 'success' }}
         working-directory: .validation/s12/worktree/chat
         run: |
           go mod verify
