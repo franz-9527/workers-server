@@ -1,0 +1,31 @@
+name: Temporary Chat S12 Final Navigation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.chat-s12-validation/**'
+      - '.github/workflows/chat-s12-temporary.yml'
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks on exact S12 snapshot
+        run: |
+          set -eu
+          node --check .chat-s12-validation/snapshot/miniprogram/pages/index/index.js
+          node --check .chat-s12-validation/snapshot/miniprogram/pages/store/store.js
+          node --check .chat-s12-validation/snapshot/miniprogram/pages/notificationCenter/index.js
+          node --check .chat-s12-validation/snapshot/miniprogram/pages/chatMessages/index.js
+          node --check .chat-s12-validation/snapshot/miniprogram/subpackages/chat/conversation/index.js
+          node --check .chat-s12-validation/snapshot/miniprogram/utils/ChatManager.js
+          node --check .chat-s12-validation/snapshot/miniprogram/utils/ChatInboxModel.js
+          node --check .chat-s12-validation/snapshot/miniprogram/utils/MessageNavigation.js
+      - name: Isolated verified inbox and preserved PHP business entry tests
+        run: node .chat-s12-validation/tests/verify.cjs
