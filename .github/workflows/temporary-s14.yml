@@ -45,6 +45,9 @@ jobs:
         run: |
           import json,hashlib,pathlib,base64
           manifest=json.loads(''.join(p.read_text() for p in sorted(pathlib.Path('.validation/s14').glob('source-*.part'))))
+          overlay=json.loads(pathlib.Path('.validation/s14/overlay.json').read_text())
+          manifest['files'].update(overlay['files']);manifest['blob_shas'].update(overlay['blob_shas'])
+          manifest['source_commit']=overlay['source_commit'];manifest['source_tree']=overlay['source_tree']
           root=pathlib.Path('.validation/s14/worktree')
           for name,content in manifest['files'].items():
               path=pathlib.PurePosixPath(name)
