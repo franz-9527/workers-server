@@ -88,6 +88,7 @@ jobs:
         run: |
           find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
           php server/tests/chat_schema_contract.php
+          php server/tests/chat_identity_contract.php
       - name: Go build, vet and affected package race regression
         if: ${{ !cancelled() && steps.source.outcome == 'success' }}
         working-directory: .validation/s16-s17/worktree/chat
@@ -96,7 +97,7 @@ jobs:
           go mod verify
           go vet ./...
           sh build.sh
-          go test -race -count=1 ./internal/message ./internal/conversation ./internal/policy ./internal/dependencies ./internal/bootstrap ./internal/socket ./internal/imagepipeline
+          go test -race -count=1 ./internal/message ./internal/conversation ./internal/policy ./internal/dependencies ./internal/bootstrap ./internal/socket ./internal/imagepipeline ./internal/auth
       - name: Export canonical new Go formatting
         if: always()
         working-directory: .validation/s16-s17/worktree/chat
