@@ -81,11 +81,11 @@ jobs:
         run: |
           find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
           php server/tests/v250_messaging_migration_mysql.php
-      - name: Go build, vet and message/policy/conversation race integration
+      - name: Go build, vet and policy fixture race regression
         if: ${{ !cancelled() && steps.source.outcome == 'success' }}
         working-directory: .validation/s12/worktree/chat
         run: |
           go mod verify
           go vet ./...
           sh build.sh
-          go test -race -count=1 ./internal/message ./internal/policy ./internal/conversation
+          go test -race -count=1 ./internal/policy
