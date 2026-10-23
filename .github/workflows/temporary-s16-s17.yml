@@ -69,7 +69,8 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install hash-pinned local image libraries
-        run: python -m pip install --require-hashes --only-binary=:all: -r .validation/s16-s17/worktree/chat/helpers/images/requirements.lock
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r .validation/s16-s17/worktree/chat/helpers/images/requirements.lock
       - name: Set isolated endpoints and verify runtimes
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
