@@ -1,0 +1,193 @@
+<view class="notice-page">
+  <view class="notice-summary">
+    <view class="summary-main">
+      <view class="summary-title-row">
+        <view class="summary-label"><text class="cuIcon-noticefill summary-title-icon"></text>通知与待办</view>
+        <button class="summary-setting-icon" bindtap="openSubscribeSettings" aria-label="通知设置"><text class="cuIcon-settings"></text></button>
+      </view>
+      <view wx:if="{{unreadCount > 0}}" class="summary-unread summary-unread-inline">{{unreadCount > 99 ? '99+' : unreadCount}} 未读</view>
+      <view class="summary-count">
+        <text class="summary-number">{{todoCount > 99 ? '99+' : todoCount}}</text><text> 项待处理</text>
+      </view>
+      <view class="summary-copy">需要操作的事项优先展示，同一订单通知自动聚合</view>
+    </view>
+  </view>
+
+  <view wx:if="{{subscriptionAlert}}" class="subscription-health {{subscriptionAlert.level}}" bindtap="handleSubscriptionAlert">
+    <view class="subscription-health-icon"><text class="{{subscriptionAlert.level === 'warning' ? 'cuIcon-warnfill' : 'cuIcon-noticefill'}}"></text></view>
+    <view class="subscription-health-copy">
+      <view class="subscription-health-title">{{subscriptionAlert.title}}</view>
+      <view class="subscription-health-desc">{{subscriptionAlert.description}}</view>
+    </view>
+    <view wx:if="{{subscriptionAlert.action !== 'none'}}" class="subscription-health-action">{{subscriptionAlert.action_text || '处理'}} <text class="cuIcon-right"></text></view>
+  </view>
+
+  <view class="notice-switch">
+    <view class="switch-item {{viewMode === 'todo' ? 'active' : ''}}" data-mode="todo" bindtap="selectMode">
+      <text>待我处理</text>
+      <text wx:if="{{todoCount > 0}}" class="switch-badge todo">{{todoCount > 99 ? '99+' : todoCount}}</text>
+    </view>
+    <view class="switch-item {{viewMode === 'all' ? 'active' : ''}}" data-mode="all" bindtap="selectMode">
+      <text>通知</text>
+      <text wx:if="{{unreadCount > 0}}" class="switch-badge unread">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
+    </view>
+  </view>
+
+  <block wx:if="{{viewMode === 'todo'}}">
+    <view class="todo-intro">
+      <view class="todo-intro-icon"><text class="cuIcon-timefill"></text></view>
+      <view class="todo-intro-copy">
+        <view class="todo-intro-title">这里只保留当前仍需处理的事项</view>
+        <view class="todo-intro-sub">处理完成后自动移出，提醒等级也会随订单实时状态变化</view>
+      </view>
+    </view>
+
+    <view wx:if="{{todoErrorText && !todos.length}}" class="notice-empty compact">
+      <view class="empty-icon-wrap warning"><text class="cuIcon-warn"></text></view>
+      <view class="notice-empty-title">待办暂时没有加载出来</view>
+      <view class="notice-empty-copy">{{todoErrorText}}</view>
+      <button class="cu-btn round bg-cyan text-white margin-top" bindtap="retry">重新加载</button>
+    </view>
+
+    <view wx:elif="{{!todoLoading && !todos.length}}" class="notice-empty compact">
+      <view class="empty-icon-wrap success"><text class="cuIcon-roundcheckfill"></text></view>
+      <view class="notice-empty-title">暂时没有待处理事项</view>
+      <view class="notice-empty-copy">当前订单都已处理妥当，有新的付款、接单、验收或售后事项时会出现在这里</view>
+    </view>
+
+    <view wx:for="{{todos}}" wx:key="order_id" class="todo-card {{item.tone_class}} urgency-border-{{item.urgency_class}}" data-index="{{index}}" bindtap="openTodo">
+      <view class="todo-card-head">
+        <view class="todo-icon {{item.tone_class}}"><text class="{{item.icon_class}}"></text></view>
+        <view class="todo-head-main">
+          <view class="todo-tags">
+            <text class="role-tag {{item.role_class}}">{{item.role_text}}</text>
+            <text class="todo-category">{{item.category_name}}</text>
+            <text class="urgency-tag {{item.urgency_class}}">{{item.urgency_text}}</text>
+          </view>
+          <view class="todo-title">{{item.action_text}}</view>
+        </view>
+        <text class="cuIcon-right todo-arrow"></text>
+      </view>
+      <view class="todo-hint">{{item.hint_text}}</view>
+      <view class="todo-order-info">
+        <view class="todo-order-title">{{item.title}}</view>
+        <view wx:if="{{item.address_text}}" class="todo-order-line"><text class="cuIcon-location"></text><text>{{item.address_text}}</text></view>
+        <view wx:if="{{item.visit_text}}" class="todo-order-line"><text class="cuIcon-time"></text><text>{{item.visit_text}}</text></view>
+      </view>
+      <view class="todo-action-row">
+        <text>进入订单处理</text><text class="cuIcon-right"></text>
+      </view>
+    </view>
+
+    <view wx:if="{{todoLoading}}" class="notice-loading"><text class="cuIcon-loading2 cuIconfont-spin"></text> 正在检查待办</view>
+  </block>
+
+  <block wx:else>
+    <view class="all-toolbar">
+      <view class="identity-legend">
+        <view class="identity-item"><text class="identity-dot user"></text><text>我的下单</text></view>
+        <view class="identity-item"><text class="identity-dot worker"></text><text>我的接单</text></view>
+      </view>
+      <button wx:if="{{unreadCount > 0}}" class="read-all-action" loading="{{readAllLoading}}" disabled="{{readAllLoading}}" bindtap="markAllRead">全部已读</button>
+    </view>
+
+    <view class="urgency-legend">
+      <view><text class="urgency-dot must"></text>必须处理</view>
+      <view><text class="urgency-dot attention"></text>需要关注</view>
+      <view><text class="urgency-dot normal"></text>普通通知</view>
+    </view>
+
+    <view wx:if="{{errorText && !items.length}}" class="notice-empty">
+      <view class="empty-icon-wrap warning"><text class="cuIcon-warn"></text></view>
+      <view class="notice-empty-title">消息暂时没有加载出来</view>
+      <view class="notice-empty-copy">{{errorText}}</view>
+      <button class="cu-btn round bg-cyan text-white margin-top" bindtap="retry">重新加载</button>
+    </view>
+
+    <view wx:elif="{{!loading && !items.length}}" class="notice-empty">
+      <view class="empty-icon-wrap"><text class="cuIcon-notice"></text></view>
+      <view class="notice-empty-title">暂时没有消息</view>
+      <view class="notice-empty-copy">有新的订单进度、报价或售后事项时，会第一时间出现在这里</view>
+    </view>
+
+    <block wx:for="{{items}}" wx:key="id">
+      <view wx:if="{{item.show_group}}" class="date-group">{{item.group_text}}</view>
+
+      <view wx:if="{{item.is_thread}}" class="notice-card thread-card {{item.read ? 'is-read' : 'is-unread'}} urgency-{{item.urgency_class}}">
+        <view class="notice-icon {{item.tone_class}}"><text class="{{item.icon_class}}"></text></view>
+        <view class="notice-content">
+          <view class="notice-meta">
+            <view class="notice-tags">
+              <text class="role-tag {{item.role_class}}">{{item.role_text}}</text>
+              <text class="category-tag">{{item.category_text}}</text>
+              <text class="urgency-tag {{item.urgency_class}}">{{item.urgency_text}}</text>
+            </view>
+            <text class="notice-time">{{item.time_text}}</text>
+          </view>
+
+          <view class="notice-title-row">
+            <view class="notice-card-title">{{item.title}}</view>
+            <text wx:if="{{item.unread_count > 0}}" class="unread-dot"></text>
+          </view>
+          <view class="notice-copy">{{item.content}}</view>
+
+          <view class="thread-summary">
+            <view class="thread-count">
+              <text class="cuIcon-time"></text>
+              <text>本订单 {{item.thread_count}} 条动态</text>
+              <text wx:if="{{item.unread_count > 0}}" class="thread-unread">{{item.unread_count}} 条未读</text>
+            </view>
+            <view class="thread-toggle" data-index="{{index}}" catchtap="toggleThread">
+              <text>{{item.expanded ? '收起' : '展开记录'}}</text>
+              <text class="{{item.expanded ? 'cuIcon-fold' : 'cuIcon-unfold'}}"></text>
+            </view>
+          </view>
+
+          <view wx:if="{{item.expanded}}" class="thread-timeline">
+            <view wx:for="{{item.messages}}" wx:for-item="message" wx:for-index="messageIndex" wx:key="id" class="timeline-item {{message.read ? 'read' : 'unread'}}">
+              <view class="timeline-rail"><text class="timeline-dot"></text><text wx:if="{{messageIndex < item.messages.length - 1}}" class="timeline-line"></text></view>
+              <view class="timeline-main">
+                <view class="timeline-head"><text>{{message.title}}</text><text>{{message.time_text}}</text></view>
+                <view class="timeline-copy">{{message.content}}</view>
+              </view>
+            </view>
+          </view>
+
+          <view class="notice-order-box {{item.current_todo ? 'todo-active' : ''}}" data-index="{{index}}" catchtap="openThreadOrder">
+            <view class="order-info">
+              <text class="cuIcon-form"></text>
+              <view>
+                <view class="order-label">{{item.current_todo ? '待处理 · 关联订单' : '关联订单'}}</view>
+                <view class="order-no">{{item.order_no}}</view>
+              </view>
+            </view>
+            <view class="order-action">{{item.action_text}} <text class="cuIcon-right"></text></view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:else class="notice-card {{item.read ? 'is-read' : 'is-unread'}} urgency-{{item.urgency_class}}" data-index="{{index}}" bindtap="openMessage">
+        <view class="notice-icon {{item.tone_class}}"><text class="{{item.icon_class}}"></text></view>
+        <view class="notice-content">
+          <view class="notice-meta">
+            <view class="notice-tags">
+              <text class="role-tag {{item.role_class}}">{{item.role_text}}</text>
+              <text class="category-tag">{{item.category_text}}</text>
+              <text class="urgency-tag {{item.urgency_class}}">{{item.urgency_text}}</text>
+            </view>
+            <text class="notice-time">{{item.time_text}}</text>
+          </view>
+          <view class="notice-title-row">
+            <view class="notice-card-title">{{item.title}}</view>
+            <text wx:if="{{!item.read}}" class="unread-dot"></text>
+          </view>
+          <view class="notice-copy">{{item.content}}</view>
+          <view class="notice-state-row"><text>{{item.read ? '已读' : '点击标记为已读'}}</text></view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:if="{{loading || loadingMore}}" class="notice-loading"><text class="cuIcon-loading2 cuIconfont-spin"></text> 加载中</view>
+    <view wx:elif="{{items.length && !hasMore}}" class="notice-bottom"><text></text><view>没有更多消息了</view><text></text></view>
+  </block>
+</view>
