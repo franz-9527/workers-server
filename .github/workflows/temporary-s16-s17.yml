@@ -92,6 +92,7 @@ jobs:
         if: ${{ !cancelled() && steps.source.outcome == 'success' }}
         working-directory: .validation/s16-s17/worktree/chat
         run: |
+          gofmt -w internal/message/media*.go internal/imagepipeline/*.go
           go mod verify
           go vet ./...
           sh build.sh
@@ -106,3 +107,8 @@ jobs:
           for name in names:
               p=subprocess.run(['gofmt',name],capture_output=True,check=True)
               print('FORMATTED_FILE '+json.dumps({'path':'chat/'+name,'base64':base64.b64encode(p.stdout).decode()}))
+          import hashlib
+          for p in sorted(pathlib.Path('..').rglob('*')):
+              if p.is_file() and p.parts[1] in ('chat','server','tools'):
+                  b=p.read_bytes()
+                  print('TESTED_BLOB '+json.dumps({'path':'/'.join(p.parts[1:]),'sha':hashlib.sha1(b'blob '+str(len(b)).encode()+b'\\0'+b).hexdigest()}))
