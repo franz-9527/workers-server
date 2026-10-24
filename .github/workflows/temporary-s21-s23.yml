@@ -105,6 +105,15 @@ jobs:
           php server/tests/chat_reminder_contract.php
           php server/tests/chat_operations_contract.php
           python -B tools/test_chat_operations.py
+      - name: Prepare native binlog verifier for the disposable MySQL 5.7 archive
+        run: |
+          sudo apt-get update -qq
+          verifier_version="$(apt-cache policy mysql-client-core-8.0 | awk '/Candidate:/ {print $2}')"
+          test -n "$verifier_version"
+          test "$verifier_version" != "(none)"
+          sudo apt-get install -y --no-install-recommends "mysql-client-core-8.0=$verifier_version"
+          /usr/bin/mysqlbinlog --no-defaults --version
+          dpkg-query -W -f='${Package} ${Version}\n' mysql-client-core-8.0
       - name: Verify real continuous archived binlogs
         working-directory: .validation/s21-s23/worktree
         shell: python
@@ -118,9 +127,7 @@ jobs:
           for n in range(first,last+1):
               name=prefix+'.'+str(n).zfill(6)
               subprocess.run(['docker','cp','bxchat-recovery:/var/lib/mysql/'+name,str(archive/name)],check=True)
-          validator=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-mysqlbinlog'
-          validator.write_text('#!/usr/bin/env python3\nimport subprocess,sys\nsys.exit(subprocess.run('+repr(['docker','run','--rm','--network=none','--user',str(os.getuid())+':'+str(os.getgid()),'--volume',str(archive)+':'+str(archive)+':ro','--entrypoint','mysqlbinlog','mysql:5.7.44'])+'+sys.argv[1:]).returncode)\n')
-          validator.chmod(0o750)
+          validator=pathlib.Path('/usr/bin/mysqlbinlog')
           env=dict(os.environ,CHAT_RECOVERY_KEY=base64.b64encode(b'k'*32).decode())
           cmd=['python','-B','chat/scripts/seal-binlogs.py','--control',str(control),'--backup-checkpoint',str(control/'backup-checkpoint.json'),'--archive',str(archive),'--mysqlbinlog',str(validator)]
           checked=subprocess.run(cmd,env=env)
@@ -167,7 +174,7 @@ jobs:
                   path=archive/(prefix+'.'+str(n).zfill(6))
                   lo=start['position'] if n==first else '4'
                   hi=end['position'] if n==last else str(path.stat().st_size)
-                  command=['docker','run','--rm','--network=none','--user',str(os.getuid())+':'+str(os.getgid()),'--volume',str(archive)+':'+str(archive)+':ro','--entrypoint','mysqlbinlog','mysql:5.7.44','--no-defaults','--verify-binlog-checksum','--database='+name,'--start-position='+str(lo),'--stop-position='+str(hi),str(path)]
+                  command=['/usr/bin/mysqlbinlog','--no-defaults','--verify-binlog-checksum','--database='+name,'--start-position='+str(lo),'--stop-position='+str(hi),str(path)]
                   subprocess.run(command,stdout=sql,check=True)
           replay.chmod(0o600)
           with replay.open('rb') as sql:
