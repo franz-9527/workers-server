@@ -94,6 +94,7 @@ jobs:
           docker exec bxchat-recovery mysqladmin ping -h 127.0.0.1 -ps14-fixture-only --silent
           echo "CHAT_RECOVERY_TEST_MYSQL_ADDR=$(docker port bxchat-recovery 3306/tcp)" >> "$GITHUB_ENV"
           echo "CHAT_RECOVERY_TEST_CONTROL_DIR=$RUNNER_TEMP/chat-recovery-control" >> "$GITHUB_ENV"
+          echo "CHAT_RECOVERY_TEST_BACKUP_PATH=$RUNNER_TEMP/chat-recovery-backup.sql" >> "$GITHUB_ENV"
           echo "CHAT_TEST_CENTER_FIXTURE_DIR=$RUNNER_TEMP/chat-center-fixtures" >> "$GITHUB_ENV"
       - name: PHP syntax, identity, reminders, schema and operational contracts
         working-directory: .validation/s21-s23/worktree
@@ -129,11 +130,40 @@ jobs:
           assert bad.returncode!=0,'incomplete archived tail unexpectedly verified'
           last_file.write_bytes(complete)
           subprocess.run(cmd,env=env,check=True)
+      - name: Restore old backup and replay the verified security increment
+        working-directory: .validation/s21-s23/worktree
+        shell: python
+        run: |
+          import json,pathlib,os,subprocess
+          control=pathlib.Path(os.environ['CHAT_RECOVERY_TEST_CONTROL_DIR'])
+          name=json.loads((control/'fixture-meta.json').read_text())['database']
+          port=os.environ['CHAT_INTEGRATION_MYSQL_ADDR'].rsplit(':',1)[1]
+          client=['docker','run','--rm','-i','--network=host','-e','MYSQL_PWD=s14-fixture-only','--entrypoint','mysql','mysql:5.7.44','-h127.0.0.1','-P'+port,'-uroot']
+          with open(os.environ['CHAT_RECOVERY_TEST_BACKUP_PATH'],'rb') as backup:
+              subprocess.run(client,stdin=backup,check=True)
+          env=dict(os.environ,CHAT_RECOVERY_TEST_MYSQL_ADDR=os.environ['CHAT_INTEGRATION_MYSQL_ADDR'])
+          subprocess.run(['php','server/tests/chat_operations_contract.php','--verify-restored-old'],env=env,check=True)
+          start=json.loads((control/'backup-checkpoint.json').read_text())['payload']['watermark']
+          end=json.loads((control/'checkpoint.json').read_text())['payload']['watermark']
+          archive=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-binlog-archive'
+          first=int(start['file'].rsplit('.',1)[1]);last=int(end['file'].rsplit('.',1)[1]);prefix=end['file'].rsplit('.',1)[0]
+          replay=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-recovery-replay.sql'
+          with replay.open('wb') as sql:
+              for n in range(first,last+1):
+                  path=archive/(prefix+'.'+str(n).zfill(6))
+                  lo=start['position'] if n==first else '4'
+                  hi=end['position'] if n==last else str(path.stat().st_size)
+                  command=['docker','run','--rm','--network=none','--user',str(os.getuid())+':'+str(os.getgid()),'--volume',str(archive)+':'+str(archive)+':ro','--entrypoint','mysqlbinlog','mysql:5.7.44','--verify-binlog-checksum','--database='+name,'--start-position='+str(lo),'--stop-position='+str(hi),str(path)]
+                  subprocess.run(command,stdout=sql,check=True)
+          replay.chmod(0o600)
+          with replay.open('rb') as sql:
+              subprocess.run(client,stdin=sql,check=True)
+          subprocess.run(['php','server/tests/chat_operations_contract.php','--verify-replayed'],env=env,check=True)
       - name: Go build, vet and complete affected package race regression
         if: ${{ !cancelled() && steps.source.outcome == 'success' }}
         working-directory: .validation/s21-s23/worktree/chat
         run: |
-          gofmt -w internal/message/recovery_integration_test.go internal/message/retention.go internal/dependencies/retention.go internal/message/media_cleanup.go internal/dependencies/operations.go internal/dependencies/runtime.go internal/bootstrap/config.go internal/bootstrap/app.go internal/bootstrap/server.go internal/dependencies/socket.go internal/message/retention_integration_test.go internal/dependencies/operations_test.go internal/bootstrap/release.go internal/dependencies/messaging.go internal/bootstrap/release_test.go internal/message/history_integration_test.go internal/message/load_integration_test.go internal/message/governance_maintenance.go
+          gofmt -w internal/message/recovery_integration_test.go internal/message/retention.go internal/dependencies/retention.go internal/message/media_cleanup.go internal/dependencies/operations.go internal/dependencies/runtime.go internal/bootstrap/config.go internal/bootstrap/app.go internal/bootstrap/server.go internal/dependencies/socket.go internal/message/retention_integration_test.go internal/dependencies/operations_test.go internal/bootstrap/release.go internal/dependencies/messaging.go internal/bootstrap/release_test.go internal/message/history_integration_test.go internal/message/load_integration_test.go internal/message/governance_maintenance.go internal/dependencies/mysql.go internal/dependencies/integration_test.go internal/message/mysql_integration_test.go internal/socket/gateway.go internal/socket/gateway_test.go internal/dependencies/dependencies_test.go internal/message/http.go
           go mod verify
           go vet ./...
           sh build.sh
@@ -158,7 +188,7 @@ jobs:
         shell: python
         run: |
           import pathlib,subprocess,base64,json,hashlib
-          names=["internal/message/recovery_integration_test.go","internal/message/retention.go","internal/dependencies/retention.go","internal/message/media_cleanup.go","internal/dependencies/operations.go","internal/dependencies/runtime.go","internal/bootstrap/config.go","internal/bootstrap/app.go","internal/bootstrap/server.go","internal/dependencies/socket.go","internal/message/retention_integration_test.go","internal/dependencies/operations_test.go","internal/bootstrap/release.go","internal/dependencies/messaging.go","internal/bootstrap/release_test.go","internal/message/history_integration_test.go","internal/message/load_integration_test.go","internal/message/governance_maintenance.go"]
+          names=["internal/message/recovery_integration_test.go","internal/message/retention.go","internal/dependencies/retention.go","internal/message/media_cleanup.go","internal/dependencies/operations.go","internal/dependencies/runtime.go","internal/bootstrap/config.go","internal/bootstrap/app.go","internal/bootstrap/server.go","internal/dependencies/socket.go","internal/message/retention_integration_test.go","internal/dependencies/operations_test.go","internal/bootstrap/release.go","internal/dependencies/messaging.go","internal/bootstrap/release_test.go","internal/message/history_integration_test.go","internal/message/load_integration_test.go","internal/message/governance_maintenance.go","internal/dependencies/mysql.go","internal/dependencies/integration_test.go","internal/message/mysql_integration_test.go","internal/socket/gateway.go","internal/socket/gateway_test.go","internal/dependencies/dependencies_test.go","internal/message/http.go"]
           for name in names:
               if not pathlib.Path(name).is_file(): continue
               p=subprocess.run(['gofmt',name],capture_output=True,check=True)
