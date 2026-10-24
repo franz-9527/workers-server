@@ -1,0 +1,71 @@
+name: Temporary U15 notification contracts
+on:
+  push:
+    paths:
+      - '.validation/u15/**'
+      - '.github/workflows/temporary-u15.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-u15
+  cancel-in-progress: true
+jobs:
+  php-mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: u15-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pu15-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+    env:
+      MESSAGING_MIGRATION_MYSQL_TEST: '1'
+      V250_DB_HOST: 127.0.0.1
+      V250_DB_USER: root
+      V250_DB_PASSWORD: u15-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize exact authorized minimal backend snapshot
+        shell: python
+        run: |
+          import json,pathlib,hashlib
+          manifest=json.loads(pathlib.Path('.validation/u15/source.json').read_text())
+          root=pathlib.Path('.validation/u15/worktree')
+          for name,source in manifest['files'].items():
+              target=pathlib.PurePosixPath(name)
+              assert not target.is_absolute() and '..' not in target.parts
+              assert target.parts[0] in ('server','tools') and name.endswith('.php')
+              data=source.encode()
+              assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==manifest['blob_shas'][name],name
+              path=root/target;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
+          print('Exact minimal backend files:',len(manifest['files']))
+          print('Candidate source:',manifest['source_commit'])
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql, ctype, mbstring, sodium
+          coverage: none
+      - name: PHP syntax and complete affected messaging contracts
+        working-directory: .validation/u15/worktree
+        env:
+          V250_DB_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: |
+          set -euo pipefail
+          php -r 'if(PHP_VERSION!=="8.3.36")exit(1);echo "PHP ".PHP_VERSION." verified\n";'
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php tools/test-messaging-migration.php
+          php server/tests/v250_messaging_migration_mysql.php
+      - name: Record exact tested backend blobs
+        if: always()
+        working-directory: .validation/u15/worktree
+        shell: python
+        run: |
+          import pathlib,hashlib,json
+          for p in sorted(pathlib.Path('.').rglob('*.php')):
+              b=p.read_bytes()
+              print('TESTED_BLOB '+json.dumps({'path':p.as_posix(),'sha':hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()}))
