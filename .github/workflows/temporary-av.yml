@@ -187,6 +187,10 @@ jobs:
           with replay.open('rb') as sql:
               subprocess.run(client,stdin=sql,check=True)
           subprocess.run(['php','server/tests/chat_operations_contract.php','--verify-replayed'],env=env,check=True)
+      - name: Focused offline media diagnostics
+        if: always()
+        working-directory: .validation/av/worktree/chat
+        run: go test -count=1 -v ./internal/avpipeline
       - name: Go format, static checks and complete race regression
         if: always()
         working-directory: .validation/av/worktree/chat
