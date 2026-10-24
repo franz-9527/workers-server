@@ -1,0 +1,172 @@
+name: Temporary S21-S23 service verification
+on:
+  push:
+    paths: ['.github/workflows/temporary-s21-s23.yml', '.validation/s21-s23/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-s21-s23-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  service-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: s14-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ps14-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:7.0.15
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_INTEGRATION: '1'
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_IMAGE_HELPER_TEST: '1'
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: s14-fixture-only
+      MESSAGING_MIGRATION_MYSQL_TEST: '1'
+      V250_DB_HOST: 127.0.0.1
+      V250_DB_USER: root
+      V250_DB_PASSWORD: s14-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact source snapshot and materialize isolated files
+        id: source
+        shell: python
+        run: |
+          import json,hashlib,pathlib,base64
+          manifest=json.loads(''.join(p.read_text() for p in sorted(pathlib.Path('.validation/s21-s23').glob('source-*.part'))))
+          root=pathlib.Path('.validation/s21-s23/worktree')
+          for name,content in manifest['files'].items():
+              path=pathlib.PurePosixPath(name)
+              assert not path.is_absolute() and '..' not in path.parts
+              assert path.parts[0] in ('chat','server','tools')
+              data=base64.b64decode(content) if manifest.get('encodings',{}).get(name)=='base64' else content.encode()
+              blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              assert blob==manifest['blob_shas'][name],name+' does not match source commit'
+              target=root.joinpath(*path.parts);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+          print('Verified source commit:',manifest['source_commit'],'files:',len(manifest['files']))
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .validation/s21-s23/worktree/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,sodium,ctype,mbstring,gd
+          coverage: none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install hash-pinned local image libraries
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r .validation/s21-s23/worktree/chat/helpers/images/requirements.lock
+      - name: Set isolated endpoints and verify runtimes
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: |
+          php -r 'if (PHP_VERSION !== "8.3.36") exit(1); echo "PHP ".PHP_VERSION."\n";'
+          go version
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "V250_DB_PORT=$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: Prepare independent binlog recovery fixture
+        run: |
+          docker run -d --name bxchat-recovery -e MYSQL_ROOT_PASSWORD=s14-fixture-only -e MYSQL_ROOT_HOST=% -p 127.0.0.1::3306 mysql:5.7.44 --log-bin=mysql-bin --binlog-format=ROW --server-id=2123 --binlog-checksum=CRC32
+          for attempt in $(seq 1 60); do
+            if docker exec bxchat-recovery mysqladmin ping -h 127.0.0.1 -ps14-fixture-only --silent; then break; fi
+            sleep 2
+          done
+          docker exec bxchat-recovery mysqladmin ping -h 127.0.0.1 -ps14-fixture-only --silent
+          echo "CHAT_RECOVERY_TEST_MYSQL_ADDR=$(docker port bxchat-recovery 3306/tcp)" >> "$GITHUB_ENV"
+          echo "CHAT_RECOVERY_TEST_CONTROL_DIR=$RUNNER_TEMP/chat-recovery-control" >> "$GITHUB_ENV"
+          echo "CHAT_TEST_CENTER_FIXTURE_DIR=$RUNNER_TEMP/chat-center-fixtures" >> "$GITHUB_ENV"
+      - name: PHP syntax, identity, reminders, schema and operational contracts
+        working-directory: .validation/s21-s23/worktree
+        run: |
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php server/tests/chat_schema_contract.php
+          php server/tests/chat_identity_contract.php
+          php server/tests/chat_reminder_contract.php
+          php server/tests/chat_operations_contract.php
+          python -B tools/test_chat_operations.py
+      - name: Verify real continuous archived binlogs
+        working-directory: .validation/s21-s23/worktree
+        shell: python
+        run: |
+          import json,pathlib,os,subprocess,base64
+          control=pathlib.Path(os.environ['CHAT_RECOVERY_TEST_CONTROL_DIR'])
+          start=json.loads((control/'backup-checkpoint.json').read_text())['payload']['watermark']
+          end=json.loads((control/'checkpoint.json').read_text())['payload']['watermark']
+          archive=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-binlog-archive';archive.mkdir(mode=0o700)
+          first=int(start['file'].rsplit('.',1)[1]);last=int(end['file'].rsplit('.',1)[1]);prefix=end['file'].rsplit('.',1)[0]
+          for n in range(first,last+1):
+              name=prefix+'.'+str(n).zfill(6)
+              subprocess.run(['docker','cp','bxchat-recovery:/var/lib/mysql/'+name,str(archive/name)],check=True)
+          validator=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-mysqlbinlog'
+          validator.write_text('#!/usr/bin/env python3\nimport subprocess,sys\nsys.exit(subprocess.run('+repr(['docker','run','--rm','--network=none','--user',str(os.getuid())+':'+str(os.getgid()),'--volume',str(archive)+':'+str(archive)+':ro','--entrypoint','mysqlbinlog','mysql:5.7.44'])+'+sys.argv[1:]).returncode)\n')
+          validator.chmod(0o750)
+          env=dict(os.environ,CHAT_RECOVERY_KEY=base64.b64encode(b'k'*32).decode())
+          cmd=['python','-B','chat/scripts/seal-binlogs.py','--control',str(control),'--backup-checkpoint',str(control/'backup-checkpoint.json'),'--archive',str(archive),'--mysqlbinlog',str(validator)]
+          subprocess.run(cmd,env=env,check=True)
+          last_file=archive/end['file'];complete=last_file.read_bytes()
+          last_file.write_bytes(complete[:max(4,int(end['position'])-1)])
+          bad=subprocess.run(cmd,env=env)
+          assert bad.returncode!=0,'incomplete archived tail unexpectedly verified'
+          last_file.write_bytes(complete)
+          subprocess.run(cmd,env=env,check=True)
+      - name: Go build, vet and complete affected package race regression
+        if: ${{ !cancelled() && steps.source.outcome == 'success' }}
+        working-directory: .validation/s21-s23/worktree/chat
+        run: |
+          gofmt -w internal/message/recovery_integration_test.go internal/message/retention.go internal/dependencies/retention.go internal/message/media_cleanup.go internal/dependencies/operations.go internal/dependencies/runtime.go internal/bootstrap/config.go internal/bootstrap/app.go internal/bootstrap/server.go internal/dependencies/socket.go internal/message/retention_integration_test.go internal/dependencies/operations_test.go internal/bootstrap/release.go internal/dependencies/messaging.go internal/bootstrap/release_test.go internal/message/history_integration_test.go internal/message/load_integration_test.go internal/message/governance_maintenance.go
+          go mod verify
+          go vet ./...
+          sh build.sh
+          export CHAT_INTEGRATION_CHATD_BIN="$PWD/bin/chatd"
+          export CHAT_TEST_CENTER_FIXTURE="$CHAT_TEST_CENTER_FIXTURE_DIR/ordinary.json"
+          go test -race -count=1 -v ./internal/message ./internal/conversation ./internal/policy ./internal/dependencies ./internal/bootstrap ./internal/socket ./internal/imagepipeline ./internal/auth
+          cp bin/chatd "$RUNNER_TEMP/chatd-first-build"
+          sh build.sh
+          cmp bin/chatd "$RUNNER_TEMP/chatd-first-build"
+      - name: Existing test center fixture runner and remaining order types
+        working-directory: .validation/s21-s23/worktree
+        run: |
+          export CHAT_VERIFIED_SOURCE_REVISION="$(python -c "import json,pathlib;print(json.loads(''.join(p.read_text() for p in sorted(pathlib.Path('../').glob('source-*.part'))))['source_commit'])")"
+          python -B chat/scripts/test-center.py --fixture "$CHAT_TEST_CENTER_FIXTURE_DIR/ordinary.json"
+          cd chat
+          for profile in measurement single_grab platform; do
+            CHAT_TEST_CENTER_FIXTURE="$CHAT_TEST_CENTER_FIXTURE_DIR/$profile.json" go test -race -count=1 -v -run '^TestMySQLS21TestCenterInstance$' ./internal/message
+          done
+      - name: Export canonical formatting and exact tested blobs
+        if: always()
+        working-directory: .validation/s21-s23/worktree/chat
+        shell: python
+        run: |
+          import pathlib,subprocess,base64,json,hashlib
+          names=["internal/message/recovery_integration_test.go","internal/message/retention.go","internal/dependencies/retention.go","internal/message/media_cleanup.go","internal/dependencies/operations.go","internal/dependencies/runtime.go","internal/bootstrap/config.go","internal/bootstrap/app.go","internal/bootstrap/server.go","internal/dependencies/socket.go","internal/message/retention_integration_test.go","internal/dependencies/operations_test.go","internal/bootstrap/release.go","internal/dependencies/messaging.go","internal/bootstrap/release_test.go","internal/message/history_integration_test.go","internal/message/load_integration_test.go","internal/message/governance_maintenance.go"]
+          for name in names:
+              if not pathlib.Path(name).is_file(): continue
+              p=subprocess.run(['gofmt',name],capture_output=True,check=True)
+              print('FORMATTED_FILE '+json.dumps({'path':'chat/'+name,'base64':base64.b64encode(p.stdout).decode()}))
+          for p in sorted(pathlib.Path('..').rglob('*')):
+              if p.is_file() and p.parts[1] in ('chat','server','tools') and '__pycache__' not in p.parts:
+                  b=p.read_bytes()
+                  print('TESTED_BLOB '+json.dumps({'path':'/'.join(p.parts[1:]),'sha':hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()}))
+      - name: Clean independent disposable fixture
+        if: always()
+        run: docker rm -f bxchat-recovery || true
