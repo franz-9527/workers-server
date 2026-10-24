@@ -136,7 +136,14 @@ jobs:
           bad=subprocess.run(cmd,env=env)
           assert bad.returncode!=0,'incomplete archived tail unexpectedly verified'
           last_file.write_bytes(complete)
-          subprocess.run(cmd,env=env,check=True)
+          checked=subprocess.run(cmd,env=env)
+          if checked.returncode:
+              for path in sorted(archive.iterdir()):
+                  stat=path.stat()
+                  print('FIXTURE_ARCHIVE_METADATA',path.name,stat.st_size,oct(stat.st_mode & 0o777),stat.st_uid,stat.st_gid)
+                  diagnostic=subprocess.run([str(validator),'--no-defaults','--verify-binlog-checksum','--start-position='+str(start['position']),'--stop-position='+str(end['position']),str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  print('FIXTURE_VALIDATOR_DIAGNOSTIC',diagnostic.returncode,diagnostic.stderr.decode(errors='replace')[:1200])
+              raise SystemExit(1)
       - name: Restore old backup and replay the verified security increment
         working-directory: .validation/s21-s23/worktree
         shell: python
