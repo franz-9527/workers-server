@@ -55,7 +55,7 @@ try{
  if($action==='prepare')s24Prepare($db);
  elseif($action==='sync')s24Sync($db);
  elseif($action==='invite'){
-  $actor=(string)($argv[2]??'10201');$generation=(string)($db->fetchValue('SELECT CAST(generation AS CHAR) FROM chat_collaboration_invites WHERE order_id=401 AND inviter_actor_id=:id',['id'=>$actor])??'0');
+  $actor=(string)($argv[2]??'10201');$generation=(string)($db->fetchValue('SELECT CAST(generation AS CHAR) FROM chat_collaboration_invites WHERE order_id=401 AND inviter_actor_id=:id',['id'=>$actor])?:'0');
   s24Call($service,$actor,'invite',['conversation_id'=>s24CID($db),'expected_generation'=>$generation]);
  }elseif($action==='join')s24Call($service,(string)($argv[2]??'10203'),'join',['token'=>s24Token($db,(string)($argv[4]??'10201')),'display_role'=>(string)($argv[3]??'designer')]);
  elseif($action==='role'){
