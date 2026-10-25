@@ -360,15 +360,41 @@ func TestMySQLS24TenMembersConcurrentSendAndIndependentUnread(t *testing.T) {
 	}
 }
 
-func TestMySQLS24AccountChangeSerializesWithGroupReadAuthority(t *testing.T){
- f,_,h,cid:=s24Fixture(t)
- tx,err:=f.goDB.BeginTx(f.ctx,nil);if err!=nil{t.Fatal(err)};defer tx.Rollback()
- if _,err=f.store.AuthorizeLocked(f.ctx,tx,ports.PolicyRequest{Actor:principal("10201"),ConversationID:cid,Action:"read"});err!=nil{t.Fatal(err)}
- started:=make(chan struct{});finished:=make(chan error,1)
- go func(){close(started);_,e:=f.root.ExecContext(f.ctx,"UPDATE users SET status='disabled' WHERE id=10204");finished<-e}()
- <-started
- select{case e:=<-finished:t.Fatal("account update crossed held group grant",e);case <-time.After(80*time.Millisecond):}
- if err=tx.Commit();err!=nil{t.Fatal(err)}
- select{case e:=<-finished:if e!=nil{t.Fatal("account/group deadlock",e)};case <-time.After(5*time.Second):t.Fatal("account update never resumed")}
- if _,err=h.Read(f.ctx,principal("10201"),HistoryRequest{ConversationID:cid},"bootstrap");err==nil{t.Fatal("old source epoch survived an account change")}
+func TestMySQLS24AccountChangeSerializesWithGroupReadAuthority(t *testing.T) {
+	f, _, h, cid := s24Fixture(t)
+	tx, err := f.goDB.BeginTx(f.ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err = f.store.AuthorizeLocked(f.ctx, tx, ports.PolicyRequest{Actor: principal("10201"), ConversationID: cid, Action: "read"}); err != nil {
+		t.Fatal(err)
+	}
+	started := make(chan struct{})
+	finished := make(chan error, 1)
+	go func() {
+		close(started)
+		_, e := f.root.ExecContext(f.ctx, "UPDATE users SET status='disabled' WHERE id=10204")
+		finished <- e
+	}()
+	<-started
+	select {
+	case e := <-finished:
+		t.Fatal("account update crossed held group grant", e)
+	case <-time.After(80 * time.Millisecond):
+	}
+	if err = tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case e := <-finished:
+		if e != nil {
+			t.Fatal("account/group deadlock", e)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("account update never resumed")
+	}
+	if _, err = h.Read(f.ctx, principal("10201"), HistoryRequest{ConversationID: cid}, "bootstrap"); err == nil {
+		t.Fatal("old source epoch survived an account change")
+	}
 }

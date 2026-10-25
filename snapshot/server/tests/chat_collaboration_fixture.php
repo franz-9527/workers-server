@@ -117,6 +117,24 @@ try{
   try{s24Call($service,'10306','join',['token'=>$fresh['token'],'display_role'=>'other']);$check(false,'eleventh member admitted');}catch(RuntimeException $err){$check($err->getMessage()==='CHAT_GROUP_FULL','eleventh member rejected without consuming invitation');}
   $db->execute('UPDATE chat_collaboration_invites SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE order_id=401');
   try{s24Call($service,'10306','preview',['token'=>$fresh['token']]);$check(false,'expired share survived');}catch(RuntimeException $err){$check($err->getMessage()==='CHAT_INVITE_INVALID','expired invitation rejected');}
+  $db->execute("INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(90002,'s24-group-admin','fixture','super_admin','active',0,UTC_TIMESTAMP(),UTC_TIMESTAMP())");
+  $settings=new \WorkerAdmin\Application\Chat\ChatStorageSettings($db,str_repeat('k',32));
+  $revision=(string)$db->fetchValue('SELECT CAST(revision AS CHAR) FROM chat_collaboration_settings WHERE id=1');
+  $settings->saveGroupLimit(['member_limit'=>'9','group_revision'=>$revision,'group_reason'=>'验证降低不移除成员'],90002,'super_admin');
+  $check((int)$db->fetchValue('SELECT member_limit FROM chat_collaboration_settings WHERE id=1')===9,'admin group limit persists');
+  $check((int)$db->fetchValue('SELECT COUNT(*) FROM chat_collaboration_members WHERE order_id=401 AND active=1')===10,'admin lowering never removes members');
+  try{$settings->saveGroupLimit(['member_limit'=>'10','group_revision'=>$revision,'group_reason'=>'旧版本测试'],90002,'super_admin');$check(false,'stale settings overwritten');}catch(RuntimeException $err){$check(str_contains($err->getMessage(),'已变化'),'admin limit CAS rejects stale form');}
+  try{$settings->saveGroupLimit(['member_limit'=>'51','group_revision'=>'2','group_reason'=>'边界测试'],90002,'super_admin');$check(false,'limit >50');}catch(RuntimeException $err){$check(true,'admin upper limit enforced');}
+  $db->execute("INSERT INTO wechat_identities(user_id,app_id,openid,status,created_at,updated_at) VALUES(10320,'chat-platform-app','S24AdditionalStaff','active',UTC_TIMESTAMP(),UTC_TIMESTAMP())");
+  $db->execute("UPDATE system_settings SET setting_value='[\"PlatformStaff\",\"S24AdditionalStaff\"]' WHERE setting_key='wechat.admin_openids'");
+  $groupAdmin=new \WorkerAdmin\Application\Chat\ChatCollaborationAdmin($db);
+  $staffPublic=(string)$db->fetchValue('SELECT public_id FROM users WHERE id=10320');
+  $groupAdmin->change(['_action'=>'group_intervene','group_order_no'=>'CHAT-PLATFORM-401','member_public_id'=>$staffPublic],90002,'super_admin');
+  $staff=$db->fetch('SELECT * FROM chat_collaboration_members WHERE order_id=401 AND actor_id=10320');
+  $check((int)$staff['active']===1&&$staff['role_source']==='platform_staff','only explicit platform intervention adds a staff member');
+  $check(s24Call($service,'10320','info',['conversation_id'=>$cid])['can_invite']===true,'real platform staff may manage own invitation');
+  $groupAdmin->change(['_action'=>'group_end_intervention','group_order_no'=>'CHAT-PLATFORM-401','member_public_id'=>$staffPublic,'member_version'=>(string)$staff['membership_generation']],90002,'super_admin');
+  $check((int)$db->fetchValue('SELECT active FROM chat_collaboration_members WHERE order_id=401 AND actor_id=10320')===0,'platform intervention can end without touching other members');
   echo 'S24 PHP/MySQL: '.$checks." assertions passed\n";
  }
  if(!$owns)echo "committed\n";
