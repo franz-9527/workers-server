@@ -136,6 +136,13 @@ func TestMySQLRedisS24GroupFanoutReconnectAndRemoval(t *testing.T) {
 	if e := reconnected.ReadJSON(&hint); e != nil || hint.Payload.Seq != "3" {
 		t.Fatal("group reconnect", hint, e)
 	}
+	// A committed message emits message.new followed by a bounded account
+	// reconciliation hint. Consume both while membership is still current;
+	// neither pre-removal frame is a notification about the later message.
+	var summary struct{Type string `json:"type"`}
+	if e:=reconnected.ReadJSON(&summary);e!=nil||summary.Type!="account.summary.changed"{
+		t.Fatal("pre-removal reconciliation hint",summary,e)
+	}
 	f.s24("remove", "10203")
 	s24Poll(t, f)
 	q.ClientMessageID = client(1804)

@@ -23,10 +23,10 @@ type Projection struct {
 	Members                        []ProjectedMember
 }
 type ProjectedMember struct {
-	ActorID ports.ID
+	ActorID        ports.ID
 	AccountVersion ports.ID
-	Role    string
-	Grant   ports.Grant
+	Role           string
+	Grant          ports.Grant
 }
 
 func DecodeEvent(body []byte, scope string, version ports.ID) (Projection, error) {
@@ -68,7 +68,7 @@ func DecodeProjection(body []byte, scope string, version ports.ID) (Projection, 
 		if err != nil {
 			return Projection{}, err
 		}
-		p.Members = append(p.Members, ProjectedMember{ActorID:m.ActorID, Role:m.Role, Grant:g})
+		p.Members = append(p.Members, ProjectedMember{ActorID: m.ActorID, Role: m.Role, Grant: g})
 	}
 	return p, nil
 }
@@ -81,12 +81,17 @@ func (r *Reader) CurrentLocked(ctx context.Context, tx *sql.Tx, scope string) (P
 	// Order changes invalidate the group before updating its guard. Account
 	// changes advance only users.chat_collaboration_version, avoiding a
 	// users -> group / group -> users lock cycle.
-	if strings.HasPrefix(scope,"order:") && strings.HasSuffix(scope,":collaboration") {
-		order:=ports.ID(strings.TrimSuffix(strings.TrimPrefix(scope,"order:"),":collaboration"))
-		if !positive(order) { return Projection{},ErrDenied }
+	if strings.HasPrefix(scope, "order:") && strings.HasSuffix(scope, ":collaboration") {
+		order := ports.ID(strings.TrimSuffix(strings.TrimPrefix(scope, "order:"), ":collaboration"))
+		if !positive(order) {
+			return Projection{}, ErrDenied
+		}
 		var epoch string
-		if err:=tx.QueryRowContext(ctx,"SELECT CAST(source_version AS CHAR) FROM chat_collaboration_groups WHERE order_id=? LOCK IN SHARE MODE",string(order)).Scan(&epoch);err!=nil{
-			if err==sql.ErrNoRows{return Projection{},ErrDenied};return Projection{},ports.ErrUnavailable
+		if err := tx.QueryRowContext(ctx, "SELECT CAST(source_version AS CHAR) FROM chat_collaboration_groups WHERE order_id=? LOCK IN SHARE MODE", string(order)).Scan(&epoch); err != nil {
+			if err == sql.ErrNoRows {
+				return Projection{}, ErrDenied
+			}
+			return Projection{}, ports.ErrUnavailable
 		}
 	}
 	var v row
@@ -127,13 +132,24 @@ func (r *Reader) CheckEpochsLocked(ctx context.Context, tx *sql.Tx, p Projection
 		}
 		// Current locking reads fence every member's account, including phone
 		// corrections. The immutable snapshot records each PHP account epoch.
-		members:=append([]ProjectedMember(nil),p.Members...)
-		sort.Slice(members,func(i,j int)bool{a,_:=strconv.ParseUint(string(members[i].ActorID),10,64);b,_:=strconv.ParseUint(string(members[j].ActorID),10,64);return a<b})
-		for _,member:=range members{
-			var version,status string
-			err:=tx.QueryRowContext(ctx,"SELECT CAST(chat_collaboration_version AS CHAR),status FROM users WHERE id=? LOCK IN SHARE MODE",string(member.ActorID)).Scan(&version,&status)
-			if err==sql.ErrNoRows{return ErrDenied};if err!=nil{return ports.ErrUnavailable}
-			if status!="active"||version!=string(member.AccountVersion){return ErrDenied}
+		members := append([]ProjectedMember(nil), p.Members...)
+		sort.Slice(members, func(i, j int) bool {
+			a, _ := strconv.ParseUint(string(members[i].ActorID), 10, 64)
+			b, _ := strconv.ParseUint(string(members[j].ActorID), 10, 64)
+			return a < b
+		})
+		for _, member := range members {
+			var version, status string
+			err := tx.QueryRowContext(ctx, "SELECT CAST(chat_collaboration_version AS CHAR),status FROM users WHERE id=? LOCK IN SHARE MODE", string(member.ActorID)).Scan(&version, &status)
+			if err == sql.ErrNoRows {
+				return ErrDenied
+			}
+			if err != nil {
+				return ports.ErrUnavailable
+			}
+			if status != "active" || version != string(member.AccountVersion) {
+				return ErrDenied
+			}
 		}
 	}
 	// A schema-2 snapshot may have no staff; its config epoch still fences joins.

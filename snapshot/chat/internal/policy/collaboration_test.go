@@ -148,7 +148,7 @@ func TestCollaborationMalformedFactsFailClosed(t *testing.T) {
 		}
 	}
 	for key, value := range map[string]any{
-		"actor_id": "1", "kind": "admin", "role_source": "merchant_owner", "membership_generation": "0","account_version":0,
+		"actor_id": "1", "kind": "admin", "role_source": "merchant_owner", "membership_generation": "0", "account_version": 0,
 		"display_role_version": 1, "display_role": "worker", "inviter_actor_id": "4",
 		"invite_generation": "01", "authority_version": "1", "extra": "forged",
 	} {
@@ -211,7 +211,7 @@ func TestCollaborationCapacityAndReadonly(t *testing.T) {
 func TestCollaborationStaffEpochs(t *testing.T) {
 	m := collaborationMap(t)
 	staff := map[string]any{"actor_id": "8", "kind": "mini", "role_source": "platform_staff",
-		"membership_generation": "1", "account_version":"1", "display_role": "platform", "display_role_version": "1",
+		"membership_generation": "1", "account_version": "1", "display_role": "platform", "display_role_version": "1",
 		"can_read": true, "can_send": true, "authority_version": "5"}
 	m["members"] = append(m["members"].([]any), staff)
 	m["staff_config_version"] = "3"

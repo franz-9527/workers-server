@@ -30,7 +30,7 @@ type CollaborationMember struct {
 	ActorID              ports.ID    `json:"actor_id"`
 	Kind                 string      `json:"kind"`
 	RoleSource           string      `json:"role_source"`
-	AccountVersion ports.ID `json:"account_version"`
+	AccountVersion       ports.ID    `json:"account_version"`
 	MembershipGeneration ports.ID    `json:"membership_generation"`
 	DisplayRole          string      `json:"display_role"`
 	DisplayRoleVersion   ports.ID    `json:"display_role_version"`
