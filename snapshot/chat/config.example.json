@@ -1,0 +1,116 @@
+{
+  "env": "development",
+  "http": {
+    "listen": "127.0.0.1:19501",
+    "internal_listen": "127.0.0.1:19502"
+  },
+  "shutdown_timeout": "10s",
+  "log_level": "info",
+  "provider_mode": "disabled",
+  "dependencies": {
+    "operation_timeout": "500ms",
+    "probe_interval": "10s",
+    "external_concurrency": 4,
+    "mysql": {
+      "enabled": false,
+      "address": "127.0.0.1:3306",
+      "database": "",
+      "username": "",
+      "password_env": "CHAT_MYSQL_PASSWORD",
+      "max_open_serve": 4,
+      "max_open_worker": 2,
+      "max_idle": 1
+    },
+    "redis": {
+      "enabled": false,
+      "address": "127.0.0.1:6379",
+      "key_prefix": "bxchat:development:",
+      "password_env": "",
+      "pool_serve": 2,
+      "pool_worker": 1
+    }
+  },
+  "auth": {
+    "enabled": false,
+    "public_keys": {}
+  },
+  "conversations": {
+    "enabled": false
+  },
+  "av": {
+    "enabled": false,
+    "audio": false,
+    "video": false,
+    "python_binary": "",
+    "python_script": "",
+    "ffmpeg_binary": "",
+    "ffprobe_binary": "",
+    "temp_root": "",
+    "bucket": "",
+    "private_bucket": true,
+    "download_origin": "",
+    "upload_origin": "https://up-z2.qiniup.com",
+    "access_key_env": "CHAT_QINIU_ACCESS_KEY",
+    "secret_key_env": "CHAT_QINIU_SECRET_KEY",
+    "asr": {"api_name": "", "data_encoding": ""},
+    "daily_asr_budget": 200,
+    "callback_token_env": "CHAT_WECHAT_CALLBACK_TOKEN",
+    "callback_key_env": "CHAT_WECHAT_CALLBACK_AES_KEY"
+  },
+  "messages": {
+    "enabled": false
+  },
+  "socket": {
+    "enabled": false
+  },
+  "history": {
+    "enabled": false,
+    "cursor_key_env": ""
+  },
+  "safety": {
+    "enabled": false,
+    "app_id": "",
+    "credential_file": "",
+    "rejection_directory": ""
+  },
+  "images": {
+    "enabled": false,
+    "mode": "manual_precheck",
+    "private_bucket": true,
+    "bucket": "",
+    "access_key_env": "CHAT_QINIU_ACCESS_KEY",
+    "secret_key_env": "CHAT_QINIU_SECRET_KEY",
+    "download_origin": "",
+    "upload_origin": "https://up-z2.qiniup.com",
+    "php_binary": "",
+    "python_binary": "",
+    "php_script": "",
+    "python_script": "",
+    "temp_root": "",
+    "max_file_bytes": 1048576,
+    "max_long_edge_px": 1600
+  },
+  "operations": {
+    "gate_file": "",
+    "epoch": ""
+  },
+  "retention": {
+    "enabled": false,
+    "body_days": 365,
+    "evidence_days": 30,
+    "change_days": 90,
+    "batch": 20
+  },
+  "release": {
+    "staging": false,
+    "file": "",
+    "key_env": "CHAT_RELEASE_KEY"
+  },
+  "reminders": {
+    "enabled": false,
+    "php_endpoint": "",
+    "key_id": "chat-internal-v1",
+    "key_env": "CHAT_INTERNAL_KEY"
+  }
+}
+
