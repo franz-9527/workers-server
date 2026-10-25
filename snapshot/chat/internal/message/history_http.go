@@ -113,7 +113,10 @@ func (h *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	mode := historyMode(r.URL.Path)
-    if r.URL.Path == "/chat/api/v1/conversations/readers" || r.URL.Path=="/chat/api/v1/conversations/unread" || r.URL.Path=="/chat/api/v1/conversations/read" || r.URL.Path=="/chat/api/v1/conversations/digests" || r.URL.Path=="/chat/api/v1/conversations/preferences" || r.URL.Path=="/chat/api/v1/conversations/preference" { h.serveS09(w,r);return }
+	if r.URL.Path == "/chat/api/v1/conversations/readers" || r.URL.Path == "/chat/api/v1/conversations/unread" || r.URL.Path == "/chat/api/v1/conversations/read" || r.URL.Path == "/chat/api/v1/conversations/digests" || r.URL.Path == "/chat/api/v1/conversations/preferences" || r.URL.Path == "/chat/api/v1/conversations/preference" {
+		h.serveS09(w, r)
+		return
+	}
 	if mode == "" {
 		fail(404, "CHAT_ROUTE_NOT_FOUND", false)
 		return

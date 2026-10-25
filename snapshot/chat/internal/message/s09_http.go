@@ -20,7 +20,7 @@ import (
 )
 
 type s09Request struct {
- MessageID ports.ID `json:"message_id,omitempty"`
+	MessageID      ports.ID `json:"message_id,omitempty"`
 	ConversationID ports.ID `json:"conversation_id,omitempty"`
 	Cursor         string   `json:"cursor,omitempty"`
 	Limit          int      `json:"limit,omitempty"`
@@ -50,8 +50,10 @@ func decodeS09(raw []byte) (s09Request, error) {
 		}
 		switch key {
 		case "message_id":
-   if json.Unmarshal(field,&q.MessageID)!=nil{return q,ports.ErrInvalid}
-  case "conversation_id":
+			if json.Unmarshal(field, &q.MessageID) != nil {
+				return q, ports.ErrInvalid
+			}
+		case "conversation_id":
 			if json.Unmarshal(field, &q.ConversationID) != nil {
 				return q, ports.ErrInvalid
 			}
@@ -135,10 +137,14 @@ func (h *HistoryHandler) serveS09(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = controller.SetReadDeadline(time.Time{})
 	var q s09Request
- var preference PreferenceRequest
- var decodeErr error
- isPreference:=r.URL.Path=="/chat/api/v1/conversations/preferences"||r.URL.Path=="/chat/api/v1/conversations/preference"
- if isPreference { preference,decodeErr=decodePreference(b,r.URL.Path=="/chat/api/v1/conversations/preference") } else {q,decodeErr=decodeS09(b)}
+	var preference PreferenceRequest
+	var decodeErr error
+	isPreference := r.URL.Path == "/chat/api/v1/conversations/preferences" || r.URL.Path == "/chat/api/v1/conversations/preference"
+	if isPreference {
+		preference, decodeErr = decodePreference(b, r.URL.Path == "/chat/api/v1/conversations/preference")
+	} else {
+		q, decodeErr = decodeS09(b)
+	}
 	if decodeErr != nil {
 		fail(400, "CHAT_INVALID_REQUEST", false)
 		return
@@ -152,16 +158,22 @@ func (h *HistoryHandler) serveS09(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if r.URL.Path!="/chat/api/v1/conversations/readers" && q.MessageID!=""{fail(400,"CHAT_INVALID_REQUEST",false);return}
- var out any
+	if r.URL.Path != "/chat/api/v1/conversations/readers" && q.MessageID != "" {
+		fail(400, "CHAT_INVALID_REQUEST", false)
+		return
+	}
+	var out any
 	switch r.URL.Path {
- case "/chat/api/v1/conversations/readers":
-  if !validID(q.ConversationID)||!validID(q.MessageID)||q.Cursor!=""||q.Limit!=0{fail(400,"CHAT_INVALID_REQUEST",false);return}
-  out,e=h.service.Readers(ctx,p,q.ConversationID,q.MessageID)
- case "/chat/api/v1/conversations/preferences":
-  out,e=h.service.Preferences(ctx,p,preference.ConversationID)
- case "/chat/api/v1/conversations/preference":
-  out,e=h.service.SetPreference(ctx,p,preference)
+	case "/chat/api/v1/conversations/readers":
+		if !validID(q.ConversationID) || !validID(q.MessageID) || q.Cursor != "" || q.Limit != 0 {
+			fail(400, "CHAT_INVALID_REQUEST", false)
+			return
+		}
+		out, e = h.service.Readers(ctx, p, q.ConversationID, q.MessageID)
+	case "/chat/api/v1/conversations/preferences":
+		out, e = h.service.Preferences(ctx, p, preference.ConversationID)
+	case "/chat/api/v1/conversations/preference":
+		out, e = h.service.SetPreference(ctx, p, preference)
 	case "/chat/api/v1/conversations/unread":
 		if !validID(q.ConversationID) || q.Cursor != "" || q.Limit != 0 {
 			fail(400, "CHAT_INVALID_REQUEST", false)
@@ -188,10 +200,10 @@ func (h *HistoryHandler) serveS09(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(e, ports.ErrInvalid):
 			fail(400, "CHAT_INVALID_REQUEST", false)
-		case errors.Is(e, ErrPreferenceConflict),errors.Is(e,ErrPinLimit):
-   w.WriteHeader(409)
-   _=json.NewEncoder(w).Encode(map[string]any{"request_id":requestID,"code":e.Error(),"retryable":false,"current":out,"server_time":time.Now().UTC()})
-  case errors.Is(e, ErrResync):
+		case errors.Is(e, ErrPreferenceConflict), errors.Is(e, ErrPinLimit):
+			w.WriteHeader(409)
+			_ = json.NewEncoder(w).Encode(map[string]any{"request_id": requestID, "code": e.Error(), "retryable": false, "current": out, "server_time": time.Now().UTC()})
+		case errors.Is(e, ErrResync):
 			fail(409, ErrResync.Error(), false)
 		case errors.Is(e, policy.ErrDenied), errors.Is(e, auth.ErrUnauthorized):
 			fail(403, "CHAT_PERMISSION_DENIED", false)

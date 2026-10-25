@@ -66,20 +66,20 @@ func (s *Store) Authorize(ctx context.Context, req ports.PolicyRequest) (ports.G
 // when their candidate set is empty; otherwise a revoked session can receive
 // a successful (empty) response without consulting the authoritative login.
 func (s *Store) ValidatePrincipal(ctx context.Context, p ports.Principal) error {
- ctx, cancel := context.WithTimeout(ctx, s.timeout)
- defer cancel()
- tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
- if err != nil {
-  return ports.ErrUnavailable
- }
- defer tx.Rollback()
- if err := s.identity.ValidatePrincipalLocked(ctx, tx, p); err != nil {
-  return err
- }
- if err := tx.Commit(); err != nil {
-  return ports.ErrUnavailable
- }
- return nil
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+	if err != nil {
+		return ports.ErrUnavailable
+	}
+	defer tx.Rollback()
+	if err := s.identity.ValidatePrincipalLocked(ctx, tx, p); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return ports.ErrUnavailable
+	}
+	return nil
 }
 
 // Authority binds PHP guard/session locks to this exact transaction and request.
@@ -319,4 +319,9 @@ func (s *Store) apply(ctx context.Context, tx *sql.Tx, p policy.Projection) erro
 	return nil
 }
 
-func nullableAssignment(id ports.ID) any {if id==""{return nil};return string(id)}
+func nullableAssignment(id ports.ID) any {
+	if id == "" {
+		return nil
+	}
+	return string(id)
+}

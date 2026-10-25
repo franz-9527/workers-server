@@ -422,7 +422,9 @@ func (s *Service) publish(ctx context.Context, p ports.Principal, r Request, fp 
 	if e != nil || messageID <= 0 {
 		return Result{}, ports.ErrUnavailable
 	}
-	if e=stampSender(ctx,tx,messageID,grant);e!=nil{return Result{},e}
+	if e = stampSender(ctx, tx, messageID, grant); e != nil {
+		return Result{}, e
+	}
 	if e = storagepolicy.Stamp(ctx, tx, messageID, "text"); e != nil {
 		return Result{}, e
 	}

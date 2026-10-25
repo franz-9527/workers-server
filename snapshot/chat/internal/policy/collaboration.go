@@ -19,7 +19,7 @@ const CollaborationMaxSnapshotBytes = 32768
 type CollaborationProjection struct {
 	Scope, Episode, State, Hash string
 	OrderID, Version            ports.ID
- SourceVersion ports.ID
+	SourceVersion               ports.ID
 	MemberLimit                 int
 	StaffConfigVersion          ports.ID
 	OrderContext                *ports.OrderContext
@@ -66,7 +66,7 @@ func (m *CollaborationMember) UnmarshalJSON(body []byte) error {
 }
 
 type collaborationSnapshot struct {
- SourceVersion ports.ID `json:"source_version"`
+	SourceVersion      ports.ID              `json:"source_version"`
 	Schema             int                   `json:"schema_version"`
 	Mode               string                `json:"conversation_mode"`
 	Scope              string                `json:"scope_key"`
@@ -117,7 +117,7 @@ func DecodeCollaborationProjection(body []byte, scope string, version ports.ID) 
 	}
 	sum := sha256.Sum256(body)
 	p := CollaborationProjection{Scope: s.Scope, Episode: s.Episode, State: s.State, Hash: hex.EncodeToString(sum[:]),
-		OrderID: s.OrderID, Version: version, SourceVersion:s.SourceVersion, MemberLimit: s.MemberLimit, StaffConfigVersion: s.StaffConfigVersion, OrderContext: s.OrderContext}
+		OrderID: s.OrderID, Version: version, SourceVersion: s.SourceVersion, MemberLimit: s.MemberLimit, StaffConfigVersion: s.StaffConfigVersion, OrderContext: s.OrderContext}
 	seen := map[ports.ID]bool{}
 	roles := map[string]int{}
 	for _, m := range s.Members {
@@ -162,7 +162,7 @@ func DecodeCollaborationProjection(body []byte, scope string, version ports.ID) 
 		// A display/source edit or repair episode never resets a lawful interval.
 		// PHP must advance the generation for leave/rejoin or lost authority.
 		key := s.Scope + ":mini:" + string(m.ActorID) + ":generation:" + string(m.MembershipGeneration)
-		g := ports.Grant{OrderContext: s.OrderContext, MemberRole: role, CanRead: true, Mode:"collaboration", RoleSource:m.RoleSource, DisplayRole:m.DisplayRole, DisplayRoleVersion:m.DisplayRoleVersion, CanSend: m.CanSend && s.State == "open",
+		g := ports.Grant{OrderContext: s.OrderContext, MemberRole: role, CanRead: true, Mode: "collaboration", RoleSource: m.RoleSource, DisplayRole: m.DisplayRole, DisplayRoleVersion: m.DisplayRoleVersion, CanSend: m.CanSend && s.State == "open",
 			ScopeKey: s.Scope, Version: version, MemberKey: key}
 		if m.RoleSource == "platform_staff" {
 			g.StaffConfigVersion = s.StaffConfigVersion

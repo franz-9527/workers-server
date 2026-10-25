@@ -5668,7 +5668,7 @@ END$$
 CREATE TRIGGER chat_collaboration_address_insert AFTER INSERT ON order_addresses FOR EACH ROW
 BEGIN
  UPDATE chat_collaboration_groups SET source_version=source_version+1 WHERE order_id=NEW.order_id;
-END$
+END$$
 CREATE TRIGGER chat_collaboration_address_update AFTER UPDATE ON order_addresses FOR EACH ROW
 BEGIN
  IF NOT(NEW.contact_mobile_hmac <=> OLD.contact_mobile_hmac) OR NOT(NEW.contact_mobile_ciphertext <=> OLD.contact_mobile_ciphertext) THEN

@@ -21,9 +21,12 @@ import (
 )
 
 func TestMySQLRedisS24GroupFanoutReconnectAndRemoval(t *testing.T) {
-	f,s,h,cid:=s24Fixture(t)
- q:=request(1801);q.ConversationID=cid
- f.s24("invite","10201");f.s24("join","10203","designer");s24Poll(t,f)
+	f, s, h, cid := s24Fixture(t)
+	q := request(1801)
+	q.ConversationID = cid
+	f.s24("invite", "10201")
+	f.s24("join", "10203", "designer")
+	s24Poll(t, f)
 	rdb := redis.NewClient(&redis.Options{Addr: os.Getenv("CHAT_AUTH_TEST_REDIS_ADDRESS"), PoolSize: 2, MaxActiveConns: 2, MaxRetries: -1, DisableIdentity: true, Protocol: 2})
 	defer rdb.Close()
 	store, e := auth.NewRedisStore(rdb, "test", "bxchat:test:")
@@ -75,8 +78,8 @@ func TestMySQLRedisS24GroupFanoutReconnectAndRemoval(t *testing.T) {
 		return ws
 	}
 	recipient := login("10203")
- owner:=login("10204")
- merchant:=login("10201")
+	owner := login("10204")
+	merchant := login("10201")
 	boot, e := h.Read(f.ctx, principal("10203"), HistoryRequest{ConversationID: q.ConversationID}, "bootstrap")
 	if e != nil {
 		t.Fatal(e)
@@ -96,7 +99,13 @@ func TestMySQLRedisS24GroupFanoutReconnectAndRemoval(t *testing.T) {
 	if e := recipient.ReadJSON(&hint); e != nil || hint.Type != "message.new" || hint.Payload.Seq != "1" {
 		t.Fatalf("postcommit %v %+v", e, hint)
 	}
- for _,peer:=range []*websocket.Conn{owner,merchant}{var other map[string]any;peer.SetReadDeadline(time.Now().Add(5*time.Second));if e:=peer.ReadJSON(&other);e!=nil||other["type"]!="message.new"{t.Fatal("group fanout",other,e)}}
+	for _, peer := range []*websocket.Conn{owner, merchant} {
+		var other map[string]any
+		peer.SetReadDeadline(time.Now().Add(5 * time.Second))
+		if e := peer.ReadJSON(&other); e != nil || other["type"] != "message.new" {
+			t.Fatal("group fanout", other, e)
+		}
+	}
 	// The row is already visible when the hint arrives; hints never invent seq.
 	if f.text("SELECT COUNT(*) FROM chat_messages WHERE id=?", string(result.MessageID)) != "1" {
 		t.Fatal("hint before commit")
@@ -118,10 +127,23 @@ func TestMySQLRedisS24GroupFanoutReconnectAndRemoval(t *testing.T) {
 		t.Fatal("delivery/sync automatically marked read")
 	}
 
- reconnected:=login("10203");q.ClientMessageID=client(1803)
- if out,e:=commands.Sender.Send(f.ctx,principal("10202"),q);e!=nil||out.State!="accepted"{t.Fatal(out,e)}
- reconnected.SetReadDeadline(time.Now().Add(5*time.Second));if e:=reconnected.ReadJSON(&hint);e!=nil||hint.Payload.Seq!="3"{t.Fatal("group reconnect",hint,e)}
- f.s24("remove","10203");s24Poll(t,f);q.ClientMessageID=client(1804)
- if out,e:=commands.Sender.Send(f.ctx,principal("10202"),q);e!=nil||out.State!="accepted"{t.Fatal(out,e)}
- reconnected.SetReadDeadline(time.Now().Add(400*time.Millisecond));if e:=reconnected.ReadJSON(&hint);e==nil{t.Fatal("removed group member received a new push",hint)}
+	reconnected := login("10203")
+	q.ClientMessageID = client(1803)
+	if out, e := commands.Sender.Send(f.ctx, principal("10202"), q); e != nil || out.State != "accepted" {
+		t.Fatal(out, e)
+	}
+	reconnected.SetReadDeadline(time.Now().Add(5 * time.Second))
+	if e := reconnected.ReadJSON(&hint); e != nil || hint.Payload.Seq != "3" {
+		t.Fatal("group reconnect", hint, e)
+	}
+	f.s24("remove", "10203")
+	s24Poll(t, f)
+	q.ClientMessageID = client(1804)
+	if out, e := commands.Sender.Send(f.ctx, principal("10202"), q); e != nil || out.State != "accepted" {
+		t.Fatal(out, e)
+	}
+	reconnected.SetReadDeadline(time.Now().Add(400 * time.Millisecond))
+	if e := reconnected.ReadJSON(&hint); e == nil {
+		t.Fatal("removed group member received a new push", hint)
+	}
 }

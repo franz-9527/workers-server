@@ -13,7 +13,7 @@ import (
 const unreadCountLimit = 1000
 
 type UnreadWindow struct {
- Mode string `json:"conversation_mode,omitempty"`
+	Mode              string              `json:"conversation_mode,omitempty"`
 	CountCapped       bool                `json:"unread_count_capped"`
 	ReadSeq           ports.ID            `json:"read_seq"`
 	SnapshotSeq       ports.ID            `json:"snapshot_max_seq"`
@@ -37,7 +37,7 @@ func unreadLocked(ctx context.Context, tx *sql.Tx, p ports.Principal, id ports.I
 	if read > upper {
 		return UnreadWindow{}, ports.ErrInvalid
 	}
-	result := UnreadWindow{Mode:grant.Mode,ReadSeq: decimal(read), SnapshotSeq: decimal(upper), SnapshotChange: decimal(change), PolicyVersion: grant.Version, OrderContext: grant.OrderContext, MemberRole: grant.MemberRole, CanSend: grant.CanSend}
+	result := UnreadWindow{Mode: grant.Mode, ReadSeq: decimal(read), SnapshotSeq: decimal(upper), SnapshotChange: decimal(change), PolicyVersion: grant.Version, OrderContext: grant.OrderContext, MemberRole: grant.MemberRole, CanSend: grant.CanSend}
 	// Activity belongs to the last message this member may see, including their
 	// own messages and recall placeholders. Read acknowledgements never move it.
 	var preview MessageView

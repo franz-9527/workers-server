@@ -41,6 +41,13 @@ final class ChatParticipantProfiles
             $items=[];
             foreach($requests as $request){
                 $cid=$request['conversation_id'];$version=$request['policy_version'];
+                // Lock order -> group -> guard, matching the PHP business
+                // writer and Go reader. The first binding read grants nothing.
+                $binding=$this->db->fetch('SELECT CAST(order_id AS CHAR) order_id,assignment_id FROM chat_conversations WHERE id=:id',['id'=>$cid]);
+                if(!$binding)continue;
+                $this->db->fetch('SELECT id FROM orders WHERE id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
+                if($binding['assignment_id']===null)$this->db->fetch('SELECT source_version FROM chat_collaboration_groups WHERE order_id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
+
                 $row=$this->db->fetch("SELECT c.scope_key,c.snapshot_hash applied_hash,CAST(c.policy_version AS CHAR) applied_version,
                     g.snapshot_json,g.snapshot_hash,CAST(g.policy_version AS CHAR) policy_version,o.order_source_type,CAST(o.current_assignment_id AS CHAR) current_assignment_id
                     FROM chat_conversations c JOIN chat_policy_guards g ON g.scope_key=c.scope_key
@@ -91,7 +98,7 @@ final class ChatParticipantProfiles
                     FROM users u LEFT JOIN assignments a ON a.id=:assignment
                     LEFT JOIN worker_profiles w ON w.id=a.worker_id AND w.user_id=u.id
                     LEFT JOIN worker_real_name_verifications rv ON rv.worker_id=w.id
-                    WHERE u.status='active' AND u.id IN (".implode(',',$slots).") ORDER BY u.id",$params);
+                    WHERE u.status='active' AND u.id IN (".implode(',',$slots).") ORDER BY u.id LOCK IN SHARE MODE",$params);
                 $profiles=[];foreach($people as $person){
                     $id=(string)$person['actor_id'];$role=$roles[$id];
                     $kind=$role==='worker'?'worker':($role==='platform_staff'?'platform':($row['order_source_type']==='merchant'?'merchant':'user'));

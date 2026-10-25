@@ -35,26 +35,26 @@ type HistoryRequest struct {
 	Limit          int      `json:"limit,omitempty"`
 }
 type MessageView struct {
- Sender *SenderIdentity `json:"sender,omitempty"`
-	AV            *AVView        `json:"av,omitempty"`
-	RetentionMode string         `json:"retention_mode"`
-	ExpiresAt     *time.Time     `json:"cloud_expires_at,omitempty"`
-	ImageCount    int            `json:"image_count,omitempty"`
-	Images        []ImageView    `json:"images,omitempty"`
-	ReplyItem     ports.ID       `json:"-"`
-	ID            ports.ID       `json:"message_id"`
-	Seq           ports.ID       `json:"seq"`
-	SenderID      ports.ID       `json:"sender_id"`
-	PolicyVersion ports.ID       `json:"policy_version"`
-	Type          string         `json:"message_type"`
-	State         string         `json:"state"`
-	StateVersion  ports.ID       `json:"state_version"`
-	Text          *string        `json:"text,omitempty"`
-	CreatedAt     time.Time      `json:"created_at"`
-	ReplyTo       ports.ID       `json:"-"`
-	EditedFrom    ports.ID       `json:"-"`
-	Reply         *ReferenceView `json:"reply,omitempty"`
-	EditedSource  *ReferenceView `json:"edited_from,omitempty"`
+	Sender        *SenderIdentity `json:"sender,omitempty"`
+	AV            *AVView         `json:"av,omitempty"`
+	RetentionMode string          `json:"retention_mode"`
+	ExpiresAt     *time.Time      `json:"cloud_expires_at,omitempty"`
+	ImageCount    int             `json:"image_count,omitempty"`
+	Images        []ImageView     `json:"images,omitempty"`
+	ReplyItem     ports.ID        `json:"-"`
+	ID            ports.ID        `json:"message_id"`
+	Seq           ports.ID        `json:"seq"`
+	SenderID      ports.ID        `json:"sender_id"`
+	PolicyVersion ports.ID        `json:"policy_version"`
+	Type          string          `json:"message_type"`
+	State         string          `json:"state"`
+	StateVersion  ports.ID        `json:"state_version"`
+	Text          *string         `json:"text,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
+	ReplyTo       ports.ID        `json:"-"`
+	EditedFrom    ports.ID        `json:"-"`
+	Reply         *ReferenceView  `json:"reply,omitempty"`
+	EditedSource  *ReferenceView  `json:"edited_from,omitempty"`
 }
 type ChangeView struct {
 	Seq     ports.ID    `json:"change_seq"`
@@ -73,7 +73,7 @@ func (s *HistoryService) ConfigureMedia(images, audio, video bool) {
 }
 
 type HistoryPage struct {
- Mode string `json:"conversation_mode,omitempty"`
+	Mode              string               `json:"conversation_mode,omitempty"`
 	Capabilities      *MessageCapabilities `json:"capabilities,omitempty"`
 	OrderContext      *ports.OrderContext  `json:"order_context,omitempty"`
 	MemberRole        string               `json:"member_role"`
@@ -160,7 +160,7 @@ func (s *HistoryService) open(ctx context.Context, p ports.Principal, q HistoryR
 	return r, nil
 }
 func emptyPage(r *historyRead) HistoryPage {
-	return HistoryPage{Mode:r.grant.Mode,OrderContext: r.grant.OrderContext, MemberRole: r.grant.MemberRole, CanSend: r.grant.CanSend, ViewerID: r.actor, Messages: []MessageView{}, Changes: []ChangeView{}, PolicyVersion: r.grant.Version, SnapshotMaxSeq: r.cursor.Seq, SnapshotMaxChange: r.cursor.Change, ExpiresAt: r.cursor.Expiry}
+	return HistoryPage{Mode: r.grant.Mode, OrderContext: r.grant.OrderContext, MemberRole: r.grant.MemberRole, CanSend: r.grant.CanSend, ViewerID: r.actor, Messages: []MessageView{}, Changes: []ChangeView{}, PolicyVersion: r.grant.Version, SnapshotMaxSeq: r.cursor.Seq, SnapshotMaxChange: r.cursor.Change, ExpiresAt: r.cursor.Expiry}
 }
 
 // Projection is safe in SQL too: hidden bodies never cross the DB boundary.
@@ -222,7 +222,9 @@ func (s *HistoryService) finish(ctx context.Context, p ports.Principal, r *histo
 	for i := range page.Changes {
 		views = append(views, &page.Changes[i].Message)
 	}
-	if err:=hydrateSenders(ctx,r.tx,views);err!=nil{return HistoryPage{},err}
+	if err := hydrateSenders(ctx, r.tx, views); err != nil {
+		return HistoryPage{}, err
+	}
 	if err := hydrateImages(ctx, r.tx, views); err != nil {
 		return HistoryPage{}, err
 	}

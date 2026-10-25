@@ -63,13 +63,13 @@ type OrderContext struct {
 }
 
 type Grant struct {
- Mode, RoleSource, DisplayRole string
- DisplayRoleVersion ID
-	OrderContext     *OrderContext
-	MemberRole       string
-	CanRead, CanSend bool
-	ScopeKey         string
-	Version          ID
+	Mode, RoleSource, DisplayRole string
+	DisplayRoleVersion            ID
+	OrderContext                  *OrderContext
+	MemberRole                    string
+	CanRead, CanSend              bool
+	ScopeKey                      string
+	Version                       ID
 	// S05 must bind intervals to this immutable authority generation, not a
 	// processing-time seq. Staff returning after revocation get a different key.
 	MemberKey                            string

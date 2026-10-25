@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"sort"
+ "strings"
 	"strconv"
 
 	"github.com/franz-9527/workers/chat/internal/ports"
@@ -69,6 +70,16 @@ func (r *Reader) CurrentLocked(ctx context.Context, tx *sql.Tx, scope string) (P
 	if tx == nil || len(scope) < 1 || len(scope) > 96 {
 		return Projection{}, ErrDenied
 	}
+ // PHP order triggers acquire the group epoch before persisting the guard.
+ // Hold the same order here so concurrent order changes never form a
+ // guard -> group / group -> guard lock cycle.
+ if strings.HasPrefix(scope,"order:") && strings.HasSuffix(scope,":collaboration") {
+  order:=ports.ID(strings.TrimSuffix(strings.TrimPrefix(scope,"order:"),":collaboration"))
+  if !positive(order){return Projection{},ErrDenied}
+  var epoch string
+  err:=tx.QueryRowContext(ctx,`SELECT CAST(source_version AS CHAR) FROM chat_collaboration_groups WHERE order_id=? LOCK IN SHARE MODE`,string(order)).Scan(&epoch)
+  if err==sql.ErrNoRows{return Projection{},ErrDenied};if err!=nil{return Projection{},ports.ErrUnavailable}
+ }
 	var v row
 	var body sql.NullString
 	err := tx.QueryRowContext(ctx, `SELECT scope_key,CAST(order_id AS CHAR),COALESCE(CAST(assignment_id AS CHAR),''),CAST(policy_version AS CHAR),state,

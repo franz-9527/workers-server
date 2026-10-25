@@ -85,7 +85,9 @@ func (g *GovernanceService) AuditHistory(ctx context.Context, p ports.Principal,
 	if err = hydrateAV(ctx, tx, p, views); err != nil {
 		return out, err
 	}
-	if err=hydrateSenders(ctx,tx,views);err!=nil{return out,err}
+	if err = hydrateSenders(ctx, tx, views); err != nil {
+		return out, err
+	}
 	if err = hydrateImages(ctx, tx, views); err != nil {
 		return out, err
 	}

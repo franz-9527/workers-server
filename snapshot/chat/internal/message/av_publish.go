@@ -111,7 +111,9 @@ func (a *AVService) Publish(ctx context.Context, id ports.ID) (Result, error) {
 	if e != nil {
 		return Result{}, ports.ErrUnavailable
 	}
-	if e=stampSender(ctx,tx,mid,g);e!=nil{return Result{},e}
+	if e = stampSender(ctx, tx, mid, g); e != nil {
+		return Result{}, e
+	}
 	if e = storagepolicy.Stamp(ctx, tx, mid, q.MessageType); e != nil {
 		return Result{}, e
 	}

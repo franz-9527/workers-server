@@ -243,11 +243,17 @@ func TestCollaborationStaffEpochs(t *testing.T) {
 // New schema is intentionally unreachable through existing database/read/send
 // paths until S24.a2 installs nullable bindings and the PHP-only authority writer.
 func TestCollaborationIntegratedProjectionKeepsAssignmentBoundary(t *testing.T) {
- p,err:=DecodeProjection([]byte(collaborationFixture),"order:77:collaboration","7")
- if err!=nil||p.Mode!="collaboration"||p.AssignmentID!=""||p.SourceVersion!="1"{t.Fatal("collaboration projection",p,err)}
- event:=`{"schema_version":1,"policy_version":"7","snapshot":`+collaborationFixture+"}"
- if _,err:=DecodeEvent([]byte(event),"order:77:collaboration","7");err!=nil{t.Fatal(err)}
- if _,err:=DecodeProjection([]byte(validSnapshot),"order:77:assignment:100","7");err!=nil{t.Fatal("assignment regression",err)}
+	p, err := DecodeProjection([]byte(collaborationFixture), "order:77:collaboration", "7")
+	if err != nil || p.Mode != "collaboration" || p.AssignmentID != "" || p.SourceVersion != "1" {
+		t.Fatal("collaboration projection", p, err)
+	}
+	event := `{"schema_version":1,"policy_version":"7","snapshot":` + collaborationFixture + "}"
+	if _, err := DecodeEvent([]byte(event), "order:77:collaboration", "7"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeProjection([]byte(validSnapshot), "order:77:assignment:100", "7"); err != nil {
+		t.Fatal("assignment regression", err)
+	}
 }
 
 func TestCollaborationPHPWireFixtures(t *testing.T) {
