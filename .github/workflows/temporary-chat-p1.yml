@@ -1,0 +1,232 @@
+name: Temporary P1 contact-boundary verification
+on:
+  push:
+    paths: ['.github/workflows/temporary-chat-p1.yml', '.validation/p1/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-p1-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  service-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: s14-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ps14-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:7.0.15
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_INTEGRATION: '1'
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_IMAGE_HELPER_TEST: '1'
+      CHAT_AV_HELPER_TEST: '1'
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: s14-fixture-only
+      MESSAGING_MIGRATION_MYSQL_TEST: '1'
+      V250_DB_HOST: 127.0.0.1
+      V250_DB_USER: root
+      V250_DB_PASSWORD: s14-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact source snapshot and materialize isolated files
+        id: source
+        shell: python
+        run: |
+          import json,hashlib,pathlib,base64
+          manifest=json.loads(''.join(p.read_text() for p in sorted(pathlib.Path('.validation/p1').glob('source-*.part'))))
+          root=pathlib.Path('.validation/p1/worktree')
+          for name,content in manifest['files'].items():
+              path=pathlib.PurePosixPath(name)
+              assert not path.is_absolute() and '..' not in path.parts
+              assert path.parts[0] in ('chat','server','tools')
+              data=base64.b64decode(content) if manifest.get('encodings',{}).get(name)=='base64' else content.encode()
+              blob=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              assert blob==manifest['blob_shas'][name],name+' candidate blob mismatch'
+              target=root.joinpath(*path.parts);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+          print('Verified candidate based on:',manifest['source_commit'],'files:',len(manifest['files']))
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .validation/p1/worktree/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,sodium,ctype,mbstring,gd
+          coverage: none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install hash-pinned local image libraries
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r .validation/p1/worktree/chat/helpers/images/requirements.lock
+      - name: Prepare local media tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          ffmpeg -version
+      - name: Set isolated endpoints and verify runtimes
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: |
+          php -r 'if (PHP_VERSION !== "8.3.36") exit(1); echo "PHP ".PHP_VERSION."\n";'
+          go version
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "V250_DB_PORT=$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: Prepare independent binlog recovery fixture
+        run: |
+          docker run -d --name bxchat-recovery -e MYSQL_ROOT_PASSWORD=s14-fixture-only -e MYSQL_ROOT_HOST=% -p 127.0.0.1::3306 mysql:5.7.44 --log-bin=mysql-bin --binlog-format=ROW --server-id=2123 --binlog-checksum=CRC32
+          for attempt in $(seq 1 60); do
+            if docker exec bxchat-recovery mysqladmin ping -h 127.0.0.1 -ps14-fixture-only --silent; then break; fi
+            sleep 2
+          done
+          docker exec bxchat-recovery mysqladmin ping -h 127.0.0.1 -ps14-fixture-only --silent
+          echo "CHAT_RECOVERY_TEST_MYSQL_ADDR=$(docker port bxchat-recovery 3306/tcp)" >> "$GITHUB_ENV"
+          echo "CHAT_RECOVERY_TEST_CONTROL_DIR=$RUNNER_TEMP/chat-recovery-control" >> "$GITHUB_ENV"
+          echo "CHAT_RECOVERY_TEST_BACKUP_PATH=$RUNNER_TEMP/chat-recovery-backup.sql" >> "$GITHUB_ENV"
+          echo "CHAT_TEST_CENTER_FIXTURE_DIR=$RUNNER_TEMP/chat-center-fixtures" >> "$GITHUB_ENV"
+      - name: PHP syntax, identity, reminders, schema and operational contracts
+        working-directory: .validation/p1/worktree
+        run: |
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php server/tests/chat_storage_contract.php
+          php server/tests/chat_schema_contract.php
+          php server/tests/chat_identity_contract.php
+          php server/tests/chat_reminder_contract.php
+          php server/tests/chat_operations_contract.php
+          python -B tools/test_chat_operations.py
+      - name: Prepare native binlog verifier for the disposable MySQL 5.7 archive
+        run: |
+          sudo apt-get update -qq
+          verifier_version="$(apt-cache policy mysql-client-core-8.0 | awk '/Candidate:/ {print $2}')"
+          test -n "$verifier_version"
+          test "$verifier_version" != "(none)"
+          sudo apt-get install -y --no-install-recommends "mysql-client-core-8.0=$verifier_version"
+          /usr/bin/mysqlbinlog --no-defaults --version
+          dpkg-query -W -f='${Package} ${Version}\n' mysql-client-core-8.0
+      - name: Verify real continuous archived binlogs
+        working-directory: .validation/p1/worktree
+        shell: python
+        run: |
+          import json,pathlib,os,subprocess,base64
+          control=pathlib.Path(os.environ['CHAT_RECOVERY_TEST_CONTROL_DIR'])
+          start=json.loads((control/'backup-checkpoint.json').read_text())['payload']['watermark']
+          end=json.loads((control/'checkpoint.json').read_text())['payload']['watermark']
+          archive=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-binlog-archive';archive.mkdir(mode=0o700)
+          first=int(start['file'].rsplit('.',1)[1]);last=int(end['file'].rsplit('.',1)[1]);prefix=end['file'].rsplit('.',1)[0]
+          for n in range(first,last+1):
+              name=prefix+'.'+str(n).zfill(6)
+              subprocess.run(['docker','cp','bxchat-recovery:/var/lib/mysql/'+name,str(archive/name)],check=True)
+          validator=pathlib.Path('/usr/bin/mysqlbinlog')
+          env=dict(os.environ,CHAT_RECOVERY_KEY=base64.b64encode(b'k'*32).decode())
+          cmd=['python','-B','chat/scripts/seal-binlogs.py','--control',str(control),'--backup-checkpoint',str(control/'backup-checkpoint.json'),'--archive',str(archive),'--mysqlbinlog',str(validator)]
+          checked=subprocess.run(cmd,env=env)
+          if checked.returncode:
+              for path in sorted(archive.iterdir()):
+                  stat=path.stat()
+                  print('FIXTURE_ARCHIVE_METADATA',path.name,stat.st_size,oct(stat.st_mode & 0o777),stat.st_uid,stat.st_gid)
+                  diagnostic=subprocess.run([str(validator),'--no-defaults','--verify-binlog-checksum','--start-position='+str(start['position']),'--stop-position='+str(end['position']),str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  print('FIXTURE_VALIDATOR_DIAGNOSTIC',diagnostic.returncode,diagnostic.stderr.decode(errors='replace')[:1200])
+              raise SystemExit(1)
+          last_file=archive/end['file'];complete=last_file.read_bytes()
+          last_file.write_bytes(complete[:max(4,int(end['position'])-1)])
+          bad=subprocess.run(cmd,env=env)
+          assert bad.returncode!=0,'incomplete archived tail unexpectedly verified'
+          last_file.write_bytes(complete)
+          checked=subprocess.run(cmd,env=env)
+          if checked.returncode:
+              for path in sorted(archive.iterdir()):
+                  stat=path.stat()
+                  print('FIXTURE_ARCHIVE_METADATA',path.name,stat.st_size,oct(stat.st_mode & 0o777),stat.st_uid,stat.st_gid)
+                  diagnostic=subprocess.run([str(validator),'--no-defaults','--verify-binlog-checksum','--start-position='+str(start['position']),'--stop-position='+str(end['position']),str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  print('FIXTURE_VALIDATOR_DIAGNOSTIC',diagnostic.returncode,diagnostic.stderr.decode(errors='replace')[:1200])
+              raise SystemExit(1)
+      - name: Restore old backup and replay the verified security increment
+        working-directory: .validation/p1/worktree
+        shell: python
+        run: |
+          import json,pathlib,os,subprocess
+          control=pathlib.Path(os.environ['CHAT_RECOVERY_TEST_CONTROL_DIR'])
+          name=json.loads((control/'fixture-meta.json').read_text())['database']
+          port=os.environ['CHAT_INTEGRATION_MYSQL_ADDR'].rsplit(':',1)[1]
+          client=['docker','run','--rm','-i','--network=host','-e','MYSQL_PWD=s14-fixture-only','--entrypoint','mysql','mysql:5.7.44','-h127.0.0.1','-P'+port,'-uroot']
+          with open(os.environ['CHAT_RECOVERY_TEST_BACKUP_PATH'],'rb') as backup:
+              subprocess.run(client,stdin=backup,check=True)
+          env=dict(os.environ,CHAT_RECOVERY_TEST_MYSQL_ADDR=os.environ['CHAT_INTEGRATION_MYSQL_ADDR'])
+          subprocess.run(['php','server/tests/chat_operations_contract.php','--verify-restored-old'],env=env,check=True)
+          start=json.loads((control/'backup-checkpoint.json').read_text())['payload']['watermark']
+          end=json.loads((control/'checkpoint.json').read_text())['payload']['watermark']
+          archive=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-binlog-archive'
+          first=int(start['file'].rsplit('.',1)[1]);last=int(end['file'].rsplit('.',1)[1]);prefix=end['file'].rsplit('.',1)[0]
+          replay=pathlib.Path(os.environ['RUNNER_TEMP'])/'chat-recovery-replay.sql'
+          with replay.open('wb') as sql:
+              for n in range(first,last+1):
+                  path=archive/(prefix+'.'+str(n).zfill(6))
+                  lo=start['position'] if n==first else '4'
+                  hi=end['position'] if n==last else str(path.stat().st_size)
+                  command=['/usr/bin/mysqlbinlog','--no-defaults','--verify-binlog-checksum','--database='+name,'--start-position='+str(lo),'--stop-position='+str(hi),str(path)]
+                  subprocess.run(command,stdout=sql,check=True)
+          replay.chmod(0o600)
+          with replay.open('rb') as sql:
+              subprocess.run(client,stdin=sql,check=True)
+          subprocess.run(['php','server/tests/chat_operations_contract.php','--verify-replayed'],env=env,check=True)
+      - name: Focused offline media diagnostics
+        if: always()
+        working-directory: .validation/p1/worktree/chat
+        run: go test -count=1 -v ./internal/avpipeline
+      - name: Go format, static checks and complete race regression
+        if: always()
+        working-directory: .validation/p1/worktree/chat
+        run: |
+          go mod verify
+          gofmt -w internal/moderation/rules.go internal/moderation/rules_test.go internal/message/moderation_integration_test.go internal/imagepipeline/helper_test.go
+          go vet ./...
+          sh build.sh
+          go test -race -count=1 ./...
+      - name: Existing test center fixture runner and remaining order types
+        working-directory: .validation/p1/worktree
+        run: |
+          export CHAT_VERIFIED_SOURCE_REVISION="$(python -c "import json,pathlib;print(json.loads(''.join(p.read_text() for p in sorted(pathlib.Path('../').glob('source-*.part'))))['source_commit'])")"
+          export CHAT_TEST_REPORT_KEY="$(python -c "import base64;print(base64.b64encode(b'r'*32).decode())")"
+          export CHAT_TEST_CENTER_SIGNED_REPORT="$RUNNER_TEMP/chat-center-signed-report.json"
+          python -B chat/scripts/test-center.py --fixture "$CHAT_TEST_CENTER_FIXTURE_DIR/platform.json" --report-file "$CHAT_TEST_CENTER_SIGNED_REPORT" --sign-env CHAT_TEST_REPORT_KEY
+          php server/tests/chat_operations_contract.php --import-report
+          cd chat
+          for profile in measurement single_grab platform; do
+            CHAT_TEST_CENTER_FIXTURE="$CHAT_TEST_CENTER_FIXTURE_DIR/$profile.json" go test -race -count=1 -v -run '^TestMySQLS21TestCenterInstance$' ./internal/message
+          done
+      - name: Export canonical formatting and exact tested blobs
+        if: always()
+        working-directory: .validation/p1/worktree/chat
+        shell: python
+        run: |
+          import pathlib,subprocess,base64,json,hashlib
+          names=["internal/moderation/rules.go","internal/moderation/rules_test.go","internal/message/moderation_integration_test.go","internal/imagepipeline/helper_test.go"]
+          for name in names:
+              if not pathlib.Path(name).is_file(): continue
+              p=subprocess.run(['gofmt',name],capture_output=True,check=True)
+              print('FORMATTED_FILE '+json.dumps({'path':'chat/'+name,'base64':base64.b64encode(p.stdout).decode()}))
+          for p in sorted(pathlib.Path('..').rglob('*')):
+              if p.is_file() and p.parts[1] in ('chat','server','tools') and '__pycache__' not in p.parts:
+                  b=p.read_bytes()
+                  print('TESTED_BLOB '+json.dumps({'path':'/'.join(p.parts[1:]),'sha':hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()}))
+      - name: Clean independent disposable fixture
+        if: always()
+        run: docker rm -f bxchat-recovery || true
