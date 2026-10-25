@@ -32,6 +32,7 @@ final class ChatParticipantProfiles
             $total+=count($ids);if($total>100||isset($seen[$cid]))throw new RuntimeException('展示范围无效',400);
             $seen[$cid]=true;$request['sender_ids']=array_values(array_unique($ids));
         }unset($request);
+        if(!$this->db->pdo()->inTransaction())$this->db->pdo()->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
         return $this->db->transaction(function()use($actor,$tokenHash,$requests):array{
             $login=$this->db->fetch("SELECT UNIX_TIMESTAMP(s.expires_at) expires_unix FROM login_sessions s JOIN users u ON u.id=s.user_id AND u.status='active'
                 WHERE s.user_id=:actor AND s.token_hash=:hash AND s.status='active' AND s.expires_at>UTC_TIMESTAMP()
@@ -46,6 +47,16 @@ final class ChatParticipantProfiles
                 $binding=$this->db->fetch('SELECT CAST(order_id AS CHAR) order_id,assignment_id FROM chat_conversations WHERE id=:id',['id'=>$cid]);
                 if(!$binding)continue;
                 $this->db->fetch('SELECT id FROM orders WHERE id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
+                $lockedUsers=null;
+                if($binding['assignment_id']===null){
+                    $hint=$this->db->fetchValue('SELECT snapshot_json FROM chat_policy_guards WHERE scope_key=:scope',['scope'=>'order:'.$binding['order_id'].':collaboration']);
+                    $hint=is_string($hint)&&strlen($hint)<=32768?json_decode($hint,true,32):null;
+                    if(!is_array($hint)||!is_array($hint['members']??null)||count($hint['members'])>64)continue;
+                    $lockedUsers=[];$args=[];$slots=[];
+                    foreach($hint['members'] as $i=>$person){$uid=$this->id($person['actor_id']??null);$lockedUsers[$uid]=true;$args['lock'.$i]=$uid;$slots[]=':lock'.$i;}
+                    if(!$slots)continue;
+                    $this->db->fetchAll('SELECT id FROM users WHERE id IN ('.implode(',',$slots).') ORDER BY id LOCK IN SHARE MODE',$args);
+                }
                 if($binding['assignment_id']===null)$this->db->fetch('SELECT source_version FROM chat_collaboration_groups WHERE order_id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
 
                 $row=$this->db->fetch("SELECT c.scope_key,c.snapshot_hash applied_hash,CAST(c.policy_version AS CHAR) applied_version,
@@ -64,6 +75,10 @@ final class ChatParticipantProfiles
                 if($group){
                     $epoch=$this->db->fetchValue('SELECT CAST(source_version AS CHAR) FROM chat_collaboration_groups WHERE order_id=:id LOCK IN SHARE MODE',['id'=>$snapshot['order_id']]);
                     if((string)$epoch!==(string)($snapshot['source_version']??''))continue;
+                }
+                if($group){
+                    $actual=[];foreach($snapshot['members'] as $person)$actual[(string)($person['actor_id']??'')]=true;
+                    if(array_diff_key($actual,$lockedUsers??[])||array_diff_key($lockedUsers??[],$actual))continue;
                 }
                 $display=[];$roles=[];$allowed=false;
                 foreach($snapshot['members'] as $member){
@@ -98,7 +113,7 @@ final class ChatParticipantProfiles
                     FROM users u LEFT JOIN assignments a ON a.id=:assignment
                     LEFT JOIN worker_profiles w ON w.id=a.worker_id AND w.user_id=u.id
                     LEFT JOIN worker_real_name_verifications rv ON rv.worker_id=w.id
-                    WHERE u.status='active' AND u.id IN (".implode(',',$slots).") ORDER BY u.id LOCK IN SHARE MODE",$params);
+                    WHERE u.status='active' AND u.id IN (".implode(',',$slots).") ORDER BY u.id",$params);
                 $profiles=[];foreach($people as $person){
                     $id=(string)$person['actor_id'];$role=$roles[$id];
                     $kind=$role==='worker'?'worker':($role==='platform_staff'?'platform':($row['order_source_type']==='merchant'?'merchant':'user'));
