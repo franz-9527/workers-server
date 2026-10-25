@@ -153,9 +153,10 @@ final class ChatCollaboration
              'can_remove'=>$m['role_source']==='invite'&&((string)$m['actor_id']===$actor||in_array($me['role_source'],['merchant_owner','platform_staff'],true)||in_array($me['role_source'],['assigned_worker','owner_mobile_match'],true)&&(string)$m['inviter_actor_id']===$actor)];
         }
         $invite=$this->db->fetch('SELECT CAST(generation AS CHAR) generation FROM chat_collaboration_invites WHERE order_id=:order AND inviter_actor_id=:actor',['order'=>$id,'actor'=>$actor]);
-        $cid=$this->db->fetchValue("SELECT CAST(id AS CHAR) FROM chat_conversations WHERE scope_key=:scope AND conversation_type='order'",['scope'=>'order:'.$id.':collaboration']);
+        $projection=$this->db->fetch("SELECT CAST(c.id AS CHAR) id,(c.policy_version=g.policy_version AND c.snapshot_hash=g.snapshot_hash) ready FROM chat_conversations c JOIN chat_policy_guards g ON g.scope_key=c.scope_key WHERE c.scope_key=:scope AND c.conversation_type='order'",['scope'=>'order:'.$id.':collaboration']);
+        $cid=$projection['id']??'';
         $events=$this->db->fetchAll('SELECT CAST(id AS CHAR) id,event_type,CAST(actor_id AS CHAR) actor_id,CAST(target_actor_id AS CHAR) target_actor_id,display_role,CAST(display_role_version AS CHAR) display_role_version,created_at FROM chat_collaboration_events WHERE order_id=:id ORDER BY id DESC LIMIT 30',['id'=>$id]);
-        return ['conversation_id'=>(string)($cid??''),'policy_version'=>$s['policy_version'],'viewer_actor_id'=>$actor,'title'=>'订单协作群 · '.(string)($s['order_context']['public_no']??''),'member_limit'=>$this->limit(),'members'=>$result,
+        return ['conversation_id'=>(string)($cid??''),'projection_ready'=>$projection!==null&&(int)$projection['ready']===1,'policy_version'=>$s['policy_version'],'viewer_actor_id'=>$actor,'title'=>'订单协作群 · '.(string)($s['order_context']['public_no']??''),'member_limit'=>$this->limit(),'members'=>$result,
          'state'=>$s['state'],'can_invite'=>$this->inviter($me,$s),'can_leave'=>$me['role_source']==='invite','can_edit_role'=>$me['role_source']==='invite',
          'invite_generation'=>$invite['generation']??'0','events'=>$events];
     }
