@@ -61,7 +61,7 @@ final class ChatRecoveryCheckpoint
             'chat_admin_sessions'=>'SELECT id,session_version,authority_hash,scopes_json,expires_at,revoked_at FROM chat_admin_sessions ORDER BY id',
             'chat_mini_auditors'=>'SELECT user_id,enabled,authority_version FROM chat_mini_auditors ORDER BY user_id',
             'login_sessions'=>'SELECT id,user_id,status,expires_at,SHA2(token_hash,256) credential_hash,demo_actor_user_id,test_actor_user_id,test_instance_id,test_actor_expires_at FROM login_sessions ORDER BY id',
-            'users'=>'SELECT id,status FROM users ORDER BY id',
+            'users'=>'SELECT id,status,chat_collaboration_version FROM users ORDER BY id',
             'wechat_identities'=>'SELECT id,user_id,SHA2(CONCAT(app_id,CHAR(10),openid),256) identity_hash,status FROM wechat_identities ORDER BY id',
             'staff_settings'=>"SELECT setting_key,SHA2(setting_value,256) value_hash FROM system_settings WHERE setting_key IN ('wechat.miniapp_appid','wechat.admin_openids') ORDER BY setting_key",
             'chat_business_events'=>'SELECT id,event_id,aggregate_key,aggregate_version,SHA2(payload_json,256) payload_hash FROM chat_business_events ORDER BY id',

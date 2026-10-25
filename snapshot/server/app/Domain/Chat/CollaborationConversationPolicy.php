@@ -51,10 +51,10 @@ final class CollaborationConversationPolicy
         $seen=[]; $roles=[]; $result=[]; $staffConfig=null;
         foreach ($members as $person) {
             if (!is_array($person) || !$this->keys($person,[
-                'actor_id','kind','status','role_source','membership_generation','display_role','display_role_version',
+                'actor_id','kind','status','role_source','membership_generation','display_role','display_role_version','account_version',
             ], ['authority_version','staff_config_version','inviter_actor_id','invite_generation'])
                 || !$this->id($person['actor_id']) || $person['kind']!=='mini' || $person['status']!=='active'
-                || !$this->id($person['membership_generation']) || !$this->id($person['display_role_version'])) return null;
+                || !$this->id($person['account_version']) || !$this->id($person['membership_generation']) || !$this->id($person['display_role_version'])) return null;
             $actor=$person['actor_id']; $sourceRole=$person['role_source'];
             if (isset($seen[$actor]) || !is_string($sourceRole)
                 || (!array_key_exists($sourceRole,self::SYSTEM_ROLES) && $sourceRole!=='invite')) return null;
@@ -65,7 +65,7 @@ final class CollaborationConversationPolicy
                 : $display!==self::SYSTEM_ROLES[$sourceRole])) return null;
             $member=[
                 'actor_id'=>$actor,'kind'=>'mini','role_source'=>$sourceRole,
-                'membership_generation'=>$person['membership_generation'],
+                'membership_generation'=>$person['membership_generation'],'account_version'=>$person['account_version']??'1',
                 'display_role'=>$display,'display_role_version'=>$person['display_role_version'],
                 'can_read'=>true,'can_send'=>$state==='open' && count($members)>1,
             ];

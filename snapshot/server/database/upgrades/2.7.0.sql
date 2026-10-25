@@ -957,6 +957,8 @@ SET @s24_ddl=IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCH
 PREPARE s24_stmt FROM @s24_ddl; EXECUTE s24_stmt; DEALLOCATE PREPARE s24_stmt;
 SET @s24_ddl=IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='chat_messages' AND COLUMN_NAME='sender_display_role_version')=0,'ALTER TABLE chat_messages ADD COLUMN sender_display_role_version bigint unsigned DEFAULT NULL COMMENT ''发送时展示版本''','SELECT 1');
 PREPARE s24_stmt FROM @s24_ddl; EXECUTE s24_stmt; DEALLOCATE PREPARE s24_stmt;
+SET @s24_ddl=IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='chat_collaboration_version')=0,'ALTER TABLE users ADD COLUMN chat_collaboration_version bigint unsigned NOT NULL DEFAULT 1','SELECT 1');
+PREPARE s24_stmt FROM @s24_ddl; EXECUTE s24_stmt; DEALLOCATE PREPARE s24_stmt;
 DROP TRIGGER IF EXISTS chat_collaboration_order_update;
 DROP TRIGGER IF EXISTS chat_collaboration_address_insert;
 DROP TRIGGER IF EXISTS chat_collaboration_address_update;
@@ -983,11 +985,12 @@ CREATE TRIGGER chat_collaboration_address_delete AFTER DELETE ON order_addresses
 BEGIN
  UPDATE chat_collaboration_groups SET source_version=source_version+1 WHERE order_id=OLD.order_id;
 END$$
-CREATE TRIGGER chat_collaboration_user_update AFTER UPDATE ON users FOR EACH ROW
+CREATE TRIGGER chat_collaboration_user_update BEFORE UPDATE ON users FOR EACH ROW
 BEGIN
  IF NOT(NEW.mobile_hmac <=> OLD.mobile_hmac) OR NOT(NEW.mobile_ciphertext <=> OLD.mobile_ciphertext) OR NOT(NEW.status <=> OLD.status) THEN
-  UPDATE chat_collaboration_groups g JOIN chat_collaboration_members m ON m.order_id=g.order_id AND m.active=1
-   SET g.source_version=g.source_version+1 WHERE m.actor_id=NEW.id;
+  SET NEW.chat_collaboration_version=OLD.chat_collaboration_version+1;
+ ELSE
+  SET NEW.chat_collaboration_version=OLD.chat_collaboration_version;
  END IF;
 END$$
 DELIMITER ;

@@ -47,16 +47,6 @@ final class ChatParticipantProfiles
                 $binding=$this->db->fetch('SELECT CAST(order_id AS CHAR) order_id,assignment_id FROM chat_conversations WHERE id=:id',['id'=>$cid]);
                 if(!$binding)continue;
                 $this->db->fetch('SELECT id FROM orders WHERE id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
-                $lockedUsers=null;
-                if($binding['assignment_id']===null){
-                    $hint=$this->db->fetchValue('SELECT snapshot_json FROM chat_policy_guards WHERE scope_key=:scope',['scope'=>'order:'.$binding['order_id'].':collaboration']);
-                    $hint=is_string($hint)&&strlen($hint)<=32768?json_decode($hint,true,32):null;
-                    if(!is_array($hint)||!is_array($hint['members']??null)||count($hint['members'])>64)continue;
-                    $lockedUsers=[];$args=[];$slots=[];
-                    foreach($hint['members'] as $i=>$person){$uid=$this->id($person['actor_id']??null);$lockedUsers[$uid]=true;$args['lock'.$i]=$uid;$slots[]=':lock'.$i;}
-                    if(!$slots)continue;
-                    $this->db->fetchAll('SELECT id FROM users WHERE id IN ('.implode(',',$slots).') ORDER BY id LOCK IN SHARE MODE',$args);
-                }
                 if($binding['assignment_id']===null)$this->db->fetch('SELECT source_version FROM chat_collaboration_groups WHERE order_id=:id LOCK IN SHARE MODE',['id'=>$binding['order_id']]);
 
                 $row=$this->db->fetch("SELECT c.scope_key,c.snapshot_hash applied_hash,CAST(c.policy_version AS CHAR) applied_version,
@@ -77,8 +67,12 @@ final class ChatParticipantProfiles
                     if((string)$epoch!==(string)($snapshot['source_version']??''))continue;
                 }
                 if($group){
-                    $actual=[];foreach($snapshot['members'] as $person)$actual[(string)($person['actor_id']??'')]=true;
-                    if(array_diff_key($actual,$lockedUsers??[])||array_diff_key($lockedUsers??[],$actual))continue;
+                    $accountsCurrent=true;
+                    foreach($snapshot['members'] as $person){
+                        $current=$this->db->fetch("SELECT CAST(chat_collaboration_version AS CHAR) version,status FROM users WHERE id=:id LOCK IN SHARE MODE",['id'=>$this->id($person['actor_id']??null)]);
+                        if(!$current||$current['status']!=='active'||(string)$current['version']!==(string)($person['account_version']??'')){$accountsCurrent=false;break;}
+                    }
+                    if(!$accountsCurrent)continue;
                 }
                 $display=[];$roles=[];$allowed=false;
                 foreach($snapshot['members'] as $member){

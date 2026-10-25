@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "generated_at": "2026-10-24T23:30:00+08:00",
   "install_file": "database.sql",
-  "install_checksum": "ebe43fa198e0d83a804f004775fc9b8b584a3bbe87275c9194625d423e075e7c",
+  "install_checksum": "575a3e8c7c4b9fbdb3e2aa455baa7828d6fef62d946a4e3d2d1613bb1c64494d",
   "upgrades": [
     {
       "version": "1.0.0",
@@ -589,7 +589,7 @@
       "version": "2.7.0",
       "name": "订单聊天整包结构与权限、消息及已读基础",
       "file": "2.7.0.sql",
-      "checksum": "ec151851e5b2ec9d3d1468ed56aa51379cb0129759483adc67692ac3b8a9ba23",
+      "checksum": "cb847797f9cde13d85e85f3b1bac63b1ee68196742842bb7655440752213bfd6",
       "min_php": "8.3.36",
       "min_mysql": "5.7.44",
       "requires_extensions": [],

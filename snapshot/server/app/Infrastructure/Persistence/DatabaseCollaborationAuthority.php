@@ -99,9 +99,13 @@ final class DatabaseCollaborationAuthority
         }
         $limit=(int)$this->db->fetchValue('SELECT member_limit FROM chat_collaboration_settings WHERE id=1 LOCK IN SHARE MODE');
         $people=[];
+        // The users trigger advances only this row's account epoch. It never
+        // locks groups, so order/group -> users cannot cycle with account edits.
         foreach($desired as $m){
+            $accountVersion=$this->db->fetchValue("SELECT CAST(chat_collaboration_version AS CHAR) FROM users WHERE id=:id AND status='active' LOCK IN SHARE MODE",['id'=>(string)$m['actor_id']]);
+            if(!$accountVersion)throw new RuntimeException('群账号权威已变化');
             $person=['actor_id'=>(string)$m['actor_id'],'kind'=>'mini','status'=>'active','role_source'=>$m['role_source'],
-                'membership_generation'=>(string)$m['membership_generation'],'display_role'=>$m['display_role'],'display_role_version'=>(string)$m['display_role_version']];
+                'membership_generation'=>(string)$m['membership_generation'],'account_version'=>(string)$accountVersion,'display_role'=>$m['display_role'],'display_role_version'=>(string)$m['display_role_version']];
             if($m['role_source']==='invite'){$person['inviter_actor_id']=(string)$m['inviter_actor_id'];$person['invite_generation']=(string)$m['invite_generation'];}
             if($m['role_source']==='platform_staff'){$person['authority_version']=$m['authority_version'];$person['staff_config_version']=$m['staff_config_version'];}
             $people[]=$person;

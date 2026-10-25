@@ -398,3 +398,16 @@ func TestMySQLS24AccountChangeSerializesWithGroupReadAuthority(t *testing.T) {
 		t.Fatal("old source epoch survived an account change")
 	}
 }
+
+func TestMySQLS24AccountEditDoesNotWaitForOrderGroupLock(t *testing.T){
+ f,_,h,cid:=s24Fixture(t)
+ tx,err:=f.root.BeginTx(f.ctx,nil);if err!=nil{t.Fatal(err)};defer tx.Rollback()
+ if _,err=tx.ExecContext(f.ctx,"UPDATE orders SET version=version+1 WHERE id=401");err!=nil{t.Fatal(err)}
+ done:=make(chan error,1)
+ go func(){_,e:=f.root.ExecContext(f.ctx,"UPDATE users SET mobile_hmac=REPEAT('f',64) WHERE id=10204");done<-e}()
+ select{case e:=<-done:if e!=nil{t.Fatal(e)};case <-time.After(2*time.Second):t.Fatal("account trigger waited on order-held group lock")}
+ if err=tx.Commit();err!=nil{t.Fatal(err)}
+ if _,err=h.Read(f.ctx,principal("10201"),HistoryRequest{ConversationID:cid},"bootstrap");err==nil{t.Fatal("old order/account epoch survived")}
+ f.s24("sync");s24Poll(t,f)
+ if _,err=h.Read(f.ctx,principal("10201"),HistoryRequest{ConversationID:cid},"bootstrap");err!=nil{t.Fatal("fresh authority did not recover",err)}
+}

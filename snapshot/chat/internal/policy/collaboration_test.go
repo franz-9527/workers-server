@@ -10,7 +10,7 @@ import (
 	"github.com/franz-9527/workers/chat/internal/ports"
 )
 
-const collaborationFixture = `{"schema_version":3,"source_version":"1","conversation_mode":"collaboration","scope_key":"order:77:collaboration","order_id":"77","assignment_id":null,"episode_key":"order:77:collaboration:service","state":"open","can_invite":false,"member_limit":10,"members":[{"actor_id":"1","kind":"mini","role_source":"merchant_owner","membership_generation":"1","display_role":"merchant","display_role_version":"1","can_read":true,"can_send":true},{"actor_id":"2","kind":"mini","role_source":"assigned_worker","membership_generation":"1","display_role":"worker","display_role_version":"1","can_read":true,"can_send":true},{"actor_id":"4","kind":"mini","role_source":"invite","membership_generation":"1","display_role":"designer","display_role_version":"1","can_read":true,"can_send":true,"inviter_actor_id":"1","invite_generation":"1"}]}`
+const collaborationFixture = `{"schema_version":3,"source_version":"1","conversation_mode":"collaboration","scope_key":"order:77:collaboration","order_id":"77","assignment_id":null,"episode_key":"order:77:collaboration:service","state":"open","can_invite":false,"member_limit":10,"members":[{"actor_id":"1","kind":"mini","role_source":"merchant_owner","membership_generation":"1","account_version":"1","display_role":"merchant","display_role_version":"1","can_read":true,"can_send":true},{"actor_id":"2","kind":"mini","role_source":"assigned_worker","membership_generation":"1","account_version":"1","display_role":"worker","display_role_version":"1","can_read":true,"can_send":true},{"actor_id":"4","kind":"mini","role_source":"invite","membership_generation":"1","account_version":"1","display_role":"designer","display_role_version":"1","can_read":true,"can_send":true,"inviter_actor_id":"1","invite_generation":"1"}]}`
 
 func collaborationDecode(body string) (CollaborationProjection, error) {
 	return DecodeCollaborationProjection([]byte(body), "order:77:collaboration", "7")
@@ -148,7 +148,7 @@ func TestCollaborationMalformedFactsFailClosed(t *testing.T) {
 		}
 	}
 	for key, value := range map[string]any{
-		"actor_id": "1", "kind": "admin", "role_source": "merchant_owner", "membership_generation": "0",
+		"actor_id": "1", "kind": "admin", "role_source": "merchant_owner", "membership_generation": "0","account_version":0,
 		"display_role_version": 1, "display_role": "worker", "inviter_actor_id": "4",
 		"invite_generation": "01", "authority_version": "1", "extra": "forged",
 	} {
@@ -211,7 +211,7 @@ func TestCollaborationCapacityAndReadonly(t *testing.T) {
 func TestCollaborationStaffEpochs(t *testing.T) {
 	m := collaborationMap(t)
 	staff := map[string]any{"actor_id": "8", "kind": "mini", "role_source": "platform_staff",
-		"membership_generation": "1", "display_role": "platform", "display_role_version": "1",
+		"membership_generation": "1", "account_version":"1", "display_role": "platform", "display_role_version": "1",
 		"can_read": true, "can_send": true, "authority_version": "5"}
 	m["members"] = append(m["members"].([]any), staff)
 	m["staff_config_version"] = "3"

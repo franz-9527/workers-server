@@ -35,12 +35,13 @@ final class DatabaseChatPolicyMaintenance
         if(\app_config('chat.collaboration_enabled',false)===true){
             $names=['chat_collaboration_order_update','chat_collaboration_address_insert','chat_collaboration_address_update','chat_collaboration_address_delete','chat_collaboration_user_update'];
             $triggers=$this->db->fetchAll("SELECT TRIGGER_NAME,ACTION_TIMING FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND TRIGGER_NAME LIKE 'chat_collaboration_%'");
-            $valid=[];foreach($triggers as $trigger)if(in_array($trigger['TRIGGER_NAME'],$names,true)&&$trigger['ACTION_TIMING']==='AFTER')$valid[$trigger['TRIGGER_NAME']]=true;
+            $valid=[];foreach($triggers as $trigger)if(in_array($trigger['TRIGGER_NAME'],$names,true)&&$trigger['ACTION_TIMING']===($trigger['TRIGGER_NAME']==='chat_collaboration_user_update'?'BEFORE':'AFTER'))$valid[$trigger['TRIGGER_NAME']]=true;
             if(count($valid)!==5)throw new RuntimeException('协作群即时撤权触发器缺失');
             $nullable=(int)$this->db->fetchValue("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('chat_policy_guards','chat_conversations') AND COLUMN_NAME='assignment_id' AND IS_NULLABLE='YES'");
             $identities=(int)$this->db->fetchValue("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='chat_messages' AND COLUMN_NAME IN ('sender_role_source','sender_display_role','sender_display_role_version')");
             $unique=(int)$this->db->fetchValue("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='chat_conversations' AND INDEX_NAME='uq_chat_collaboration_order' AND NON_UNIQUE=0");
-            if($nullable!==2||$identities!==3||$unique!==2)throw new RuntimeException('协作群绑定或消息身份结构不完整');
+            $accountEpoch=(int)$this->db->fetchValue("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='chat_collaboration_version' AND IS_NULLABLE='NO'");
+            if($nullable!==2||$identities!==3||$unique!==2||$accountEpoch!==1)throw new RuntimeException('协作群绑定或消息身份结构不完整');
             foreach(['chat_collaboration_groups','chat_collaboration_members','chat_collaboration_invites','chat_collaboration_settings','chat_collaboration_events'] as $table)
                 if(!$this->db->tableExists($table))throw new RuntimeException('协作群结构未完成升级');
         }

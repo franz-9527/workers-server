@@ -30,6 +30,7 @@ type CollaborationMember struct {
 	ActorID              ports.ID    `json:"actor_id"`
 	Kind                 string      `json:"kind"`
 	RoleSource           string      `json:"role_source"`
+	AccountVersion ports.ID `json:"account_version"`
 	MembershipGeneration ports.ID    `json:"membership_generation"`
 	DisplayRole          string      `json:"display_role"`
 	DisplayRoleVersion   ports.ID    `json:"display_role_version"`
@@ -48,7 +49,7 @@ func (m *CollaborationMember) UnmarshalJSON(body []byte) error {
 	if json.Unmarshal(body, &header) != nil {
 		return ErrDenied
 	}
-	keys := []string{"actor_id", "kind", "role_source", "membership_generation", "display_role", "display_role_version", "can_read", "can_send"}
+	keys := []string{"actor_id", "kind", "role_source", "account_version", "membership_generation", "display_role", "display_role_version", "can_read", "can_send"}
 	switch header.Source {
 	case "invite":
 		keys = append(keys, "inviter_actor_id", "invite_generation")
@@ -121,7 +122,7 @@ func DecodeCollaborationProjection(body []byte, scope string, version ports.ID) 
 	seen := map[ports.ID]bool{}
 	roles := map[string]int{}
 	for _, m := range s.Members {
-		if !positive(m.ActorID) || seen[m.ActorID] || m.Kind != "mini" || !positive(m.MembershipGeneration) ||
+		if !positive(m.AccountVersion) || !positive(m.ActorID) || seen[m.ActorID] || m.Kind != "mini" || !positive(m.MembershipGeneration) ||
 			!positive(m.DisplayRoleVersion) || !m.CanRead || (s.State == "readonly" && m.CanSend) ||
 			(len(s.Members) == 1 && m.CanSend) {
 			return deny()

@@ -15,7 +15,7 @@ function s24Assert(bool $ok,string $label): void {
 }
 function s24Person(string $actor,string $source,string $display): array {
     $person=['actor_id'=>$actor,'kind'=>'mini','status'=>'active','role_source'=>$source,
-        'membership_generation'=>'1','display_role'=>$display,'display_role_version'=>'1'];
+        'membership_generation'=>'1','account_version'=>'1','display_role'=>$display,'display_role_version'=>'1'];
     if($source==='invite'){$person['inviter_actor_id']='1';$person['invite_generation']='1';}
     return $person;
 }
@@ -52,7 +52,7 @@ foreach(['schema_version'=>2,'order_id'=>'0','assignment_id'=>'0','scope_key'=>'
 foreach([
     ['actor_id'=>'01'],['actor_id'=>4],['actor_id'=>'18446744073709551616'],
     ['status'=>'disabled'],['kind'=>'admin'],['membership_generation'=>'0'],
-    ['membership_generation'=>1],['display_role_version'=>'01'],['display_role'=>'worker'],
+    ['membership_generation'=>1],['account_version'=>'0'],['account_version'=>1],['display_role_version'=>'01'],['display_role'=>'worker'],
     ['display_role'=>'platform'],['display_role'=>'自定义'],['nickname'=>'假的商家'],
     ['avatar_url'=>'https://example.invalid/a.png'],['role_source'=>'merchant_owner'],
     ['inviter_actor_id'=>'4'],['invite_generation'=>'0'],['authority_version'=>'1'],
@@ -61,7 +61,7 @@ foreach([
     $bad=$members;$bad[3]=array_replace($bad[3],$change);
     s24Assert($policy->evaluate($base,'merchant',$bad)===null,'invalid invited facts '.json_encode($change));
 }
-foreach(['membership_generation','display_role_version','inviter_actor_id','invite_generation'] as $key) {
+foreach(['membership_generation','display_role_version','inviter_actor_id','invite_generation','account_version'] as $key) {
     $bad=$members;unset($bad[3][$key]);
     s24Assert($policy->evaluate($base,'merchant',$bad)===null,'missing member fact '.$key);
 }
