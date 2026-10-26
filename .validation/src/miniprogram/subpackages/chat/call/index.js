@@ -52,7 +52,7 @@ Page({
  },
  async startMedia(call,life,epoch){
   const grant=await this.calls.prepare()
-  if(!this.visible||life!==this.life||epoch!==this.manager.epoch)return
+  if(!this.visible||this.ending||life!==this.life||epoch!==this.manager.epoch||!['preparing','connecting','active'].includes(this.calls.current?.state))return
   const current=()=>this.visible&&life===this.life&&epoch===this.manager.epoch
   const engine=new CallMedia(wx,patch=>{if(current())this.setData(patch)},{
    prepared:()=>{if(current())this.calls.action('prepared').catch(()=>{})},
@@ -63,7 +63,7 @@ Page({
   this.media=engine;this.arm(grant,this.calls.current)
   try{await engine.start(grant,this.calls.current)}catch(error){engine.stop().catch(()=>{});if(this.media===engine)this.media=null;if(current())throw error}
  },
- async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||life!==this.life||epoch!==this.manager.epoch)return;await this.media.renew(grant);this.arm(grant,this.calls.current)},
+ async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||this.ending||life!==this.life||epoch!==this.manager.epoch)return;await this.media.renew(grant);this.arm(grant,this.calls.current)},
  async accept(){if(this.data.busy)return;this.setData({busy:true});try{await this.calls.action('accept');await this.tick()}catch(error){this.setData({notice:message(error)})}finally{this.setData({busy:false})}},
  async hangup(){
   this.ending=true;this.stopMedia()

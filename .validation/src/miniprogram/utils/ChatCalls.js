@@ -20,7 +20,7 @@ class ChatCalls{
   if(previous&&previous.call_id===view.call_id&&previous.attempt_epoch===view.attempt_epoch&&previous.revision===view.revision){
    merged.authorized_until=Math.max(previous.authorized_until||0,view.authorized_until||0);merged.prepared_count=Math.max(previous.prepared_count||0,view.prepared_count||0)
   }
-  this.current=merged;this.manager.emit('calls.changed',{...view})
+  this.current=merged;this.manager.emit('calls.changed',{...merged})
  }
  async create(conversation,peer,media){
   const key=[conversation,peer,media].join(':')
@@ -37,7 +37,9 @@ class ChatCalls{
    if(epoch!==this.manager.epoch)throw Object.assign(new Error('账号已变化'),{code:'CHAT_CONTEXT_CHANGED'})
    this.pendingCreate=q
   }
-  const view=await this.call('create',this.pendingCreate)
+  let view
+  try{view=await this.call('create',this.pendingCreate)}
+  catch(error){if(epoch===this.manager.epoch&&['CALL_BUSY','CALL_STATE_CONFLICT','CALL_REQUEST_INVALID','CALL_DISABLED','CHAT_UNAUTHORIZED','CHAT_PERMISSION_DENIED'].includes(error.code))this.pendingCreate=null;throw error}
   if(epoch!==this.manager.epoch)return
   this.pendingCreate=null;this.apply(view);return view
  }
@@ -50,6 +52,11 @@ class ChatCalls{
  async performAction(name){
   if(!this.current)throw new Error('没有活动通话')
   const epoch=this.manager.epoch
+  if(name==='end'&&this.pending&&this.pending.name!=='end'){
+   await this.performAction(this.pending.name)
+   if(epoch!==this.manager.epoch)throw Object.assign(new Error('账号已变化'),{code:'CHAT_CONTEXT_CHANGED'})
+   if(terminal.has(this.current?.state))return this.current
+  }
   if(this.pending&&this.pending.name!==name)throw Object.assign(new Error('请先确认上一操作结果'),{code:'CALL_OPERATION_PENDING'})
   if(!this.pending){
    const target={...this.current}
@@ -71,10 +78,12 @@ class ChatCalls{
  }
  async prepare(){
   if(!this.current)throw new Error('没有活动通话')
-  const epoch=this.manager.epoch
-  const value=await this.call('prepare',{call_id:this.current.call_id,attempt_epoch:this.current.attempt_epoch,instance_id:await this.device()})
+  const epoch=this.manager.epoch,target={...this.current}
+  const value=await this.call('prepare',{call_id:target.call_id,attempt_epoch:target.attempt_epoch,instance_id:await this.device()})
   if(epoch!==this.manager.epoch)throw new Error('账号已变化')
-  this.apply(value.call);return value.credentials
+  this.apply(value.call)
+  if(this.current?.call_id!==target.call_id||this.current.attempt_epoch!==target.attempt_epoch||!['preparing','connecting','active'].includes(this.current.state))throw Object.assign(new Error('通话状态已变化'),{code:'CALL_STATE_CONFLICT'})
+  return value.credentials
  }
  setEnabled(value){const was=this.enabled;this.enabled=value===true;if(this.enabled&&!was&&this.manager.foreground)this.schedule(0);if(!this.enabled&&was)this.foreground(false)}
  foreground(value){

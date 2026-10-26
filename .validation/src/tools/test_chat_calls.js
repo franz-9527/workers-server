@@ -104,3 +104,23 @@ test('an end intent prevents media re-creation while confirmation is pending',as
  page.onLoad({});page.visible=true;page.ending=true;await page.tick()
  assert.equal(prepares,0);assert.equal(ends,1)
 })
+
+test('hangup resolves an unknown heartbeat using its original operation before ending',async()=>{
+ let first=true
+ const f=fixture(async(type)=>{if(type==='calls.pulse'&&first){first=false;throw Object.assign(new Error('network'),{retryable:true})}return {...base,state:type==='calls.end'?'stopping':'active',revision:'4'}})
+ f.calls.apply({...base,state:'active',revision:'4'})
+ await assert.rejects(f.calls.action('pulse'));const pending=structuredClone(f.calls.pending.q)
+ await f.calls.action('end')
+ assert.deepEqual(f.requests[1][1],pending);assert.equal(f.requests[2][0],'calls.end');assert.equal(f.calls.current.state,'stopping')
+})
+test('late media credentials cannot revive a terminal call',async()=>{
+ let finish;const f=fixture(()=>new Promise(resolve=>finish=resolve));f.calls.apply({...base,state:'connecting',revision:'3'})
+ const prepare=f.calls.prepare();await new Promise(setImmediate)
+ f.calls.apply({...base,state:'ended',revision:'5'});finish({call:{...base,state:'connecting',revision:'3'},credentials:{provider:'shengwang'}})
+ await assert.rejects(prepare,e=>e.code==='CALL_STATE_CONFLICT');assert.equal(f.calls.current.state,'ended')
+})
+test('a known busy refusal permits a different later call intent',async()=>{
+ const f=fixture(async()=>{throw Object.assign(new Error('busy'),{code:'CALL_BUSY',retryable:false})})
+ await assert.rejects(f.calls.create('2','12','audio'));assert.equal(f.calls.pendingCreate,null)
+ await assert.rejects(f.calls.create('2','13','video'));assert.equal(f.requests.length,2)
+})

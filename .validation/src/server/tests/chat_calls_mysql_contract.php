@@ -85,7 +85,10 @@ try{
  $clock=time();$cycleService=new ChatCallResources($db,static function()use(&$clock):int{return $clock;});
  $oldCycle=array_replace($poolForm('shengwang','rollover-app','rollover-old'),['app_id'=>str_repeat('c',32),'expires_at'=>date('Y-m-d\\TH:i:s',$clock+20)]);
  $newCycle=array_replace($poolForm('shengwang','rollover-app','rollover-new'),['app_id'=>str_repeat('c',32),'valid_from'=>date('Y-m-d\\TH:i:s',$clock+20),'expires_at'=>date('Y-m-d\\TH:i:s',$clock+7200)]);
- $administration->change($oldCycle,1,'super_admin');$administration->change($newCycle,1,'super_admin');
+ $administration->change($oldCycle,1,'super_admin');
+ $oldOnly=(string)$db->fetchValue("SELECT id FROM chat_call_resource_pools WHERE cycle_key='rollover-old'");
+ $reject(fn()=>$cycleService->receive(array_replace($q,['pool_id'=>$oldOnly,'call_id'=>'89','operation_id'=>hash('sha256','no-future-grant')])),'calendar boundary without confirmed new G cannot authorize media');
+ $administration->change($newCycle,1,'super_admin');
  $cycleID=(string)$db->fetchValue("SELECT id FROM chat_call_resource_pools WHERE cycle_key='rollover-old'");
  $futureID=(string)$db->fetchValue("SELECT id FROM chat_call_resource_pools WHERE cycle_key='rollover-new'");
  $cq=array_replace($q,['pool_id'=>$cycleID,'call_id'=>'88','operation_id'=>hash('sha256','cross-cycle')]);$cp=$cycleService->receive($cq);
@@ -112,5 +115,10 @@ try{
  foreach($children as [$process,$pipes]){$out=stream_get_contents($pipes[1]);$error=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$exit=proc_close($process);$assert($exit===0&&$error==='','child isolated execution');if($out==='reserved')$wins++;}
  $assert($wins===1,'concurrent calls cannot overbook final pool window');
  $assert((int)$db->fetchValue('SELECT reserved_units FROM chat_call_resource_pools WHERE id=:id',['id'=>$pool])===24000,'one final reservation across eight processes');
+ $service->availability();$service->availability();
+ $assert((int)$db->fetchValue('SELECT COUNT(*) FROM chat_call_alerts WHERE pool_id=:pool',['pool'=>$pool])===3,'20/10/exhausted alerts persist once per pool');
+ $alert=(string)$db->fetchValue('SELECT id FROM chat_call_alerts WHERE pool_id=:pool ORDER BY id LIMIT 1',['pool'=>$pool]);
+ $administration->change(['_action'=>'ack_alert','revision'=>'1','alert_id'=>$alert,'reason'=>'synthetic operator acknowledged'],1,'super_admin');
+ $assert((int)$db->fetchValue('SELECT COUNT(*) FROM chat_call_alerts WHERE id=:id AND acknowledged_at IS NOT NULL',['id'=>$alert])===1,'authorized acknowledgment is audited');
  echo 'Call MySQL resource integration: '.$count." assertions passed\n";
 }finally{$adminDB->execute('DROP DATABASE IF EXISTS `'.$name.'`');}
