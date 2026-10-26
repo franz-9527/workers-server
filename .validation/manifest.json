@@ -49,7 +49,7 @@
     "chat/internal/calls/resources.go": "3f1e0ad3d78a908c04c299fbe2416bb3b6651840",
     "chat/internal/calls/resources_test.go": "6eecd07bb6d840d659634b1317f817825f7ac2af",
     "chat/internal/calls/service.go": "a6e81c931bb92f0069f5cdf3ef72fc0afbf52567",
-    "chat/internal/calls/session.go": "b98f4b8fb3028291cadfc37febf933d71fb5107d",
+    "chat/internal/calls/session.go": "c046500dba2abfdec504dd9954209478c7f4b37d",
     "chat/internal/calls/session_test.go": "a8446fa4e333634b255af080e83d97f831608db3",
     "chat/internal/calls/worker.go": "98838d832d5c649e4df30a1c352a052003cf6cdd",
     "chat/internal/conversation/consumer.go": "703b6086036cc051e47f4c8ffe6d31ba36a102d2",
@@ -182,12 +182,14 @@
     "chat/internal/storagepolicy/policy.go": "086d72d7caf8a2e084a38ffe8126f37940040166",
     "chat/internal/storagepolicy/policy_test.go": "f4017617cfee81a67223ffa095a5aac7cc5507b9",
     "docs/订单聊天/双通道通话实施与联调.md": "a381cfa40cf31c8f7e868e6d65ebf670ad76657d",
+    "docs/订单聊天/开发拆分与验收清单.md": "7b1bd181bf8790760f2f10a1408b705c669d01d9",
+    "docs/订单聊天/通话月额度、充值与计费.md": "990482b1a1536d62837b3bf4458fe9b9fe8b78a7",
     "miniprogram/app.json": "0d51584b5d32118ccd9cc73805d7bc9fe395b2e7",
     "miniprogram/subpackages/chat/call/index.js": "20c55202589481c88f13ddc2fdc8be4fc801ae52",
     "miniprogram/subpackages/chat/call/index.json": "2f9a7aca62a0c34a9ab6420fc3e7d7d37686f6d8",
     "miniprogram/subpackages/chat/call/index.wxml": "ecbdcad9e0bdedd3315dfe426fbc19611d72b14c",
     "miniprogram/subpackages/chat/call/index.wxss": "a19ef356ccf9d1593a817125e62ec93a02d520bc",
-    "miniprogram/subpackages/chat/call/media.js": "5dcfe92c7605bc0c22a85af77e920fabe686f360",
+    "miniprogram/subpackages/chat/call/media.js": "bdd87153c5641fd75bf98ec9edb3ec6d0ca89eb3",
     "miniprogram/subpackages/chat/call/vendor/NOTICE.md": "9aea7504f3f5fcc3dd0c1eb982b5d58d2d86292b",
     "miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js": "a4714fa26f0f6d266ad95ece591b1406ef8b76df",
     "miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js.LICENSE.txt": "d6e26f29de2d380d3d4a4d9d92224ed7eb47cf87",
@@ -270,7 +272,7 @@
     "server/views/admin/chat-calls.php": "84cd833a03486c76d703bdd37fdf432304f0e74b",
     "server/views/layouts/admin.php": "2a961c163df1d3088aade6e702b6f9fcb43c4e1f",
     "tools/check-chat-release.py": "381fe65eeae55724920d21c57dc6707753a21b16",
-    "tools/test_chat_calls.js": "46f4a3d3504afcb76526bfaf289450b74f36b693",
+    "tools/test_chat_calls.js": "0b31d49c54781e37f7d0fa1592f4464be5061cfe",
     "tools/test_chat_s11.js": "4077f7e4fc94f18482b59f4351988c05028ad340"
   }
 }

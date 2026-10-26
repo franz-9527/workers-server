@@ -124,3 +124,12 @@ test('a known busy refusal permits a different later call intent',async()=>{
  await assert.rejects(f.calls.create('2','12','audio'));assert.equal(f.calls.pendingCreate,null)
  await assert.rejects(f.calls.create('2','13','video'));assert.equal(f.requests.length,2)
 })
+
+test('a native join acknowledged after local stop is exited again',async()=>{
+ let finish,exits=0
+ const api={setEnable1v1Chat(o){o.success?.()},join1v1Chat(o){finish=o.success},exitVoIPChat(){exits++},onVoIPChatMembersChanged(){},offVoIPChatMembersChanged(){}}
+ const Media=mediaClass({}),media=new Media(api,()=>{},{prepared(){},ready(){},end(){},error(){}})
+ await media.start({provider:'wechat',initiator:true,caller:{openid:'a'},listener:{openid:'b'}},{media:'audio'})
+ const join=media.initiate({media:'audio',prepared_count:2});await media.stop();finish();await join
+ assert.equal(exits,2)
+})

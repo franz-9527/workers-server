@@ -25,9 +25,8 @@ func (s State) Terminal() bool {
 	return s == Rejected || s == Cancelled || s == Missed || s == Ended || s == Failed
 }
 
-// Session is a value model, not a concurrent session store. The future owner
-// must lock both actors, persist CAS+operation idempotency, and reauthorize both
-// members on each action. A ResourceDecision never authorizes media_start.
+// Session is an immutable value model. Service owns actor locks, persisted
+// CAS/operation idempotency and current member authorization on every action. A ResourceDecision never authorizes media_start.
 type Session struct {
 	CallID, ConversationID, CallerID, CalleeID ports.ID
 	Provider                                   Provider
@@ -57,7 +56,7 @@ type Event struct {
 }
 
 // Apply is immutable on failure. Server events are trusted facts collected by
-// the future adapter, not SDK/client assertions. Unknown media results stay
+// the provider adapter, not SDK/client assertions. Unknown media results stay
 // Connecting/Stopping and retain reservations until verified media_stopped.
 func (s Session) Apply(e Event) (Session, error) {
 	if e.Epoch != s.Epoch || e.ExpectedRevision != s.Revision {
@@ -107,7 +106,7 @@ func (s Session) Apply(e Event) (Session, error) {
 		}
 		next.State = Missed
 	case "media_start":
-		// Must follow the future PHP durable reserve ACK + current authority
+		// Must follow the PHP durable reserve ACK + current authority
 		// check. This pure model has no route or credential issuing capability.
 		if s.State != Preparing || !server {
 			return s, ErrConflict

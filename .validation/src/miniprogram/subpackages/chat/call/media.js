@@ -40,7 +40,7 @@ class CallMedia{
  async initiate(call){
   if(!this.alive()||this.grant?.provider!=='wechat'||!this.grant.initiator||this.joined||call.prepared_count<2)return
   this.joined=true
-  try{await new Promise((resolve,reject)=>this.api.join1v1Chat({caller:this.grant.caller,listener:this.grant.listener,roomType:call.media==='audio'?'voice':'video',disableSwitchVoice:true,success:resolve,fail:reject}))}
+  try{await new Promise((resolve,reject)=>this.api.join1v1Chat({caller:this.grant.caller,listener:this.grant.listener,roomType:call.media==='audio'?'voice':'video',disableSwitchVoice:true,success:resolve,fail:reject}));if(!this.alive())await this.stop()}
   catch(_){if(this.alive())this.events.error('微信通话未能建立')}
  }
  async renew(grant){
@@ -49,11 +49,13 @@ class CallMedia{
   this.grant=grant
  }
  pusher(event){
+  if(!this.alive())return
   if(this.client&&this.alive())this.client.updatePusherStateChange(event)
   if(event.detail.code===1002)this.events.ready()
   if(event.detail.code===-1307)this.events.error('网络中断，请结束后重试')
  }
  player(event){
+  if(!this.alive())return
   if(this.client&&this.alive())this.client.updatePlayerStateChange(this.grant.peer_uid,event)
   if(event.detail.code===-2301)this.events.error('网络中断，请结束后重试')
  }
