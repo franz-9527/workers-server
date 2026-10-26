@@ -1,8 +1,0 @@
-.audit-page{padding:28rpx;background:#f5f6f8;min-height:100vh}.audit-intro{font-size:34rpx;font-weight:600}.audit-note,.audit-meta{font-size:24rpx;color:#717987;line-height:1.7;margin:16rpx 0}.audit-card{background:#fff;border-radius:20rpx;padding:24rpx;margin:20rpx 0}.audit-text{white-space:pre-wrap;word-break:break-all;line-height:1.7}.audit-error{color:#b33535;padding:20rpx}.audit-photo{position:fixed;inset:0;background:#111;z-index:30;padding:30rpx}.audit-photo image{width:100%;height:85vh}.audit-page button{font-size:26rpx;margin:12rpx 0}
-/* Native settings layout shared by reports, appeals and audit. */
-.audit-page{box-sizing:border-box;padding:28rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));background:#ededed;color:#191919;font-size:28rpx}
-.audit-page .audit-note,.audit-page .audit-meta{font-size:26rpx;color:#606060}
-.audit-page .audit-card{border-radius:8rpx;padding:24rpx;background:#fff}
-.audit-page button{min-height:88rpx;line-height:1.4;display:flex;align-items:center;justify-content:center;padding:20rpx;font-size:28rpx}
-.audit-page textarea{font-size:28rpx;color:#191919;border-radius:8rpx}
-@media(prefers-color-scheme:dark){.audit-page{background:#111;color:#eee}.audit-page .audit-card{background:#202020}.audit-page .audit-note,.audit-page .audit-meta{color:#bbb}.audit-page textarea{background:#2a2a2a;color:#eee}.audit-page .audit-error{color:#ff9c99}.audit-page button{background:#303030;color:#eee}}
