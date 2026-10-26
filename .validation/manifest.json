@@ -51,7 +51,7 @@
     "chat/internal/calls/service.go": "a6e81c931bb92f0069f5cdf3ef72fc0afbf52567",
     "chat/internal/calls/session.go": "b98f4b8fb3028291cadfc37febf933d71fb5107d",
     "chat/internal/calls/session_test.go": "a8446fa4e333634b255af080e83d97f831608db3",
-    "chat/internal/calls/worker.go": "27c88531b97c334960a31a124e79275d280a1ac4",
+    "chat/internal/calls/worker.go": "98838d832d5c649e4df30a1c352a052003cf6cdd",
     "chat/internal/conversation/consumer.go": "703b6086036cc051e47f4c8ffe6d31ba36a102d2",
     "chat/internal/conversation/mysql_integration_test.go": "b721ed56022655db69b4c69197476c3a8d945d6c",
     "chat/internal/conversation/realtime.go": "24ab7c4669ca6731cc357e66884a3e313f0761fb",

@@ -95,8 +95,8 @@ jobs:
           tar -xzf agora-miniapp-sdk-2.6.5.tgz
           node -e 'const p=require("./package/package.json");if(p.version!=="2.6.5")process.exit(1);console.log("SDK",p.name,p.version,p.main)'
           sha256sum agora-miniapp-sdk-2.6.5.tgz
-          cmp package/build/agora-miniapp-sdk.js ../../src/miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js
-          cmp package/build/agora-miniapp-sdk.js.LICENSE.txt ../../src/miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js.LICENSE.txt
+          cmp package/build/agora-miniapp-sdk.js ../src/miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js
+          cmp package/build/agora-miniapp-sdk.js.LICENSE.txt ../src/miniprogram/subpackages/chat/call/vendor/agora-miniapp-sdk.js.LICENSE.txt
       - name: Build and all Go unit race tests
         if: success() || failure()
         working-directory: .validation/src/chat

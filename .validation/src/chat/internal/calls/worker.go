@@ -21,7 +21,7 @@ func(s *Service)Available(ctx context.Context,p ports.Principal,q Request)(any,e
 // Tick is crash-recoverable. Terminal rows keep account occupancy until PHP
 // settlement ACK. Media uncertainty retains both occupancy and resource R.
 func(s *Service)Tick(ctx context.Context)error{
- rows,e:=s.db.QueryContext(ctx,"SELECT CAST(s.id AS CHAR) FROM chat_call_sessions s WHERE s.state IN ('ringing','preparing','connecting','active','stopping') OR EXISTS(SELECT 1 FROM chat_call_accounts a WHERE a.active_call_id=s.id) ORDER BY CASE WHEN s.state IN (\'active\',\'connecting\') THEN 0 WHEN s.state IN (\'ringing\',\'preparing\') THEN 1 ELSE 2 END,s.updated_at,s.id LIMIT 100")
+ rows,e:=s.db.QueryContext(ctx,"SELECT CAST(s.id AS CHAR) FROM chat_call_sessions s WHERE s.state IN ('ringing','preparing','connecting','active','stopping') OR EXISTS(SELECT 1 FROM chat_call_accounts a WHERE a.active_call_id=s.id) ORDER BY CASE WHEN s.state IN ('active','connecting') THEN 0 WHEN s.state IN ('ringing','preparing') THEN 1 ELSE 2 END,s.updated_at,s.id LIMIT 100")
  if e!=nil{return e};ids:=[]ports.ID{};for rows.Next(){var id ports.ID;if e=rows.Scan(&id);e!=nil{rows.Close();return e};ids=append(ids,id)};e=rows.Err();rows.Close();if e!=nil{return e}
  availability,availabilityErr:=s.broker.Availability(ctx);emergency:=availabilityErr==nil&&!availability.Settings.Config.Enabled
  var group sync.WaitGroup;queue:=make(chan ports.ID)
