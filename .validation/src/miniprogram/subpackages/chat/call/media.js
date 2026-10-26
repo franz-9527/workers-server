@@ -49,15 +49,15 @@ class CallMedia{
   this.grant=grant
  }
  pusher(event){
-  if(this.client&&this.alive())this.client.updatePusherStateChange(event.detail)
+  if(this.client&&this.alive())this.client.updatePusherStateChange(event)
   if(event.detail.code===1002)this.events.ready()
   if(event.detail.code===-1307)this.events.error('网络中断，请结束后重试')
  }
  player(event){
-  if(this.client&&this.alive())this.client.updatePlayerStateChange(this.grant.peer_uid,event.detail)
+  if(this.client&&this.alive())this.client.updatePlayerStateChange(this.grant.peer_uid,event)
   if(event.detail.code===-2301)this.events.error('网络中断，请结束后重试')
  }
- net(event,kind){if(this.client&&this.alive()){if(kind==='pusher')this.client.updatePusherNetStatus(event.detail);else this.client.updatePlayerNetStatus(this.grant.peer_uid,event.detail)}}
+ net(event,kind){if(this.client&&this.alive()){if(kind==='pusher')this.client.updatePusherNetStatus(event);else this.client.updatePlayerNetStatus(this.grant.peer_uid,event)}}
  async stop(){
   this.closed=true;this.paint({localURL:'',remoteURL:''})
   if(this.members&&this.api.offVoIPChatMembersChanged)this.api.offVoIPChatMembersChanged(this.members)

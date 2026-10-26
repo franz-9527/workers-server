@@ -12,6 +12,7 @@ import(
  "strconv"
  "time"
  "github.com/franz-9527/workers/chat/internal/ports"
+ "github.com/franz-9527/workers/chat/internal/policy"
 )
 
 var ErrBusy=errors.New("CALL_BUSY")
@@ -68,7 +69,7 @@ func(s *Service)authorized(ctx context.Context,tx *sql.Tx,p ports.Principal,r re
  peer:=r.CalleeID;ownKey,otherKey:=r.CallerKey,r.CalleeKey
  if p.ActorID==r.CalleeID{peer=r.CallerID;ownKey,otherKey=r.CalleeKey,r.CallerKey}else if p.ActorID!=r.CallerID{return ErrInvalid}
  own,other,e:=s.guard.Pair(ctx,tx,p,r.ConversationID,peer,send);if e!=nil{return e}
- if own.MemberKey!=ownKey||other.MemberKey!=otherKey{return ErrConflict};return nil
+ if own.MemberKey!=ownKey||other.MemberKey!=otherKey{return policy.ErrDenied};return nil
 }
 func(s *Service)save(ctx context.Context,tx *sql.Tx,r record,event string,evidence ...string)error{
  model,_:=json.Marshal(r.Session);binding,_:=json.Marshal(r.Binding)

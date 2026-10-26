@@ -64,7 +64,7 @@ class ChatManager {
      if (!result.access_token || !Number.isFinite(expires) || expires <= this.io.now()) throw failure('CHAT_UNAUTHORIZED')
      if(result.environment&&this.io.environment&&result.environment!==this.io.environment())throw failure('CHAT_UNAUTHORIZED')
      if(this.disk&&result.actor_id&&result.environment)this.disk.bind(result.environment,String(result.actor_id))
-     this.calls.actorID=String(result.actor_id||'');this.token = { value: result.access_token, expires }
+     this.calls.actorID=String(result.actor_id||'');this.calls.setEnabled(result.calls_enabled===true);this.token = { value: result.access_token, expires }
     }).finally(() => { if (this.credentialJob === job) this.credentialJob = null })
     this.credentialJob = job
    }

@@ -6,14 +6,14 @@ Page({
  data:{call:null,status:'正在读取通话',notice:'',busy:false,localURL:'',remoteURL:'',rotation:0,muted:false,speaker:true,video:false,canAccept:false,canHangup:false,isNative:false,history:[],historyPage:false,hasMoreHistory:false},
  onLoad(options){
   this.historyID=options?.view==='history'?String(options.conversation_id||''):'';this.setData({historyPage:!!this.historyID});this.historyCursor='';
-  this.manager=Runtime.get();this.calls=this.manager.calls;this.visible=false;this.life=0;this.media=null;this.grantedUntil=0
+  this.manager=Runtime.get();this.calls=this.manager.calls;this.visible=false;this.life=0;this.media=null;this.grantedUntil=0;this.ending=false
   this.unsubscribe=this.manager.subscribe((type,value)=>{
    if(type==='reset'||type==='calls.suspend'){this.stopMedia();this.life++;this.setData({notice:'通话已暂停，请重新进入',localURL:'',remoteURL:''});return}
    if(this.visible&&type==='calls.changed')this.render(value)
   })
  },
  onShow(){this.visible=true;this.life++;if(this.historyID){this.loadHistory();return}if(!this.manager.enabled){this.setData({status:'通话尚未开放'});return}this.tick()},
- onHide(){this.visible=false;this.life++;this.clearTimers();this.stopMedia();if(!this.historyID&&this.calls.current&&!terminal.has(this.calls.current.state))this.calls.action('end').catch(()=>{})},
+ onHide(){if(!this.historyID)this.ending=true;this.visible=false;this.life++;this.clearTimers();this.stopMedia();if(!this.historyID&&this.calls.current&&!terminal.has(this.calls.current.state))this.calls.action('end').catch(()=>{})},
  onUnload(){this.onHide();if(this.unsubscribe)this.unsubscribe()},
  clearTimers(){if(this.timer)clearTimeout(this.timer);if(this.deadline)clearTimeout(this.deadline);this.timer=null;this.deadline=null},
  stopMedia(){if(this.media){this.media.stop().catch(()=>{});this.media=null}this.setData({localURL:'',remoteURL:''});if(this.deadline)clearTimeout(this.deadline);this.deadline=null},
@@ -27,7 +27,8 @@ Page({
    const call=this.calls.current
    if(!call){this.setData({status:'当前没有通话'});return}
    this.render(call)
-   if(['preparing','connecting','active'].includes(call.state)){
+   if(this.ending&&!terminal.has(call.state)&&call.state!=='stopping'){await this.calls.action('end');return}
+   if(!this.ending&&['preparing','connecting','active'].includes(call.state)){
     if(!this.media)await this.startMedia(call,life,epoch)
     if(life!==this.life||epoch!==this.manager.epoch||!this.visible)return
     await this.calls.action('pulse')
@@ -47,7 +48,7 @@ Page({
   if(this.deadline)clearTimeout(this.deadline)
   this.grantedUntil=grant.expires_at
   const left=Math.max(0,(grant.expires_at-call.server_time)*1000-2000)
-  this.deadline=setTimeout(()=>{this.stopMedia();this.calls.action('end').catch(()=>{});this.setData({notice:'本次通话授权已结束，请稍后重试'})},left)
+  this.deadline=setTimeout(()=>{this.ending=true;this.stopMedia();this.calls.action('end').catch(()=>{});this.setData({notice:'本次通话授权已结束，请稍后重试'})},left)
  },
  async startMedia(call,life,epoch){
   const grant=await this.calls.prepare()
@@ -65,7 +66,7 @@ Page({
  async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||life!==this.life||epoch!==this.manager.epoch)return;await this.media.renew(grant);this.arm(grant,this.calls.current)},
  async accept(){if(this.data.busy)return;this.setData({busy:true});try{await this.calls.action('accept');await this.tick()}catch(error){this.setData({notice:message(error)})}finally{this.setData({busy:false})}},
  async hangup(){
-  this.stopMedia()
+  this.ending=true;this.stopMedia()
   try{await this.calls.status();await this.calls.action('end')}catch(error){this.setData({notice:message(error)});if(this.visible){if(this.timer)clearTimeout(this.timer);this.timer=setTimeout(()=>this.tick(),1000)}}
  },
  async loadHistory(){
