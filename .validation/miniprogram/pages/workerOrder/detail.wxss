@@ -85,7 +85,7 @@ page{background:#f2f7f8!important}.detail-page{box-sizing:border-box;padding-top
 /* 报价与总价抢单共用表单，包含输入值、提示及协议的明暗样式。 */
 .detail-page .quote-sheet .cu-dialog{max-height:88vh;display:flex;flex-direction:column;background:#fff;color:#293a3f}
 .detail-page .quote-sheet .cu-bar{flex:none;background:#fff!important;color:#293a3f}
-.detail-page .quote-sheet .modal-body{overflow-y:auto;min-height:0}
+.detail-page .quote-sheet .modal-body{height:68vh;max-height:calc(88vh - 100rpx);box-sizing:border-box;min-height:0}
 .detail-page .quote-sheet .quote-preview{color:#293a3f;background:#f5f8f9}
 .detail-page .quote-sheet .quote-placeholder{color:#667b80}
 .detail-page .quote-sheet .quote-field textarea{height:190rpx;color:#293a3f}

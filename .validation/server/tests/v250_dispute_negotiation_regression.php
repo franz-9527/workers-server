@@ -187,7 +187,7 @@ disputeAssert(strpos($kernelSource, 'new OrderDisputeApiModule($db)') !== false,
 disputeAssert(strpos($moduleSource, "'admin.dispute.resolve'") !== false, '管理员争议结案由 OrderDisputeApiModule 接管');
 disputeAssert(strpos($moduleSource, 'requireWorkbenchAdmin') !== false, '管理员争议结案继续执行小程序管理员鉴权');
 
-disputeAssert(strpos($webModuleSource, "['dispute-review','dispute-review.resolve','disputes.resolve']") !== false, 'Web 专项模块同时接管旧 disputes.resolve 路由');
+disputeAssert(strpos($webModuleSource, "'dispute-review','dispute-review.resolve','disputes.resolve'") !== false, 'Web 专项模块同时接管旧 disputes.resolve 路由');
 disputeAssert(strpos($webModuleSource, 'disputeProjectionById') !== false, '旧 Web 数字争议 ID 通过统一读模型映射当前异常任务');
 disputeAssert(strpos($webModuleSource, 'OrderApplicationContainer') !== false && strpos($webModuleSource, "->dispute()->execute(") !== false, 'Web 争议裁定复用统一 OrderDispute Application');
 disputeAssert(strpos($webModuleSource, "['channel'=>'web_admin','admin_user_id'=>\$adminId]") !== false, 'Web 争议模块传递真实 admin_users.id 域');

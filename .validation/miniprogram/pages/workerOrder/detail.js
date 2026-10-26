@@ -415,7 +415,7 @@ detail, order, isMeasurementOrder, media, negotiations: detail.negotiations || [
     const threshold = Math.max(1, Number(this.data.quoteDistanceConfirmKm || 30))
     const distanceText = farDistance !== null && farDistance > threshold ? '\n当前距离约 ' + farDistance.toFixed(1) + 'km，已超过 ' + threshold + 'km，请确认路程和上门成本。' : ''
     const content = fixedTotal
-      ? '抢单即成交，无需再报价，沟通/现场有复杂情况可申请加价。\n\n成交总价：' + feeText + '\n平台' + this.data.commissionText + '。加价申请需用户确认后生效。' + distanceText
+      ? (order.is_platform_order ? '抢单即按平台设定工费成交。\n\n师傅工费：' + feeText + '。按平台单结算规则处理，不另扣普通平台服务费。' : '抢单即成交，无需再报价。\n\n成交总价：' + feeText + '\n平台' + this.data.commissionText + '。新增项目需用户确认后生效。') + distanceText
       : ((order.expected_fee_type === 'unit' && feeText ? '用户期望单价：' + feeText + '。该文本不参与金额计算，仅供参考。' : '') + '抢单成功后订单立即锁定给你，请先联系用户沟通，再提交施工总价；提交后直接进入施工，无需用户再次选择。' + distanceText)
     wx.showModal({ title: fixedTotal ? '按 ' + feeText + ' 总价抢单？' : '确认抢单？', content, confirmText: '确认抢单', confirmColor: '#00b9cb', success: result => {
       if (!result.confirm || this.data.grabbing) return
