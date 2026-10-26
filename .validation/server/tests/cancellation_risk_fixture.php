@@ -11,10 +11,9 @@ spl_autoload_register(static function (string $class): void {
 function installCancellationRiskFixture(\WorkerAdmin\Core\Database $db): void
 {
     $sql=(string)file_get_contents(dirname(__DIR__).'/database/upgrades/2.5.0.sql');
-    $marker='-- 2026-10-08：取消风控与七天下单限制';
-    $start=strpos($sql,$marker);
-    if ($start===false) throw new RuntimeException('取消风控迁移缺失');
-    $ddl=explode('INSERT INTO `database_field_dictionary`',substr($sql,$start),2)[0];
+    preg_match_all('/CREATE TABLE IF NOT EXISTS\s+`?order_cancellation_risk_(?:accounts|signals|scores|restrictions)`?[\s\S]*?;/i',$sql,$matches);
+    if(count($matches[0])!==4)throw new RuntimeException('取消风控迁移缺失');
+    $ddl=implode("\n",$matches[0]);
     $db->pdo()->exec($ddl);
     $db->pdo()->exec('CREATE TABLE IF NOT EXISTS system_settings(setting_key VARCHAR(100) PRIMARY KEY,setting_value LONGTEXT) ENGINE=InnoDB');
     if (!$db->columnExists('quotes','worker_id')) $db->pdo()->exec('ALTER TABLE quotes ADD worker_id BIGINT UNSIGNED NULL');

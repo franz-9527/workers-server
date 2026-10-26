@@ -1,7 +1,7 @@
 {
   "repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "sha": "0fe9769de0364327d03efd7b9353a24afc781f32",
+  "sha": "7ce9b4205587983bba9ea6206b2fd0ff02613ea6",
   "files": [
     "miniprogram/pages/workerOrder/detail.js",
     "miniprogram/pages/workerOrder/detail.wxml",
