@@ -171,11 +171,12 @@ disputeAssert(strpos($repositorySource, "'run_empty_fee','credit'") !== false &&
 disputeAssert(strpos($repositorySource, 'DatabaseOrderCancellationRiskRepository($db)') !== false, '资金争议终止履约前继续捕获取消风控事实');
 
 disputeAssert(strpos($workbenchSource, "WHERE d.status IN ('open','processing')") !== false, '管理员工作台只接收已平台介入争议');
-$workbenchDisputeQuery = strstr($workbenchSource, "FROM disputes d\n             JOIN orders o ON o.id=d.order_id");
+$workbenchCompact=preg_replace('/\\s+/','',$workbenchSource);
+$workbenchDisputeQuery = strstr($workbenchCompact, "FROMdisputesdJOINordersoONo.id=d.order_id");
 disputeAssert($workbenchDisputeQuery !== false && strpos(substr($workbenchDisputeQuery, 0, 600), "'negotiating'") === false, '双方协商状态不进入管理员工作台待办');
-disputeAssert(strpos($workbenchSource, '涉及金额处理，请到 Web 后台裁定') !== false && strpos($workbenchSource, "$needsWeb ? [] : ['dispute_resolve']") !== false, '金额争议在小程序异常投影中只提醒不提供结案动作');
-disputeAssert(strpos($workbenchSource, "'refund_amount_cents'=>max(0, (int)\$row['refund_amount_cents'])") !== false, '争议任务提供结构化退款金额给 Web 页面');
-disputeAssert(strpos($workbenchSource, "'run_empty_fee_cents'=>max(0, (int)\$row['run_empty_fee_cents'])") !== false, '争议任务提供结构化跑空费给 Web 页面');
+disputeAssert(strpos($workbenchSource, '涉及金额处理，请到 Web 后台裁定') !== false && strpos($workbenchCompact, '$needsWeb?[]:[\'dispute_resolve\']') !== false, '金额争议在小程序异常投影中只提醒不提供结案动作');
+disputeAssert(strpos($workbenchCompact, "'refund_amount_cents'=>max(0,(int)\$row['refund_amount_cents'])") !== false, '争议任务提供结构化退款金额给 Web 页面');
+disputeAssert(strpos($workbenchCompact, "'run_empty_fee_cents'=>max(0,(int)\$row['run_empty_fee_cents'])") !== false, '争议任务提供结构化跑空费给 Web 页面');
 disputeAssert(strpos($schedulerSource, "!in_array((string) \$order['dispute_status'], ['none', 'resolved'], true)") !== false, '统一自动任务把 negotiating 视为阻断状态');
 disputeAssert(strpos($schedulerSource, 'runUnifiedMeasurementAutoAccept') !== false && strpos($schedulerSource, 'hasBlockingBusiness($db,$order)') !== false, '测量成果自动确认同样复用统一阻断判断');
 

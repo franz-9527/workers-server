@@ -48,7 +48,8 @@ final class DatabaseOrderCancellationRepository implements OrderCancellationRepo
                 }
                 if (!in_array((string)($order['refund_status']??'none'),['','none'],true)
                     || !in_array((string)($order['dispute_status']??'none'),['','none','resolved'],true)
-                    || $db->fetchValue("SELECT id FROM worker_balance_ledger WHERE status='effective' AND business_id=:id AND business_type IN ('order','platform_order','measurement_order','order_measurement') LIMIT 1",['id'=>$order['id']])) {
+                    || $db->fetchValue("SELECT id FROM run_empty_fee_claims WHERE order_id=:id AND status<>'cancelled' LIMIT 1",['id'=>$order['id']])
+                    || $db->fetchValue("SELECT id FROM worker_balance_ledger WHERE status='effective' AND ((business_id=:id AND business_type IN ('order','platform_order','measurement_order','order_measurement')) OR (business_type='dispute' AND business_id IN (SELECT id FROM disputes WHERE order_id=:id))) LIMIT 1",['id'=>$order['id']])) {
                     throw new OrderOperationException('当前已有资金或争议事实，请由平台处理','WORKER_CANCEL_REVIEW_REQUIRED',409);
                 }
             }

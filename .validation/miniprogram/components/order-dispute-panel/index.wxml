@@ -18,3 +18,4 @@
     <button wx:if="{{actions.can_escalate_dispute}}" class="escalate" loading="{{submitting}}" disabled="{{submitting}}" bindtap="escalate">申请平台介入</button>
   </view>
 </view>
+

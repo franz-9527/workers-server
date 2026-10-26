@@ -1,7 +1,7 @@
 {
   "repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "sha": "c3ad0cc10eb5a267ecf342e0e19501a8128cb19a",
+  "sha": "83ad2300f0945fd3a2a7de7047fe91cb367b6787",
   "files": [
     "miniprogram/pages/workerOrder/detail.js",
     "miniprogram/pages/workerOrder/detail.wxml",
@@ -94,6 +94,5 @@
     "server/app/Application/Order/OrderCancellation.php",
     "server/tests/v250_order_detail_owner_actions.php",
     "server/tests/v250_order_cancellation_mysql.php"
-  ],
-  "scope": "Quote/grab forms, cancellation and actor contracts; synthetic inputs only; no deployment or external payment calls"
+  ]
 }
