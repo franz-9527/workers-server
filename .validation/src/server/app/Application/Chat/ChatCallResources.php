@@ -23,9 +23,7 @@ final class ChatCallResources
         $selected=[];
         foreach($this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY provider,id DESC LIMIT 100') as $row){
             $facts=$this->facts($row);$profile=json_decode($row['meter_json'],true,32,JSON_THROW_ON_ERROR);
-            $decision=(new CallResourcePolicy())->availability($facts,$this->now());
-            $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls c JOIN chat_call_resource_pools p ON p.id=c.pool_id WHERE p.provider=:provider AND p.scope_key=:scope AND c.state='active' AND c.authorized_until<:deadline",['provider'=>$row['provider'],'scope'=>$row['scope_key'],'deadline'=>$this->now()-$settings['config']['stop_margin_seconds']]);
-            if($stale>0){$decision['status']='unavailable';$decision['available_units']='0';}
+            $decision=$this->decision($row,$settings['config']);
             $this->alerts($row,$facts,$decision);
             $candidate=['pool_id'=>(string)$row['id'],'decision'=>$decision,'audio'=>$profile['audio'],'video'=>$profile['video']];
             $provider=$row['provider'];
@@ -33,6 +31,13 @@ final class ChatCallResources
         }
         $pools=array_values($selected);
         return ['settings'=>$settings,'pools'=>$pools];
+    }
+    public function decision(array $row,?array $config=null):array
+    {
+        $config??=$this->settings()['config'];$decision=(new CallResourcePolicy())->availability($this->facts($row),$this->now());
+        $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls c JOIN chat_call_resource_pools p ON p.id=c.pool_id WHERE p.provider=:provider AND p.scope_key=:scope AND c.state='active' AND c.authorized_until<:deadline",['provider'=>$row['provider'],'scope'=>$row['scope_key'],'deadline'=>$this->now()-$config['stop_margin_seconds']]);
+        if($stale>0){$decision['status']='unavailable';$decision['available_units']='0';}
+        return $decision;
     }
     private function alerts(array $row,array $facts,array $decision):void
     {
@@ -203,6 +208,6 @@ final class ChatCallResources
     }
     public static function id($v):void
     {
-        if(!is_string($v)||preg_match('/^[1-9][0-9]{0,18}$/D',$v)!==1||strlen($v)===19&&strcmp($v,(string)PHP_INT_MAX)>0)throw new RuntimeException('CALL_REQUEST_INVALID',400);
+        if(!is_string($v)||preg_match('/^[1-9][0-9]{0,19}$/D',$v)!==1||strlen($v)===20&&strcmp($v,'18446744073709551615')>0)throw new RuntimeException('CALL_REQUEST_INVALID',400);
     }
 }

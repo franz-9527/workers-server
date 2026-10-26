@@ -40,6 +40,8 @@ $poolForm=static function(string $provider='wechat',string $scope='synthetic-app
 try{
  foreach([1,2] as $unused)foreach(explode(';',$sql) as $statement)if(trim($statement)!=='')$db->execute($statement);
  $assert((int)$db->fetchValue('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()')===13,'13 idempotent tables');
+ ChatCallResources::id('18446744073709551615');$assert(true,'unsigned BIGINT identity stays a decimal string');
+ $reject(fn()=>ChatCallResources::id('18446744073709551616'),'BIGINT overflow rejected');
  $service=new ChatCallResources($db);$settings=$service->settings();
  $assert($settings['config']['enabled']===false,'new installation disabled');
  $db->execute('CREATE TABLE admin_users(id BIGINT UNSIGNED PRIMARY KEY,role VARCHAR(32),status VARCHAR(24),must_change_password TINYINT) ENGINE=InnoDB');

@@ -13,11 +13,12 @@ final class ChatCallAdministration
     public function current():array
     {
         $resources=new ChatCallResources($this->db);$availability=$resources->availability();
-        return ['settings'=>$availability['settings'],'decisions'=>array_column($availability['pools'],'decision','pool_id'),
+        $pools=$this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY id DESC LIMIT 100');$decisions=[];foreach($pools as $row)$decisions[(string)$row['id']]=$resources->decision($row,$availability['settings']['config']);
+        return ['settings'=>$availability['settings'],'decisions'=>$decisions,
             'alerts'=>$this->db->fetchAll('SELECT a.*,p.provider,p.cycle_key FROM chat_call_alerts a JOIN chat_call_resource_pools p ON p.id=a.pool_id ORDER BY a.id DESC LIMIT 100'),
             'trend'=>$this->db->fetchAll('SELECT p.provider,DATE(l.created_at) day,CAST(SUM(l.consumed_units) AS CHAR) estimated_units FROM chat_call_resource_ledger l JOIN chat_call_resource_pools p ON p.id=l.pool_id WHERE l.created_at>=UTC_TIMESTAMP()-INTERVAL 30 DAY GROUP BY p.provider,DATE(l.created_at) ORDER BY day DESC,p.provider'),
             'recent'=>$this->db->fetchAll('SELECT CAST(id AS CHAR) id,CAST(conversation_id AS CHAR) conversation_id,state,model_json,created_at FROM chat_call_sessions ORDER BY id DESC LIMIT 50'),
-            'pools'=>$this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY id DESC LIMIT 100'),
+            'pools'=>$pools,
             'audit'=>$this->db->fetchAll('SELECT admin_id,action,reason,created_at FROM chat_call_admin_audit ORDER BY id DESC LIMIT 20'),
             'active'=>$this->db->fetchAll("SELECT CAST(id AS CHAR) id,CAST(conversation_id AS CHAR) conversation_id,state,attempt_epoch,created_at FROM chat_call_sessions WHERE state IN ('ringing','preparing','connecting','active','stopping') ORDER BY id LIMIT 100")];
     }

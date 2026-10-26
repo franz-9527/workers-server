@@ -150,7 +150,7 @@
       "desc": "地图查看附近师傅及量房标注位置"
     },
     "scope.record": {
-      "desc": "用于录制并发送订单沟通语音消息"
+      "desc": "用于订单沟通语音消息和音视频通话"
     }
   },
   "requiredPrivateInfos": [

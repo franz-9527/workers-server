@@ -86,7 +86,7 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T){
  if _,e=service.Create(ctx,caller,Request{ConversationID:"1",PeerID:"12",Media:Video,Instance:create.Instance,Operation:create.Operation});e==nil{t.Fatal("same operation different media")}
  if _,e=service.Create(ctx,callee,Request{ConversationID:"1",PeerID:"11",Media:Audio,Instance:strings.Repeat("b",32),Operation:sha256String("mutual")});!errors.Is(e,ErrBusy){t.Fatalf("mutual call: %v",e)}
  action:=func(p ports.Principal,name string,instance string)View{t.Helper();current,e:=service.Status(ctx,p,Request{CallID:view.CallID});if e!=nil{t.Fatal(e)}
-  out,e:=service.Action(ctx,p,name,Request{CallID:view.CallID,Epoch:ports.ID(current.Epoch),Revision:ports.ID(current.Revision),Instance:instance,Operation:sha256String(name+":"+string(p.ActorID)+":"+current.Revision)});if e!=nil{t.Fatalf("%s: %v",name,e)};return out}
+  out,e:=service.Action(ctx,p,name,Request{CallID:view.CallID,Epoch:ports.ID(current.Epoch),Revision:ports.ID(current.Revision),Instance:instance,Operation:sha256String(string(view.CallID)+":"+name+":"+string(p.ActorID)+":"+current.Revision)});if e!=nil{t.Fatalf("%s: %v",name,e)};return out}
  action(callee,"accept",strings.Repeat("b",32))
  broker.drop="reserve"
  prepare:=Request{CallID:view.CallID,Epoch:"1",Instance:create.Instance}
