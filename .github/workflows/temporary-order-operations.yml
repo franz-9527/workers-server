@@ -90,3 +90,5 @@ jobs:
           php server/tests/v260_order_operations_mysql.php
           php server/tests/v250_order_cancellation_mysql.php
           php server/tests/v260_order_reuse_discovery_mysql.php
+
+# Verified source 4b00f9880ae3c67ffff483d783db648cf0b7d1f1
