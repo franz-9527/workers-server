@@ -24,9 +24,10 @@ type Providers struct {
 func (p *Providers) Ready(provider Provider) bool {
 	return provider == Wechat || (provider == Shengwang && p.PublishPrivilegesVerified && p.SupplierControlReady())
 }
+
 // Closing admission must not disable remedial stop/query for existing exposure.
 func (p *Providers) SupplierControlReady() bool {
- return len(p.AppID)==32 && len(p.Certificate)==32 && p.CustomerID!="" && p.CustomerSecret!=""
+	return len(p.AppID) == 32 && len(p.Certificate) == 32 && p.CustomerID != "" && p.CustomerSecret != ""
 }
 func (p *Providers) channel(s Session, app string) string {
 	return "bx_" + sha256String(p.Environment + ":" + app + ":" + string(s.CallID) + ":" + strconv.FormatUint(s.Epoch, 10))[:40]

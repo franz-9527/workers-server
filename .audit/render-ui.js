@@ -82,7 +82,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  await page.evaluate(()=>{
   const rgb=s=>(s.match(/[\d.]+/g)||[]).map(Number)
   const lum=c=>c.slice(0,3).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4}).reduce((s,n,i)=>s+n*[.2126,.7152,.0722][i],0)
-  for(const el of document.querySelectorAll('.message-text,.av-transcript,.conversation-preview,.conversation-title,.conversation-clock,.cache-hint,.hint')){
+  for(const el of document.querySelectorAll('.message-text,.av-transcript,.conversation-preview,.conversation-title,.conversation-clock,.cache-hint,.hint,textarea')){
    if(!el.textContent.trim()||!el.getBoundingClientRect().width)continue
    let p=el,bg=[255,255,255]
    while(p){const v=rgb(getComputedStyle(p).backgroundColor);if(v.length===3||v[3]===1){bg=v;break}p=p.parentElement}
