@@ -43,6 +43,25 @@ jobs:
           node --version
           find server -name '*.php' -print0 | xargs -0 -n1 php -l
           find miniprogram tools -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Check mini-program template nesting
+        working-directory: .validation
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          token = re.compile(r'<(/?)([\w:-]+)((?:"[^"]*"|\'[^\']*\'|[^\'">])*)>')
+          for path in Path('miniprogram').rglob('*.wxml'):
+              source = re.sub(r'<!--.*?-->', '', path.read_text(), flags=re.S)
+              stack = []
+              for match in token.finditer(source):
+                  closing, name, attributes = match.groups()
+                  if closing:
+                      assert stack and stack.pop() == name, f'{path}: mismatched closing {name}'
+                  elif not attributes.rstrip().endswith('/'):
+                      stack.append(name)
+              assert not stack, f'{path}: unclosed {stack}'
+              print('PASS template nesting', path)
+          PY
       - name: Frontend behavior regressions
         working-directory: .validation
         run: |
