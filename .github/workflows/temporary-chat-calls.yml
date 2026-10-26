@@ -1,0 +1,73 @@
+name: Temporary EXT03 call contracts
+on:
+  push:
+    branches: [main]
+    paths: ['.validation/**', '.github/workflows/temporary-chat-calls.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-calls-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .validation/src/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - name: Verify exact source snapshot
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          base=pathlib.Path('.validation/src')
+          manifest=json.loads(pathlib.Path('.validation/manifest.json').read_text())
+          for name,expected in manifest['files'].items():
+              data=(base/name).read_bytes()
+              actual=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              assert actual==expected,(name,actual,expected)
+          print('Verified source',manifest['source_commit'],len(manifest['files']),'Git blobs')
+          PY
+      - name: PHP 8.3.36 syntax and resource arithmetic
+        run: |
+          set -euo pipefail
+          php -r 'if (PHP_VERSION !== "8.3.36") { exit(1); } echo PHP_VERSION."\n";'
+          php -l .validation/src/server/app/Domain/Chat/CallResourcePolicy.php
+          php -l .validation/src/server/tests/chat_call_resource_contract.php
+          php .validation/src/server/tests/chat_call_resource_contract.php
+          echo "CHAT_CALLS_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: Format, build, vet and cross-language race tests
+        working-directory: .validation/src/chat
+        run: |
+          set -euo pipefail
+          go version
+          gofmt -w internal/calls/*.go
+          go build ./internal/calls ./internal/ports
+          go vet ./internal/calls ./internal/ports
+          go test -race -count=1 -v ./internal/calls ./internal/ports
+      - name: Record exact tested formatting
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          root=pathlib.Path('.validation/src')
+          files={str(p.relative_to(root)):p.read_text() for p in sorted((root/'chat/internal/calls').glob('*.go'))}
+          print('FORMATTED_JSON '+json.dumps(files,separators=(',',':')))
+          for p in sorted(root.rglob('*')):
+              if p.is_file():
+                  data=p.read_bytes()
+                  print('TESTED_BLOB',p.relative_to(root),hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest())
+          PY
+      - name: Verify planned cleanup
+        run: |
+          git rm -r --cached -- .validation .github/workflows/temporary-chat-calls.yml
+          python3 tools/check-clean-state.py
+          git diff --cached --check
