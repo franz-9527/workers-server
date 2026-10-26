@@ -1,7 +1,7 @@
 {
   "repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "sha": "1e82bd1468784b6a2a901b007bd7b9da5cd4063e",
+  "sha": "0ec941d58e85a01b74318ea783aa032ad146a58e",
   "files": [
     "miniprogram/pages/workerOrder/detail.js",
     "miniprogram/pages/workerOrder/detail.wxml",
@@ -52,7 +52,7 @@
     "tools/test_v250_order_center_search_ui.js",
     "server/app/Contracts/ApiActorRepository.php",
     "server/app/Contracts/MiniAdminDemoRepository.php",
-    "server/app/Infrastructure/Safety/TestingEnvironmentPolicy.php"
-  ],
-  "scope": "Order quote form, center counts, moderation, stage layout and testing actors; synthetic data only"
+    "server/app/Infrastructure/Safety/TestingEnvironmentPolicy.php",
+    "miniprogram/utils/OrderStagePresentation.js"
+  ]
 }

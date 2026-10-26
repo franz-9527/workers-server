@@ -86,7 +86,7 @@ Page({
       const sections = Object.assign({ information: false, media: false, answers: false, quotes: !!(actions.can_select_quote || actions.can_switch_worker || actions.can_admin_platform_quote), worker: !serviceArchived, appointment: !serviceArchived, timeline: false }, this.manualSections || {})
       const timelineEvents = (data.events || []).slice().sort((a, b) => String(b.time || '').localeCompare(String(a.time || '')))
       this.setData({
-        sections, serviceArchived, timelineEvents, recentEvents: timelineEvents.slice(0, 3),
+        sections, serviceArchived, quotePriority: !!(actions.can_select_quote || actions.can_switch_worker || actions.can_admin_platform_quote), timelineEvents, recentEvents: timelineEvents.slice(0, 3),
         isMeasurementOrder, order, platformOrder: data.platform_order || null, media, negotiations: data.negotiations || [], productMedia: media.filter(x => x.purpose === 'product'), wallMedia: media.filter(x => x.purpose === 'wall'), beforeMedia: media.filter(x => x.purpose === 'before_optional'), completionMedia: media.filter(x => x.purpose === 'completion'), arrivalMedia: media.filter(x => x.purpose === 'arrival_evidence'), answers: data.answers || [],
         quotes: (data.quotes || []).map(q => Object.assign(q, { amount_text: this.money(q.amount_cents), booking_text: this.money(q.booking_fee_cents), source_text: q.type === 'platform' ? '平台报价' : (q.worker_name || '师傅报价') })),
         changes: (data.changes || []).map(x => Object.assign(x, {

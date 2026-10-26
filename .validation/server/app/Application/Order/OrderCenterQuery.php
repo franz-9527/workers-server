@@ -161,14 +161,15 @@ final class OrderCenterQuery
             $card['phase_text'] = '施工准备';
         }
         if ($kind === 'mine') {
-            if (($order['audit_status'] ?? '') === 'supplement_required') $card['todo_action'] = '补充订单资料';
+            if (($order['lifecycle_status'] ?? '') !== 'active' || !in_array((string)($order['refund_status'] ?? 'none'), ['','none'], true)) $card['todo_action'] = '查看处理进度';
+            elseif ($activeRepair !== '') $card['todo_action'] = '查看售后进度';
+            elseif (($order['audit_status'] ?? '') === 'supplement_required') $card['todo_action'] = '补充订单资料';
             elseif (($order['audit_status'] ?? '') === 'draft' && in_array((string)($order['payment_status'] ?? ''), ['unpaid','awaiting_payment'], true)) $card['todo_action'] = '支付预约费';
             elseif ($pricingConfirmationPending) $card['todo_action'] = '确认施工价格';
             elseif (!empty($order['pending_change_id'])) $card['todo_action'] = '处理费用调整';
             elseif (($order['pending_run_empty_status'] ?? '') === 'pending_confirmation') $card['todo_action'] = '确认跑空费';
             elseif (($order['pending_run_empty_status'] ?? '') === 'awaiting_payment') $card['todo_action'] = '支付跑空费';
             elseif (($order['fulfillment_status'] ?? '') === 'submitted') $card['todo_action'] = '确认完工';
-            elseif (($order['lifecycle_status'] ?? '') !== 'active' || !in_array((string)($order['refund_status'] ?? 'none'), ['','none'], true)) $card['todo_action'] = '查看处理进度';
             elseif (!empty($order['selected_quote_id'])) $card['todo_action'] = ($order['payment_status'] ?? '') === 'awaiting_payment' ? '继续支付' : '查看服务进度';
             elseif (($order['audit_status'] ?? '') !== 'approved') $card['todo_action'] = '查看审核进度';
             elseif (($order['publish_status'] ?? '') !== 'published') $card['todo_action'] = '查看订单';
