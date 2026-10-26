@@ -26,7 +26,6 @@ jobs:
     env:
       GOTOOLCHAIN: local
       CHAT_CALLS_MYSQL_PASSWORD: calls-fixture-only
-      CHAT_CALLS_MYSQL_ADDR: 127.0.0.1:${{ job.services.mysql.ports['3306'] }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -38,6 +37,10 @@ jobs:
           php-version: '8.3.36'
           extensions: pdo_mysql,mbstring,sodium
           coverage: none
+      - name: Isolated service endpoint
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
       - name: Verify snapshot
         run: |
           python3 - <<'PY'
