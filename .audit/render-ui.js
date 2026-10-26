@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8')
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 function expr(s,data){try{return vm.runInNewContext(s,data,{timeout:30})}catch{return ''}}
 function interpolate(s,data){return String(s||'').replace(/\{\{([\s\S]*?)\}\}/g,(_,x)=>String(expr(x,data)??''))}
-function initial(file){let def;vm.runInNewContext(read(file),{Page:p=>def=p,require:()=>({}),console,setTimeout,clearTimeout});return def.data}
+function initial(file){let def;vm.runInNewContext(read(file),{Page:p=>def=p,require:n=>n.endsWith('ChatIdentity.js')?require(path.join(root,'miniprogram/utils/ChatIdentity.js')):{},console,setTimeout,clearTimeout});return def.data}
 function children(nodes,data){
  let result='',chain=false,matched=false
  for(const n of nodes||[]){
@@ -49,7 +49,7 @@ function css(file,width,seen=new Set()){
 }
 const stamp='2026-10-27T06:30:00Z'
 function fixture(name,tools=false){
- const p='miniprogram/'+(name==='inbox'?'pages/chatMessages':name==='conversation'?'subpackages/chat/conversation':'subpackages/chat/call')+'/index'
+ const p='miniprogram/'+(name==='inbox'?'pages/chatMessages':'subpackages/chat/'+name)+'/index'
  const data={...initial(p+'.js')}
  if(name==='inbox')Object.assign(data,{checkingLogin:false,isLoggedIn:true,summaryReady:true,chatEnabled:true,chatStatus:'http',visibleChatRows:[
   {conversationId:'1',kind:'chat',displayTitle:'李师傅',subtitle:'施工订单 BX-1027',lastText:'明天上午九点到，材料我会提前核对。',avatarPath:'/images/chat-worker.svg',unreadCount:2,unreadLabel:'2',activityLabel:'14:30',preferences:{pinned:true}},
@@ -64,6 +64,10 @@ function fixture(name,tools=false){
   {messageId:'4',displayName:'用户ABC123',avatarPath:'/images/chat-user.svg',isMine:true,isText:true,body:'收到，辛苦了。',createdAt:stamp}
  ]})
  if(name==='call')Object.assign(data,{peerName:'李师傅',peerAvatar:'/images/chat-worker.svg',call:{state:'active'},status:'通话中',canHangup:true,isNative:false})
+ if(name==='storage')Object.assign(data,{loading:false,total:'12.4 MB',items:[{key:'1:video',title:'客厅墙布施工 · 视频',size:'8.5 MB'}]})
+ if(name==='group')Object.assign(data,{group:{title:'订单协作群',member_limit:10,projection_ready:true,members:[{actor_id:'11',name:'用户138****8000',label:'业主',avatar:'/images/chat-user.svg',role_source:'owner_mobile_match'},{actor_id:'12',name:'李师傅',label:'正式施工师傅',avatar:'/images/chat-worker.svg',role_source:'assigned_worker'}]}})
+ if(name==='audit')Object.assign(data,{enabled:true,rows:[{order_id:'401',conversation_id:'9',activity_at:'2026-10-27 14:30'}]})
+ if(name==='governance')Object.assign(data,{enabled:true,status:{blocked:false,confirmed_risks:0},report:{},reason:'请核对该条消息的沟通内容',cases:[{case_id:'9',kindLabel:'举报',stateLabel:'待核对',reason:'需要平台协助核对'}]})
  return {p,data}
 }
 async function render(browser,name,theme,width=375,large=false,tools=false){
@@ -82,7 +86,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
 }
 ;(async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROME_BIN,args:['--no-sandbox','--disable-dev-shm-usage']})
- for(const theme of ['light','dark'])for(const name of ['inbox','conversation','call']){await render(browser,name,theme);await render(browser,name,theme,320,true);if(name==='conversation')await render(browser,name,theme,375,false,true)}
+ for(const theme of ['light','dark'])for(const name of ['inbox','conversation','call','group','storage','audit','governance']){await render(browser,name,theme);await render(browser,name,theme,320,true);if(name==='conversation')await render(browser,name,theme,375,false,true)}
  await browser.close()
- for(const name of ['inbox','conversation','call'])for(const theme of ['light','dark'])console.log('UI_IMAGE',name,theme,fs.readFileSync(path.join(out,name+'-'+theme+'.png')).toString('base64'))
+ for(const name of ['inbox','conversation','call','group','storage','audit','governance'])for(const theme of ['light','dark'])console.log('UI_IMAGE',name,theme,fs.readFileSync(path.join(out,name+'-'+theme+'.png')).toString('base64'))
 })().catch(e=>{console.error(e);process.exitCode=1})
