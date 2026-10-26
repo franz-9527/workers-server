@@ -1,0 +1,2 @@
+@import "../audit/index.wxss";
+.audit-page textarea{box-sizing:border-box;width:100%;padding:20rpx;background:#f6f7f8;min-height:180rpx;margin:20rpx 0}

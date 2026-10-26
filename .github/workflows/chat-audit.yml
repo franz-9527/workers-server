@@ -1,0 +1,145 @@
+name: Chat audit and native interaction regression
+on:
+  push:
+    branches: [main]
+    paths: ['.audit/**', '.github/workflows/chat-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: chat-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: audit-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -paudit-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:7.0.15
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_INTEGRATION: '1'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: audit-fixture-only
+      CHAT_CALLS_MYSQL_PASSWORD: audit-fixture-only
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+      TZ: Asia/Shanghai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .audit/src/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,sodium,ctype,mbstring,curl
+          coverage: none
+      - name: Isolated fixture endpoints
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: |
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_SCHEMA_FILE=$(realpath .audit/src/calls.sql)" >> "$GITHUB_ENV"
+      - name: Verify source snapshot
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          root=pathlib.Path('.audit/src')
+          manifest=json.loads(pathlib.Path('.audit/manifest.json').read_text())
+          for p,sha in manifest['files'].items():
+              d=(root/p).read_bytes()
+              assert hashlib.sha1(b'blob '+str(len(d)).encode()+b'\0'+d).hexdigest()==sha,p
+          print('Verified exact source blobs:',len(manifest['files']),'base',manifest['base_commit'])
+          PY
+      - name: PHP syntax and unit contracts
+        if: success() || failure()
+        run: |
+          set -euo pipefail
+          find .audit/src/server -name '*.php' -print0 | xargs -0 -n1 php -l
+          for name in chat_identity_contract chat_policy_contract chat_storage_contract chat_participant_contract chat_collaboration_policy_contract chat_call_resource_contract; do php ".audit/src/server/tests/$name.php"; done
+          php .audit/src/server/tests/chat_collaboration_policy_contract.php --emit-fixtures > "$RUNNER_TEMP/s24-php-wire.json"
+          echo "CHAT_S24_PHP_FIXTURES=$RUNNER_TEMP/s24-php-wire.json" >> "$GITHUB_ENV"
+      - name: Real schema, recovery fingerprints and PHP ledger
+        if: success() || failure()
+        run: |
+          set -euo pipefail
+          php .audit/src/server/tests/chat_schema_contract.php
+          php .audit/src/server/tests/chat_calls_mysql_contract.php
+          php .audit/src/server/tests/chat_collaboration_fixture.php self-test
+      - name: Go build, vet and complete race integration
+        if: success() || failure()
+        working-directory: .audit/src/chat
+        run: |
+          set -euo pipefail
+          gofmt -w internal/calls/providers.go internal/dependencies/calls.go internal/calls/service.go internal/calls/lifecycle.go internal/calls/mysql_integration_test.go internal/calls/providers_test.go
+          go mod verify
+          go build ./...
+          go vet ./...
+          go test -race -count=1 -v ./...
+      - name: Frontend behavior and release gates
+        if: success() || failure()
+        run: |
+          set -euo pipefail
+          find .audit/src/miniprogram -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --test .audit/src/tools/test_chat_s11.js .audit/src/tools/test_chat_calls.js .audit/src/tools/test_chat_av.js .audit/src/tools/test_chat_s18_s20.js .audit/src/tools/test_chat_s24.js
+          node .audit/src/tools/test_chat_s12_business_entry.js
+          python3 .audit/src/tools/test_chat_calls_release.py
+      - name: Dependency vulnerability audit
+        if: success() || failure()
+        working-directory: .audit/src/chat
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          go run golang.org/x/vuln/cmd/govulncheck@latest -version
+          go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: Isolated browser layout environment
+        if: success() || failure()
+        run: |
+          set -euo pipefail
+          npm install --prefix .audit --ignore-scripts --no-audit --no-fund playwright-core@1.56.1 htmlparser2@9.1.0
+          echo "CHROME_BIN=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+          if ! fc-list :lang=zh | head -1 | grep -q .; then sudo apt-get update -qq; sudo apt-get install -y -qq fonts-noto-cjk; fi
+      - name: Light, dark, narrow and large-text layouts
+        if: success() || failure()
+        run: node .audit/render-ui.js
+      - name: Record exact tested sources
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,hashlib,base64
+          root=pathlib.Path('.audit/src')
+          files={p:(root/p).read_text() for p in ["chat/internal/calls/providers.go","chat/internal/dependencies/calls.go","chat/internal/calls/service.go","chat/internal/calls/lifecycle.go","chat/internal/calls/mysql_integration_test.go","chat/internal/calls/providers_test.go"]}
+          data=base64.b64encode(json.dumps(files,separators=(',',':')).encode()).decode()
+          chunks=[data[i:i+5000] for i in range(0,len(data),5000)]
+          for i,c in enumerate(chunks):print('FORMATTED_B64',i,len(chunks),c)
+          for p in sorted(root.rglob('*')):
+              if p.is_file():
+                  d=p.read_bytes()
+                  print('TESTED_BLOB',p.relative_to(root),hashlib.sha1(b'blob '+str(len(d)).encode()+b'\0'+d).hexdigest())
+          PY
+      - name: Verify final cleanup plan
+        if: success() || failure()
+        run: |
+          git rm -r --cached .audit .github/workflows/chat-audit.yml >/dev/null
+          python3 tools/check-clean-state.py
+          git diff --cached --check
