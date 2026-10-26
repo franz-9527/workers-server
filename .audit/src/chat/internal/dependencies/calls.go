@@ -42,7 +42,7 @@ func (c CallsConfig) Validate() error {
 		return ports.ErrInvalid
 	}
 	if c.ShengwangAppID != "" {
-		if !c.PublishPrivilegesVerified || !regexp.MustCompile("^[a-f0-9]{32}$").MatchString(c.ShengwangAppID) || !secretName.MatchString(c.CertificateEnv) || !secretName.MatchString(c.CustomerIDEnv) || !secretName.MatchString(c.CustomerSecretEnv) {
+		if !regexp.MustCompile("^[a-f0-9]{32}$").MatchString(c.ShengwangAppID) || !secretName.MatchString(c.CertificateEnv) || !secretName.MatchString(c.CustomerIDEnv) || !secretName.MatchString(c.CustomerSecretEnv) {
 			return ports.ErrInvalid
 		}
 	}
@@ -132,7 +132,7 @@ func (r *Runtime) EnableCalls(c CallsConfig) error {
 	r.callTransport = transport
 	broker := &callBroker{transport, signer, c.PHPEndpoint, c.KeyID}
 	provider := &calls.Providers{PublishPrivilegesVerified: c.PublishPrivilegesVerified, Broker: broker, Environment: r.environment, AppID: c.ShengwangAppID, Certificate: os.Getenv(c.CertificateEnv), CustomerID: os.Getenv(c.CustomerIDEnv), CustomerSecret: os.Getenv(c.CustomerSecretEnv)}
-	if c.ShengwangAppID != "" && !provider.Ready(calls.Shengwang) {
+	if c.ShengwangAppID != "" && !provider.SupplierControlReady() {
 		return ports.ErrInvalid
 	}
 	authority, e := calls.NewOrderAuthority(r.sql, r.Conversations, r.environment)

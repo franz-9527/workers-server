@@ -81,7 +81,8 @@ func TestSupplierStopRequiresBanAndAuthoritativeAbsence(t *testing.T) {
 		{"ban-refused", `{"status":"failed"}`, `{"success":true,"data":{"channel_exist":false}}`, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			p := &Providers{PublishPrivilegesVerified: true, Environment: "test", AppID: strings.Repeat("a", 32), Certificate: strings.Repeat("b", 32), CustomerID: "synthetic", CustomerSecret: "synthetic"}
+			p := &Providers{PublishPrivilegesVerified: false, Environment: "test", AppID: strings.Repeat("a", 32), Certificate: strings.Repeat("b", 32), CustomerID: "synthetic", CustomerSecret: "synthetic"}
+			if p.Ready(Shengwang) { t.Fatal("unverified project admitted new publishing") }
 			seen := []string{}
 			p.Client = &http.Client{Transport: providerRoundTrip(func(r *http.Request) (*http.Response, error) {
 				seen = append(seen, r.Method)

@@ -22,7 +22,11 @@ type Providers struct {
 }
 
 func (p *Providers) Ready(provider Provider) bool {
-	return provider == Wechat || (provider == Shengwang && p.PublishPrivilegesVerified && len(p.AppID) == 32 && len(p.Certificate) == 32 && p.CustomerID != "" && p.CustomerSecret != "")
+	return provider == Wechat || (provider == Shengwang && p.PublishPrivilegesVerified && p.SupplierControlReady())
+}
+// Closing admission must not disable remedial stop/query for existing exposure.
+func (p *Providers) SupplierControlReady() bool {
+ return len(p.AppID)==32 && len(p.Certificate)==32 && p.CustomerID!="" && p.CustomerSecret!=""
 }
 func (p *Providers) channel(s Session, app string) string {
 	return "bx_" + sha256String(p.Environment + ":" + app + ":" + string(s.CallID) + ":" + strconv.FormatUint(s.Epoch, 10))[:40]
@@ -71,7 +75,7 @@ func (p *Providers) Credentials(ctx context.Context, s Session, permit Permit, a
 	return map[string]any{"provider": Shengwang, "app_id": p.AppID, "channel": channel, "uid": uid, "peer_uid": peer, "token": signed, "expires_at": permit.Until}, nil
 }
 func (p *Providers) request(ctx context.Context, method, path string, body any) (map[string]json.RawMessage, error) {
-	if !p.Ready(Shengwang) {
+	if !p.SupplierControlReady() {
 		return nil, ErrUnavailable
 	}
 	var raw []byte
@@ -111,7 +115,7 @@ func (p *Providers) Stop(ctx context.Context, s Session, permit Permit) (bool, e
 	if s.Provider == Wechat {
 		return false, nil
 	} // Native 1v1 has no verified server close/query API. Evidence review is explicit.
-	if permit.AppID != p.AppID || !p.Ready(Shengwang) {
+	if permit.AppID != p.AppID || !p.SupplierControlReady() {
 		return false, ErrUnavailable
 	}
 	channel := p.channel(s, permit.AppID)

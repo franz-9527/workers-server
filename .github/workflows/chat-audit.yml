@@ -87,14 +87,16 @@ jobs:
           php .audit/src/server/tests/chat_reminder_contract.php
           php .audit/src/server/tests/chat_calls_mysql_contract.php
           php .audit/src/server/tests/chat_collaboration_fixture.php self-test
-      - name: Go formatting; complete integration runs separately at 40394474208
+      - name: Go build, vet and affected call/runtime race integration
         if: success() || failure()
         working-directory: .audit/src/chat
         run: |
           set -euo pipefail
           gofmt -w internal/calls/providers.go internal/dependencies/calls.go internal/calls/service.go internal/calls/lifecycle.go internal/calls/mysql_integration_test.go internal/calls/providers_test.go
           go mod verify
-          echo 'Full Go build/vet/race uses the same source blobs in run 40394474208; results are reviewed separately.'
+          go build ./...
+          go vet ./...
+          go test -race -count=1 -v ./internal/calls ./internal/dependencies
       - name: Frontend behavior and release gates
         if: success() || failure()
         run: |
