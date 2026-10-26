@@ -9,3 +9,5 @@
 .group-page button::after{border:0}.group-page .hint{padding-bottom:16rpx;font-size:24rpx}
 .group-page .selector{font-size:30rpx;border-bottom:1rpx solid #e8e8e8}
 @media(prefers-color-scheme:dark){.group-page{background:#111}.group-page .card{background:#191919}.group-page .member,.group-page .card>button,.group-page .selector{border-color:#333}.group-page .card>button{color:#8bdce5}.group-page .member button{color:#ffacb0}}
+
+.group-page .card>button{display:block;width:100%}.group-page .member button{min-width:88rpx}

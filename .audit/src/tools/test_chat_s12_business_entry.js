@@ -659,9 +659,16 @@ async function u15NotificationThreadTests(){
 // P1 caution is informative: no extra confirmation, write/read or financial action.
 {
  const xml=read('miniprogram/subpackages/chat/conversation/index.wxml')
- assert(xml.includes('站外交流记录可能无法核验，影响售后处理和责任认定；多次违规可能被限制聊天'))
- assert(!xml.includes('一律不作为证据'))
+ assert(xml.includes('bindtap="chatInfo"'),'guidance remains reachable from chat details')
+ let sheet,modal
+ const interaction={exports:{}}
+ new Function('module','wx',read('miniprogram/subpackages/chat/conversation/interaction.js'))(interaction,{showActionSheet(value){sheet=value},showModal(value){modal=value}})
  const f=nativeConversation()
+ interaction.exports.chatInfo.call(f.inst)
+ assert(sheet&&sheet.itemList.includes('沟通说明'))
+ sheet.success({tapIndex:sheet.itemList.indexOf('沟通说明')})
+ assert(modal.content.includes('站外交流记录可能无法核验，影响售后处理和责任认定；多次违规可能被限制聊天'))
+ assert(!modal.content.includes('一律不作为证据'));assert.strictEqual(modal.showCancel,false)
  f.manager.attempts().push({client_message_id:'p1-contact',state:'rejected',code:'CHAT_CONTENT_BLOCKED',text:'13800138000'})
  f.inst.refreshComposer()
  assert(f.inst.data.sendReason.includes('未发送'))

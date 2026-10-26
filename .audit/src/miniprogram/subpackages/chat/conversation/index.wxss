@@ -131,3 +131,7 @@ page{height:100%;overflow:hidden}
  .conversation-page .voice-hold.is-recording{background:#16464e}.conversation-page .chat-tools{border-color:#363636}.conversation-page .chat-tool{color:#c2c8ca}
  .conversation-page .reading-actions button{color:#8bdce5}.conversation-page .is-placeholder .message-bubble{background:transparent;color:#b2b8bb}
 }
+
+.conversation-page .av-transcript{color:#4c5c62;font-size:26rpx;line-height:1.65}
+.composer-placeholder{color:#68747a}
+@media(prefers-color-scheme:dark){.conversation-page .av-transcript{color:#c2c8ca}.composer-placeholder{color:#b2b8bb}}

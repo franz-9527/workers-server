@@ -151,15 +151,3 @@ jobs:
           git rm -r --cached .audit .github/workflows/chat-audit.yml >/dev/null
           python3 tools/check-clean-state.py
           git diff --cached --check
-  cleanup-proof:
-    name: Retire superseded UI setup and verify clean index
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    concurrency:
-      group: chat-audit-followup-${{ github.ref }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          git rm -r --cached .audit .github/workflows/chat-audit.yml >/dev/null
-          python3 tools/check-clean-state.py

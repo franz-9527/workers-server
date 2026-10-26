@@ -15,7 +15,7 @@ import (
 )
 
 type Providers struct {
-	PublishPrivilegesVerified bool
+	PublishPrivilegesVerified                                   bool
 	Broker                                                      Broker
 	Environment, AppID, Certificate, CustomerID, CustomerSecret string
 	Client                                                      *http.Client
@@ -56,13 +56,15 @@ func (p *Providers) Credentials(ctx context.Context, s Session, permit Permit, a
 	}
 	channel := p.channel(s, permit.AppID)
 	// Omit forbidden privileges entirely: an expiry of zero is not a denial.
- signedToken:=token.NewAccessToken(p.AppID,p.Certificate,uint32(ttl))
- rtc:=token.NewServiceRtc(channel,token.GetUidStr(uid))
- rtc.AddPrivilege(token.PrivilegeJoinChannel,uint32(ttl))
- rtc.AddPrivilege(token.PrivilegePublishAudioStream,uint32(ttl))
- if s.Media==Video{rtc.AddPrivilege(token.PrivilegePublishVideoStream,uint32(ttl))}
- signedToken.AddService(rtc)
- signed,e:=signedToken.Build()
+	signedToken := token.NewAccessToken(p.AppID, p.Certificate, uint32(ttl))
+	rtc := token.NewServiceRtc(channel, token.GetUidStr(uid))
+	rtc.AddPrivilege(token.PrivilegeJoinChannel, uint32(ttl))
+	rtc.AddPrivilege(token.PrivilegePublishAudioStream, uint32(ttl))
+	if s.Media == Video {
+		rtc.AddPrivilege(token.PrivilegePublishVideoStream, uint32(ttl))
+	}
+	signedToken.AddService(rtc)
+	signed, e := signedToken.Build()
 	if e != nil {
 		return nil, ErrUnavailable
 	}

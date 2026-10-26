@@ -94,7 +94,7 @@ type record struct {
 	CallerKey, CalleeKey string
 	Prepared             int
 	Created              int64
- PolicyVersion ports.ID
+	PolicyVersion        ports.ID
 }
 type View struct {
 	CallID         ports.ID `json:"call_id"`
@@ -111,11 +111,11 @@ type View struct {
 	ServerTime     int64    `json:"server_time"`
 	Prepared       int      `json:"prepared_count"`
 	Created        int64    `json:"created_at"`
- PolicyVersion ports.ID `json:"policy_version,omitempty"`
+	PolicyVersion  ports.ID `json:"policy_version,omitempty"`
 }
 
 func (r record) view() View {
-	return View{r.CallID, r.ConversationID, r.CallerID, r.CalleeID, r.Provider, r.Media, r.State, strconv.FormatUint(r.Epoch, 10), strconv.FormatUint(r.Revision, 10), r.RingExpiresAt, r.Binding.Permit.Until, time.Now().Unix(), r.Prepared, r.Created,r.PolicyVersion}
+	return View{r.CallID, r.ConversationID, r.CallerID, r.CalleeID, r.Provider, r.Media, r.State, strconv.FormatUint(r.Epoch, 10), strconv.FormatUint(r.Revision, 10), r.RingExpiresAt, r.Binding.Permit.Until, time.Now().Unix(), r.Prepared, r.Created, r.PolicyVersion}
 }
 
 type Request struct {
@@ -163,7 +163,7 @@ func (s *Service) load(ctx context.Context, tx *sql.Tx, id ports.ID, lock bool) 
 	if lock {
 		query += " FOR UPDATE"
 	}
-	e := tx.QueryRowContext(ctx, query, string(id)).Scan(&model, &binding, &r.CallerKey, &r.CalleeKey, &r.Created,&r.PolicyVersion)
+	e := tx.QueryRowContext(ctx, query, string(id)).Scan(&model, &binding, &r.CallerKey, &r.CalleeKey, &r.Created, &r.PolicyVersion)
 	if e != nil {
 		return r, e
 	}
@@ -296,12 +296,14 @@ func (s *Service) selectPool(ctx context.Context, media Media, exclude ...Provid
 			if e != nil {
 				return Pool{}, a.Settings, e
 			}
-            if provider==Wechat{
-                audioCost,ae:=windowCost(p.Audio,a.Settings.Config.Window+a.Settings.Config.Margin)
-                videoCost,ve:=windowCost(p.Video,a.Settings.Config.Window+a.Settings.Config.Margin)
-                if ae!=nil||ve!=nil{return Pool{},a.Settings,ErrInvalid}
-                cost=max(audioCost,videoCost)
-            }
+			if provider == Wechat {
+				audioCost, ae := windowCost(p.Audio, a.Settings.Config.Window+a.Settings.Config.Margin)
+				videoCost, ve := windowCost(p.Video, a.Settings.Config.Window+a.Settings.Config.Margin)
+				if ae != nil || ve != nil {
+					return Pool{}, a.Settings, ErrInvalid
+				}
+				cost = max(audioCost, videoCost)
+			}
 			costs[provider] = cost
 			decisions = append(decisions, p.Decision)
 		}

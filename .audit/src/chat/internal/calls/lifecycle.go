@@ -91,7 +91,7 @@ func (s *Service) Create(ctx context.Context, p ports.Principal, q Request) (Vie
 		if e != nil {
 			return e
 		}
-		r := record{Session: model, Binding: Binding{Pool: pool}, CallerKey: own.MemberKey, CalleeKey: other.MemberKey, Created: now,PolicyVersion:own.Version}
+		r := record{Session: model, Binding: Binding{Pool: pool}, CallerKey: own.MemberKey, CalleeKey: other.MemberKey, Created: now, PolicyVersion: own.Version}
 		if e = s.save(ctx, tx, r, "created"); e != nil {
 			return e
 		}

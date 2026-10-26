@@ -22,15 +22,15 @@ import (
 )
 
 type CallsConfig struct {
- PublishPrivilegesVerified bool `json:"publish_privileges_verified"`
-	Enabled           bool   `json:"enabled"`
-	PHPEndpoint       string `json:"php_endpoint"`
-	KeyID             string `json:"key_id"`
-	KeyEnv            string `json:"key_env"`
-	ShengwangAppID    string `json:"shengwang_app_id"`
-	CertificateEnv    string `json:"certificate_env"`
-	CustomerIDEnv     string `json:"customer_id_env"`
-	CustomerSecretEnv string `json:"customer_secret_env"`
+	PublishPrivilegesVerified bool   `json:"publish_privileges_verified"`
+	Enabled                   bool   `json:"enabled"`
+	PHPEndpoint               string `json:"php_endpoint"`
+	KeyID                     string `json:"key_id"`
+	KeyEnv                    string `json:"key_env"`
+	ShengwangAppID            string `json:"shengwang_app_id"`
+	CertificateEnv            string `json:"certificate_env"`
+	CustomerIDEnv             string `json:"customer_id_env"`
+	CustomerSecretEnv         string `json:"customer_secret_env"`
 }
 
 func (c CallsConfig) Validate() error {
@@ -131,7 +131,7 @@ func (r *Runtime) EnableCalls(c CallsConfig) error {
 	}
 	r.callTransport = transport
 	broker := &callBroker{transport, signer, c.PHPEndpoint, c.KeyID}
-	provider := &calls.Providers{PublishPrivilegesVerified:c.PublishPrivilegesVerified, Broker: broker, Environment: r.environment, AppID: c.ShengwangAppID, Certificate: os.Getenv(c.CertificateEnv), CustomerID: os.Getenv(c.CustomerIDEnv), CustomerSecret: os.Getenv(c.CustomerSecretEnv)}
+	provider := &calls.Providers{PublishPrivilegesVerified: c.PublishPrivilegesVerified, Broker: broker, Environment: r.environment, AppID: c.ShengwangAppID, Certificate: os.Getenv(c.CertificateEnv), CustomerID: os.Getenv(c.CustomerIDEnv), CustomerSecret: os.Getenv(c.CustomerSecretEnv)}
 	if c.ShengwangAppID != "" && !provider.Ready(calls.Shengwang) {
 		return ports.ErrInvalid
 	}

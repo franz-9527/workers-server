@@ -79,6 +79,17 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  await page.evaluate(()=>document.fonts.ready)
  const measure=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:[...document.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().width>0).map(b=>({label:b.getAttribute('aria-label')||b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),composer:document.querySelector('.composer')?.getBoundingClientRect().bottom}))
  await page.evaluate(()=>{for(const img of document.querySelectorAll('.conversation-group-avatar img')){const a=img.getBoundingClientRect(),b=img.parentElement.getBoundingClientRect();if(a.left<b.left-1||a.top<b.top-1||a.right>b.right+1||a.bottom>b.bottom+1)throw Error('group avatar spills outside container')}})
+ await page.evaluate(()=>{
+  const rgb=s=>(s.match(/[\d.]+/g)||[]).map(Number)
+  const lum=c=>c.slice(0,3).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4}).reduce((s,n,i)=>s+n*[.2126,.7152,.0722][i],0)
+  for(const el of document.querySelectorAll('.message-text,.av-transcript,.conversation-preview,.conversation-title,.conversation-clock,.cache-hint,.hint')){
+   if(!el.textContent.trim()||!el.getBoundingClientRect().width)continue
+   let p=el,bg=[255,255,255]
+   while(p){const v=rgb(getComputedStyle(p).backgroundColor);if(v.length===3||v[3]===1){bg=v;break}p=p.parentElement}
+   const fg=rgb(getComputedStyle(el).color),a=lum(fg),b=lum(bg),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05)
+   if(ratio<4.5)throw Error('insufficient text contrast '+el.className+' '+ratio)
+  }
+ })
  assert(measure.scroll<=width+1,'horizontal overflow: '+name+' '+theme+' '+width+' '+large+' '+JSON.stringify(measure))
  if(tools==='audio-off')assert(measure.buttons.some(b=>b.label==='发送文字消息'),'text sending must survive audio capability loss')
  if(name==='conversation')assert(measure.composer<=813,'composer clipped below viewport')

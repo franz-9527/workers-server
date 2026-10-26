@@ -104,3 +104,5 @@
  .chat-inbox .conversation-title,.chat-inbox .conversation-heading{color:#e8e8e8}.chat-inbox .conversation-clock,.chat-inbox .conversation-preview,.chat-inbox .conversation-tags,.chat-inbox .conversation-id{color:#b2b8bb}
  .chat-inbox .conversation-later{color:#8bdce5}.chat-inbox .conversation-unread{border-color:#191919}
 }
+
+.chat-inbox .filter-option{min-height:88rpx}
