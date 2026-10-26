@@ -1034,7 +1034,7 @@ CREATE TABLE IF NOT EXISTS chat_call_resource_ledger (
  operation_id CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
  consumed_units BIGINT UNSIGNED NOT NULL, through_at BIGINT UNSIGNED NOT NULL,
  covered TINYINT UNSIGNED NOT NULL DEFAULT 0, created_at DATETIME(6) NOT NULL,
- UNIQUE KEY uq_call_resource_entry(operation_id), KEY ix_call_coverage(pool_id,covered,through_at)
+ UNIQUE KEY uq_call_resource_entry(operation_id), KEY ix_call_coverage(pool_id,covered,through_at), KEY ix_call_ledger_created(created_at,pool_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS chat_call_usage_snapshots (
  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, pool_id BIGINT UNSIGNED NOT NULL,
@@ -1057,7 +1057,7 @@ CREATE TABLE IF NOT EXISTS chat_call_alerts (
 -- Go owns the tables below. PHP resources never change call signaling.
 CREATE TABLE IF NOT EXISTS chat_call_accounts (
  actor_id BIGINT UNSIGNED NOT NULL PRIMARY KEY, active_call_id BIGINT UNSIGNED NULL,
- updated_at DATETIME(6) NOT NULL
+ updated_at DATETIME(6) NOT NULL, KEY ix_call_account_active(active_call_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS chat_call_sessions (
  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

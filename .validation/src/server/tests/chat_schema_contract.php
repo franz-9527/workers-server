@@ -29,6 +29,19 @@ $pdo->exec('CREATE DATABASE `'.$database.'` CHARACTER SET utf8mb4 COLLATE utf8mb
 try {
     $pdo->exec('USE `'.$database.'`');
     $runner->runFile($pdo,$root.'/server/database/database.sql');
+    require_once $root.'/server/app/Infrastructure/Chat/ChatRecoveryGate.php';
+    require_once $root.'/server/app/Infrastructure/Chat/ChatRecoveryCheckpoint.php';
+    $control=sys_get_temp_dir().'/bixuan-call-recovery-'.bin2hex(random_bytes(6));mkdir($control,0700);
+    try{
+        $checkpoint=new \WorkerAdmin\Infrastructure\Chat\ChatRecoveryCheckpoint($pdo,'test',random_bytes(32),$control,str_repeat('e',64));
+        $facts=$checkpoint->facts();$again=$checkpoint->facts();if($facts!==$again)throw new RuntimeException('Recovery fingerprints unstable');
+        foreach(['settings','resource_pools','resource_calls','resource_operations','resource_ledger','usage_snapshots','admin_audit','alerts','accounts','sessions','legs','operations','events'] as $name)if(!isset($facts['chat_call_'.$name]))throw new RuntimeException('Call recovery fact missing: '.$name);
+        $pdo->exec("INSERT INTO chat_call_accounts(actor_id,updated_at) VALUES(999991,UTC_TIMESTAMP(6))");
+        $changed=$checkpoint->facts();if($changed['chat_call_accounts']===$facts['chat_call_accounts'])throw new RuntimeException('Call occupancy restore gap was not detected');
+        $pdo->exec('DELETE FROM chat_call_accounts WHERE actor_id=999991');
+        if($checkpoint->facts()!==$facts)throw new RuntimeException('Call recovery fact did not return to original state');
+        echo "13张通话表真实恢复指纹与占用缺口识别通过\\n";
+    }finally{rmdir($control);}
     $before = [];
     $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
     foreach ($tables as $table) $before[$table] = $pdo->query('SHOW CREATE TABLE `'.$table.'`')->fetch(PDO::FETCH_NUM)[1];

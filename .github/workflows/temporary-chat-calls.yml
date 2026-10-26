@@ -116,6 +116,7 @@ jobs:
         run: |
           node --test .validation/src/tools/test_chat_calls.js
           node .validation/src/tools/test_chat_s11.js
+          python3 .validation/src/tools/test_chat_calls_release.py
       - name: Record tested sources
         if: always()
         run: |
