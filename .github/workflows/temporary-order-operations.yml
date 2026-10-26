@@ -1,0 +1,64 @@
+name: Temporary order operations validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-order-operations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-order-operations
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Identify immutable source and syntax
+        working-directory: .validation
+        run: |
+          cat source.json
+          php --version
+          node --version
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l
+          find miniprogram tools -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Frontend behavior regressions
+        working-directory: .validation
+        run: |
+          node tools/test_v250_worker_order_ui_cleanup.js
+          node tools/test_v250_admin_workbench_operations_ui.js
+          node tools/test_v250_owner_problem_entry_ui.js
+          node tools/test_v250_order_center_search_ui.js
+      - name: Order list projection regression
+        working-directory: .validation
+        run: php server/tests/v250_order_center_keyword_regression.php
+      - name: MySQL order moderation and testing identity integration
+        working-directory: .validation
+        env:
+          V250_PLATFORM_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+        run: php server/tests/v260_order_operations_mysql.php
