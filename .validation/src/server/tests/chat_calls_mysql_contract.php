@@ -81,6 +81,23 @@ try{
  $assert($wx['decision']['status']==='unavailable','lost worker/media exposure blocks new admission');
  $reject(fn()=>$service->receive(array_replace($q,['call_id'=>'81','operation_id'=>hash('sha256','no-admit')])),'stale exposure cannot be treated as zero');
  $service->receive(array_replace($next,['action'=>'release_unsubmitted','operation_id'=>hash('sha256','unknown-no-media')]));
+ // A real adjacent verified period is reserved before crossing its boundary.
+ $clock=time();$cycleService=new ChatCallResources($db,static function()use(&$clock):int{return $clock;});
+ $oldCycle=array_replace($poolForm('shengwang','rollover-app','rollover-old'),['app_id'=>str_repeat('c',32),'expires_at'=>date('Y-m-d\\TH:i:s',$clock+20)]);
+ $newCycle=array_replace($poolForm('shengwang','rollover-app','rollover-new'),['app_id'=>str_repeat('c',32),'valid_from'=>date('Y-m-d\\TH:i:s',$clock+20),'expires_at'=>date('Y-m-d\\TH:i:s',$clock+7200)]);
+ $administration->change($oldCycle,1,'super_admin');$administration->change($newCycle,1,'super_admin');
+ $cycleID=(string)$db->fetchValue("SELECT id FROM chat_call_resource_pools WHERE cycle_key='rollover-old'");
+ $futureID=(string)$db->fetchValue("SELECT id FROM chat_call_resource_pools WHERE cycle_key='rollover-new'");
+ $cq=array_replace($q,['pool_id'=>$cycleID,'call_id'=>'88','operation_id'=>hash('sha256','cross-cycle')]);$cp=$cycleService->receive($cq);
+ $assert($cp['authorized_until']===$clock+60,'verified adjacent cycle permits continuous window');
+ $assert((int)$db->fetchValue('SELECT reserved_units FROM chat_call_resource_pools WHERE id=:id',['id'=>$cycleID])===5720,'old cycle reserves only its own two-leg seconds');
+ $assert((int)$db->fetchValue('SELECT reserved_units FROM chat_call_resource_pools WHERE id=:id',['id'=>$futureID])===20020,'future segment is atomically reserved before media crosses');
+ $clock+=25;$continued=$cycleService->receive(array_replace($cq,['action'=>'renew','operation_id'=>hash('sha256','cross-renew')]));
+ $assert($continued['pool_id']===$cycleID&&$continued['authorized_until']===$clock+60,'same call and reservation continue without provider switch');
+ $assert((int)$db->fetchValue('SELECT local_uncovered FROM chat_call_resource_pools WHERE id=:id',['id'=>$cycleID])===5720,'old-cycle usage stays in old ledger');
+ $cycleService->receive(array_replace($cq,['action'=>'release','operation_id'=>hash('sha256','cross-stop')]));
+ $assert((int)$db->fetchValue('SELECT reserved_units FROM chat_call_resource_pools WHERE id=:id',['id'=>$futureID])===0,'supplier-confirmed stop releases all period reservations');
+ $assert((int)$db->fetchValue('SELECT local_uncovered FROM chat_call_resource_pools WHERE id=:id',['id'=>$futureID])===1430,'new cycle records only new-cycle usage');
  // Last remaining four equivalent minutes: eight independent PHP processes.
  $budget=['_action'=>'budget','revision'=>'1','pool_id'=>$pool,'pool_revision'=>'2','budget_limit'=>'8','safety_margin'=>'0','external_uncertainty'=>'0','reason'=>'synthetic final concurrent window'];
  $administration->change($budget,1,'super_admin');

@@ -32,11 +32,11 @@ type ResourceRequest struct{
  Action string `json:"action"`;Operation string `json:"operation_id"`;CallID ports.ID `json:"call_id,omitempty"`;Epoch ports.ID `json:"attempt_epoch,omitempty"`
  PoolID ports.ID `json:"pool_id"`;Media Media `json:"media"`;CallerID ports.ID `json:"caller_id"`;CalleeID ports.ID `json:"callee_id"`
 }
-type Permit struct{CallID ports.ID `json:"call_id"`;Epoch ports.ID `json:"attempt_epoch"`;PoolID ports.ID `json:"pool_id"`;State string `json:"state"`;Provider Provider `json:"provider"`;AppID string `json:"app_id"`;Until int64 `json:"authorized_until"`;Revision ports.ID `json:"config_revision,omitempty"`}
+type Permit struct{CallID ports.ID `json:"call_id,omitempty"`;Epoch ports.ID `json:"attempt_epoch,omitempty"`;PoolID ports.ID `json:"pool_id,omitempty"`;State string `json:"state"`;Provider Provider `json:"provider"`;AppID string `json:"app_id"`;Until int64 `json:"authorized_until"`;Revision ports.ID `json:"config_revision,omitempty"`}
 type Broker interface{Availability(context.Context)(Availability,error);Resource(context.Context,ResourceRequest)(Permit,error);Identities(context.Context,ResourceRequest)(map[string]NativePerson,error)}
 type NativePerson struct{OpenID string `json:"openid"`;Nickname string `json:"nickname"`}
 type MediaProvider interface{Ready(Provider)bool;Credentials(context.Context,Session,Permit,ports.ID)(any,error);Stop(context.Context,Session,Permit)(bool,error)}
-type Binding struct {Pool Pool `json:"pool"`;Permit Permit `json:"permit"`;Submitted bool `json:"submitted"`}
+type Binding struct {Pool Pool `json:"pool"`;Permit Permit `json:"permit"`;Submitted bool `json:"submitted"`;NextPool *Pool `json:"next_pool,omitempty"`}
 type record struct{Session;Binding Binding;CallerKey,CalleeKey string;Prepared int;Created int64}
 type View struct{
  CallID ports.ID `json:"call_id"`;ConversationID ports.ID `json:"conversation_id"`;CallerID ports.ID `json:"caller_id"`;CalleeID ports.ID `json:"callee_id"`
@@ -72,7 +72,7 @@ func(s *Service)authorized(ctx context.Context,tx *sql.Tx,p ports.Principal,r re
  if own.MemberKey!=ownKey||other.MemberKey!=otherKey{return policy.ErrDenied};return nil
 }
 func(s *Service)save(ctx context.Context,tx *sql.Tx,r record,event string,evidence ...string)error{
- model,_:=json.Marshal(r.Session);binding,_:=json.Marshal(r.Binding)
+ model,marshalErr:=json.Marshal(r.Session);if marshalErr!=nil{return ErrInvalid};binding,marshalErr:=json.Marshal(r.Binding);if marshalErr!=nil{return ErrInvalid}
  _,e:=tx.ExecContext(ctx,"UPDATE chat_call_sessions SET state=?,revision=?,attempt_epoch=?,model_json=?,resource_json=?,updated_at=? WHERE id=?",r.State,r.Revision,r.Epoch,model,binding,time.Now().Unix(),string(r.CallID))
  if e!=nil{return e}
  if event!=""{var proof any;if len(evidence)==1{proof=evidence[0]};_,e=tx.ExecContext(ctx,"INSERT INTO chat_call_events(call_id,revision,attempt_epoch,event_type,evidence_hash,created_at) VALUES(?,?,?,?,?,UTC_TIMESTAMP(6))",string(r.CallID),r.Revision,r.Epoch,event,proof)}
@@ -99,13 +99,13 @@ func(s *Service)prior(ctx context.Context,tx *sql.Tx,p ports.Principal,q Request
 func(s *Service)remember(ctx context.Context,tx *sql.Tx,p ports.Principal,q Request,hash string,v View)error{
  b,_:=json.Marshal(v);_,e:=tx.ExecContext(ctx,"INSERT INTO chat_call_operations(actor_id,operation_id,fingerprint,call_id,response_json,created_at) VALUES(?,?,?,?,?,UTC_TIMESTAMP(6))",string(p.ActorID),q.Operation,hash,string(v.CallID),b);return e
 }
-func(s *Service)selectPool(ctx context.Context,media Media)(Pool,Settings,error){
+func(s *Service)selectPool(ctx context.Context,media Media,exclude ...Provider)(Pool,Settings,error){
  a,e:=s.broker.Availability(ctx);if e!=nil{return Pool{},a.Settings,e}
  chosen:=map[Provider]Pool{}
  for _,p:=range a.Pools{if !positive(p.ID)||!p.Decision.valid(){return Pool{},a.Settings,ErrInvalid};if _,ok:=chosen[p.Decision.Provider];!ok{chosen[p.Decision.Provider]=p}}
  decisions:=[]ResourceDecision{};costs:=map[Provider]int64{Wechat:1,Shengwang:1}
  for _,provider:=range []Provider{Wechat,Shengwang}{if p,ok:=chosen[provider];ok{
-  if !s.provider.Ready(provider){p.Decision.Status="disabled";p.Decision.AvailableUnits="0"}
+  if !s.provider.Ready(provider)||(len(exclude)>0&&provider==exclude[0]){p.Decision.Status="disabled";p.Decision.AvailableUnits="0"}
   meter:=p.Audio;if media==Video{meter=p.Video};cost,e:=windowCost(meter,a.Settings.Config.Window+a.Settings.Config.Margin)
   if e!=nil{return Pool{},a.Settings,e};costs[provider]=cost;decisions=append(decisions,p.Decision)
  }}

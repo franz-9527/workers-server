@@ -120,15 +120,20 @@ func(s *Service)Prepare(ctx context.Context,p ports.Principal,q Request)(any,err
   if e=tx.QueryRowContext(ctx,"SELECT instance_id FROM chat_call_legs WHERE call_id=? AND actor_id=?",string(q.CallID),string(p.ActorID)).Scan(&instance);e!=nil||instance!=q.Instance{return ErrConflict}
   snapshot=r;return nil
  });if e!=nil{return nil,e}
+ if snapshot.Binding.NextPool!=nil{if e=s.completeFallback(ctx,snapshot);e!=nil{return nil,e};return nil,ErrConflict}
  action:="reserve";if snapshot.Binding.Submitted{action="status"}
- permit,e:=s.broker.Resource(ctx,resourceRequest(snapshot,action,"initial"));if e!=nil{return nil,e}
+ permit,e:=s.broker.Resource(ctx,resourceRequest(snapshot,action,"initial"));if e!=nil{
+  if action=="reserve"&&knownReserveFailure(e)&&!snapshot.FallbackUsed{
+   if switchErr:=s.beginFallback(ctx,snapshot);switchErr==nil{return nil,ErrConflict}
+  };return nil,e
+ }
  if !validPermit(snapshot,permit)||permit.State!="active"||permit.Until<=time.Now().Unix()+2{return nil,ErrUnavailable}
  e=s.tx(ctx,func(tx *sql.Tx)error{
   if e:=s.authorized(ctx,tx,p,snapshot,true);e!=nil{return e}
-  r,e:=s.load(ctx,tx,q.CallID,true);if e!=nil{return e};if r.Epoch!=snapshot.Epoch||(r.State!=Preparing&&r.State!=Connecting&&r.State!=Active){return ErrConflict}
-  if r.State==Preparing{r.Session,e=r.Apply(Event{Name:"media_start",Epoch:r.Epoch,ExpectedRevision:r.Revision,At:time.Now().Unix()});if e!=nil{return e}}
+  r,e:=s.load(ctx,tx,q.CallID,true);if e!=nil{return e};if r.Binding.NextPool!=nil||r.Epoch!=snapshot.Epoch||(r.State!=Preparing&&r.State!=Connecting&&r.State!=Active){return ErrConflict}
+  event:="";if r.State==Preparing{event="media_start";r.Session,e=r.Apply(Event{Name:"media_start",Epoch:r.Epoch,ExpectedRevision:r.Revision,At:time.Now().Unix()});if e!=nil{return e}}
   r.Binding.Permit=permit;r.Binding.Submitted=true
-  if e=s.save(ctx,tx,r,"");e!=nil{return e};snapshot=r;return nil
+  if e=s.save(ctx,tx,r,event);e!=nil{return e};snapshot=r;return nil
  });if e!=nil{return nil,e}
  // Persisted Connecting precedes all media credentials. A lost SDK response
  // can never be mistaken for "not submitted" or trigger cross-provider retry.
@@ -142,3 +147,32 @@ func resourceRequest(r record,action,window string)ResourceRequest{
 }
 func validPermit(r record,p Permit)bool{return p.CallID==r.CallID&&string(p.Epoch)==strconv.FormatUint(r.Epoch,10)&&p.PoolID==r.Binding.Pool.ID&&p.Provider==r.Provider&&positive(p.Revision)&&p.AppID!=""}
 func sha256String(value string)string{sum:=sha256.Sum256([]byte(value));return hex.EncodeToString(sum[:])}
+
+func knownReserveFailure(e error)bool{
+ switch e.Error(){case "CALL_RESOURCE_exhausted","CALL_RESOURCE_busy","CALL_RESOURCE_unavailable","CALL_RESOURCE_safety_insufficient","CALL_RESOURCE_CYCLE_END","CALL_RESOURCE_UNAVAILABLE":return true};return false
+}
+func(s *Service)beginFallback(ctx context.Context,r record)error{
+ next,settings,e:=s.selectPool(ctx,r.Media,r.Provider);if e!=nil{return e};if !settings.Config.AllowFallback||next.Decision.Provider==r.Provider{return ErrUnavailable}
+ e=s.tx(ctx,func(tx *sql.Tx)error{
+  live,e:=s.load(ctx,tx,r.CallID,true);if e!=nil{return e}
+  if live.Epoch!=r.Epoch||live.State!=Preparing||live.Binding.Submitted||live.FallbackUsed{return ErrConflict}
+  live.Binding.NextPool=&next
+  if e=s.save(ctx,tx,live,"");e!=nil{return e};r=live;return nil
+ });if e!=nil{return e};return s.completeFallback(ctx,r)
+}
+func(s *Service)completeFallback(ctx context.Context,r record)error{
+ if r.Binding.NextPool==nil||r.State!=Preparing||r.Binding.Submitted{return ErrConflict}
+ // This durable tombstone fences an in-flight old reserve before either end
+ // can get new credentials. A lost ACK is retried with the same operation.
+ stopped,e:=s.broker.Resource(ctx,resourceRequest(r,"release_unsubmitted","fallback"))
+ if e!=nil||!validPermit(r,stopped)||stopped.State!="closed"{return ErrUnavailable}
+ return s.tx(ctx,func(tx *sql.Tx)error{
+  live,e:=s.load(ctx,tx,r.CallID,true);if e!=nil{return e}
+  if live.Epoch!=r.Epoch||live.State!=Preparing||live.Binding.Submitted||live.Binding.NextPool==nil{return ErrConflict}
+  target:=*live.Binding.NextPool
+  live.Session,e=live.Apply(Event{Name:"fallback",Epoch:live.Epoch,ExpectedRevision:live.Revision,At:time.Now().Unix(),NextProvider:target.Decision.Provider});if e!=nil{return e}
+  live.Binding=Binding{Pool:target}
+  _,e=tx.ExecContext(ctx,"UPDATE chat_call_legs SET prepared=0,ready=0 WHERE call_id=?",string(r.CallID));if e!=nil{return e}
+  return s.save(ctx,tx,live,"fallback")
+ })
+}

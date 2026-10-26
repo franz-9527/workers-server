@@ -9,7 +9,8 @@ use WorkerAdmin\Domain\Chat\CallResourcePolicy;
 /** PHP is the only writer of the shared resource pools, calls and ledger. */
 final class ChatCallResources
 {
-    public function __construct(private Database $db) {}
+    public function __construct(private Database $db,private ?\Closure $clock=null) {}
+    private function now():int{return $this->clock?($this->clock)():time();}
     public function settings(bool $lock=false): array
     {
         $row=$this->db->fetch('SELECT CAST(revision AS CHAR) revision,config_json FROM chat_call_settings WHERE id=1'.($lock?' FOR UPDATE':''));
@@ -22,8 +23,8 @@ final class ChatCallResources
         $selected=[];
         foreach($this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY provider,id DESC LIMIT 100') as $row){
             $facts=$this->facts($row);$profile=json_decode($row['meter_json'],true,32,JSON_THROW_ON_ERROR);
-            $decision=(new CallResourcePolicy())->availability($facts,time());
-            $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls WHERE pool_id=:pool AND state='active' AND authorized_until<:deadline",['pool'=>$row['id'],'deadline'=>time()-$settings['config']['stop_margin_seconds']]);
+            $decision=(new CallResourcePolicy())->availability($facts,$this->now());
+            $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls c JOIN chat_call_resource_pools p ON p.id=c.pool_id WHERE p.provider=:provider AND p.scope_key=:scope AND c.state='active' AND c.authorized_until<:deadline",['provider'=>$row['provider'],'scope'=>$row['scope_key'],'deadline'=>$this->now()-$settings['config']['stop_margin_seconds']]);
             if($stale>0){$decision['status']='unavailable';$decision['available_units']='0';}
             $this->alerts($row,$facts,$decision);
             $candidate=['pool_id'=>(string)$row['id'],'decision'=>$decision,'audio'=>$profile['audio'],'video'=>$profile['video']];
@@ -35,7 +36,7 @@ final class ChatCallResources
     }
     private function alerts(array $row,array $facts,array $decision):void
     {
-        if(!$facts['enabled']||!$facts['verified']||!$facts['hard_stop_verified']||time()<$facts['valid_from']||time()>=$facts['expires_at'])return;
+        if(!$facts['enabled']||!$facts['verified']||!$facts['hard_stop_verified']||$this->now()<$facts['valid_from']||$this->now()>=$facts['expires_at'])return;
         $limit=(int)$facts['budget_limit'];$available=(int)$decision['available_units'];
         if(!in_array($decision['status'],['available','busy','exhausted','safety_insufficient'],true))return;
         foreach([20,10,0] as $threshold){
@@ -80,12 +81,12 @@ final class ChatCallResources
             }
             $row=$this->db->fetch('SELECT * FROM chat_call_resource_calls WHERE call_id=:call AND attempt_epoch=:epoch FOR UPDATE',['call'=>$q['call_id'],'epoch'=>$q['attempt_epoch']]);
             if($row)$this->bound($row,$q);
-            $now=time();$releasing=in_array($action,['release','release_unsubmitted'],true);
+            $now=$this->now();$releasing=in_array($action,['release','release_unsubmitted'],true);
             if(!$releasing){
                 if(!$settings['enabled']||!$settings[$q['media'].'_enabled'])throw new RuntimeException('CALL_DISABLED',409);
                 if($row&&$row['state']!=='active')throw new RuntimeException('CALL_RESOURCE_CLOSED',409);
                 if($action==='renew'&&!$row)throw new RuntimeException('CALL_RESOURCE_UNKNOWN',409);
-                $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls WHERE pool_id=:pool AND state='active' AND authorized_until<:deadline",['pool'=>$pool['id'],'deadline'=>$now-$settings['stop_margin_seconds']]);
+                $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls c JOIN chat_call_resource_pools p ON p.id=c.pool_id WHERE p.provider=:provider AND p.scope_key=:scope AND c.state='active' AND c.authorized_until<:deadline",['provider'=>$pool['provider'],'scope'=>$pool['scope_key'],'deadline'=>$now-$settings['stop_margin_seconds']]);
                 if($stale)throw new RuntimeException('CALL_RESOURCE_UNAVAILABLE',503);
             }elseif(!$row&&$action==='release')throw new RuntimeException('CALL_RESOURCE_UNKNOWN',409);
             if($row&&$row['state']==='closed'){
@@ -93,42 +94,88 @@ final class ChatCallResources
                 $this->db->execute('INSERT INTO chat_call_resource_operations(operation_id,fingerprint,response_json,created_at) VALUES(:operation,:fingerprint,:response,UTC_TIMESTAMP(6))',['operation'=>$q['operation_id'],'fingerprint'=>$fingerprint,'response'=>json_encode($result,JSON_THROW_ON_ERROR)]);
                 return $result;
             }
-            $profile=$row?json_decode($row['snapshot_json'],true,32,JSON_THROW_ON_ERROR)['profile']:json_decode($pool['meter_json'],true,32,JSON_THROW_ON_ERROR);
-            $facts=$this->facts($pool);$meter=$profile[$q['media']];
+            $snapshot=$row?json_decode($row['snapshot_json'],true,32,JSON_THROW_ON_ERROR):[
+                'provider'=>$pool['provider'],'scope_key'=>$pool['scope_key'],'cycle_key'=>$pool['cycle_key'],
+                'profile'=>json_decode($pool['meter_json'],true,32,JSON_THROW_ON_ERROR),
+                'media'=>$q['media'],'caller_id'=>$q['caller_id'],'callee_id'=>$q['callee_id'],'config_revision'=>(string)$pool['revision'],'segments'=>[]];
             $start=$row?(int)$row['started_at']:$now;
-            $oldReserved=$row?(int)$row['reserved_units']:0;$oldConsumed=$row?(int)$row['consumed_units']:0;
-            $elapsed=$action==='release_unsubmitted'?0:max(0,$now-$start);
-            $policy=new CallResourcePolicy();
-            $cost=static fn(int $seconds):int=>$policy->incrementalCost($meter,array_fill(0,2,['previous_seconds'=>0,'current_seconds'=>$seconds]));
-            $consumed=$row?$cost($elapsed):0;
-            if($consumed<$oldConsumed)$consumed=$oldConsumed;
-            $delta=$consumed-$oldConsumed;
-            $until=$releasing?$now:min($facts['expires_at'],$now+$settings['window_seconds']);
-            if(!$releasing&&$until<$now+5)throw new RuntimeException('CALL_RESOURCE_CYCLE_END',409);
-            $upper=$releasing?$elapsed:max($elapsed,$until-$start+$settings['stop_margin_seconds']);
-            $reserved=$releasing?0:max(0,$cost($upper)-$consumed);
-            // Temporarily return this call's old R to available capacity. O/L
-            // remain conservative and cannot be reduced by retry/client timers.
-            $facts['reserved']=(string)max(0,(int)$pool['reserved_units']-$oldReserved);
-            $admission=$policy->availability($facts,$now);
-            if(!$releasing&&($admission['status']!=='available'||$reserved>max(0,(int)$admission['available_units']-$delta)))throw new RuntimeException('CALL_RESOURCE_'.$admission['status'],409);
-            $covered=$now<=(int)$pool['covered_through'];$localDelta=$covered?0:$delta;
-            if($localDelta>PHP_INT_MAX-(int)$pool['local_uncovered'])throw new RuntimeException('CALL_RESOURCE_OVERFLOW',503);
-            $newReserved=max(0,(int)$pool['reserved_units']-$oldReserved);
-            if($reserved>PHP_INT_MAX-$newReserved)throw new RuntimeException('CALL_RESOURCE_OVERFLOW',503);
-            $this->db->execute('UPDATE chat_call_resource_pools SET local_uncovered=:local,reserved_units=:reserved,updated_at=UTC_TIMESTAMP(6) WHERE id=:id',
-                ['local'=>(int)$pool['local_uncovered']+$localDelta,'reserved'=>$newReserved+$reserved,'id'=>$pool['id']]);
-            if($delta>0)$this->db->execute('INSERT INTO chat_call_resource_ledger(pool_id,call_id,attempt_epoch,operation_id,consumed_units,through_at,covered,created_at) VALUES(:pool,:call,:epoch,:operation,:units,:through,:covered,UTC_TIMESTAMP(6))',
-                ['pool'=>$pool['id'],'call'=>$q['call_id'],'epoch'=>$q['attempt_epoch'],'operation'=>$q['operation_id'],'units'=>$delta,'through'=>$now,'covered'=>$covered?1:0]);
-            $snapshot=$row?$row['snapshot_json']:json_encode(['provider'=>$pool['provider'],'scope_key'=>$pool['scope_key'],'cycle_key'=>$pool['cycle_key'],'profile'=>$profile,
-                'media'=>$q['media'],'caller_id'=>$q['caller_id'],'callee_id'=>$q['callee_id'],'config_revision'=>(string)$pool['revision']],JSON_THROW_ON_ERROR);
+            [$snapshot,$until,$upper,$consumed,$reserved]=$this->segments($snapshot,$q,$pool,$settings,$start,$now,$releasing,$action==='release_unsubmitted');
+            $encoded=json_encode($snapshot,JSON_THROW_ON_ERROR);
             $this->db->execute("INSERT INTO chat_call_resource_calls(call_id,attempt_epoch,pool_id,state,snapshot_json,started_at,authorized_until,upper_seconds,consumed_units,reserved_units,updated_at)
-                VALUES(:call,:epoch,:pool,:state,:snapshot,:start,:until,:upper,:consumed,:reserved,UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state=VALUES(state),authorized_until=VALUES(authorized_until),upper_seconds=VALUES(upper_seconds),consumed_units=VALUES(consumed_units),reserved_units=VALUES(reserved_units),updated_at=VALUES(updated_at)",
-                ['call'=>$q['call_id'],'epoch'=>$q['attempt_epoch'],'pool'=>$pool['id'],'state'=>$releasing?'closed':'active','snapshot'=>$snapshot,'start'=>$start,'until'=>$until,'upper'=>$upper,'consumed'=>$consumed,'reserved'=>$reserved]);
-            $result=$this->permit(['call_id'=>$q['call_id'],'attempt_epoch'=>$q['attempt_epoch'],'pool_id'=>(string)$pool['id'],'state'=>$releasing?'closed':'active','snapshot_json'=>$snapshot,'authorized_until'=>$until]);
+                VALUES(:call,:epoch,:pool,:state,:snapshot,:start,:until,:upper,:consumed,:reserved,UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE state=VALUES(state),snapshot_json=VALUES(snapshot_json),authorized_until=VALUES(authorized_until),upper_seconds=VALUES(upper_seconds),consumed_units=VALUES(consumed_units),reserved_units=VALUES(reserved_units),updated_at=VALUES(updated_at)",
+                ['call'=>$q['call_id'],'epoch'=>$q['attempt_epoch'],'pool'=>$pool['id'],'state'=>$releasing?'closed':'active','snapshot'=>$encoded,'start'=>$start,'until'=>$until,'upper'=>$upper,'consumed'=>$consumed,'reserved'=>$reserved]);
+            $result=$this->permit(['call_id'=>$q['call_id'],'attempt_epoch'=>$q['attempt_epoch'],'pool_id'=>(string)$pool['id'],'state'=>$releasing?'closed':'active','snapshot_json'=>$encoded,'authorized_until'=>$until]);
             $this->db->execute('INSERT INTO chat_call_resource_operations(operation_id,fingerprint,response_json,created_at) VALUES(:operation,:fingerprint,:response,UTC_TIMESTAMP(6))',['operation'=>$q['operation_id'],'fingerprint'=>$fingerprint,'response'=>json_encode($result,JSON_THROW_ON_ERROR)]);
             return $result;
         });
+    }
+    /**
+     * Reserve all supplier cycles touched by the credential plus stop margin.
+     * The root pool_id is an immutable reservation reference. Individual cycle
+     * segments own their R/L; a verified adjacent cycle can continue the same
+     * call without changing provider, app, epoch or media credentials.
+     */
+    private function segments(array $snapshot,array $q,array $root,array $settings,int $start,int $now,bool $release,bool $unsubmitted):array
+    {
+        $policy=new CallResourcePolicy();$margin=$settings['stop_margin_seconds'];
+        $old=$snapshot['segments']??[];$known=[];
+        foreach($old as $segment)$known[(string)$segment['pool_id']]=$segment;
+        $rows=$this->db->fetchAll('SELECT * FROM chat_call_resource_pools WHERE provider=:provider AND scope_key=:scope ORDER BY id FOR UPDATE',['provider'=>$root['provider'],'scope'=>$root['scope_key']]);
+        $pools=[];$timeline=[];
+        foreach($rows as $row){
+            $facts=$this->facts($row);$profile=json_decode($row['meter_json'],true,32,JSON_THROW_ON_ERROR);
+            if($profile['app_id']!==$snapshot['profile']['app_id']||$profile[$q['media']]!=$snapshot['profile'][$q['media']])continue;
+            $pools[(string)$row['id']]=[$row,$facts,$profile];$timeline[]=[(string)$row['id'],$facts['valid_from'],$facts['expires_at']];
+        }
+        usort($timeline,static fn($a,$b)=>$a[1]<=>$b[1]);
+        $target=$release?$now:$now+$settings['window_seconds']+$margin;$coveredUntil=$start;
+        foreach($timeline as [$id,$from,$end]){
+            if($end<=$start||$from>$coveredUntil||$coveredUntil>=$target)continue;
+            [$row,$facts,$profile]=$pools[$id];
+            if(!$release&&$end>$now){
+                $at=max($now,$from);
+                $facts['reserved']=(string)max(0,(int)$row['reserved_units']-(int)($known[$id]['reserved_units']??0));
+                $decision=$policy->availability($facts,$at);
+                // A future cycle must already have independently verified G and
+                // fresh complete-scope usage; a calendar change grants nothing.
+                if(!in_array($decision['status'],['available','busy'],true))break;
+            }
+            $coveredUntil=$end;
+        }
+        if(!$release&&$coveredUntil<$target)$target=$coveredUntil;
+        $until=$release?$now:$target-$margin;
+        if(!$release&&$until<$now+5)throw new RuntimeException('CALL_RESOURCE_CYCLE_END',409);
+        // If an unknown media result passed the last registered cycle, retain
+        // the whole reservation until the missing supplier period is reconciled.
+        if($release&&!$unsubmitted&&$coveredUntil<$now)throw new RuntimeException('CALL_RESOURCE_CYCLE_UNKNOWN',409);
+        $totalConsumed=0;$totalReserved=0;$segments=[];
+        foreach($timeline as [$id,$from,$end]){
+            if($end<=$start||$from>=$target&&!isset($known[$id]))continue;
+            [$row,$facts,$profile]=$pools[$id];$before=$known[$id]??null;
+            $segmentStart=max($start,$from);$elapsed=$unsubmitted?0:max(0,min($now,$end)-$segmentStart);
+            $upper=$release?$elapsed:max($elapsed,min($target,$end)-$segmentStart);
+            $cost=static fn(int $seconds):int=>$policy->incrementalCost($profile[$q['media']],array_fill(0,2,['previous_seconds'=>0,'current_seconds'=>$seconds]));
+            $oldConsumed=(int)($before['consumed_units']??0);$oldReserved=(int)($before['reserved_units']??0);
+            $consumed=max($oldConsumed,$cost($elapsed));$delta=$consumed-$oldConsumed;
+            $reserved=$release?0:max(0,$cost($upper)-$consumed);
+            $facts['reserved']=(string)max(0,(int)$row['reserved_units']-$oldReserved);
+            $decision=$policy->availability($facts,max($now,$from));
+            if(!$release&&($reserved>0||$delta>0)&&(!in_array($decision['status'],['available','busy'],true)||$reserved>max(0,(int)$decision['available_units']-$delta))){
+                // Expired previous segments may still move existing R to L.
+                if($now<$end||$reserved>0)throw new RuntimeException('CALL_RESOURCE_'.$decision['status'],409);
+            }
+            $covered=min($now,$end)<=(int)$row['covered_through'];$localDelta=$covered?0:$delta;
+            $poolReserved=max(0,(int)$row['reserved_units']-$oldReserved);
+            if($localDelta>PHP_INT_MAX-(int)$row['local_uncovered']||$reserved>PHP_INT_MAX-$poolReserved||$consumed>PHP_INT_MAX-$totalConsumed||$reserved>PHP_INT_MAX-$totalReserved)throw new RuntimeException('CALL_RESOURCE_OVERFLOW',503);
+            $this->db->execute('UPDATE chat_call_resource_pools SET local_uncovered=:local,reserved_units=:reserved,updated_at=UTC_TIMESTAMP(6) WHERE id=:id',
+                ['local'=>(int)$row['local_uncovered']+$localDelta,'reserved'=>$poolReserved+$reserved,'id'=>$id]);
+            if($delta>0)$this->db->execute('INSERT INTO chat_call_resource_ledger(pool_id,call_id,attempt_epoch,operation_id,consumed_units,through_at,covered,created_at) VALUES(:pool,:call,:epoch,:operation,:units,:through,:covered,UTC_TIMESTAMP(6))',
+                ['pool'=>$id,'call'=>$q['call_id'],'epoch'=>$q['attempt_epoch'],'operation'=>hash('sha256',$q['operation_id'].':cycle:'.$id),'units'=>$delta,'through'=>min($now,$end),'covered'=>$covered?1:0]);
+            $segments[]=['pool_id'=>$id,'started_at'=>$segmentStart,'consumed_units'=>$consumed,'reserved_units'=>$reserved,'cycle_key'=>$row['cycle_key']];
+            $totalConsumed+=$consumed;$totalReserved+=$reserved;
+        }
+        $snapshot['segments']=$segments;
+        return [$snapshot,$until,max(0,$target-$start),$totalConsumed,$totalReserved];
     }
     private function bound(array $row,array $q):void
     {
@@ -145,7 +192,7 @@ final class ChatCallResources
     private function identities(array $q):array
     {
         $row=$this->db->fetch('SELECT * FROM chat_call_resource_calls WHERE call_id=:call AND attempt_epoch=:epoch',['call'=>$q['call_id'],'epoch'=>$q['attempt_epoch']]);
-        if(!$row||$row['state']!=='active'||(int)$row['authorized_until']<=time())throw new RuntimeException('CALL_RESOURCE_CLOSED',409);
+        if(!$row||$row['state']!=='active'||(int)$row['authorized_until']<=$this->now())throw new RuntimeException('CALL_RESOURCE_CLOSED',409);
         $this->bound($row,$q);$permit=$this->permit($row);$people=[];
         foreach(['caller_id','callee_id'] as $key){
             $identity=$this->db->fetch("SELECT w.openid,u.public_id FROM wechat_identities w JOIN users u ON u.id=w.user_id AND u.status='active' WHERE w.user_id=:actor AND w.app_id=:app AND w.status='active' LIMIT 1",['actor'=>$q[$key],'app'=>$permit['app_id']]);
