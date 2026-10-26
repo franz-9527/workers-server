@@ -46,7 +46,7 @@
       <view class="conversation-avatar {{item.kind === 'notification' ? 'notification-avatar' : ''}}">
         <view wx:if="{{item.kind==='chat' && item.groupAvatars && item.groupAvatars.length}}" class="conversation-group-avatar"><image wx:for="{{item.groupAvatars}}" wx:for-item="avatar" wx:key="index" src="{{avatar}}" mode="aspectFill"/></view>
         <image wx:elif="{{item.kind==='chat' && item.avatarPath}}" class="conversation-fixed-avatar" src="{{item.avatarPath}}" mode="aspectFill"/>
-        <text wx:else class="{{item.kind === 'notification' ? 'cuIcon-noticefill' : 'cuIcon-commentfill'}}"></text>
+        <text wx:else class="{{item.kind === 'notification' ? 'chat-icon chat-icon-notice' : 'cuIcon-commentfill'}}"></text>
         <view wx:if="{{item.unreadCount > 0}}" class="conversation-unread">{{item.unreadLabel}}</view>
       </view>
       <view class="conversation-body">

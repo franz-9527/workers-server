@@ -177,3 +177,14 @@ test('renewal processing time cannot extend the local media deadline',()=>{
  f.page.arm({expires_at:160,remaining_ms:52000,received_at_ms:9000},base)
  assert.equal(f.timers.at(-1).delay,49000)
 })
+
+test('authorization timing stays on the monotonic clock when wall time differs',async()=>{
+ let mono=1000;const f=fixture(async()=>{mono+=8000;return {call:{...base,state:'connecting'},credentials:{provider:'shengwang',expires_at:160}}})
+ f.manager.io.monotonicNow=()=>mono;f.manager.io.now=()=>1793000000000;f.calls.apply({...base,state:'connecting'})
+ const grant=await f.calls.prepare();assert.equal(grant.remaining_ms,52000);assert.equal(grant.received_at_ms,9000)
+})
+test('a stale local deadline cannot end another call',async()=>{
+ let ends=0;const calls={current:{...base,state:'active'},action:async()=>{ends++}}
+ const f=callPage(calls);f.page.arm({expires_at:160,remaining_ms:50000,received_at_ms:1000},base)
+ calls.current={...base,call_id:'2'};f.timers.at(-1).fn();await new Promise(setImmediate);assert.equal(ends,0)
+})

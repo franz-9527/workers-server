@@ -235,7 +235,7 @@ Page({
       unreadCount: this.data.noticeUnreadCount,
       latestNotification: this.data.latestNotification
     } : null
-    this.setData({ chatRows: rows, visibleChatRows: InboxModel.inboxRows(this.digestMap, summary, this.data.chatFilter).map(row=>InboxModel.identities.row(row,this.memberIdentities[row.conversationId])) })
+    this.setData({ chatRows: rows, visibleChatRows: InboxModel.inboxRows(this.digestMap, summary, this.data.chatFilter).map(row=>({...InboxModel.identities.row(row,this.memberIdentities[row.conversationId]),activityLabel:Presentation.timeLabel(row.activityAt)})) })
     this.loadInboxParticipants()
   },
 

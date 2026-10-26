@@ -19,7 +19,7 @@ function get() {
   av:createWxAV(wx),
   disk:createWxCache(wx,()=>wx.showToast({title:'聊天缓存无法保存，可在设置中清理',icon:'none'})),
   environment:()=>ApiEnvironment.current().key==='testing'?'test':'production',
-  now: () => Date.now(), random: () => Math.random(), setTimeout, clearTimeout,
+  now: () => Date.now(), monotonicNow: () => typeof wx.getPerformance==='function' ? wx.getPerformance().now() : Date.now(), random: () => Math.random(), setTimeout, clearTimeout,
   collaboration: async (action,data) => (await require('./OrderApi.js').request('chat.collaboration.'+action,'POST',data)).data,
   participants: async conversations => (await require('./OrderApi.js').request('chat.participants','POST',{conversations})).data,
   credential: async () => {

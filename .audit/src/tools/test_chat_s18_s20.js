@@ -57,7 +57,13 @@ test('S19 native owner status clears late responses on hide and appeals never se
 test('S18-S20 feature gates stay closed and original notification card is preserved',()=>{
  assert(read('miniprogram/utils/ChatRuntime.js').includes('const ENABLED = false'))
  const wxml=read('miniprogram/pages/chatMessages/index.wxml')
- assert(wxml.includes('mine-message-summary'));assert(wxml.includes('auditAllowed && chatEnabled'))
+ assert(wxml.includes('mine-message-summary'))
+  let definition,items=[]
+  vm.runInNewContext(read('miniprogram/pages/chatMessages/index.js'),{Page(p){definition=p},require(){return {}},wx:{showActionSheet(q){items=q.itemList}}})
+  const page={...definition,_showSerial:1,chatManager:{epoch:1},data:{chatEnabled:true,isLoggedIn:true,auditAllowed:false}}
+  page.inboxMenu();assert(!items.includes('全部订单会话'),'ordinary member cannot see audit action')
+  page.data.auditAllowed=true;page.inboxMenu();assert(items.includes('全部订单会话'),'auditor has explicit menu entry')
+  page.data.chatEnabled=false;page.inboxMenu();assert(!items.includes('全部订单会话'),'closed feature hides audit entry')
  const page=JSON.parse(read('miniprogram/app.json')).subpackages.find(s=>s.root==='subpackages/chat')
  assert(page.pages.includes('audit/index')&&page.pages.includes('governance/index'))
 })

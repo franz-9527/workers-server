@@ -46,10 +46,11 @@ Page({
     if(life!==this.life||epoch!==this.manager.epoch||!this.visible)return
     await this.calls.action('pulse')
     const updated=this.calls.current
+    if(!this.owns()){this.stopMedia();return}
     if(this.media&&updated.authorized_until>this.grantedUntil+5)await this.renew(life,epoch)
     if(this.media)await this.media.initiate(updated)
    }
-  }catch(error){if(life===this.life){this.setData({notice:message(error)});if(['CHAT_UNAUTHORIZED','CHAT_PERMISSION_DENIED'].includes(error.code)){this.stopMedia();this.calls.action('end').catch(()=>{})}}}
+  }catch(error){if(life===this.life){this.setData({notice:message(error)});if(this.owns()&&['CHAT_UNAUTHORIZED','CHAT_PERMISSION_DENIED'].includes(error.code)){this.stopMedia();this.calls.action('end').catch(()=>{})}}}
   finally{this.ticking=false;if(this.visible&&life===this.life&&this.manager.epoch===epoch)this.timer=setTimeout(()=>this.tick(),5000)}
  },
  render(call){
@@ -83,12 +84,12 @@ Page({
   const age=Number.isFinite(grant.received_at_ms)?Math.max(0,now-grant.received_at_ms):0
   const left=Math.max(0,remaining-age-2000)
   if(left===0){this.ending=true;this.stopMedia();if(this.owns())this.calls.action('end').catch(()=>{});return false}
-  this.deadline=setTimeout(()=>{this.ending=true;this.stopMedia();this.calls.action('end').catch(()=>{});this.setData({notice:'本次通话授权已结束，请稍后重试'})},left)
+  this.deadline=setTimeout(()=>{this.ending=true;this.stopMedia();if(this.owns())this.calls.action('end').catch(()=>{});this.setData({notice:'本次通话授权已结束，请稍后重试'})},left)
   return true
  },
  async startMedia(call,life,epoch){
   const grant=await this.calls.prepare()
-  if(!this.visible||this.ending||life!==this.life||epoch!==this.manager.epoch||!['preparing','connecting','active'].includes(this.calls.current?.state))return
+  if(!this.visible||this.ending||!this.owns()||life!==this.life||epoch!==this.manager.epoch||!['preparing','connecting','active'].includes(this.calls.current?.state))return
   if(grant.provider==='wechat'&&this.profileKey===[call.call_id,call.policy_version,this.manager.epoch].join(':')){
    if(this.people[call.caller_id])grant.caller={...grant.caller,nickname:this.people[call.caller_id].displayName}
    if(this.people[call.callee_id])grant.listener={...grant.listener,nickname:this.people[call.callee_id].displayName}
@@ -104,7 +105,7 @@ Page({
   this.media=engine;if(!this.arm(grant,this.calls.current)){await engine.stop();this.media=null;return}
   try{await engine.start(grant,this.calls.current)}catch(error){engine.stop().catch(()=>{});if(this.media===engine)this.media=null;if(current())throw error}
  },
- async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||this.ending||life!==this.life||epoch!==this.manager.epoch)return;await this.media.renew(grant);this.arm(grant,this.calls.current)},
+ async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||this.ending||!this.owns()||life!==this.life||epoch!==this.manager.epoch)return;const engine=this.media;await engine.renew(grant);if(this.media===engine&&this.owns()&&life===this.life&&epoch===this.manager.epoch)this.arm(grant,this.calls.current)},
  async accept(){if(this.data.busy||!this.owns())return;this.setData({busy:true});try{await this.calls.action('accept');await this.tick()}catch(error){this.setData({notice:message(error)})}finally{this.setData({busy:false})}},
  async hangup(){
   if(!this.owns())return

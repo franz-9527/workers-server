@@ -87,7 +87,7 @@ class ChatCalls{
   if(epoch!==this.manager.epoch)throw new Error('账号已变化')
   this.apply(value.call)
   if(this.current?.call_id!==target.call_id||this.current.attempt_epoch!==target.attempt_epoch||!['preparing','connecting','active'].includes(this.current.state))throw Object.assign(new Error('通话状态已变化'),{code:'CALL_STATE_CONFLICT'})
-  const received=typeof this.manager.io.now==='function'?this.manager.io.now():Date.now()
+  const received=typeof this.manager.io.monotonicNow==='function'?this.manager.io.monotonicNow():(typeof this.manager.io.now==='function'?this.manager.io.now():Date.now())
   const elapsed=Math.max(0,received-started)
   return {...value.credentials,remaining_ms:Math.max(0,(value.credentials.expires_at-value.call.server_time)*1000-elapsed),received_at_ms:received}
  }

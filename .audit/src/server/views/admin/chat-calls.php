@@ -8,7 +8,7 @@ $reason=static function():void{echo '<label class="admin-field">操作理由<inp
 <div class="admin-page-head"><div><h1>音视频通话</h1><p>微信与声网分别使用平台共享免费资源。语音、视频共用各通道总池；没有个人额度、充值或付费续通。</p></div></div>
 <?php if($notice!==''): ?><p role="alert"><?= e($notice) ?></p><?php endif; ?>
 <section class="admin-card"><div class="admin-card__body">
-<h2>功能与路由</h2><p>当前版本 <?= e($revision) ?>。通道权益、计量和免费停用能力须有真实核验证据；尚未完成现场验收时保持关闭。</p>
+<h2>功能与路由</h2><p>微信通道未取得服务端媒体类型约束证明时，语音也按音视频两种费率的较高值预占与估算；这是安全上界，最终按官方完整报表对账。声网须核验已启用发布权限鉴权，语音凭证仅授权音频。视频折算须覆盖可发布的最高计费档位。</p><p>当前版本 <?= e($revision) ?>。通道权益、计量和免费停用能力须有真实核验证据；尚未完成现场验收时保持关闭。</p>
 <?php if($canManage): ?><form method="post" action="<?= e(admin_url('chat.calls')) ?>">
 <?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="_action" value="settings">
 <?php foreach(['enabled'=>'开放音视频通话','audio_enabled'=>'语音通话','video_enabled'=>'视频通话','allow_fallback'=>'建立媒体前允许使用备选通道'] as $key=>$label): ?>

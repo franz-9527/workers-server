@@ -36,9 +36,10 @@ function node(n,data){
   if(key==='value'&&tag==='textarea')continue
   let v=interpolate(value,data)
   if(['disabled','autoplay'].includes(key)){if(v==='false'||v==='')continue;attrs+=' '+key;continue}
-  if(key==='src'&&v.startsWith('/images/'))v='file://'+path.join(root,'miniprogram',v)
+  if(key==='src'&&v.startsWith('/images/'))v='data:image/svg+xml;base64,'+fs.readFileSync(path.join(root,'miniprogram',v)).toString('base64')
   attrs+=' '+key+'="'+esc(v)+'"'
  }
+ if(tag==='textarea')attrs+=' rows="1"'
  if(tag==='img')return '<img'+attrs+'>'
  return '<'+tag+attrs+'>'+(tag==='textarea'?esc(interpolate(a.value||'',data)):children(n.children,data))+'</'+tag+'>'
 }
@@ -69,7 +70,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  const {p,data}=fixture(name,tools),page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
  await page.route('**/*',r=>/^(file:|data:|about:)/.test(r.request().url())?r.continue():r.abort())
  const source=read(p+'.wxml'),html=children(parseDocument(source,{xmlMode:true,decodeEntities:true}).children,data)
- await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
+ await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none;border:0;outline:0}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
  if(large)await page.evaluate(()=>{const nodes=[...document.querySelectorAll('*')];const sizes=nodes.map(n=>parseFloat(getComputedStyle(n).fontSize));nodes.forEach((n,i)=>n.style.fontSize=(sizes[i]*1.35)+'px')})
  await page.evaluate(()=>document.fonts.ready)
  const measure=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:[...document.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().width>0).map(b=>({label:b.getAttribute('aria-label')||b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),composer:document.querySelector('.composer')?.getBoundingClientRect().bottom}))

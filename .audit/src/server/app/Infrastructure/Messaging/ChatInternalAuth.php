@@ -39,6 +39,9 @@ final class ChatInternalAuth
             ||!hash_equals(hash_hmac('sha256',$this->canonical($uri,$body,$stamp,$nonce),$this->key),$signature))throw new RuntimeException('CHAT_INTERNAL_AUTH');
         $insert=$this->db->execute('INSERT IGNORE INTO chat_internal_nonces(nonce_hash,expires_at) VALUES(:hash,UTC_TIMESTAMP()+INTERVAL 61 SECOND)',['hash'=>hash('sha256',$this->kid.':'.$nonce)]);
         if($insert!==1)throw new RuntimeException('CHAT_INTERNAL_AUTH');
+        // Calls also use this verifier when the optional reminder worker is off.
+        // Expiry includes the full timestamp-skew replay window; never prune live nonces.
+        $this->db->execute('DELETE FROM chat_internal_nonces WHERE expires_at<=UTC_TIMESTAMP() ORDER BY expires_at LIMIT 100');
     }
     public function eligible(string $operation):bool
     {
@@ -55,8 +58,8 @@ final class ChatInternalAuth
         $origin=rtrim((string)\app_config('chat.internal_go_origin',''),'/');$url=parse_url($origin);
         if(!$url||($url['scheme']??'')!=='https'||empty($url['host'])||isset($url['user'])||isset($url['pass'])||isset($url['query'])||isset($url['fragment'])||!empty($url['path']))throw new RuntimeException('通话内部连接未配置');
         $uri='/chat/internal/v1/calls/stop-confirmed';$body=json_encode(['call_id'=>$call,'attempt_epoch'=>$epoch,'evidence_hash'=>$proof],JSON_THROW_ON_ERROR);
-        $ch=curl_init($origin.$uri);curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$body,CURLOPT_HTTPHEADER=>array_merge(['Content-Type: application/json'],$this->sign($uri,$body)),CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT_MS=>1000,CURLOPT_TIMEOUT_MS=>3000,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS]);
-        $raw=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
+        $response='';$ch=curl_init($origin.$uri);curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$body,CURLOPT_HTTPHEADER=>array_merge(['Content-Type: application/json'],$this->sign($uri,$body)),CURLOPT_RETURNTRANSFER=>false,CURLOPT_WRITEFUNCTION=>static function($handle,string $chunk)use(&$response):int{if(strlen($response)+strlen($chunk)>1024)return 0;$response.=$chunk;return strlen($chunk);},CURLOPT_CONNECTTIMEOUT_MS=>1000,CURLOPT_TIMEOUT_MS=>3000,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS]);
+        $ok=curl_exec($ch);$raw=$ok===false?false:$response;$status=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);curl_close($ch);
         $reply=is_string($raw)&&strlen($raw)<=1024?json_decode($raw,true):null;
         if($status!==200||!is_array($reply)||($reply['ok']??null)!==true)throw new RuntimeException('已记录核验理由，通话状态尚未确认，请刷新后重试；资源仍保留');
     }
