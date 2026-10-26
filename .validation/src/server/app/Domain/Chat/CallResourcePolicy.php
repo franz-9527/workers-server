@@ -50,7 +50,7 @@ final class CallResourcePolicy
         if (!$pool['enabled']) $status = 'disabled';
         elseif (!$pool['verified'] || !$pool['hard_stop_verified']) $status = 'waiting_verification';
         elseif (!$pool['healthy'] || $now < $pool['valid_from'] || $now >= $pool['expires_at']
-            || $now - $pool['usage_observed_at'] > $pool['max_age_seconds']) $status = 'unavailable';
+            || $now - $pool['usage_observed_at'] >= $pool['max_age_seconds']) $status = 'unavailable';
         else {
             // Saturating sequential subtraction avoids overflow when independent
             // conservative counters exceed the original budget.

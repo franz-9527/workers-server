@@ -1,11 +1,11 @@
 {
   "source_repository": "franz-9527/workers",
-  "source_commit": "c1723de493fb7891fe1f7f859457d6ae6f638dfb",
+  "source_commit": "6e471e3d7ca84886a2187f63661ba142245572cf",
   "files": {
-    "server/app/Domain/Chat/CallResourcePolicy.php": "72a189133973387e80da3f1c823aac60b4739d51",
+    "server/app/Domain/Chat/CallResourcePolicy.php": "9076be1f6c8839fafd396b58adb854c8c815cd15",
     "chat/internal/calls/resources.go": "c954b307c0d136360bcfde5793374d9a726f501a",
     "chat/internal/calls/session.go": "747862d376599c04fdf24265a5b7288072cf5657",
-    "server/tests/chat_call_resource_contract.php": "dcf0ea6d7787b94b2c449c42593a110830e980f0",
+    "server/tests/chat_call_resource_contract.php": "18b2821c9e8ba4d5152799739926c65649634c2b",
     "chat/internal/calls/resources_test.go": "b282fafbc6b35cab73bcd0ca5490d17f9f365716",
     "chat/internal/calls/session_test.go": "09cacf09b1d17647908d0711b9390b60259123ce",
     "chat/internal/ports/contracts.go": "d40bcb7540ca604bfe45946d0cc4390f2d2ee07e",
