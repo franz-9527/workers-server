@@ -51,7 +51,7 @@ def validate(e,revision):
             and recovery.get("recall_not_revived") is True and recovery.get("notification_not_resent") is True
             and recovery.get("wallet_not_recharged") is True and recovery.get("gap_blocks_access") is True,"safe_incremental_restore")
     caps=e.get("capabilities",["text","images","governance","reminders"])
-    require(isinstance(caps,list) and len(caps)==len(set(caps)) and set(caps)<=set(("text","images","governance","reminders","audio","video")),"capabilities")
+    require(isinstance(caps,list) and len(caps)==len(set(caps)) and set(caps)<=set(("text","images","governance","reminders","audio","video","calls")),"capabilities")
     if isinstance(caps,list) and ("audio" in caps or "video" in caps):
         required={5,6,8,9,11,12,13,14,15,16,18,19,20}
         if "video" in caps: required.update((1,2,3,4,7,10,17))
@@ -61,6 +61,15 @@ def validate(e,revision):
         require(channels.get("actual_asr_contract") is True and channels.get("audio_callback_crypto") is True,"actual_av_channels")
         require(d.get("microphone_permissions") is True and d.get("local_cache_after_cloud_expiry") is True,"actual_av_devices")
         if "video" in caps: require(channels.get("full_clip_review") is True and channels.get("retained_frames") is True,"actual_video_review")
+    if isinstance(caps,list) and "calls" in caps:
+        call=e.get("calls",{})
+        require(call.get("status")=="passed" and call.get("revision")==revision and bool(call.get("evidence")),"calls_evidence")
+        for key in ("two_real_devices","wechat_real_media","shengwang_real_media","weak_network","background_cleanup",
+                    "microphone_camera_permissions","mutual_exclusion","business_revocation","provider_fallback",
+                    "unknown_media_retained","shared_quota_race","verified_entitlements","free_boundary_hard_stop",
+                    "cycle_rollover","supplier_reconciliation","crash_recovery","no_recording","no_wallet_charge"):
+            require(call.get(key) is True,"calls_"+key)
+        require(call.get("simulated") is False and call.get("default_closed") is True,"calls_real_channels")
     return failures
 def template():
     e={"schema":1,"revision":"","environment":"test","recovery_epoch":"","go_version":"go1.27.3","database_version":"2.7.0",

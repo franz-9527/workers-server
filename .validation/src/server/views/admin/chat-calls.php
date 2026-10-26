@@ -20,11 +20,15 @@ $reason=static function():void{echo '<label class="admin-field">操作理由<inp
 <p>资源窗口会持续续约，属于内部结算周期，不是每通时长限制。</p></details>
 <?php $reason(); ?><button class="admin-btn" type="submit">保存功能设置</button></form><?php else: ?><p><?= $config['enabled']?'功能已开放':'功能关闭' ?></p><?php endif; ?>
 </div></section>
+<section class="admin-card"><div class="admin-card__body"><h2>资源提醒</h2><p>各周期在剩余20%、10%与无法分配时各记录一次站内提醒；不发送付费短信。</p>
+<?php foreach($current['alerts'] as $alert): ?><p><?= e($providers[$alert['provider']]) ?> · <?= e($alert['cycle_key']) ?> · <?= (int)$alert['threshold_percent']===0?'资源已用尽或全部被预占':'剩余不高于'.e((string)$alert['threshold_percent']).'%' ?> · <?= e($alert['created_at']) ?> · <?= $alert['acknowledged_at']?'已确认':'待处理' ?></p>
+<?php if($canManage&&!$alert['acknowledged_at']): ?><form method="post" action="<?= e(admin_url('chat.calls')) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="ack_alert"><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="alert_id" value="<?= e((string)$alert['id']) ?>"><?php $reason(); ?><button type="submit">确认提醒</button></form><?php endif; ?><?php endforeach; ?>
+</div></section>
 <h2>额度与用量</h2><p>用量以人工核验的官方完整报表为准。下列分钟数为各供应商自己的折算单位，两个通道不直接相加。</p>
 <?php if(!$current['pools']): ?><p>尚未配置已核验的免费资源。</p><?php endif; ?>
 <?php foreach($current['pools'] as $pool):
 $facts=json_decode($pool['facts_json'],true,32,JSON_THROW_ON_ERROR);$facts['official_used']=(string)$pool['official_used'];$facts['local_uncovered']=(string)$pool['local_uncovered'];$facts['reserved']=(string)$pool['reserved_units'];$facts['usage_observed_at']=(int)$pool['observation_at'];
-$decision=(new \WorkerAdmin\Domain\Chat\CallResourcePolicy())->availability($facts,time());$profile=json_decode($pool['meter_json'],true,32,JSON_THROW_ON_ERROR);
+$decision=$current['decisions'][(string)$pool['id']]??(new \WorkerAdmin\Domain\Chat\CallResourcePolicy())->availability($facts,time());$profile=json_decode($pool['meter_json'],true,32,JSON_THROW_ON_ERROR);
 ?>
 <section class="admin-card"><div class="admin-card__body"><h3><?= e($providers[$pool['provider']]) ?> · <?= e($pool['cycle_key']) ?></h3>
 <p><?= e($statusNames[$decision['status']]??'暂不可用') ?> · <?= e($pool['scope_key']) ?> · 应用 <?= e(substr($profile['app_id'],0,4).'…'.substr($profile['app_id'],-4)) ?></p>
@@ -66,4 +70,10 @@ $decision=(new \WorkerAdmin\Domain\Chat\CallResourcePolicy())->availability($fac
 <?php foreach($current['active'] as $call): ?><p>通话 <?= e($call['id']) ?> · 会话 <?= e($call['conversation_id']) ?> · <?= e($call['state']) ?> · <?= e(date('Y-m-d H:i:s',(int)$call['created_at'])) ?></p><?php if($canManage&&$call['state']==='stopping'): ?><details><summary>凭供应商证明确认媒体已经停止</summary><p>必须先核验真实供应商退房或免费硬停证据。客户端提示、倒计时和网络断开均不足以确认。</p><form method="post" action="<?= e(admin_url('chat.calls')) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="confirmed_stop"><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="call_id" value="<?= e($call['id']) ?>"><input type="hidden" name="attempt_epoch" value="<?= e((string)$call['attempt_epoch']) ?>"><label>供应商停止证明摘要<input class="admin-control" name="evidence_hash" pattern="[a-f0-9]{64}" required></label><?php $reason(); ?><button type="submit">记录核验并确认结束</button></form></details><?php endif; ?><?php endforeach; ?>
 <p>“正在确认结束”的通话继续占用资源。客户端报告、断网或令牌到期不作为已停止媒体的证明。</p>
 <h2>最近管理记录</h2><?php foreach($current['audit'] as $audit): ?><p><?= e($audit['created_at']) ?> · <?= e($audit['action']) ?> · <?= e($audit['reason']) ?></p><?php endforeach; ?>
+</div></section>
+
+<section class="admin-card"><div class="admin-card__body"><h2>近30天估算用量</h2><p>按供应商分别显示本地累计计量分录；与官方完整报表分别核对。</p>
+<table class="admin-table"><thead><tr><th>日期</th><th>通道</th><th>估算折算分钟</th></tr></thead><tbody><?php foreach($current['trend'] as $row): ?><tr><td><?= e($row['day']) ?></td><td><?= e($providers[$row['provider']]) ?></td><td><?= e($minutes($row['estimated_units'])) ?></td></tr><?php endforeach; ?></tbody></table>
+<h2>最近通话记录</h2><table class="admin-table"><thead><tr><th>通话</th><th>会话</th><th>通道／类型</th><th>状态</th><th>时间</th></tr></thead><tbody>
+<?php foreach($current['recent'] as $row): $model=json_decode($row['model_json'],true,32,JSON_THROW_ON_ERROR); ?><tr><td><?= e($row['id']) ?></td><td><?= e($row['conversation_id']) ?></td><td><?= e($providers[$model['Provider']]??'待确认') ?>／<?= ($model['Media']??'')==='video'?'视频':'语音' ?></td><td><?= e($row['state']) ?></td><td><?= e(date('Y-m-d H:i:s',(int)$row['created_at'])) ?></td></tr><?php endforeach; ?></tbody></table>
 </div></section>

@@ -5744,6 +5744,12 @@ CREATE TABLE IF NOT EXISTS chat_call_admin_audit (
  action VARCHAR(32) CHARACTER SET ascii NOT NULL, reason VARCHAR(200) NOT NULL,
  details_json JSON NOT NULL, created_at DATETIME(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS chat_call_alerts (
+ id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,pool_id BIGINT UNSIGNED NOT NULL,
+ threshold_percent TINYINT UNSIGNED NOT NULL,available_units BIGINT UNSIGNED NOT NULL,
+ created_at DATETIME(6) NOT NULL,acknowledged_at DATETIME(6) NULL,admin_id BIGINT UNSIGNED NULL,
+ UNIQUE KEY uq_call_pool_alert(pool_id,threshold_percent)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Go owns the tables below. PHP resources never change call signaling.
 CREATE TABLE IF NOT EXISTS chat_call_accounts (
  actor_id BIGINT UNSIGNED NOT NULL PRIMARY KEY, active_call_id BIGINT UNSIGNED NULL,

@@ -12,7 +12,11 @@ final class ChatCallAdministration
     public function __construct(private Database $db) {}
     public function current():array
     {
-        return ['settings'=>(new ChatCallResources($this->db))->settings(),
+        $resources=new ChatCallResources($this->db);$availability=$resources->availability();
+        return ['settings'=>$availability['settings'],'decisions'=>array_column($availability['pools'],'decision','pool_id'),
+            'alerts'=>$this->db->fetchAll('SELECT a.*,p.provider,p.cycle_key FROM chat_call_alerts a JOIN chat_call_resource_pools p ON p.id=a.pool_id ORDER BY a.id DESC LIMIT 100'),
+            'trend'=>$this->db->fetchAll('SELECT p.provider,DATE(l.created_at) day,CAST(SUM(l.consumed_units) AS CHAR) estimated_units FROM chat_call_resource_ledger l JOIN chat_call_resource_pools p ON p.id=l.pool_id WHERE l.created_at>=UTC_TIMESTAMP()-INTERVAL 30 DAY GROUP BY p.provider,DATE(l.created_at) ORDER BY day DESC,p.provider'),
+            'recent'=>$this->db->fetchAll('SELECT CAST(id AS CHAR) id,CAST(conversation_id AS CHAR) conversation_id,state,model_json,created_at FROM chat_call_sessions ORDER BY id DESC LIMIT 50'),
             'pools'=>$this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY id DESC LIMIT 100'),
             'audit'=>$this->db->fetchAll('SELECT admin_id,action,reason,created_at FROM chat_call_admin_audit ORDER BY id DESC LIMIT 20'),
             'active'=>$this->db->fetchAll("SELECT CAST(id AS CHAR) id,CAST(conversation_id AS CHAR) conversation_id,state,attempt_epoch,created_at FROM chat_call_sessions WHERE state IN ('ringing','preparing','connecting','active','stopping') ORDER BY id LIMIT 100")];
@@ -26,7 +30,10 @@ final class ChatCallAdministration
             if(!$actor||$actor['role']!==$role||$role!=='super_admin')throw new RuntimeException('当前账号无权修改通话资源');
             $settings=(new ChatCallResources($this->db))->settings(true);
             if(!is_string($input['revision']??null)||$settings['revision']!==$input['revision'])throw new RuntimeException('设置已变化，请刷新重试');
-            if($action==='settings'){
+            if($action==='ack_alert'){
+                ChatCallResources::id($input['alert_id']??null);
+                $this->db->execute('UPDATE chat_call_alerts SET acknowledged_at=UTC_TIMESTAMP(6),admin_id=:admin WHERE id=:id AND acknowledged_at IS NULL',['admin'=>$admin,'id'=>$input['alert_id']]);$details=['alert_id'=>$input['alert_id']];
+            }elseif($action==='settings'){
                 $config=$settings['config'];
                 foreach(['enabled','audio_enabled','video_enabled','allow_fallback'] as $k)$config[$k]=self::flag($input,$k);
                 foreach(['audio','video'] as $media){

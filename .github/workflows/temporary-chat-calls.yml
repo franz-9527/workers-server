@@ -60,7 +60,31 @@ jobs:
           php .validation/src/server/tests/chat_call_resource_contract.php
           echo "CHAT_CALLS_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
           echo "CHAT_CALLS_SCHEMA_FILE=$(realpath .validation/src/calls.sql)" >> "$GITHUB_ENV"
+      - name: Build unreleased SQL manifest
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path('.validation/src')
+          p=root/'server/database/upgrades/manifest.json'
+          m=json.loads(p.read_text())
+          old={"server/database/database.sql":"612a80f914172b595c83931139c68b1dc9412893","server/database/upgrades/2.7.0.sql":"a1daa57594c3c0e57cf608a65599b04f6693b438"}
+          for name,expected in old.items():
+              d=(root/name).read_bytes().split(b'\n-- CHAT_BEGIN calls\n')[0]
+              assert hashlib.sha1(b'blob '+str(len(d)).encode()+b'\0'+d).hexdigest()==expected,name
+          m['install_checksum']=hashlib.sha256((root/'server/database/database.sql').read_bytes()).hexdigest()
+          for row in m['upgrades']:
+              actual=hashlib.sha256((root/'server/database/upgrades'/row['file']).read_bytes()).hexdigest()
+              if row['version']=='2.7.0':
+                  row['checksum']=actual
+              else: assert actual==row['checksum'],row['version']
+          p.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n')
+          print('Historical SQL unchanged; install and unreleased 2.7.0 checksums generated')
+          PY
+      - name: Install and immutable 2.6.0 migration
+        if: success() || failure()
+        run: CHAT_AUTH_TEST_INTEGRATION=1 CHAT_INTEGRATION_MYSQL_ADDR="$CHAT_CALLS_MYSQL_ADDR" CHAT_INTEGRATION_ADMIN_PASSWORD="$CHAT_CALLS_MYSQL_PASSWORD" php .validation/src/server/tests/chat_schema_contract.php
       - name: PHP transactional integration
+        if: success() || failure()
         run: CHAT_CALLS_SCHEMA_FILE="$PWD/.validation/src/calls.sql" php .validation/src/server/tests/chat_calls_mysql_contract.php
       - name: Download pinned official miniapp SDK
         run: |
@@ -72,6 +96,7 @@ jobs:
           node -e 'const p=require("./package/package.json");if(p.version!=="2.6.5")process.exit(1);console.log("SDK",p.name,p.version,p.main)'
           find package -maxdepth 3 -type f
       - name: Build and all Go unit race tests
+        if: success() || failure()
         working-directory: .validation/src/chat
         run: |
           set -euo pipefail
@@ -80,10 +105,12 @@ jobs:
           go vet ./...
           go test -race -count=1 ./...
       - name: Frontend syntax
+        if: success() || failure()
         run: |
           set -euo pipefail
           find .validation/src/miniprogram -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Frontend behavior regressions
+        if: success() || failure()
         run: |
           node --test .validation/src/tools/test_chat_calls.js
           node .validation/src/tools/test_chat_s11.js
@@ -93,7 +120,7 @@ jobs:
           python3 - <<'PY'
           import json,pathlib,hashlib,base64
           root=pathlib.Path('.validation/src')
-          files={p:(root/p).read_text() for p in ["chat/internal/calls/authority.go","chat/internal/calls/service.go","chat/internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go","chat/internal/agoratoken/accesstoken2/accesstoken.go","chat/internal/agoratoken/accesstoken2/util.go","chat/internal/calls/lifecycle.go","chat/internal/calls/worker.go","chat/internal/calls/providers.go","chat/internal/calls/http.go","chat/internal/dependencies/calls.go","chat/internal/dependencies/runtime.go","chat/internal/dependencies/socket.go","chat/internal/bootstrap/app.go","chat/internal/bootstrap/server.go","chat/internal/bootstrap/config.go","chat/internal/dependencies/mysql.go","chat/internal/calls/confirmation.go","chat/internal/calls/mysql_integration_test.go"]}
+          files={p:(root/p).read_text() for p in ["chat/internal/calls/authority.go","chat/internal/calls/service.go","chat/internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go","chat/internal/agoratoken/accesstoken2/accesstoken.go","chat/internal/agoratoken/accesstoken2/util.go","chat/internal/calls/lifecycle.go","chat/internal/calls/worker.go","chat/internal/calls/providers.go","chat/internal/calls/http.go","chat/internal/dependencies/calls.go","chat/internal/dependencies/runtime.go","chat/internal/dependencies/socket.go","chat/internal/bootstrap/app.go","chat/internal/bootstrap/server.go","chat/internal/bootstrap/config.go","chat/internal/dependencies/mysql.go","chat/internal/calls/confirmation.go","chat/internal/calls/mysql_integration_test.go","server/database/upgrades/manifest.json"]}
           encoded=base64.b64encode(json.dumps(files,separators=(',',':')).encode()).decode()
           chunks=[encoded[i:i+5000] for i in range(0,len(encoded),5000)]
           for i,c in enumerate(chunks):print('FORMATTED_B64',i,len(chunks),c)

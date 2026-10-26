@@ -25,12 +25,25 @@ final class ChatCallResources
             $decision=(new CallResourcePolicy())->availability($facts,time());
             $stale=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_call_resource_calls WHERE pool_id=:pool AND state='active' AND authorized_until<:deadline",['pool'=>$row['id'],'deadline'=>time()-$settings['config']['stop_margin_seconds']]);
             if($stale>0){$decision['status']='unavailable';$decision['available_units']='0';}
+            $this->alerts($row,$facts,$decision);
             $candidate=['pool_id'=>(string)$row['id'],'decision'=>$decision,'audio'=>$profile['audio'],'video'=>$profile['video']];
             $provider=$row['provider'];
             if(!isset($selected[$provider])||($selected[$provider]['decision']['status']!=='available'&&$decision['status']==='available'))$selected[$provider]=$candidate;
         }
         $pools=array_values($selected);
         return ['settings'=>$settings,'pools'=>$pools];
+    }
+    private function alerts(array $row,array $facts,array $decision):void
+    {
+        if(!$facts['enabled']||!$facts['verified']||!$facts['hard_stop_verified']||time()<$facts['valid_from']||time()>=$facts['expires_at'])return;
+        $limit=(int)$facts['budget_limit'];$available=(int)$decision['available_units'];
+        if(!in_array($decision['status'],['available','busy','exhausted','safety_insufficient'],true))return;
+        foreach([20,10,0] as $threshold){
+            // Compare integers without multiplying a potentially large budget.
+            $boundary=intdiv($limit,100)*$threshold+intdiv(($limit%100)*$threshold,100);
+            if($available>$boundary)continue;
+            $this->db->execute('INSERT IGNORE INTO chat_call_alerts(pool_id,threshold_percent,available_units,created_at) VALUES(:pool,:threshold,:available,UTC_TIMESTAMP(6))',['pool'=>$row['id'],'threshold'=>$threshold,'available'=>$available]);
+        }
     }
     private function facts(array $row): array
     {

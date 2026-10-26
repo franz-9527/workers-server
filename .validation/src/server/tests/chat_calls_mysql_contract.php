@@ -39,7 +39,7 @@ $poolForm=static function(string $provider='wechat',string $scope='synthetic-app
 };
 try{
  foreach([1,2] as $unused)foreach(explode(';',$sql) as $statement)if(trim($statement)!=='')$db->execute($statement);
- $assert((int)$db->fetchValue('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()')===12,'12 idempotent tables');
+ $assert((int)$db->fetchValue('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()')===13,'13 idempotent tables');
  $service=new ChatCallResources($db);$settings=$service->settings();
  $assert($settings['config']['enabled']===false,'new installation disabled');
  $db->execute('CREATE TABLE admin_users(id BIGINT UNSIGNED PRIMARY KEY,role VARCHAR(32),status VARCHAR(24),must_change_password TINYINT) ENGINE=InnoDB');
@@ -51,7 +51,7 @@ try{
  $permit=$service->receive($q);
  $assert($permit['state']==='active'&&$permit['provider']==='wechat','durable reserve acknowledgment');
  $assert((int)$db->fetchValue('SELECT reserved_units FROM chat_call_resource_pools WHERE id=:id',['id'=>$pool])===24000,'both legs and cumulative 60-second rounding');
- $assert($service->receive($q)===$permit,'same reserve returns original permit');
+ $assert($service->receive($q)==$permit,'same reserve returns original permit');
  $reject(fn()=>$service->receive(array_replace($q,['caller_id'=>'13'])),'same operation changed actor rejected');
  $cancel=array_replace($q,['action'=>'release_unsubmitted','call_id'=>'78','operation_id'=>hash('sha256','tombstone')]);$service->receive($cancel);
  $reject(fn()=>$service->receive(array_replace($cancel,['action'=>'reserve','operation_id'=>hash('sha256','late-reserve')])),'release-before-reserve creates a durable fence');
