@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: chat-audit-followup-${{ github.ref }}
+  group: chat-audit-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   audit:
@@ -112,12 +112,21 @@ jobs:
           go run golang.org/x/vuln/cmd/govulncheck@latest -version
           go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - name: Isolated browser layout environment
+        timeout-minutes: 2
         if: success() || failure()
         run: |
           set -euo pipefail
           npm install --prefix .audit --ignore-scripts --no-audit --no-fund playwright-core@1.56.1 htmlparser2@9.1.0
           echo "CHROME_BIN=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
-          if ! fc-list :lang=zh | head -1 | grep -q .; then sudo apt-get update -qq; sudo apt-get install -y -qq fonts-noto-cjk; fi
+          curl --fail --location --max-time 60 'https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf' -o "$RUNNER_TEMP/chat-audit-noto.otf"
+          python3 - <<'PY'
+          import pathlib,hashlib,os
+          d=pathlib.Path(os.environ['RUNNER_TEMP'],'chat-audit-noto.otf').read_bytes()
+          assert hashlib.sha1(b'blob '+str(len(d)).encode()+b'\0'+d).hexdigest()=='dc15562470b4f842321894787a0d066879ccff8b'
+          PY
+          install -D -m 644 "$RUNNER_TEMP/chat-audit-noto.otf" "$HOME/.local/share/fonts/chat-audit/NotoSansCJKsc-Regular.otf"
+          fc-cache -f "$HOME/.local/share/fonts/chat-audit"
+          fc-list :lang=zh | head -3
       - name: Light, dark, narrow and large-text layouts
         if: success() || failure()
         run: node .audit/render-ui.js
@@ -142,3 +151,15 @@ jobs:
           git rm -r --cached .audit .github/workflows/chat-audit.yml >/dev/null
           python3 tools/check-clean-state.py
           git diff --cached --check
+  cleanup-proof:
+    name: Retire superseded UI setup and verify clean index
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    concurrency:
+      group: chat-audit-followup-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git rm -r --cached .audit .github/workflows/chat-audit.yml >/dev/null
+          python3 tools/check-clean-state.py

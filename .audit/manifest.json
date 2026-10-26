@@ -222,9 +222,9 @@
     "miniprogram/subpackages/chat/conversation/av.js": "4005148552e948953edefc2d30a562f5c0e1f600",
     "miniprogram/subpackages/chat/conversation/calls.js": "ebe6ef41d3d650492777a23f262246bdf4f1a562",
     "miniprogram/subpackages/chat/conversation/group.js": "e60ef17c9dc37e833575d215c44f6a3b1ecf2849",
-    "miniprogram/subpackages/chat/conversation/index.js": "d431feda9a0c8257a1b314644df43086ae017fba",
+    "miniprogram/subpackages/chat/conversation/index.js": "295f3dead96a0c8f3a254daa375b1250cf3b7de6",
     "miniprogram/subpackages/chat/conversation/index.json": "443790c451ddae7086820b1244203e9b4d48cd73",
-    "miniprogram/subpackages/chat/conversation/index.wxml": "3efac2f2e857e0692be0cd1960c03b76c92fd9b6",
+    "miniprogram/subpackages/chat/conversation/index.wxml": "128fafed397bc03f0fd3641b3e2cf741040f8648",
     "miniprogram/subpackages/chat/conversation/index.wxss": "a304ab2073f582b70f3555d84205a39cf901b85a",
     "miniprogram/subpackages/chat/conversation/interaction.js": "cfee70aa47f8a1b2fee17e69e93f8b9d04808003",
     "miniprogram/subpackages/chat/governance/index.js": "676961f1ed8baa90de704bbf614b181ed9badda2",
@@ -322,6 +322,7 @@
     "server/app/Infrastructure/Messaging/ChatInternalAuth.php": "fdad1fff9801bd59366e0a0f445482541f72ab6c",
     "server/app/Infrastructure/Messaging/ChatReminderTemplate.php": "3cc478a7dfb77265bfd775eb9a065cf105474432",
     "server/app/Infrastructure/Messaging/DatabaseNotificationProducer.php": "7db4deb334aa1d787d92a3307d3faf7466b2d61b",
+    "server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php": "d4124d2f678523a787fb0beb98a84f37a23af405",
     "server/app/Infrastructure/Messaging/OrderSubscriptionQueue.php": "0ef934f80222ca26ac7089dd5a0de10dd4e6bdef",
     "server/app/Infrastructure/Messaging/SubscriptionCatalog.php": "903ae5388a824f8bc1fa70d28f98c0e36a4c43f3",
     "server/app/Infrastructure/Messaging/SubscriptionQuotaStore.php": "af76601610f433a6579c29f1c50bef2b9e5a589a",
@@ -446,7 +447,7 @@
     "tools/test_chat_calls_release.py": "0033340f3507d8d637b1b291d6f29d4a46ad353f",
     "tools/test_chat_operations.py": "406aa6ef262a292c74c0056f2e58d9e405b20260",
     "tools/test_chat_s11.js": "4077f7e4fc94f18482b59f4351988c05028ad340",
-    "tools/test_chat_s12_business_entry.js": "55fc7195fa49bb0f392477b141fbd693286506da",
+    "tools/test_chat_s12_business_entry.js": "ab5b0256857859a88670b6911e4277dadfca5683",
     "tools/test_chat_s18_s20.js": "9400fbbf28fc95d0268ffb6a4cc0bda7db49c22f",
     "tools/test_chat_s24.js": "282b15a7cb27a7b86a2f74f0a20b065750bfb283"
   }

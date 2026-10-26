@@ -160,7 +160,7 @@ Page({
   this.pendingImageSelection=null;this.pendingImageReplacement=null;
   this.orderCanSend=false
   this.views={};this.initialized=false;this.historyCursor='';this.historyDetached=false;this.returnPoint=null;this.mode='latest';this.highSeq='0';this.atBottom=true;this.currentTop=0;this.unreadJob=null
-  this.setData({audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],largeImage:null,orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
+  this.setData({voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],largeImage:null,orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
  },
  async refreshRestriction(){
   const life=this.life,epoch=this.manager.epoch

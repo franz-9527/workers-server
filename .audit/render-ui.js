@@ -71,7 +71,7 @@ function fixture(name,tools=false){
  return {p,data}
 }
 async function render(browser,name,theme,width=375,large=false,tools=false){
- const {p,data}=fixture(name,tools),page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
+ const {p,data}=fixture(name,tools);if(tools==='audio-off')Object.assign(data,{showTools:false,voiceMode:true,audioEnabled:false,draft:'可以继续发送文字'});const page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
  await page.route('**/*',r=>/^(file:|data:|about:)/.test(r.request().url())?r.continue():r.abort())
  const source=read(p+'.wxml'),html=children(parseDocument(source,{xmlMode:true,decodeEntities:true}).children,data)
  await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{display:block;border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none;border:0;outline:0}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
@@ -80,6 +80,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  const measure=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:[...document.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().width>0).map(b=>({label:b.getAttribute('aria-label')||b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),composer:document.querySelector('.composer')?.getBoundingClientRect().bottom}))
  await page.evaluate(()=>{for(const img of document.querySelectorAll('.conversation-group-avatar img')){const a=img.getBoundingClientRect(),b=img.parentElement.getBoundingClientRect();if(a.left<b.left-1||a.top<b.top-1||a.right>b.right+1||a.bottom>b.bottom+1)throw Error('group avatar spills outside container')}})
  assert(measure.scroll<=width+1,'horizontal overflow: '+name+' '+theme+' '+width+' '+large+' '+JSON.stringify(measure))
+ if(tools==='audio-off')assert(measure.buttons.some(b=>b.label==='发送文字消息'),'text sending must survive audio capability loss')
  if(name==='conversation')assert(measure.composer<=813,'composer clipped below viewport')
  if(!large&&width===375&&!tools)await page.screenshot({path:path.join(out,name+'-'+theme+'.png')})
  console.log('VISUAL_LAYOUT',name,theme,width,large?'large':'normal',tools?'tools-open':'default',JSON.stringify(measure))
@@ -87,7 +88,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
 }
 ;(async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROME_BIN,args:['--no-sandbox','--disable-dev-shm-usage']})
- for(const theme of ['light','dark'])for(const name of ['inbox','conversation','call','group','storage','audit','governance']){await render(browser,name,theme);await render(browser,name,theme,320,true);if(name==='conversation')await render(browser,name,theme,375,false,true)}
+ for(const theme of ['light','dark'])for(const name of ['inbox','conversation','call','group','storage','audit','governance']){await render(browser,name,theme);await render(browser,name,theme,320,true);if(name==='conversation'){await render(browser,name,theme,375,false,true);await render(browser,name,theme,320,true,'audio-off')}}
  await browser.close()
  for(const name of ['inbox','conversation','call','group','storage','audit','governance'])for(const theme of ['light','dark'])console.log('UI_IMAGE',name,theme,fs.readFileSync(path.join(out,name+'-'+theme+'.png')).toString('base64'))
 })().catch(e=>{console.error(e);process.exitCode=1})

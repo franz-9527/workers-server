@@ -734,3 +734,6 @@ async function nativeChatInteractionAudit(){
  console.log('Native chat composer, readonly/recording fences, time groups and explicit-read preservation: OK')
 }
 nativeChatInteractionAudit().catch(e=>{console.error(e);process.exitCode=1})
+
+// Account changes reset presentation state as well as message data.
+;(async()=>{const f=nativeConversation(),p=f.inst;p.setData({voiceMode:true,showTools:true,showJump:true});f.reset();assert(!p.data.voiceMode&&!p.data.showTools&&!p.data.showJump);console.log('Chat account reset clears composer presentation: OK')})().catch(e=>{console.error(e);process.exitCode=1})
