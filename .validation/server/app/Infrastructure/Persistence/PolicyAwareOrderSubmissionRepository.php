@@ -198,3 +198,82 @@ final class PolicyAwareOrderSubmissionRepository implements OrderSubmissionRepos
         $useVerifiedDiscount = $recognition === 'verified' && $hasPaidCertifiedOrder;
         $rate = $source === 'merchant' && $useVerifiedDiscount
             ? $this->settings->int('commission.merchant_verified_rate_bp', 800)
+            : ($source === 'merchant' && $recognition !== 'verified'
+                ? $this->settings->int('commission.merchant_detected_rate_bp', 1000)
+                : $this->settings->int('commission.default_rate_bp', 1000));
+        $minimum = $source === 'merchant' && ($useVerifiedDiscount || $recognition !== 'verified')
+            ? $this->settings->int('commission.merchant_minimum_cents', 5000)
+            : $this->settings->int('commission.minimum_cents', 5000);
+
+        return [
+            'merchant_profile_id'=>$profile ? (int)$profile['id'] : null,
+            'source_type'=>$source,
+            'recognition_level'=>$recognition,
+            'order_count_7d'=>$orders7d,
+            'same_registered_mobile'=>$sameRegistered,
+            'owner_mobile_hmac'=>$ownerHmac,
+            'risk_level'=>$risk,
+            'risk_score'=>$risk === 'high' ? 80 : ($risk === 'medium' ? 40 : 0),
+            'events'=>$events,
+            'commission_rate_bp'=>max(0, min(10000, $rate)),
+            'commission_min_cents'=>max(1, $minimum),
+            'prior_warning_count'=>(int)($profile['same_phone_warning_count'] ?? 0),
+            'prior_risk_score'=>(int)($profile['risk_score'] ?? 0),
+        ];
+    }
+
+    /** @param array<string,mixed> $policy */
+    private function applyMerchantPolicy(array $actor, int $orderId, array $policy): void
+    {
+        $this->db->transaction(function (Database $db) use ($actor, $orderId, $policy): void {
+            $order = $db->fetch('SELECT id,user_id FROM orders WHERE id=:id FOR UPDATE', ['id'=>$orderId]);
+            if (!$order || (int)$order['user_id'] !== (int)$actor['user_id']) {
+                throw new OrderOperationException('订单不存在或无权操作', 'ORDER_NOT_FOUND', 404);
+            }
+            $db->execute(
+                "UPDATE orders SET owner_mobile_base_hmac=:owner_hmac,order_source_type=:source_type,
+                        merchant_profile_id=:merchant_profile_id,merchant_risk_level=:risk_level,
+                        commission_rate_bp=:rate,commission_min_cents=:minimum,updated_at=UTC_TIMESTAMP()
+                 WHERE id=:id",
+                [
+                    'owner_hmac'=>$policy['owner_mobile_hmac'], 'source_type'=>$policy['source_type'],
+                    'merchant_profile_id'=>$policy['merchant_profile_id'], 'risk_level'=>$policy['risk_level'],
+                    'rate'=>$policy['commission_rate_bp'], 'minimum'=>$policy['commission_min_cents'], 'id'=>$orderId,
+                ]
+            );
+
+            $merchantId = (int)($policy['merchant_profile_id'] ?? 0);
+            if ($merchantId > 0) {
+                $warningCount = (int)$policy['prior_warning_count'] + (!empty($policy['same_registered_mobile']) ? 1 : 0);
+                $riskScore = max((int)$policy['prior_risk_score'], (int)$policy['risk_score']);
+                $db->execute(
+                    "UPDATE merchant_profiles SET recognition_level=:recognition,order_count_7d=:count_7d,
+                            same_phone_warning_count=:warning_count,risk_score=:risk_score,updated_at=UTC_TIMESTAMP()
+                     WHERE id=:id",
+                    [
+                        'recognition'=>$policy['recognition_level'], 'count_7d'=>$policy['order_count_7d'],
+                        'warning_count'=>$warningCount, 'risk_score'=>$riskScore, 'id'=>$merchantId,
+                    ]
+                );
+            }
+
+            // 内层仓储可能按简化规则写过风险事件；本层按最终策略重建本订单事件，避免双口径。
+            $db->execute('DELETE FROM merchant_risk_events WHERE order_id=:order_id', ['order_id'=>$orderId]);
+            if ($merchantId > 0) {
+                foreach ((array)$policy['events'] as $event) {
+                    $db->insert(
+                        "INSERT INTO merchant_risk_events(
+                            merchant_profile_id,user_id,order_id,event_type,risk_level,signal_value,details_json,status,created_at
+                         ) VALUES(:merchant_id,:user_id,:order_id,:event_type,:risk_level,:signal_value,:details,'new',UTC_TIMESTAMP())",
+                        [
+                            'merchant_id'=>$merchantId, 'user_id'=>(int)$actor['user_id'], 'order_id'=>$orderId,
+                            'event_type'=>(string)$event['type'], 'risk_level'=>(string)$event['level'],
+                            'signal_value'=>(int)$event['value'],
+                            'details'=>json_encode($event['details'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        ]
+                    );
+                }
+            }
+        });
+    }
+}

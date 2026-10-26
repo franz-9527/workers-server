@@ -1,7 +1,7 @@
 {
   "repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "commit": "d9051e726c993e2feae1a5306281cf0c7f18759c",
+  "commit": "4b00f9880ae3c67ffff483d783db648cf0b7d1f1",
   "purpose": "Isolated synthetic regression only; no source repository tests or local runtime",
   "files": [
     "miniprogram/components/admin-order-operations/index.js",
