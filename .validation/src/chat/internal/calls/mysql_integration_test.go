@@ -108,6 +108,10 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T){
  if e=service.Tick(ctx);e!=nil{t.Fatal(e)}
  if e=db.QueryRow("SELECT COUNT(*) FROM chat_call_accounts WHERE active_call_id IS NOT NULL").Scan(&occupants);e!=nil||occupants!=0{t.Fatalf("settled occupancy %d %v",occupants,e)}
  if e=db.QueryRow("SELECT reserved_units FROM chat_call_resource_pools WHERE id=1").Scan(&reserved);e!=nil||reserved!=0{t.Fatalf("settled R %d %v",reserved,e)}
+ // A callee can reject directly without first accepting or owning a leg.
+ rejectq:=create;rejectq.Operation=sha256String("direct-reject");view,e=service.Create(ctx,caller,rejectq);if e!=nil{t.Fatal(e)}
+ rejected:=action(callee,"reject",strings.Repeat("b",32));if rejected.State!=Rejected{t.Fatal("callee could not directly reject")}
+ if e=service.Tick(ctx);e!=nil{t.Fatal(e)}
  // Only a known pre-media refusal may cross providers after old fencing ACK.
  fq:=create;fq.Operation=sha256String("fallback-fixture");view,e=service.Create(ctx,caller,fq);if e!=nil{t.Fatal(e)}
  action(callee,"accept",strings.Repeat("b",32))

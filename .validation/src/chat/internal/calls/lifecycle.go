@@ -55,7 +55,7 @@ func(s *Service)Action(ctx context.Context,p ports.Principal,action string,q Req
   if epoch!=r.Epoch{return ErrConflict}
   var instance string
   e=tx.QueryRowContext(ctx,"SELECT instance_id FROM chat_call_legs WHERE call_id=? AND actor_id=? FOR UPDATE",string(q.CallID),string(p.ActorID)).Scan(&instance)
-  if action=="accept"&&e==sql.ErrNoRows&&p.ActorID==r.CalleeID&&r.State==Ringing{
+  if (action=="accept"||action=="reject"||action=="end")&&e==sql.ErrNoRows&&p.ActorID==r.CalleeID&&r.State==Ringing{
    raw,_:=json.Marshal(p)
    _,e=tx.ExecContext(ctx,"INSERT INTO chat_call_legs(call_id,actor_id,instance_id,principal_json,last_seen) VALUES(?,?,?,?,?)",string(q.CallID),string(p.ActorID),q.Instance,raw,time.Now().Unix());instance=q.Instance
   }

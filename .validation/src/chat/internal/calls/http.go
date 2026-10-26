@@ -85,6 +85,7 @@ func Decode(action string, raw []byte) (Request, error) {
 	return q, nil
 }
 func (s *Service) Execute(ctx context.Context, p ports.Principal, action string, q Request) (any, error) {
+ if p.Kind!="mini"||len(p.Scopes)!=1||p.Scopes[0]!="chat:use"{return nil,auth.ErrUnauthorized}
 	switch action {
 	case "create":
 		return s.Create(ctx, p, q)
