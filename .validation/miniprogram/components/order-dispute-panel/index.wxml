@@ -1,0 +1,20 @@
+<view wx:if="{{dispute}}" class="panel">
+  <view class="head">
+    <view class="title"><text class="cuIcon-warn"></text>{{isMeasurement ? '测量成果异议' : '完工异议'}}</view>
+    <text class="status {{dispute.status}}">{{dispute.status === 'negotiating' ? '双方协商中' : (dispute.status === 'open' || dispute.status === 'pending' ? '等待平台处理' : (dispute.status === 'processing' ? '平台处理中' : (dispute.status === 'resolved' ? '已结束' : dispute.status)))}}</text>
+  </view>
+  <view class="description">{{dispute.description}}</view>
+  <view wx:if="{{dispute.evidence && dispute.evidence.length}}" class="images">
+    <image wx:for="{{dispute.evidence}}" wx:key="url" src="{{item.url}}" mode="aspectFill" data-url="{{item.url}}" bindtap="preview"></image>
+  </view>
+  <view wx:if="{{dispute.resolution}}" class="resolution">处理结果：{{dispute.resolution}}</view>
+
+  <view wx:if="{{dispute.status === 'negotiating'}}" class="hint"><text class="cuIcon-infofill"></text><view>自动{{isMeasurement ? '确认' : '验收'}}已暂停。请先与师傅直接沟通；双方解决后恢复后续流程，师傅拒绝或满48小时仍未解决后可申请平台介入。</view></view>
+  <view wx:elif="{{dispute.status === 'open' || dispute.status === 'pending' || dispute.status === 'processing'}}" class="hint"><text class="cuIcon-infofill"></text><view>平台已介入，自动{{isMeasurement ? '确认' : '验收'}}继续暂停。后续处理结果会更新在本订单。</view></view>
+  <view wx:else class="hint resolved"><text class="cuIcon-roundcheckfill"></text><view>本次异议已结束，订单会按当前状态恢复后续流程。</view></view>
+
+  <view wx:if="{{actions.can_resolve_dispute || actions.can_escalate_dispute}}" class="actions">
+    <button wx:if="{{actions.can_resolve_dispute}}" class="resolve" loading="{{submitting}}" disabled="{{submitting}}" bindtap="resolveByAgreement">已协商解决</button>
+    <button wx:if="{{actions.can_escalate_dispute}}" class="escalate" loading="{{submitting}}" disabled="{{submitting}}" bindtap="escalate">申请平台介入</button>
+  </view>
+</view>
