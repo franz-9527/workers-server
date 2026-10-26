@@ -24,7 +24,7 @@ const maxConfigBytes = 64 << 10
 
 // Config contains implemented lifecycle and dependency settings only.
 type Config struct {
- Calls dependencies.CallsConfig `json:"calls"`
+	Calls       dependencies.CallsConfig      `json:"calls"`
 	AV          avpipeline.Config             `json:"av"`
 	Release     ReleaseConfig                 `json:"release"`
 	Reminders   dependencies.RemindersConfig  `json:"reminders"`
@@ -190,9 +190,13 @@ func (c Config) validate() *Fault {
 	if c.Retention.Validate() != nil || c.Retention.Enabled && (!c.Dependencies.MySQL.Enabled || c.ProviderMode != "disabled") {
 		return configFault("CHAT_RETENTION_INVALID", "留存配置或数据库边界不符合要求")
 	}
-	if c.Calls.Validate()!=nil || c.Calls.Enabled && (!c.Messages.Enabled || !c.Dependencies.Redis.Enabled) {return configFault("CHAT_CALLS_INVALID","通话配置或组合依赖不完整")}
- if c.Calls.Enabled && !(c.Environment=="test" && c.Release.Staging) && !c.Release.Verify(c.Environment,c.Operations.Epoch,sourceRevision,sourceDirty,"calls") {return configFault("CHAT_CALLS_NOT_READY","通话联合验收未完成")}
- if c.AV.Validate() != nil || c.AV.Enabled && (!c.Messages.Enabled || !c.Retention.Enabled) {
+	if c.Calls.Validate() != nil || c.Calls.Enabled && (!c.Messages.Enabled || !c.Dependencies.Redis.Enabled) {
+		return configFault("CHAT_CALLS_INVALID", "通话配置或组合依赖不完整")
+	}
+	if c.Calls.Enabled && !(c.Environment == "test" && c.Release.Staging) && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "calls") {
+		return configFault("CHAT_CALLS_NOT_READY", "通话联合验收未完成")
+	}
+	if c.AV.Validate() != nil || c.AV.Enabled && (!c.Messages.Enabled || !c.Retention.Enabled) {
 		return configFault("CHAT_AV_NOT_READY", "音视频配置或组合依赖不完整")
 	}
 	if c.AV.Enabled && !(c.Environment == "test" && c.Release.Staging) && (c.AV.Audio && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "audio") || c.AV.Video && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "video")) {

@@ -5,6 +5,7 @@ import(
  "encoding/json"
  "strconv"
  "time"
+ "sync"
  "github.com/franz-9527/workers/chat/internal/ports"
 )
 func(s *Service)Available(ctx context.Context,p ports.Principal,q Request)(any,error){
@@ -20,16 +21,20 @@ func(s *Service)Available(ctx context.Context,p ports.Principal,q Request)(any,e
 // Tick is crash-recoverable. Terminal rows keep account occupancy until PHP
 // settlement ACK. Media uncertainty retains both occupancy and resource R.
 func(s *Service)Tick(ctx context.Context)error{
- rows,e:=s.db.QueryContext(ctx,"SELECT CAST(s.id AS CHAR) FROM chat_call_sessions s WHERE s.state IN ('ringing','preparing','connecting','active','stopping') OR EXISTS(SELECT 1 FROM chat_call_accounts a WHERE a.active_call_id=s.id) ORDER BY s.updated_at,s.id LIMIT 100")
+ rows,e:=s.db.QueryContext(ctx,"SELECT CAST(s.id AS CHAR) FROM chat_call_sessions s WHERE s.state IN ('ringing','preparing','connecting','active','stopping') OR EXISTS(SELECT 1 FROM chat_call_accounts a WHERE a.active_call_id=s.id) ORDER BY CASE WHEN s.state IN (\'active\',\'connecting\') THEN 0 WHEN s.state IN (\'ringing\',\'preparing\') THEN 1 ELSE 2 END,s.updated_at,s.id LIMIT 100")
  if e!=nil{return e};ids:=[]ports.ID{};for rows.Next(){var id ports.ID;if e=rows.Scan(&id);e!=nil{rows.Close();return e};ids=append(ids,id)};e=rows.Err();rows.Close();if e!=nil{return e}
  availability,availabilityErr:=s.broker.Availability(ctx);emergency:=availabilityErr==nil&&!availability.Settings.Config.Enabled
- for _,id:=range ids{if ctx.Err()!=nil{return ctx.Err()};_ = s.maintain(ctx,id,emergency)}
- return nil
+ var group sync.WaitGroup;queue:=make(chan ports.ID)
+ for i:=0;i<8;i++{group.Add(1);go func(){defer group.Done();for id:=range queue{if ctx.Err()==nil{_ = s.maintain(ctx,id,emergency)}}}()}
+ for _,id:=range ids{if ctx.Err()!=nil{break};queue<-id};close(queue);group.Wait()
+ return ctx.Err()
 }
 func(s *Service)maintain(ctx context.Context,id ports.ID,emergency bool)error{
  var r record
  e:=s.tx(ctx,func(tx *sql.Tx)error{var e error;r,e=s.load(ctx,tx,id,false);return e});if e!=nil{return e}
  now:=time.Now().Unix();name:=""
+ // Failed stop probes rotate behind other pending calls instead of starving leases.
+ _,_=s.db.ExecContext(ctx,"UPDATE chat_call_sessions SET updated_at=? WHERE id=?",now,string(id))
  if r.State==Ringing&&now>=r.RingExpiresAt{name="ring_timeout"}
  if r.State==Preparing&&now-r.LastEventAt>=30{name="media_failure"}
  if r.State==Connecting&&now-r.LastEventAt>=30{name="media_failure"}

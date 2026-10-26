@@ -112,8 +112,15 @@ func healthHandler(internal bool, runtimes ...*dependencies.Runtime) http.Handle
 			return
 		}
 		if deps != nil {
-			if internal && deps.CallsInternal!=nil && r.URL.Path=="/chat/internal/v1/calls/stop-confirmed" {if !deps.OperationsReady(){writeError(w,r,503,"CHAT_RECOVERY_BLOCKED","安全恢复尚未核验",true);return};deps.CallsInternal.ServeHTTP(w,r);return}
-   if internal && deps.ReminderHTTP != nil && r.URL.Path == "/chat/internal/v1/reminders/eligible" {
+			if internal && deps.CallsInternal != nil && r.URL.Path == "/chat/internal/v1/calls/stop-confirmed" {
+				if !deps.OperationsReady() {
+					writeError(w, r, 503, "CHAT_RECOVERY_BLOCKED", "安全恢复尚未核验", true)
+					return
+				}
+				deps.CallsInternal.ServeHTTP(w, r)
+				return
+			}
+			if internal && deps.ReminderHTTP != nil && r.URL.Path == "/chat/internal/v1/reminders/eligible" {
 				if !deps.OperationsReady() {
 					writeError(w, r, 503, "CHAT_RECOVERY_BLOCKED", "安全恢复尚未核验", true)
 					return
@@ -121,8 +128,11 @@ func healthHandler(internal bool, runtimes ...*dependencies.Runtime) http.Handle
 				deps.ReminderHTTP.ServeHTTP(w, r)
 				return
 			}
-			if !internal && deps.CallsHTTP != nil && strings.HasPrefix(r.URL.Path,"/chat/api/v1/calls/") {deps.CallsHTTP.ServeHTTP(w,r);return}
-   if !internal && deps.MessageHTTP != nil && (r.URL.Path == "/chat/api/v1/messages/send" || r.URL.Path == "/chat/api/v1/messages/result" || r.URL.Path == "/chat/api/v1/messages/recall") {
+			if !internal && deps.CallsHTTP != nil && strings.HasPrefix(r.URL.Path, "/chat/api/v1/calls/") {
+				deps.CallsHTTP.ServeHTTP(w, r)
+				return
+			}
+			if !internal && deps.MessageHTTP != nil && (r.URL.Path == "/chat/api/v1/messages/send" || r.URL.Path == "/chat/api/v1/messages/result" || r.URL.Path == "/chat/api/v1/messages/recall") {
 				deps.MessageHTTP.ServeHTTP(w, r)
 				return
 			}

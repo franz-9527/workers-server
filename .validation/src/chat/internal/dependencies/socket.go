@@ -15,9 +15,9 @@ func (r *Runtime) EnableSocket(c socket.Config) error {
 	}
 	var e error
 	if r.Conversations != nil {
-		r.Socket, e = socket.NewWithPolicy(r.Identity, guardedCommands{r, callCommands{r,message.SocketCommands{Sender: r.Messages, History: r.History}}}, guardedPolicy{r, r.Conversations})
+		r.Socket, e = socket.NewWithPolicy(r.Identity, guardedCommands{r, callCommands{r, message.SocketCommands{Sender: r.Messages, History: r.History}}}, guardedPolicy{r, r.Conversations})
 	} else {
-		r.Socket, e = socket.New(r.Identity, guardedCommands{r, callCommands{r,message.SocketCommands{History: r.History}}})
+		r.Socket, e = socket.New(r.Identity, guardedCommands{r, callCommands{r, message.SocketCommands{History: r.History}}})
 	}
 	return e
 }

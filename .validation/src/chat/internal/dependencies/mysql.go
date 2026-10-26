@@ -100,7 +100,7 @@ func checkMySQL(ctx context.Context, db *sql.DB, database, environment string) e
 
 // Exact table ownership, never a chat_* wildcard: PHP owns several chat_* tables.
 var goOwned = map[string]bool{
- "chat_call_accounts":true,"chat_call_sessions":true,"chat_call_legs":true,"chat_call_operations":true,"chat_call_events":true,
+	"chat_call_accounts": true, "chat_call_sessions": true, "chat_call_legs": true, "chat_call_operations": true, "chat_call_events": true,
 	"chat_av_uploads": true, "chat_av_parts": true, "chat_av_jobs": true, "chat_av_objects": true, "chat_av_items": true, "chat_av_listens": true, "chat_av_raw_receipts": true, "chat_av_asr_requests": true, "chat_av_budgets": true,
 
 	"chat_storage_applications": true, "chat_storage_application_errors": true,

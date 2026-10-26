@@ -4,6 +4,7 @@ import(
  "context"
  "encoding/base64"
  "encoding/json"
+ "errors"
  "net/http"
  "io"
  "net/url"
@@ -14,6 +15,7 @@ import(
  "github.com/franz-9527/workers/chat/internal/auth"
  "github.com/franz-9527/workers/chat/internal/calls"
  "github.com/franz-9527/workers/chat/internal/message"
+ "github.com/franz-9527/workers/chat/internal/policy"
  "github.com/franz-9527/workers/chat/internal/ports"
  "github.com/franz-9527/workers/chat/internal/socket"
 )
@@ -63,7 +65,7 @@ func(r *Runtime)EnableCalls(c CallsConfig)error{
   raw,e:=io.ReadAll(io.LimitReader(req.Body,1025));if e!=nil||len(raw)>1024||signer.Verify(req.Context(),req,raw,time.Now())!=nil{http.Error(w,"unavailable",403);return}
   var q struct{Call ports.ID `json:"call_id"`;Epoch ports.ID `json:"attempt_epoch"`;Evidence string `json:"evidence_hash"`}
   decoder:=json.NewDecoder(bytes.NewReader(raw));decoder.DisallowUnknownFields()
-  if decoder.Decode(&q)!=nil||service.ConfirmStopped(req.Context(),q.Call,q.Epoch,q.Evidence)!=nil{http.Error(w,"conflict",409);return}
+  if decoder.Decode(&q)!=nil||decoder.Decode(new(any))!=io.EOF||service.ConfirmStopped(req.Context(),q.Call,q.Epoch,q.Evidence)!=nil{http.Error(w,"conflict",409);return}
   _=json.NewEncoder(w).Encode(map[string]bool{"ok":true})
  })
  return nil
@@ -81,6 +83,7 @@ func(c callCommands)Execute(ctx context.Context,p ports.Principal,kind string,ra
  if c.runtime.Calls==nil{return "",nil,callCommandError{"CALL_DISABLED"}}
  action:=strings.TrimPrefix(kind,"calls.");q,e:=calls.Decode(action,raw);if e!=nil{return "",nil,callCommandError{"CALL_REQUEST_INVALID"}}
  result,e:=c.runtime.Calls.Execute(ctx,p,action,q);if e!=nil{
+  if errors.Is(e,policy.ErrDenied)||errors.Is(e,auth.ErrUnauthorized){return "",nil,callCommandError{"CHAT_PERMISSION_DENIED"}}
   code:=e.Error();if !regexp.MustCompile("^CALL_[A-Za-z_]{1,55}$").MatchString(code){code="CALL_UNAVAILABLE"}
   return "",nil,callCommandError{code}
  }

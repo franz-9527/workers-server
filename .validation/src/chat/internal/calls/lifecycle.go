@@ -149,7 +149,7 @@ func validPermit(r record,p Permit)bool{return p.CallID==r.CallID&&string(p.Epoc
 func sha256String(value string)string{sum:=sha256.Sum256([]byte(value));return hex.EncodeToString(sum[:])}
 
 func knownReserveFailure(e error)bool{
- switch e.Error(){case "CALL_RESOURCE_exhausted","CALL_RESOURCE_busy","CALL_RESOURCE_unavailable","CALL_RESOURCE_safety_insufficient","CALL_RESOURCE_CYCLE_END","CALL_RESOURCE_UNAVAILABLE":return true};return false
+ switch e.Error(){case "CALL_RESOURCE_exhausted","CALL_RESOURCE_busy","CALL_RESOURCE_unavailable","CALL_RESOURCE_safety_insufficient","CALL_RESOURCE_CYCLE_END","CALL_RESOURCE_UNAVAILABLE","CALL_RESOURCE_disabled","CALL_RESOURCE_waiting_verification":return true};return false
 }
 func(s *Service)beginFallback(ctx context.Context,r record)error{
  next,settings,e:=s.selectPool(ctx,r.Media,r.Provider);if e!=nil{return e};if !settings.Config.AllowFallback||next.Decision.Provider==r.Provider{return ErrUnavailable}

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/franz-9527/workers/chat/internal/auth"
- "github.com/franz-9527/workers/chat/internal/calls"
+	"github.com/franz-9527/workers/chat/internal/calls"
 	"github.com/franz-9527/workers/chat/internal/conversation"
 	"github.com/franz-9527/workers/chat/internal/message"
 	"github.com/franz-9527/workers/chat/internal/moderation"
@@ -18,10 +18,10 @@ import (
 )
 
 type Runtime struct {
- Calls *calls.Service
- CallsHTTP http.Handler
- CallsInternal http.Handler
- callTransport *HTTP
+	Calls                                                *calls.Service
+	CallsHTTP                                            http.Handler
+	CallsInternal                                        http.Handler
+	callTransport                                        *HTTP
 	Messages                                             *message.Service
 	Media                                                *message.MediaService
 	AV                                                   *message.AVService
@@ -189,7 +189,9 @@ func (r *Runtime) Stop() {
 	r.snapshot.InfrastructureReady = false
 }
 func (r *Runtime) Close() {
- if r.callTransport!=nil {r.callTransport.Close()}
+	if r.callTransport != nil {
+		r.callTransport.Close()
+	}
 	r.Stop()
 	if r.Socket != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

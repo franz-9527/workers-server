@@ -100,7 +100,7 @@ jobs:
         working-directory: .validation/src/chat
         run: |
           set -euo pipefail
-          gofmt -w internal/calls/authority.go internal/calls/service.go internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go internal/agoratoken/accesstoken2/accesstoken.go internal/agoratoken/accesstoken2/util.go internal/calls/lifecycle.go internal/calls/worker.go internal/calls/providers.go internal/calls/http.go internal/dependencies/calls.go internal/dependencies/runtime.go internal/dependencies/socket.go internal/bootstrap/app.go internal/bootstrap/server.go internal/bootstrap/config.go internal/dependencies/mysql.go internal/calls/confirmation.go internal/calls/mysql_integration_test.go
+          gofmt -w internal/calls/authority.go internal/calls/service.go internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go internal/agoratoken/accesstoken2/accesstoken.go internal/agoratoken/accesstoken2/util.go internal/calls/lifecycle.go internal/calls/worker.go internal/calls/providers.go internal/calls/http.go internal/dependencies/calls.go internal/dependencies/runtime.go internal/dependencies/socket.go internal/bootstrap/app.go internal/bootstrap/server.go internal/bootstrap/config.go internal/dependencies/mysql.go internal/calls/confirmation.go internal/calls/mysql_integration_test.go internal/calls/http_test.go
           go build ./...
           go vet ./...
           go test -race -count=1 ./...
@@ -120,7 +120,7 @@ jobs:
           python3 - <<'PY'
           import json,pathlib,hashlib,base64
           root=pathlib.Path('.validation/src')
-          files={p:(root/p).read_text() for p in ["chat/internal/calls/authority.go","chat/internal/calls/service.go","chat/internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go","chat/internal/agoratoken/accesstoken2/accesstoken.go","chat/internal/agoratoken/accesstoken2/util.go","chat/internal/calls/lifecycle.go","chat/internal/calls/worker.go","chat/internal/calls/providers.go","chat/internal/calls/http.go","chat/internal/dependencies/calls.go","chat/internal/dependencies/runtime.go","chat/internal/dependencies/socket.go","chat/internal/bootstrap/app.go","chat/internal/bootstrap/server.go","chat/internal/bootstrap/config.go","chat/internal/dependencies/mysql.go","chat/internal/calls/confirmation.go","chat/internal/calls/mysql_integration_test.go","server/database/upgrades/manifest.json"]}
+          files={p:(root/p).read_text() for p in ["chat/internal/calls/authority.go","chat/internal/calls/service.go","chat/internal/agoratoken/rtctokenbuilder2/rtctokenbuilder.go","chat/internal/agoratoken/accesstoken2/accesstoken.go","chat/internal/agoratoken/accesstoken2/util.go","chat/internal/calls/lifecycle.go","chat/internal/calls/worker.go","chat/internal/calls/providers.go","chat/internal/calls/http.go","chat/internal/dependencies/calls.go","chat/internal/dependencies/runtime.go","chat/internal/dependencies/socket.go","chat/internal/bootstrap/app.go","chat/internal/bootstrap/server.go","chat/internal/bootstrap/config.go","chat/internal/dependencies/mysql.go","chat/internal/calls/confirmation.go","chat/internal/calls/mysql_integration_test.go","chat/internal/calls/http_test.go","server/database/upgrades/manifest.json"]}
           encoded=base64.b64encode(json.dumps(files,separators=(',',':')).encode()).decode()
           chunks=[encoded[i:i+5000] for i in range(0,len(encoded),5000)]
           for i,c in enumerate(chunks):print('FORMATTED_B64',i,len(chunks),c)

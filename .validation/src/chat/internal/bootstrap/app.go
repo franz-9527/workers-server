@@ -110,8 +110,10 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if err := deps.EnableAV(cfg.AV); err != nil {
 		return fail(logger, &Fault{"CHAT_AV_INVALID", "音视频组合依赖不可用", 2})
 	}
-	if err := deps.EnableCalls(cfg.Calls); err != nil { return fail(logger, &Fault{"CHAT_CALLS_INVALID", "通话组合依赖不可用", 2}) }
- if err := deps.EnableSocket(cfg.Socket); err != nil {
+	if err := deps.EnableCalls(cfg.Calls); err != nil {
+		return fail(logger, &Fault{"CHAT_CALLS_INVALID", "通话组合依赖不可用", 2})
+	}
+	if err := deps.EnableSocket(cfg.Socket); err != nil {
 		return fail(logger, &Fault{"CHAT_CONFIG_SOCKET_INVALID", "WSS连接配置不可用", 2})
 	}
 	snapshot := deps.Refresh(ctx)
@@ -129,7 +131,11 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	go func() { defer close(monitorDone); deps.Monitor(monitorCtx) }()
 	defer func() { stopMonitor(); <-monitorDone }()
 	if command == "worker" {
-  if deps.Calls != nil { done:=make(chan struct{});go func(){defer close(done);deps.RunCalls(ctx)}();defer func(){<-done}() }
+		if deps.Calls != nil {
+			done := make(chan struct{})
+			go func() { defer close(done); deps.RunCalls(ctx) }()
+			defer func() { <-done }()
+		}
 		if deps.Messages != nil {
 			done := make(chan struct{})
 			go func() { defer close(done); deps.RunAV(ctx) }()

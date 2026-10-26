@@ -71,6 +71,9 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T){
  profile:=map[string]any{"app_id":strings.Repeat("a",32),"evidence_hash":strings.Repeat("f",64),"audio":Meter{1,1,60},"video":Meter{15,1,60}}
  fjson,_:=json.Marshal(facts);pjson,_:=json.Marshal(profile)
  run("INSERT INTO chat_call_resource_pools(provider,scope_key,cycle_key,revision,facts_json,meter_json,observation_at,updated_at) VALUES('wechat','synthetic-app','synthetic-cycle',1,?,?,?,UTC_TIMESTAMP(6))",fjson,pjson,now)
+ facts["provider"]="shengwang";facts["quota_scope_id"]="synthetic-sw";facts["cycle_id"]="synthetic-sw-cycle";facts["unit"]="shengwang_standard";profile["app_id"]=strings.Repeat("b",32);profile["audio"]=Meter{143,100,1};profile["video"]=Meter{429,100,1}
+ swfacts,_:=json.Marshal(facts);swprofile,_:=json.Marshal(profile)
+ run("INSERT INTO chat_call_resource_pools(provider,scope_key,cycle_key,revision,facts_json,meter_json,observation_at,updated_at) VALUES('shengwang','synthetic-sw','synthetic-sw-cycle',1,?,?,?,UTC_TIMESTAMP(6))",swfacts,swprofile,now)
  run("UPDATE chat_call_settings SET config_json=JSON_SET(config_json,'$.enabled',CAST('true' AS JSON)) WHERE id=1")
  broker:=&phpBrokerFixture{t:t,database:name};media:=&fixtureMedia{}
  service,e:=NewService(db,fixtureAuthority{},broker,media);if e!=nil{t.Fatal(e)}
@@ -88,6 +91,7 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T){
  broker.drop="reserve"
  prepare:=Request{CallID:view.CallID,Epoch:"1",Instance:create.Instance}
  if _,e=service.Prepare(ctx,caller,prepare);e==nil{t.Fatal("lost PHP acknowledgment must be unknown")}
+ unknown,_:=service.Status(ctx,caller,Request{CallID:view.CallID});if unknown.Epoch!="1"||unknown.Provider!=Wechat{t.Fatal("unknown reserve triggered unsafe fallback")}
  var reserved int64;if e=db.QueryRow("SELECT reserved_units FROM chat_call_resource_pools WHERE id=1").Scan(&reserved);e!=nil||reserved!=24000{t.Fatalf("lost reserve retained %d %v",reserved,e)}
  if _,e=service.Prepare(ctx,caller,prepare);e!=nil{t.Fatal("retry same durable resource operation",e)}
  if _,e=service.Prepare(ctx,callee,Request{CallID:view.CallID,Epoch:"1",Instance:strings.Repeat("b",32)});e!=nil{t.Fatal(e)}
@@ -104,6 +108,17 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T){
  if e=service.Tick(ctx);e!=nil{t.Fatal(e)}
  if e=db.QueryRow("SELECT COUNT(*) FROM chat_call_accounts WHERE active_call_id IS NOT NULL").Scan(&occupants);e!=nil||occupants!=0{t.Fatalf("settled occupancy %d %v",occupants,e)}
  if e=db.QueryRow("SELECT reserved_units FROM chat_call_resource_pools WHERE id=1").Scan(&reserved);e!=nil||reserved!=0{t.Fatalf("settled R %d %v",reserved,e)}
+ // Only a known pre-media refusal may cross providers after old fencing ACK.
+ fq:=create;fq.Operation=sha256String("fallback-fixture");view,e=service.Create(ctx,caller,fq);if e!=nil{t.Fatal(e)}
+ action(callee,"accept",strings.Repeat("b",32))
+ run("UPDATE chat_call_resource_pools SET facts_json=JSON_SET(facts_json,'$.enabled',CAST('false' AS JSON)) WHERE id=1")
+ if _,e=service.Prepare(ctx,caller,Request{CallID:view.CallID,Epoch:"1",Instance:create.Instance});!errors.Is(e,ErrConflict){t.Fatalf("pre-media fallback %v",e)}
+ switched,e:=service.Status(ctx,caller,Request{CallID:view.CallID});if e!=nil||switched.Provider!=Shengwang||switched.Epoch!="2"||switched.State!=Preparing{t.Fatalf("fallback epoch %+v %v",switched,e)}
+ if _,e=service.Prepare(ctx,caller,Request{CallID:view.CallID,Epoch:"1",Instance:create.Instance});e==nil{t.Fatal("old provider epoch was accepted")}
+ var oldState string
+ if e=db.QueryRow("SELECT state FROM chat_call_resource_calls WHERE call_id=? AND attempt_epoch=1",string(view.CallID)).Scan(&oldState);e!=nil||oldState!="closed"{t.Fatal("old attempt was not durably fenced")}
+ action(caller,"end",create.Instance);if e=service.Tick(ctx);e!=nil{t.Fatal(e)}
+ run("UPDATE chat_call_resource_pools SET facts_json=JSON_SET(facts_json,'$.enabled',CAST('true' AS JSON)) WHERE id=1")
  // Eight simultaneous independent operations: exactly one may acquire both actors.
  var wg sync.WaitGroup;success:=make(chan View,8);failures:=make(chan error,8)
  for i:=0;i<8;i++{wg.Add(1);go func(i int){defer wg.Done();q:=create;q.Operation=sha256String(fmt.Sprintf("parallel-%d",i));v,e:=service.Create(ctx,caller,q);if e==nil{success<-v}else{failures<-e}}(i)}
