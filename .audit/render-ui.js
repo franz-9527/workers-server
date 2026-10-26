@@ -45,7 +45,7 @@ function node(n,data){
 }
 function css(file,width,seen=new Set()){
  if(seen.has(file))return '';seen.add(file)
- return read(file).replace(/@import\s+["']([^"']+)["'];?/g,(_,p)=>css(path.posix.normalize(path.posix.join(path.posix.dirname(file),p)),width,seen)).replace(/([\d.]+)rpx/g,(_,n)=>(Number(n)*width/750)+'px').replace(/(^|})\s*page\s*\{/g,'$1 body{')
+ return read(file).replace(/@import\s+["']([^"']+)["'];?/g,(_,p)=>css(path.posix.normalize(path.posix.join(path.posix.dirname(file),p)),width,seen)).replace(/([\d.]+)rpx/g,(_,n)=>(Number(n)*width/750)+'px').replace(/(^|[{}])([^{}@]+)\{/g,(_,prefix,selectors)=>prefix+selectors.replace(/(?<![-.#\w])(text|image|scroll-view|view|page)(?![-\w])/g,tag=>({text:'span',image:'img','scroll-view':'div',view:'div',page:'body'}[tag]))+'{')
 }
 const stamp='2026-10-27T06:30:00Z'
 function fixture(name,tools=false){
@@ -74,10 +74,11 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  const {p,data}=fixture(name,tools),page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
  await page.route('**/*',r=>/^(file:|data:|about:)/.test(r.request().url())?r.continue():r.abort())
  const source=read(p+'.wxml'),html=children(parseDocument(source,{xmlMode:true,decodeEntities:true}).children,data)
- await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none;border:0;outline:0}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
+ await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{display:block;border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none;border:0;outline:0}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
  if(large)await page.evaluate(()=>{const nodes=[...document.querySelectorAll('*')];const sizes=nodes.map(n=>parseFloat(getComputedStyle(n).fontSize));nodes.forEach((n,i)=>n.style.fontSize=(sizes[i]*1.35)+'px')})
  await page.evaluate(()=>document.fonts.ready)
  const measure=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,buttons:[...document.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().width>0).map(b=>({label:b.getAttribute('aria-label')||b.textContent.trim(),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),composer:document.querySelector('.composer')?.getBoundingClientRect().bottom}))
+ await page.evaluate(()=>{for(const img of document.querySelectorAll('.conversation-group-avatar img')){const a=img.getBoundingClientRect(),b=img.parentElement.getBoundingClientRect();if(a.left<b.left-1||a.top<b.top-1||a.right>b.right+1||a.bottom>b.bottom+1)throw Error('group avatar spills outside container')}})
  assert(measure.scroll<=width+1,'horizontal overflow: '+name+' '+theme+' '+width+' '+large+' '+JSON.stringify(measure))
  if(name==='conversation')assert(measure.composer<=813,'composer clipped below viewport')
  if(!large&&width===375&&!tools)await page.screenshot({path:path.join(out,name+'-'+theme+'.png')})

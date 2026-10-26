@@ -238,7 +238,7 @@
     "miniprogram/subpackages/chat/storage/index.js": "988678b4676dba1ea48deda6cc606494c3087758",
     "miniprogram/subpackages/chat/storage/index.json": "40261b180d14d82016dd8008fd671e3bdb45fdfb",
     "miniprogram/subpackages/chat/storage/index.wxml": "8c63290037cb2afc9b40e94b098399c2c9169e19",
-    "miniprogram/subpackages/chat/storage/index.wxss": "7f5eb722a2315246d68f3f0d1bf676c605cdef08",
+    "miniprogram/subpackages/chat/storage/index.wxss": "5d8995b4ad146672c5a2c178cc3f58203fc1802d",
     "miniprogram/utils/ApiEnvironment.js": "e5d319590d1aaf1c68976eac668306d98fb64497",
     "miniprogram/utils/ChatAV.js": "f2ccaf384f3ca03ce57dc86a05009a97ba17ffda",
     "miniprogram/utils/ChatAVFiles.js": "8c14033c044799df7b7d9b9b06ec5fb8a646f626",
@@ -370,6 +370,7 @@
     "server/app/Services/WeChatContentSecurityService.php": "c794a1ec3bb01208a96c17f603eebc25da0e0bb5",
     "server/app/Services/WorkerCloudGatewayService.php": "5acecdb047cf2c276b42e0e513ecfada098171b2",
     "server/app/Support/SqlScriptRunner.php": "33ac3df54c9a41c61c26772b7b54b8028ec8d791",
+    "server/app/Support/functions.php": "45951a8e24c11b1416563ba64142c98270dc1e20",
     "server/assets/chat-governance.js": "297dbee64c58c7c8e01e3fe8e407fe1ff2b4a900",
     "server/assets/chat-image-review.js": "e1ab057c622c1e78e92eecc3af7cd99633399a67",
     "server/chat-calls.php": "1dc563a8eaa7ed10fae405187b4cafe9c1f26e63",
@@ -446,7 +447,7 @@
     "tools/test_chat_operations.py": "406aa6ef262a292c74c0056f2e58d9e405b20260",
     "tools/test_chat_s11.js": "4077f7e4fc94f18482b59f4351988c05028ad340",
     "tools/test_chat_s12_business_entry.js": "55fc7195fa49bb0f392477b141fbd693286506da",
-    "tools/test_chat_s18_s20.js": "500876a193aabf528c43dd772249f4b5dc94fcde",
+    "tools/test_chat_s18_s20.js": "9400fbbf28fc95d0268ffb6a4cc0bda7db49c22f",
     "tools/test_chat_s24.js": "282b15a7cb27a7b86a2f74f0a20b065750bfb283"
   }
 }
