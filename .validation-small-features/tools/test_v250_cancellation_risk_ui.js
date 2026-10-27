@@ -50,8 +50,12 @@ async function main() {
   assert(submitMarkup.includes('submissionPolicy.restricted && currentStep === 0'), '真实风控限制只应在第一步显著展示')
   assert(!submitMarkup.includes('师傅报价或联系后多次、频繁取消订单，将暂停新下单7天'), '普通用户不应在下单页顶部持续看到处罚提示')
   const confirmStart = submitMarkup.indexOf('<view wx:else class="form-card bg-white confirm">')
-  const weakRiskHint = submitMarkup.indexOf('异常取消可能触发暂时下单限制')
+  const weakRiskHint = submitMarkup.indexOf('{{confirmNotice}}')
   assert(confirmStart >= 0 && weakRiskHint > confirmStart, '普通取消风险提示只应在最终确认页弱展示')
+  assert(/<view[^>]*wx:if="{{confirmNotice}}"[^>]*class="help text-grey text-xs[^"]*"/.test(submitMarkup), '动态提示应保持弱提示样式')
+  const submitScript = fs.readFileSync(path.join(root, 'miniprogram/pages/orderSubmit/index.js'), 'utf8')
+  assert(submitScript.includes("'confirm_notice'") && submitScript.includes('异常取消可能触发暂时下单限制'), '配置入口及默认风险提示必须继续保留')
+
   assert(submitMarkup.includes("data-purpose=\"{{item.field_key === 'material_images' ? 'product' : 'wall'}}\""), '图片添加入口用途三元表达式必须完整')
   assert(!submitMarkup.includes("'product''"), 'WXML 不得存在重复引号表达式')
 

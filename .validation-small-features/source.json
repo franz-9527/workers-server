@@ -1,7 +1,7 @@
 {
   "repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "source_commit": "5293faebb7c4812cde40dc457b82d305da981b27",
+  "source_commit": "810bb6f595cbedcb4d87b66b4c6647224af5e6b2",
   "baseline_commit": "02493b8c5ded32df6e91a3a4e262007472b57d74",
   "files": [
     "cloudfunctions/base/index.js",
