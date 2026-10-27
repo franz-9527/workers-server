@@ -30,3 +30,5 @@ jobs:
       - name: Store routing and actual upload handler regression
         working-directory: .validation-store-package
         run: node tools/test_store_subpackage.js
+
+# Complete immutable publisher dependency snapshot
