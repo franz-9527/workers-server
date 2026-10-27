@@ -7,6 +7,7 @@
     "cloudfunctions/base/index.js",
     "cloudfunctions/store/index.js",
     "miniprogram/app.json",
+    "miniprogram/config/config.js",
     "miniprogram/pages/index/index.js",
     "miniprogram/subpackages/store/index/index.js",
     "miniprogram/subpackages/store/index/index.json",
@@ -21,6 +22,7 @@
     "miniprogram/subpackages/store/record/detail.wxml",
     "miniprogram/subpackages/store/record/detail.wxss",
     "miniprogram/subpackages/store/utils/CloudUtils.js",
+    "miniprogram/utils/DateUtils.js",
     "tools/test_store_subpackage.js"
   ]
 }
