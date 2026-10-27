@@ -1,0 +1,8 @@
+{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "platform-order-settlement": "/components/platform-order-settlement/index",
+    "measurement-order-archive": "/components/measurement-order-archive/index"
+  }
+}

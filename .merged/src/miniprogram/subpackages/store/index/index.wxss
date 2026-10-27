@@ -1,0 +1,140 @@
+/* pages/index/index.wxss */
+
+.home{
+  height: 100%;
+  background-image: url(https://776f-worker-real-1301382302.tcb.qcloud.la/public/indexTopBg.png);
+  background-size: 100%;
+  background-repeat: no-repeat;
+  background-position: top;
+}
+.topbg{
+  display:block;
+  position:fixed;
+  top:0;
+  width:100%;
+
+}
+.location{
+  padding: 20rpx;
+
+}
+.location text{
+  font-size: 32rpx;
+  color: #fff;
+}
+
+.menu-avatar{
+  min-height: 420rpx;
+}
+
+.controls {
+  position: absolute;
+  right:20rpx;
+  bottom:40rpx;
+  height: 100rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.controlsBtn{
+  height: 100rpx;
+  width: 100rpx;
+}
+.controls .controlsBtn .img {
+  width: 80rpx;
+  height: 80rpx;
+  margin: 10rpx auto;
+  opacity: 0.9;
+}
+ 
+/* 微信客服 */
+.img-plus-style {  
+  height: 130rpx;  
+  width: 195rpx;  
+  /* 固定 */
+  position: fixed;
+  /* 距离底部   */
+  bottom: 300rpx;  
+  /* 距离右边 */
+  right: 0rpx;
+  /* 不透明度   */
+  opacity: 1
+}  
+
+/* .zindex100{z-index: 100}
+.yc{opacity: 0} */
+
+
+.test_image{width:100%;}
+
+
+/* 搜索地址 */
+.fake{
+  padding:30rpx 25rpx 25rpx 25rpx;
+}
+.fakeSearchWrapper {
+  width: 100%;
+  /* background-color: #fff; */
+}
+.fakeSearch {
+  width: 700rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+  text-align: center;
+}
+.fakeSearch text {
+  color: #808080;
+  font-size: 32rpx;
+  line-height: 80rpx;
+}
+/* 暗色模式样式覆盖 */
+@media (prefers-color-scheme: dark) {
+  .fakeSearch { /* 注意这里从ID选择器改回了类选择器 */
+      background-color: rgb(24, 24, 24); /* 深色背景 */
+  }
+  .fakeSearch text { /* 同样，这里也应对应到类选择器下的文本 */
+      color: rgb(122, 122, 122); /* 中灰文本颜色，以适应暗色背景 */
+  }
+}
+
+
+/* 4.19 宫格导航 */
+.plate {
+  height: 220rpx;
+  /* background: #fff; */
+  overflow: hidden; /* 可能需要防止内容溢出 */
+}
+.plate-item {
+  display: flex;
+  float: left;
+  position: relative;
+  width: 140rpx;
+  height: 140rpx;
+  margin-top: 30rpx;
+  margin-left: 42rpx;
+  align-items: center; /* 让容器内的元素垂直居中 */
+  justify-content: center; /* 让容器内的元素水平居中 */
+}
+.plate-img image {
+  width: 80rpx;
+  height: 80rpx;
+}
+.plate-info {
+  position: absolute;
+  height: 30rpx;
+  font-size: 30rpx;
+  font-family: '微软雅黑';
+  /* 调整底部距离，留出足够的空间显示文字 */
+  bottom: 10rpx;
+  /* 文字左边缘距离其父容器（.plate-item）的距离 */
+  /* left: 0; */
+  /* 防止文字超出图片右边界，可以根据实际情况调整 */
+  /* right: 10rpx; */
+  /* 也可以考虑让文字居中 */
+  transform: translateY(50%); /* 上下居中 */
+  text-align: center; /* 水平居中 */
+  width: 100%; /* 使文字宽度等于父容器宽度 */
+  padding: 0 10rpx; /* 左右内边距，根据需要调整 */
+}

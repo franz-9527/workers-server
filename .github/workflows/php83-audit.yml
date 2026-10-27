@@ -1,0 +1,180 @@
+name: Chat architecture and PHP 8.3.36 full regression
+on:
+  push:
+    branches: [main]
+    paths: ['.merged/**', '.github/workflows/php83-audit.yml']
+permissions:
+  contents: read
+concurrency:
+  group: php83-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: test-only
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: worker_test
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:7.0.15
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_INTEGRATION: '1'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: test-only
+      CHAT_CALLS_MYSQL_PASSWORD: test-only
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+      V260_PAID_SMS_REPOSITORY_MYSQL_TEST: '1'
+      V250_PLATFORM_MYSQL_TEST: '1'
+      ONBOARDING_NOTICE_MYSQL_TEST: '1'
+      V250_DB_HOST: 127.0.0.1
+      V250_DB_NAME: worker_test
+      V260_DB_NAME: worker_test
+      V260_DB_HOST: 127.0.0.1
+      V260_DB_USER: root
+      V260_DB_PASSWORD: test-only
+      V250_DB_USER: root
+      V250_DB_PASSWORD: test-only
+      AUXILIARY_RETIREMENT_MYSQL_TEST: '1'
+      BOARD_RETIREMENT_MYSQL_TEST: '1'
+      CONTROLLER_RETIREMENT_MYSQL_TEST: '1'
+      MESSAGE_COMPLETION_MYSQL_TEST: '1'
+      MESSAGING_MIGRATION_MYSQL_TEST: '1'
+      MINI_PLATFORM_CREATE_MYSQL_TEST: '1'
+      ORDINARY_CREATE_MYSQL_TEST: '1'
+      PAYMENT_RETIREMENT_MYSQL_TEST: '1'
+      V260_REFUND_RETRY_MYSQL_TEST: '1'
+      V260_ASSIGNMENT_TIMEOUT_MYSQL_TEST: '1'
+      V260_AUTO_ACCEPT_MYSQL_TEST: '1'
+      V260_AUTO_CANCEL_CLEANUP_MYSQL_TEST: '1'
+      V260_AUTO_CANCEL_MYSQL_TEST: '1'
+      V260_AUTO_REVIEW_CLEANUP_MYSQL_TEST: '1'
+      V260_AUTO_REVIEW_MYSQL_TEST: '1'
+      V260_MEASUREMENT_ACCEPT_MYSQL_TEST: '1'
+      V260_PLATFORM_BALANCE_RELEASE_MYSQL_TEST: '1'
+      V260_SUPPLEMENT_CLEANUP_MYSQL_TEST: '1'
+      V260_SUPPLEMENT_TIMEOUT_MYSQL_TEST: '1'
+      V260_DISPUTE_FINANCE_CLEANUP_MYSQL_TEST: '1'
+      V260_DISPUTE_FINANCE_MYSQL_TEST: '1'
+      V260_EXPANSION_MYSQL_TEST: '1'
+      V260_M2_SAFETY_MYSQL_TEST: '1'
+      V260_MEASUREMENT_MYSQL_TEST: '1'
+      V260_MEASUREMENT_TAIL_MYSQL_TEST: '1'
+      V260_MESSAGE_PROVIDER_MYSQL_TEST: '1'
+      V260_ORDINARY_FLOW_MYSQL_TEST: '1'
+      V260_PAID_SMS_RECEIPT_MYSQL_TEST: '1'
+      V260_PLATFORM_MEASUREMENT_MYSQL_TEST: '1'
+      V260_SHORT_ENTRY_MYSQL_TEST: '1'
+      V260_SINGLE_GRAB_MYSQL_TEST: '1'
+      TZ: Asia/Shanghai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,sodium,ctype,mbstring,curl,gd,fileinfo,simplexml,dom,xml,xmlwriter,mysqli
+          tools: composer:2
+          coverage: none
+      - name: Enable isolated MySQL recovery coordinates
+        run: |
+          docker exec -i ${{ job.services.mysql.id }} sh -c 'cat > /etc/mysql/conf.d/chat-merge-binlog.cnf' <<'CFG'
+          [mysqld]
+          log-bin=mysql-bin
+          server-id=71
+          binlog-format=ROW
+          CFG
+          docker restart ${{ job.services.mysql.id }} >/dev/null
+          for attempt in $(seq 1 30); do
+            if docker exec ${{ job.services.mysql.id }} mysqladmin ping -h 127.0.0.1 -ptest-only --silent; then break; fi
+            sleep 1
+          done
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -ptest-only -e 'SHOW MASTER STATUS'
+      - name: Exact merged inputs and isolated endpoints
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: |
+          CHAT_TEST_MYSQL_PORT="$(docker port ${{ job.services.mysql.id }} 3306/tcp | head -n1 | cut -d: -f2)"
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_SMS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "V260_DB_PORT=$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "V250_DB_PORT=$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_SCHEMA_FILE=$(realpath .merged/src/calls.sql)" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          root=pathlib.Path('.merged/src');m=json.loads(pathlib.Path('.merged/manifest.json').read_text())
+          for p,sha in m.items():
+              b=(root/p).read_bytes()
+              assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==sha,p
+          print('MERGED_SOURCE_VERIFIED',len(m))
+          PY
+      - name: Complete PHP syntax and strict app load
+        if: success() || failure()
+        run: |
+          php -r 'if(PHP_VERSION!=="8.3.36")exit(1);echo "EXACT_PHP ".PHP_VERSION.PHP_EOL;'
+          python3 - <<'PY'
+          import pathlib,subprocess,sys
+          files=sorted(pathlib.Path('.merged/src').rglob('*.php'));fail=[]
+          for p in files:
+              r=subprocess.run(['php','-d','error_reporting=-1','-l',str(p)],text=True,capture_output=True)
+              if r.returncode or r.stderr or 'Warning:' in r.stdout or 'Deprecated:' in r.stdout:
+                  fail.append(str(p));print('PHP83_LINT_DIAGNOSTIC',str(p),r.stdout,r.stderr)
+          print('PHP83_LINT',len(files),'FAILED',len(fail))
+          sys.exit(bool(fail))
+          PY
+          php .merged/load-app.php
+      - name: Full PHPCompatibility 8.3 scan
+        if: success() || failure()
+        run: |
+          mkdir "$RUNNER_TEMP/php83-analyzer"
+          cd "$RUNNER_TEMP/php83-analyzer"
+          composer require --no-interaction --no-progress --no-plugins --no-scripts 'phpcompatibility/php-compatibility:dev-develop#4b1ac835da9b71a6ac3bc70ff903638187f33674' 'squizlabs/php_codesniffer:4.0.2' 'phpcsstandards/phpcsutils:1.2.3'
+          vendor/bin/phpcs --config-set installed_paths "$RUNNER_TEMP/php83-analyzer/vendor/phpcompatibility/php-compatibility,$RUNNER_TEMP/php83-analyzer/vendor/phpcsstandards/phpcsutils"
+          status=0
+          vendor/bin/phpcs "$GITHUB_WORKSPACE/.merged/src/server" "$GITHUB_WORKSPACE/.merged/src/tools" --standard=PHPCompatibility --runtime-set testVersion 8.3 --extensions=php --report=json --report-file="$RUNNER_TEMP/php83-compat.json" || status=$?
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open(os.environ['RUNNER_TEMP']+'/php83-compat.json'))
+          print('PHP83_COMPAT_TOTALS',json.dumps(r['totals']))
+          for p,f in r['files'].items():
+              for m in f['messages']:print('PHP83_COMPAT',json.dumps({'path':p,**m},ensure_ascii=False))
+          PY
+          exit "$status"
+      - name: Architecture and isolated PHP business regressions
+        if: success() || failure()
+        run: |
+          status=0
+          php -d error_reporting=-1 .merged/src/tools/check-modular-architecture.php || status=1
+          python3 .merged/run-suite.py || status=1
+          php -d error_reporting=-1 .merged/src/server/tests/chat_participant_contract.php --mysql || status=1
+          exit "$status"
+      - name: Source proof and clean index
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib,hashlib
+          root=pathlib.Path('.merged/src')
+          for p in sorted(root.rglob('*')):
+              if p.is_file():
+                  b=p.read_bytes();print('TESTED_BLOB',p.relative_to(root),hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest())
+          PY
+          git rm -r --cached .merged .github/workflows/php83-audit.yml >/dev/null
+          python3 tools/check-clean-state.py
+          git diff --cached --check

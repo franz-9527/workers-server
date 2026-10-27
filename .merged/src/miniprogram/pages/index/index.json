@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "add-tip": "/components/addTip/addTip"
+  }
+}

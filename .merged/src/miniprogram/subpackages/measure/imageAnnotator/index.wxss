@@ -1,0 +1,503 @@
+page{background:#f2f8f4;color:#24362d}
+.annotator-page{min-height:100vh;padding:18rpx 18rpx calc(154rpx + env(safe-area-inset-bottom));box-sizing:border-box}
+button:after{border:0}
+button{box-sizing:border-box}
+
+/* 本地项目首页 */
+.project-home{padding:2rpx 0 30rpx}
+.home-hero{padding:28rpx;background:linear-gradient(145deg,#ffffff 0%,#f4fbf7 100%);border:1rpx solid #e1ebe5;border-radius:26rpx;box-shadow:0 8rpx 30rpx rgba(31,83,54,.055)}
+.home-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24rpx}
+.home-title-row>view:first-child{min-width:0;flex:1}
+.home-head-actions{display:flex;align-items:center;gap:10rpx;flex:none}
+.home-settings{display:flex;align-items:center;justify-content:center;width:62rpx;height:62rpx;border:1rpx solid #dfe9e3;border-radius:18rpx;background:#fff;color:#607168;font-size:29rpx}
+.home-settings:active{background:#eaf7ef;color:#0b8d56}
+.tool-logo{display:flex;align-items:center;justify-content:center;flex:none;width:78rpx;height:78rpx;border-radius:22rpx;background:#e7f8ef;color:#119d62;font-size:38rpx}
+.empty-title{font-size:37rpx;font-weight:700;letter-spacing:.3rpx}
+.empty-desc{max-width:570rpx;margin-top:10rpx;color:#7b8a83;font-size:21rpx;line-height:1.65}
+.home-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;margin-top:26rpx}
+.home-action{display:flex;align-items:center;gap:13rpx;min-width:0;height:112rpx;padding:0 16rpx;box-sizing:border-box;background:#fff;border:1rpx solid #dfeae4;border-radius:20rpx;color:#3e5047}
+.home-action>text{flex:none;display:flex;align-items:center;justify-content:center;width:44rpx;height:44rpx;color:#119d62;font-size:31rpx}
+.home-action>view{min-width:0}
+.home-action>view>view{font-size:24rpx;font-weight:700;white-space:nowrap}
+.home-action>view>text{display:block;margin-top:4rpx;color:#8a9890;font-size:17rpx;white-space:nowrap}
+.home-action.primary{background:#119d62;border-color:#119d62;color:#fff}
+.home-action.primary>text,.home-action.primary>view>text{color:#fff}
+.home-action.primary>view>text{opacity:.82}
+.home-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20rpx;margin:30rpx 6rpx 12rpx}
+.home-section-title{color:#2b3d33;font-size:27rpx;font-weight:700}
+.home-section-sub{margin-top:3rpx;color:#97a39c;font-size:18rpx}
+.home-add-folder{display:flex;align-items:center;gap:5rpx;padding:8rpx 4rpx;color:#119d62;font-size:20rpx;font-weight:600}
+.folder-scroll,.move-folder-scroll{width:100%;white-space:nowrap}
+.folder-row{display:inline-flex;align-items:center;gap:9rpx;min-width:100%;padding:2rpx 6rpx 6rpx;box-sizing:border-box}
+.folder-chip{display:inline-flex;align-items:center;justify-content:center;max-width:250rpx;height:58rpx;padding:0 22rpx;box-sizing:border-box;background:#fff;border:1rpx solid #e1e9e4;border-radius:17rpx;color:#66766e;font-size:20rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder-chip.active{background:#e7f8ef;border-color:#b9e1c9;color:#0b8d56;font-weight:700}
+.project-head{margin-top:24rpx}
+.project-count{color:#98a39d;font-size:19rpx}
+.project-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:250rpx;margin:0 6rpx;background:#fff;border:1rpx dashed #dbe6df;border-radius:22rpx;color:#7d8c84}
+.project-empty>text:first-child{margin-bottom:10rpx;color:#b0bbb4;font-size:44rpx}
+.project-empty>view{font-size:23rpx;font-weight:600}
+.project-empty>text:last-child{margin-top:6rpx;color:#a5b0aa;font-size:18rpx}
+.project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx;padding:0 6rpx}
+.project-card{min-width:0;padding:10rpx 10rpx 14rpx;background:#fff;border:1rpx solid #e2ebe6;border-radius:21rpx;box-shadow:0 5rpx 18rpx rgba(31,83,54,.04)}
+.project-thumb{position:relative;width:100%;height:210rpx;overflow:hidden;background:#edf3ef;border-radius:15rpx}
+.project-thumb image{display:block;width:100%;height:100%}
+.blank-thumb{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#fafcfb;color:#9bacA2;font-size:48rpx}
+.project-more{position:absolute;right:9rpx;bottom:9rpx;display:flex;align-items:center;justify-content:center;width:52rpx;height:52rpx;background:rgba(255,255,255,.88);border:1rpx solid rgba(225,235,229,.9);border-radius:50%;color:#495a51;font-size:27rpx;backdrop-filter:blur(8px)}
+.project-name{margin:12rpx 4rpx 0;color:#34463c;font-size:21rpx;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.project-time{margin:4rpx 4rpx 0;color:#9ba69f;font-size:17rpx}
+
+/* 顶部工具栏：缩小体量，避免传统大卡片感 */
+.editor-topbar{display:flex;align-items:center;gap:8rpx;margin-bottom:10rpx;padding:7rpx 8rpx;background:rgba(255,255,255,.94);border:1rpx solid #e4eee8;border-radius:20rpx;box-shadow:0 5rpx 22rpx rgba(31,83,54,.05)}
+.topbar-item{flex:1;min-width:0;height:66rpx;margin:0;padding:7rpx 2rpx;background:transparent!important;color:#66766e!important;border-radius:14rpx;font-size:19rpx;line-height:1.2}
+.topbar-item text{display:block;margin-bottom:3rpx;color:#33483d;font-size:27rpx}
+.topbar-item[disabled]{opacity:.28}
+.topbar-save{flex:none;width:118rpx;height:60rpx;margin:0 0 0 4rpx;padding:0;background:#119d62!important;color:#fff!important;border-radius:16rpx;font-size:24rpx;font-weight:700;line-height:60rpx}
+.topbar-save[disabled]{opacity:.55}
+.mode-tip{text-align:center;margin:6rpx 0 12rpx;color:#8a9991;font-size:19rpx;letter-spacing:.2rpx}
+
+/* 画布 */
+.canvas-shell{position:relative;display:flex;justify-content:center;align-items:center;overflow:hidden;background:#162019;border-radius:15rpx;box-shadow:0 8rpx 24rpx rgba(16,43,28,.10)}
+.edit-canvas{display:block}
+.canvas-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#becbc3;font-size:23rpx;background:rgba(20,31,24,.76)}
+.magnifier-canvas{position:absolute;left:12rpx;top:12rpx;z-index:9;width:90px;height:90px;border:5rpx solid rgba(255,255,255,.96);border-radius:50%;box-sizing:border-box;box-shadow:0 6rpx 22rpx rgba(7,25,14,.22);opacity:0;pointer-events:none;transform:scale(.92);transition:opacity .12s ease,transform .12s ease;background:#fff}
+.magnifier-canvas.show{opacity:1;transform:scale(1)}
+.view-controls{position:absolute;right:12rpx;top:12rpx;z-index:8;display:flex;align-items:center;height:54rpx;padding:4rpx;background:rgba(255,255,255,.88);border:1rpx solid rgba(226,236,230,.9);border-radius:16rpx;box-shadow:0 4rpx 16rpx rgba(11,35,21,.08);backdrop-filter:blur(10px)}
+.view-control{display:flex;align-items:center;justify-content:center;width:46rpx;height:46rpx;color:#405148;font-size:27rpx;font-weight:600;border-radius:12rpx}
+.view-control:active{background:#e8f5ed;color:#0b8d56}
+.view-control.reset{font-size:24rpx}
+.view-scale{min-width:72rpx;text-align:center;color:#64746b;font-size:18rpx;font-variant-numeric:tabular-nums}
+.gesture-tip{margin:10rpx 7rpx 0;color:#8b9992;font-size:20rpx;line-height:1.5}
+
+/* 选中对象操作条 */
+.object-bar{display:flex;align-items:center;gap:4rpx;margin-top:12rpx;padding:8rpx 10rpx;background:#fff;border:1rpx solid #e5eee8;border-radius:18rpx;box-shadow:0 5rpx 20rpx rgba(31,83,54,.045)}
+.object-name{flex:1;min-width:0;padding:0 10rpx;color:#405148;font-size:21rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.object-bar button{flex:none;width:76rpx;height:60rpx;margin:0;padding:5rpx 0;background:transparent!important;color:#63736b!important;border-radius:12rpx;font-size:17rpx;line-height:1.15}
+.object-bar button text{display:block;margin-bottom:2rpx;color:#405148;font-size:25rpx}
+.object-bar button.danger,.object-bar button.danger text{color:#d9524b!important}
+
+/* 底部一级工具栏 */
+.editor-dock{position:fixed;left:18rpx;right:18rpx;bottom:calc(14rpx + env(safe-area-inset-bottom));z-index:30;padding:8rpx 10rpx;background:rgba(255,255,255,.96);border:1rpx solid #e1ebe5;border-radius:24rpx;box-shadow:0 10rpx 34rpx rgba(25,66,43,.12);backdrop-filter:blur(14px)}
+.dock-tools{display:flex;align-items:center;justify-content:space-between}
+.dock-tool{position:relative;display:flex;flex:1;min-width:0;height:78rpx;flex-direction:column;align-items:center;justify-content:center;color:#76857d;font-size:18rpx;border-radius:16rpx}
+.dock-tool>text{margin-bottom:4rpx;color:#4a5b52;font-size:30rpx}
+.dock-tool.active{color:#0b8d56;font-weight:600;background:#edf8f1}
+.dock-tool.active>text{color:#119d62}
+.dock-tool.active:after{display:none}
+
+/* Bottom sheet 统一语言 */
+.sheet-mask{position:fixed;inset:0;z-index:60;background:rgba(8,18,12,.26);opacity:0;pointer-events:none;transition:opacity .22s ease}
+.sheet-mask.show{opacity:1;pointer-events:auto}
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;padding:0 24rpx calc(22rpx + env(safe-area-inset-bottom));box-sizing:border-box;background:#fff;border-radius:28rpx 28rpx 0 0;box-shadow:0 -10rpx 38rpx rgba(17,49,29,.12);transform:translateY(105%);transition:transform .24s ease;pointer-events:none}
+.bottom-sheet.show{transform:translateY(0);pointer-events:auto}
+.sheet-handle{width:62rpx;height:7rpx;margin:12rpx auto 4rpx;border-radius:10rpx;background:#dbe4de}
+.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18rpx;padding:18rpx 2rpx 20rpx}
+.sheet-title{color:#23352b;font-size:31rpx;font-weight:700}
+.sheet-subtitle{margin-top:5rpx;color:#8a9890;font-size:20rpx;line-height:1.45}
+.sheet-close{flex:none;padding:6rpx;color:#77867e;font-size:31rpx}
+
+/* 输入面板 */
+.input-sheet{z-index:72}
+.input-sheet+.sheet-mask{z-index:71}
+.input-wrap{padding:3rpx 0 8rpx}
+.sheet-input{height:84rpx;padding:0 20rpx;background:#f5f8f6;border:1rpx solid #dfe9e3;border-radius:17rpx;color:#24362d;font-size:31rpx;font-weight:600}
+.sheet-section-label{margin:18rpx 2rpx 11rpx;color:#7b8982;font-size:20rpx}
+.chip-row{display:flex;align-items:center;gap:10rpx}
+.chip-row.wrap{flex-wrap:wrap}
+.chip{min-width:78rpx;padding:11rpx 20rpx;box-sizing:border-box;text-align:center;background:#f3f6f4;border:1rpx solid #e1e8e4;border-radius:16rpx;color:#53635a;font-size:22rpx}
+.chip.active{background:#e7f8ef;border-color:#b7e2c9;color:#0b8d56;font-weight:700}
+.chip.quick{min-width:94rpx;background:#f7faf8}
+.sheet-switch-row{display:flex;align-items:center;justify-content:space-between;margin-top:20rpx;padding:17rpx 2rpx 4rpx;border-top:1rpx solid #edf2ef}
+.switch-title{color:#34473d;font-size:23rpx;font-weight:600}
+.switch-desc{margin-top:4rpx;color:#94a098;font-size:19rpx}
+.sheet-actions{display:flex;gap:12rpx;margin-top:22rpx}
+.sheet-actions button{height:74rpx;margin:0;padding:0;border-radius:18rpx;font-size:24rpx;line-height:74rpx}
+.sheet-secondary{width:190rpx;background:#f3f6f4!important;color:#65756c!important}
+.sheet-primary{flex:1;background:#119d62!important;color:#fff!important;font-weight:700}
+
+/* 图形选择 */
+.compact-sheet{padding-bottom:calc(28rpx + env(safe-area-inset-bottom))}
+.shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12rpx;padding:2rpx 0 8rpx}
+.shape-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;height:124rpx;background:#f6f9f7;border:1rpx solid #e1e9e4;border-radius:18rpx;color:#4f6057;font-size:22rpx}
+.shape-choice>text{margin-bottom:10rpx;color:#31473b;font-size:39rpx}
+.shape-choice:active{background:#eaf7ef;border-color:#b9e1c9;color:#0b8d56}
+
+/* 样式面板 */
+.style-sheet{padding-bottom:calc(28rpx + env(safe-area-inset-bottom))}
+.setting-row{min-height:84rpx;display:flex;align-items:center;justify-content:space-between;gap:18rpx;border-top:1rpx solid #edf2ef}
+.setting-title{flex:none;width:90rpx;color:#66766e;font-size:21rpx}
+.setting-title.auto{width:auto;color:#405148;font-size:23rpx;font-weight:600}
+.setting-desc{margin-top:4rpx;color:#96a29b;font-size:19rpx}
+.colors{display:flex;align-items:center;justify-content:flex-end;gap:15rpx;flex:1}
+.color-dot{width:38rpx;height:38rpx;border:3rpx solid #dbe3de;border-radius:50%;box-sizing:border-box}
+.color-dot.active{border-color:#119d62;box-shadow:0 0 0 5rpx rgba(17,157,98,.12)}
+.segmented{display:flex;gap:7rpx;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.segment{padding:9rpx 20rpx;background:#f2f5f3;border:1rpx solid transparent;border-radius:15rpx;color:#65756c;font-size:21rpx}
+.segment.active{background:#e7f8ef;border-color:#b9e1c9;color:#0b8d56;font-weight:600}
+
+/* 更多 / 编辑辅助 */
+.more-sheet{max-height:78vh}
+.inline-view-actions{display:flex;align-items:center;gap:8rpx}
+.inline-view-actions>view{display:flex;align-items:center;justify-content:center;min-width:48rpx;height:44rpx;padding:0 10rpx;box-sizing:border-box;background:#f2f5f3;border-radius:13rpx;color:#43554b;font-size:22rpx}
+.inline-view-actions>text{min-width:62rpx;text-align:center;color:#718078;font-size:19rpx;font-variant-numeric:tabular-nums}
+.inline-view-actions .reset-view{min-width:76rpx;color:#0b8d56;background:#e7f8ef;font-size:20rpx}
+.more-danger{display:flex;align-items:center;gap:15rpx;margin-top:12rpx;padding:17rpx 4rpx 6rpx;border-top:1rpx solid #edf2ef;color:#d9524b}
+.more-danger>text{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;border-radius:14rpx;background:#fff1f0;font-size:25rpx}
+.more-danger>view>view{font-size:22rpx;font-weight:600}
+.more-danger>view>text{display:block;margin-top:3rpx;color:#aa7772;font-size:18rpx}
+.settings-link{cursor:pointer}
+.settings-link>text{flex:none;color:#97a49d;font-size:24rpx}
+
+/* 通用设置 */
+.settings-sheet{max-height:82vh;overflow:auto}
+.settings-group-label{margin:8rpx 2rpx 10rpx;color:#829087;font-size:19rpx}
+.setting-block{padding:15rpx 0 18rpx;border-top:1rpx solid #edf2ef}
+.setting-block-title{margin-bottom:12rpx;color:#405148;font-size:22rpx;font-weight:650}
+.resolution-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10rpx}
+.resolution-item{display:flex;flex-direction:column;align-items:center;justify-content:center;height:92rpx;background:#f5f8f6;border:1rpx solid #e0e9e4;border-radius:17rpx;color:#506157}
+.resolution-item>view{font-size:22rpx;font-weight:650}
+.resolution-item>text{display:block;margin-top:4rpx;color:#96a29b;font-size:17rpx}
+.resolution-item.active{background:#e7f8ef;border-color:#b9e1c9;color:#0b8d56}
+.resolution-item.active>text{color:#5ca276}
+.setting-help{margin-top:11rpx;color:#98a39c;font-size:18rpx;line-height:1.55}
+.storage-card{margin-top:2rpx;padding:16rpx 0 2rpx;border-top:1rpx solid #edf2ef}
+.storage-main{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
+.storage-value{color:#2f4438;font-size:30rpx;font-weight:700;font-variant-numeric:tabular-nums}
+.storage-label{margin-top:3rpx;color:#98a39c;font-size:18rpx}
+.storage-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4rpx;color:#718078;font-size:18rpx}
+.storage-safe{display:flex;align-items:center;gap:13rpx;margin-top:16rpx;padding:14rpx 16rpx;background:#f5f8f6;border-radius:16rpx;color:#475a4f}
+.storage-safe>text{flex:none;color:#119d62;font-size:26rpx}
+.storage-safe>view>view{font-size:21rpx;font-weight:650}
+.storage-safe>view>text{display:block;margin-top:3rpx;color:#97a39c;font-size:17rpx;line-height:1.45}
+
+/* 使用帮助 */
+.help-sheet{max-height:78vh}
+.help-list{max-height:60vh;padding-bottom:8rpx}
+.help-card{padding:18rpx 2rpx;border-top:1rpx solid #edf2ef}
+.help-card-title{color:#34483d;font-size:23rpx;font-weight:700}
+.help-card-text{margin-top:7rpx;color:#78877f;font-size:20rpx;line-height:1.68}
+
+/* 图层 */
+.layer-sheet{max-height:72vh}
+.layer-list{max-height:55vh;border-top:1rpx solid #edf2ef}
+.layer-empty{padding:68rpx 20rpx;text-align:center;color:#9aa69f;font-size:22rpx}
+.layer-item{display:flex;align-items:center;justify-content:space-between;gap:14rpx;min-height:82rpx;padding:12rpx 4rpx;border-bottom:1rpx solid #edf2ef}
+.layer-item.selected{background:#f0f8f3}
+.layer-main{display:flex;align-items:center;gap:13rpx;min-width:0;flex:1}
+.layer-eye{flex:none;padding:10rpx;color:#159b63;font-size:29rpx}
+.layer-copy{min-width:0}
+.layer-name{max-width:330rpx;color:#37483f;font-size:23rpx;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.layer-type{margin-top:3rpx;color:#9aa69f;font-size:18rpx}
+.layer-actions{display:flex;align-items:center;gap:18rpx;padding-right:6rpx;color:#586960;font-size:27rpx}
+.layer-actions .disabled{opacity:.22}
+.danger-text{color:#d9524b}
+
+/* 本地文件夹 / 项目设置 */
+.project-sheet{max-height:75vh}
+.project-save-name{display:flex;align-items:center;justify-content:center;height:58rpx;margin-top:9rpx;background:#eef8f2;border-radius:15rpx;color:#0b8d56;font-size:20rpx;font-weight:650}
+.move-folder-scroll{margin-bottom:8rpx}
+.project-delete{display:flex;align-items:center;gap:14rpx;margin-top:18rpx;padding:17rpx 4rpx 5rpx;border-top:1rpx solid #edf2ef;color:#d9524b}
+.project-delete>text{display:flex;align-items:center;justify-content:center;width:48rpx;height:48rpx;background:#fff1f0;border-radius:14rpx;font-size:24rpx}
+.project-delete>view>view{font-size:22rpx;font-weight:650}
+.project-delete>view>text{display:block;margin-top:3rpx;color:#ad7c77;font-size:18rpx}
+.danger-button{color:#d9524b!important;background:#fff1f0!important}
+
+/* 深色模式 */
+@media (prefers-color-scheme:dark){
+  page{background:#0d1812;color:#edf6f0}
+  .annotator-page{background:#0d1812}
+  .home-hero,.project-card,.project-empty,.editor-topbar,.object-bar,.editor-dock,.bottom-sheet{background:#17251d;border-color:#2b4034;box-shadow:none}
+  .home-hero{background:#17251d}
+  .tool-logo,.dock-tool.active,.chip.active,.segment.active,.layer-item.selected,.folder-chip.active{background:#19382a}
+  .empty-title,.home-section-title,.project-name,.sheet-title,.switch-title,.setting-title.auto,.layer-name,.object-name{color:#edf6f0}
+  .empty-desc,.home-section-sub,.project-time,.mode-tip,.gesture-tip,.sheet-subtitle,.sheet-section-label,.switch-desc,.setting-title,.setting-desc,.layer-type{color:#a9b7ae}
+  .home-action,.folder-chip,.home-settings{background:#101b15;border-color:#2d4235;color:#dce8e0}
+  .home-settings:active{background:#19382a;color:#63cf92}
+  .home-action>view>text,.project-count{color:#a9b7ae}
+  .home-action.primary{background:#119d62;border-color:#119d62;color:#fff}
+  .project-thumb{background:#101b15}
+  .blank-thumb{background:#101b15;color:#72837a}
+  .project-more{background:rgba(23,37,29,.9);border-color:#2b4034;color:#dce8e0}
+  .topbar-item,.object-bar button{color:#aab8b0!important}
+  .topbar-item text,.object-bar button text,.dock-tool>text,.shape-choice>text{color:#d9e5de}
+  .dock-tool{color:#a7b5ad}
+  .dock-tool.active,.dock-tool.active>text{color:#63cf92}
+  .topbar-save,.sheet-primary,.choose-btn{background:#119d62!important}
+  .canvas-shell{background:#08100b}
+  .magnifier-canvas{border-color:#e8f2ec;background:#17251d;box-shadow:0 6rpx 20rpx rgba(0,0,0,.35)}
+  .view-controls{background:rgba(23,37,29,.90);border-color:#2b4034;box-shadow:none}
+  .view-control{color:#d8e4dc}
+  .view-control:active{background:#19382a;color:#63cf92}
+  .view-scale{color:#a9b7ae}
+  .sheet-handle{background:#415449}
+  .sheet-input,.chip,.chip.quick,.shape-choice,.segment,.sheet-secondary{background:#101b15!important;border-color:#2d4235;color:#dce8e0!important}
+  .sheet-input{color:#fff}
+  .chip.active,.segment.active{border-color:#356e4d;color:#7cdaa0!important}
+  .setting-row,.sheet-switch-row,.setting-block,.layer-list,.layer-item,.more-danger{border-color:#293b31}
+  .settings-group-label,.setting-help,.storage-label,.storage-safe>view>text,.help-card-text{color:#a9b7ae}
+  .setting-block-title,.storage-value,.help-card-title{color:#edf6f0}
+  .help-card{border-color:#293b31}
+  .storage-card{border-color:#293b31}
+  .storage-meta{color:#a9b7ae}
+  .storage-safe{background:#101b15;color:#dce8e0}
+  .storage-safe>text{color:#63cf92}
+  .resolution-item{background:#101b15;border-color:#2d4235;color:#dce8e0}
+  .resolution-item>text{color:#93a199}
+  .resolution-item.active{background:#19382a;border-color:#356e4d;color:#63cf92}
+  .resolution-item.active>text{color:#82c89d}
+  .settings-link>text{color:#a9b7ae}
+  .inline-view-actions>view{background:#101b15;color:#dce8e0}
+  .inline-view-actions>text{color:#a9b7ae}
+  .inline-view-actions .reset-view{background:#19382a;color:#63cf92}
+  .more-danger>text{background:#351d1b;color:#f08078}
+  .more-danger>view>text,.project-delete>view>text{color:#b98d88}
+  .project-save-name{background:#19382a;color:#63cf92}
+  .project-delete{border-color:#293b31}
+  .project-delete>text,.danger-button{background:#351d1b!important;color:#f08078!important}
+  .color-dot{border-color:#526158}
+  .layer-eye{color:#63cf92}
+  .sheet-mask{background:rgba(0,0,0,.48)}
+}
+
+/* 2026-09-23：量房工具可读性、粗细辨识与扩展工具交互 */
+.annotator-page{font-size:24rpx}
+.empty-title{font-size:36rpx}
+.empty-desc{font-size:23rpx}
+.home-action>view>view{font-size:27rpx}
+.home-action>view>text{font-size:20rpx}
+.home-section-title{font-size:30rpx}
+.home-section-sub,.project-count{font-size:21rpx}
+.folder-chip{font-size:23rpx}
+.project-name{font-size:24rpx}
+.project-time{font-size:20rpx}
+.topbar-item{font-size:22rpx}
+.topbar-item text{font-size:30rpx}
+.topbar-save{font-size:27rpx}
+.mode-tip{font-size:22rpx}
+.gesture-tip{font-size:23rpx}
+.object-name{font-size:24rpx}
+.object-bar button{font-size:20rpx}
+.object-bar button text{font-size:28rpx}
+.dock-tool{font-size:21rpx}
+.dock-tool>text{font-size:33rpx}
+.dock-emoji{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Apple Color Emoji",sans-serif!important;font-size:34rpx!important;line-height:1}
+.sheet-title{font-size:34rpx}
+.sheet-subtitle{font-size:23rpx}
+.sheet-section-label,.setting-title{font-size:23rpx}
+.switch-title,.setting-title.auto{font-size:26rpx}
+.switch-desc,.setting-desc,.setting-help{font-size:21rpx}
+.chip,.segment{font-size:24rpx}
+.sheet-actions button{font-size:27rpx}
+.layer-name,.help-card-title,.setting-block-title{font-size:26rpx}
+.layer-type,.help-card-text,.storage-label,.storage-meta{font-size:21rpx}
+.shape-choice{height:136rpx;font-size:23rpx;line-height:1.25}
+.shape-choice>text{font-size:41rpx}
+.shape-grid.extended{grid-template-columns:repeat(3,1fr)}
+.stroke-segment{display:flex;align-items:center;justify-content:center;gap:10rpx;min-width:112rpx;padding-left:14rpx;padding-right:14rpx}
+.stroke-segment>text{font-size:23rpx}
+.stroke-preview{width:42rpx;background:currentColor;border-radius:999rpx}
+.stroke-preview.thin{height:2rpx}
+.stroke-preview.normal{height:6rpx}
+.stroke-preview.thick{height:11rpx}
+.multi-measure-bar{position:absolute;left:12rpx;right:12rpx;bottom:12rpx;z-index:12;display:flex;align-items:center;gap:8rpx;padding:8rpx;background:rgba(255,255,255,.94);border:1rpx solid #dce8e0;border-radius:16rpx;box-shadow:0 4rpx 18rpx rgba(11,35,21,.10);backdrop-filter:blur(10px)}
+.multi-measure-bar>text{flex:1;padding-left:8rpx;color:#52635a;font-size:22rpx}
+.multi-measure-bar>view{display:flex;align-items:center;justify-content:center;height:48rpx;padding:0 15rpx;background:#f1f6f3;border-radius:12rpx;color:#516259;font-size:21rpx}
+.multi-measure-bar .finish{background:#119d62;color:#fff;font-weight:700}
+.multi-measure-bar .cancel{color:#c85c55;background:#fff1f0}
+@media (prefers-color-scheme:dark){
+  .multi-measure-bar{background:rgba(23,37,29,.94);border-color:#2b4034;box-shadow:none}
+  .multi-measure-bar>text{color:#b5c2ba}
+  .multi-measure-bar>view{background:#101b15;color:#dce8e0}
+  .multi-measure-bar .finish{background:#119d62;color:#fff}
+  .multi-measure-bar .cancel{background:#351d1b;color:#f08078}
+  .stroke-preview{background:currentColor}
+}
+
+
+/* 2026-09-23：底部工具分组重构。图标统一为线性工具风格，不使用 Emoji。 */
+.dock-icon-box{display:flex;align-items:center;justify-content:center;width:48rpx;height:38rpx;margin-bottom:5rpx;color:#4a5b52;font-size:32rpx;line-height:1}
+.dock-tool.active .dock-icon-box{color:#119d62}
+.measure-glyph{position:relative;display:block;width:38rpx;height:30rpx;color:currentColor;box-sizing:border-box}
+.glyph-ruler{width:42rpx;height:19rpx;border:4rpx solid currentColor;border-radius:5rpx;transform:rotate(-3deg)}
+.glyph-ruler:before,.glyph-ruler:after,.glyph-ruler .glyph-part:before,.glyph-ruler .glyph-part:after{content:"";position:absolute;top:0;width:3rpx;background:currentColor}
+.glyph-ruler:before{left:7rpx;height:7rpx}.glyph-ruler:after{left:15rpx;height:11rpx}
+.glyph-ruler .glyph-part:before{left:24rpx;height:7rpx}.glyph-ruler .glyph-part:after{left:32rpx;height:11rpx}
+.glyph-leader{width:43rpx;height:31rpx}
+.glyph-leader:before{content:"";position:absolute;left:3rpx;top:2rpx;width:26rpx;height:15rpx;border:3rpx solid currentColor;border-radius:3rpx}
+.glyph-leader:after{content:"";position:absolute;left:26rpx;top:18rpx;width:20rpx;height:3rpx;background:currentColor;transform:rotate(135deg);transform-origin:left center}
+.glyph-leader .glyph-part:before,.glyph-leader .glyph-part:after{content:"";position:absolute;background:currentColor}
+.glyph-leader .glyph-part:before{left:35rpx;top:24rpx;width:3rpx;height:9rpx;transform:rotate(30deg)}
+.glyph-leader .glyph-part:after{left:31rpx;top:27rpx;width:9rpx;height:3rpx;transform:rotate(30deg)}
+.glyph-shape:before{content:"";position:absolute;left:2rpx;top:4rpx;width:19rpx;height:19rpx;border:3rpx solid currentColor;border-radius:3rpx}
+.glyph-shape:after{content:"";position:absolute;right:1rpx;bottom:1rpx;width:19rpx;height:19rpx;border:3rpx solid currentColor;border-radius:50%;background:transparent}
+
+.tool-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14rpx;padding:2rpx 0 10rpx}
+.tool-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:142rpx;padding:14rpx 8rpx;background:#f6f9f7;border:1rpx solid #e1e9e4;border-radius:18rpx;color:#4f6057;font-size:23rpx;text-align:center}
+.tool-choice:active{background:#eaf7ef;border-color:#b9e1c9;color:#0b8d56}
+.choice-icon{position:relative;display:flex;align-items:center;justify-content:center;width:58rpx;height:48rpx;margin-bottom:11rpx;color:#26352d;box-sizing:border-box}
+.iconfont-choice text{font-size:45rpx;color:currentColor}
+.css-line:before{content:"";position:absolute;left:5rpx;right:5rpx;top:23rpx;height:5rpx;border-radius:5rpx;background:currentColor;transform:rotate(-43deg)}
+.css-arrow:before{content:"";position:absolute;left:5rpx;right:5rpx;top:23rpx;height:5rpx;border-radius:5rpx;background:currentColor;transform:rotate(-43deg)}
+.css-arrow:after{content:"";position:absolute;right:3rpx;top:3rpx;width:15rpx;height:15rpx;border-top:5rpx solid currentColor;border-right:5rpx solid currentColor;transform:rotate(2deg)}
+.css-rect:before{content:"";position:absolute;left:4rpx;right:4rpx;top:5rpx;bottom:5rpx;border:5rpx solid currentColor;border-radius:4rpx}
+.css-ellipse:before{content:"";position:absolute;left:3rpx;right:3rpx;top:6rpx;bottom:6rpx;border:5rpx solid currentColor;border-radius:50%}
+.css-area:before{content:"";position:absolute;left:4rpx;right:4rpx;top:5rpx;bottom:5rpx;border:4rpx dashed currentColor;border-radius:3rpx}
+.css-area:after{content:"";position:absolute;left:12rpx;right:12rpx;top:22rpx;height:3rpx;background:currentColor;box-shadow:0 -9rpx 0 currentColor,0 9rpx 0 currentColor;opacity:.55}
+.css-multi{transform:rotate(-42deg)}
+.css-multi:before{content:"";position:absolute;left:5rpx;right:5rpx;top:23rpx;height:5rpx;border-radius:5rpx;background:currentColor}
+.css-multi:after{content:"";position:absolute;left:12rpx;top:12rpx;width:4rpx;height:25rpx;background:currentColor;box-shadow:15rpx 0 0 currentColor,30rpx 0 0 currentColor}
+.css-location{width:52rpx;height:52rpx;border:4rpx solid currentColor;border-radius:50%}
+.css-location text{font-size:30rpx;color:currentColor}
+.other-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (prefers-color-scheme:dark){
+  .dock-icon-box{color:#d9e5de}
+  .dock-tool.active .dock-icon-box{color:#63cf92}
+  .tool-choice{background:#101b15;border-color:#2d4235;color:#dce8e0}
+  .tool-choice:active{background:#19382a;border-color:#356e4d;color:#63cf92}
+  .choice-icon{color:#d9e5de}
+}
+
+
+/* 2026-09-23：图标回归 ColorUI / Lucide，二级弹窗恢复原尺寸。 */
+.dock-public-icon{width:34rpx;height:34rpx;display:block;opacity:.82}
+.dock-tool.active .dock-public-icon{opacity:1}
+.shape-public-icon{width:39rpx;height:39rpx;margin-bottom:10rpx;display:block;opacity:.86}
+.shape-public-icon.multi-icon{transform:rotate(-38deg)}
+.shape-grid{grid-template-columns:repeat(3,1fr);gap:12rpx;padding:2rpx 0 8rpx}
+.shape-choice{height:124rpx;min-height:0;padding:0;background:#f6f9f7;border:1rpx solid #e1e9e4;border-radius:18rpx;color:#4f6057;font-size:22rpx}
+.shape-choice>text{margin-bottom:10rpx;color:#31473b;font-size:39rpx}
+@media (prefers-color-scheme:dark){
+  .dock-public-icon,.shape-public-icon{opacity:.9}
+}
+
+
+/* 本地图标与 ColorUI 一样处理暗黑模式；普通态变浅，选中态保持师傅绿。 */
+.dock-public-icon{filter:none}
+.dock-tool.active .dock-public-icon{filter:brightness(0) saturate(100%) invert(45%) sepia(45%) saturate(1050%) hue-rotate(103deg) brightness(91%) contrast(89%)}
+@media (prefers-color-scheme:dark){
+  .dock-public-icon,.shape-public-icon{filter:brightness(0) invert(1);opacity:.88}
+  .dock-tool.active .dock-public-icon{filter:brightness(0) saturate(100%) invert(67%) sepia(33%) saturate(861%) hue-rotate(93deg) brightness(92%) contrast(88%);opacity:1}
+}
+
+
+/* 2026-09-23：图形/其他改用微信原生 page-container。
+   这是专门用于页面级弹层的组件，避免普通 fixed view 与 2D Canvas 的触摸层级冲突。 */
+.tool-picker-sheet{
+  padding:0 24rpx calc(28rpx + env(safe-area-inset-bottom));
+  box-sizing:border-box;
+  background:#fff;
+  border-radius:28rpx 28rpx 0 0;
+}
+@media (prefers-color-scheme:dark){
+  .tool-picker-sheet{background:#17251d}
+}
+
+
+/* 2026-09-23：文字引线、多段尺寸输入与弹窗图标暗黑模式 */
+.multi-segment-inputs{display:flex;flex-direction:column;gap:10rpx;padding:2rpx 0 6rpx}
+.multi-segment-row{display:flex;align-items:center;gap:12rpx;padding:10rpx 12rpx;background:#f5f8f6;border:1rpx solid #dfe9e3;border-radius:16rpx}
+.multi-segment-row.active{border-color:#9fd6b6;box-shadow:0 0 0 3rpx rgba(17,157,98,.08)}
+.multi-segment-row>text{flex:none;width:86rpx;color:#687970;font-size:21rpx}
+.multi-segment-row>input{flex:1;height:58rpx;min-width:0;color:#24362d;font-size:27rpx;font-weight:600}
+
+.tool-picker-sheet .shape-choice .picker-icon{color:#31473b}
+.tool-picker-sheet .shape-choice image.picker-icon{
+  filter:brightness(0) saturate(100%) invert(22%) sepia(12%) saturate(763%) hue-rotate(93deg) brightness(93%) contrast(88%);
+}
+.tool-picker-sheet .shape-choice:active .picker-icon{color:#0b8d56}
+.tool-picker-sheet .shape-choice:active image.picker-icon{
+  filter:brightness(0) saturate(100%) invert(45%) sepia(47%) saturate(930%) hue-rotate(103deg) brightness(88%) contrast(91%);
+}
+
+@media (prefers-color-scheme:dark){
+  .multi-segment-row{background:#101b15;border-color:#2d4235}
+  .multi-segment-row.active{border-color:#356e4d;box-shadow:0 0 0 3rpx rgba(99,207,146,.08)}
+  .multi-segment-row>text{color:#a9b7ae}
+  .multi-segment-row>input{color:#edf6f0}
+  .tool-picker-sheet .shape-choice .picker-icon{color:#d9e5de!important}
+  .tool-picker-sheet .shape-choice image.picker-icon{
+    filter:brightness(0) invert(1)!important;
+    opacity:.88;
+  }
+  .tool-picker-sheet .shape-choice:active .picker-icon{color:#63cf92!important}
+  .tool-picker-sheet .shape-choice:active image.picker-icon{
+    filter:brightness(0) saturate(100%) invert(73%) sepia(24%) saturate(828%) hue-rotate(93deg) brightness(91%) contrast(88%)!important;
+    opacity:1;
+  }
+}
+
+
+/* 2026-09-27：底部工具回显 + iOS 微信文本行盒修正。 */
+.dock-label{
+  display:block;
+  max-width:100%;
+  text-align:center;
+  white-space:nowrap;
+  font-size:20rpx;
+  line-height:1.28;
+  letter-spacing:-.2rpx;
+}
+.dock-public-icon.multi-icon{transform:rotate(-38deg)}
+
+/* iOS WKWebView 对中文字体的上下边界更敏感：只放宽文本行盒，不改变整体字号与控件高度。 */
+.annotator-page{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.empty-title,
+.empty-desc,
+.home-action>view>view,
+.home-action>view>text,
+.home-section-title,
+.home-section-sub,
+.home-add-folder,
+.folder-chip,
+.project-count,
+.project-empty>view,
+.project-empty>text:last-child,
+.project-name,
+.project-time,
+.topbar-item>view,
+.mode-tip,
+.gesture-tip,
+.object-name,
+.object-bar button>view,
+.dock-label,
+.sheet-title,
+.sheet-subtitle,
+.sheet-section-label,
+.switch-title,
+.switch-desc,
+.shape-choice>view:last-child,
+.setting-title,
+.setting-desc,
+.segment,
+.inline-view-actions>text,
+.setting-block-title,
+.setting-help,
+.resolution-item>view,
+.resolution-item>text,
+.storage-value,
+.storage-label,
+.storage-meta,
+.storage-safe>view>view,
+.storage-safe>view>text,
+.help-card-title,
+.help-card-text,
+.layer-empty,
+.layer-name,
+.layer-type,
+.project-save-name,
+.project-delete>view>view,
+.project-delete>view>text,
+.multi-measure-bar>text,
+.multi-measure-bar>view,
+.multi-segment-row>text{
+  line-height:1.4;
+}
+.topbar-item>text,
+.object-bar button>text{
+  line-height:1;
+}
+.shape-choice{line-height:1.4}
+.sheet-input{line-height:84rpx}
+.multi-segment-row>input{line-height:58rpx}
