@@ -1,6 +1,0 @@
-/* pages/getCityData/getCityData.wxss */
-
-.picker{
-  padding: 13px;
-  background-color: #FFFFFF;
-}
