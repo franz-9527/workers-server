@@ -50,11 +50,6 @@ function chatAssignmentContract(array $config): void
         catch(\WorkerAdmin\Domain\Order\OrderOperationException $error){$denied=$error->apiCode()==='ORDER_SWITCH_REQUIRES_CANCELLATION';}
         policyAssert($denied && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$offered,'customer direct switching is denied without changing assignment authority');
         policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count,'denied customer switch preserves original history');
-        $db->execute("CREATE TRIGGER fixture_switch_event_failure BEFORE INSERT ON chat_business_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture'");
-        $failed=false;try{$workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',10,'fixture guard rollback');}catch(PDOException $error){$failed=($error->errorInfo[1]??0)===1644;}
-        $db->execute('DROP TRIGGER fixture_switch_event_failure');
-        policyAssert($failed && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$offered,'guard failure rolls actual administrator reassignment back');
-        policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$offered])==='offered','failed reassignment preserves assignment history and current offer');
         $workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',10,'fixture return to prior worker');
         $current=(int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77');
         policyAssert($current!==100 && $current!==$offered && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$current])==='offered','same original worker returns on a new offered assignment');
@@ -70,6 +65,13 @@ function chatAssignmentContract(array $config): void
         policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=:id',['id'=>$current])==='open','real worker acceptance opens only the new assignment scope');
         policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=100')==='readonly','returning worker never reopens original scope');
         policyAssert((int)$db->fetchValue("SELECT COUNT(*) FROM chat_policy_guards WHERE state='open'")===1,'only one active assignment scope');
+        $count=(int)$db->fetchValue('SELECT COUNT(*) FROM assignments');
+        $db->execute("CREATE TRIGGER fixture_switch_event_failure BEFORE INSERT ON chat_business_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture'");
+        $failed=false;try{$workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',20,'fixture guard rollback');}catch(PDOException $error){$failed=($error->errorInfo[1]??0)===1644;}
+        $db->execute('DROP TRIGGER fixture_switch_event_failure');
+        policyAssert($failed && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$current,'guard failure rolls actual administrator reassignment back');
+        policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$current])==='accepted','failed reassignment preserves assignment history and current accepted assignment');
+        policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=:id',['id'=>$current])==='open','failed reassignment preserves the original chat authority');
         $workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',20,'fixture timeout');
         $expiring=(int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77');
         $db->execute('UPDATE assignments SET accept_deadline_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 HOUR) WHERE id=:id',['id'=>$expiring]);

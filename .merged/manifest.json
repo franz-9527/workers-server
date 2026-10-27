@@ -1404,7 +1404,7 @@
   "server/install/index.php": "ba88635f65cce8e2286c5b50c64988882dfefa07",
   "server/install/install-token.php": "c9a20bf0c427b5a30ab47516b151a48aa718ece9",
   "server/tests/cancellation_risk_fixture.php": "70f94ff83b30c976f1f41d0575f4cfe7f9a7445a",
-  "server/tests/chat_assignment_contract.php": "8dc9f14b157c060dfdc9d12ab1ffd598cabd9bc9",
+  "server/tests/chat_assignment_contract.php": "e417eadbb70f3e162cc9cc87f600a071cfb90996",
   "server/tests/chat_call_resource_contract.php": "18b2821c9e8ba4d5152799739926c65649634c2b",
   "server/tests/chat_calls_mysql_contract.php": "eb8b8428840374ad09f782b337f8890cf93fd049",
   "server/tests/chat_closure_contract.php": "6a33319d146a0e2a691ee09ce00781c825c40e4e",
