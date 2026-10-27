@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f2f6f4",
+  "usingComponents": {
+    "subscription-health-banner": "/components/subscription-health-banner/index"
+  }
+}

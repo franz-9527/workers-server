@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "platform-order-pricing": "/components/platform-order-pricing/index"
+  }
+}

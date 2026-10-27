@@ -1,0 +1,106 @@
+/* 2026-08-23：订单详情延续青色 ColorUI 风格，核心操作固定在底部并用半屏弹窗完成。 */
+@import "./detail-polish.wxss";
+.quote-preview{margin-top:20rpx;padding:18rpx 22rpx;background:#f5f9fa;border-radius:14rpx}.quote-preview view{display:flex;justify-content:space-between;padding:9rpx 0}.ack{display:flex;align-items:flex-start;margin-top:22rpx;line-height:1.55;color:#53686d}.ack checkbox{transform:scale(.8);margin-right:8rpx}
+/* 2026-08-24：尾款延期记录只突出异常情况，正常线下收款不增加流程负担。 */
+.collection-note{margin-top:20rpx;color:#668086;line-height:1.6}.delay-record{margin-top:18rpx;padding:20rpx;background:#fff8e8;border-radius:14rpx;line-height:1.55}
+.bg-gradual-cyan{background-image:linear-gradient(135deg,#00b9cb,#16a6c7)}
+.detail-page{min-height:100vh;background:#f4f7f8;color:#263b40}.loading-box{padding:240rpx 40rpx}.big-icon{font-size:90rpx}.spin{display:inline-block;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.hero{margin:24rpx;border-radius:24rpx;padding:30rpx;box-shadow:0 16rpx 42rpx rgba(0,185,203,.18)}.hero-icon{font-size:78rpx;opacity:.48}.opacity{opacity:.84}.hero-money{margin-top:30rpx;padding-top:25rpx;border-top:1rpx solid rgba(255,255,255,.25)}.notice{margin:16rpx 24rpx;padding:20rpx 24rpx;border-radius:14rpx;line-height:1.6}.panel{margin:20rpx 24rpx;border-radius:20rpx;padding:26rpx;box-shadow:0 8rpx 30rpx rgba(31,65,72,.06)}.panel-title{font-size:32rpx;font-weight:700;padding-bottom:20rpx;border-bottom:1rpx solid #edf1f2}.info-line{display:flex;align-items:center;padding:18rpx 0;border-bottom:1rpx dashed #edf1f2}.info-line .label{width:150rpx;flex:none;color:#7b898d}.info-line .value{flex:1;line-height:1.6}.align-start{align-items:flex-start}.address-actions{padding:20rpx 0;text-align:right}.distance-grid,.income-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16rpx;background:#f5f9fa;border-radius:14rpx;padding:20rpx;margin:8rpx 0 10rpx}.income-grid{grid-template-columns:repeat(3,1fr);text-align:center}.description{margin-top:20rpx;padding:20rpx;background:#f7f9fa;border-radius:14rpx;line-height:1.7}.media-scroll{white-space:nowrap;margin-top:20rpx}.media-row{display:inline-flex}.media-image{width:210rpx;height:170rpx;border-radius:14rpx;margin-right:14rpx}.commission-tip{margin-top:22rpx;color:#9a6327;background:#fff8e7;padding:18rpx;border-radius:12rpx}.step-row{display:flex;align-items:center;padding:22rpx 0;border-bottom:1rpx solid #edf1f2}.step-dot{width:48rpx;height:48rpx;line-height:48rpx;text-align:center;border-radius:50%;background:#e7ecee;color:#849195}.step-dot.done{background:#00b9cb;color:#fff}.step-body{flex:1;margin-left:20rpx}.upload-block{margin-top:22rpx;padding:22rpx;background:#f7f9fa;border-radius:16rpx}.thumb-row{display:flex;flex-wrap:wrap;margin-top:16rpx}.thumb-row image{width:138rpx;height:138rpx;border-radius:12rpx;margin:0 12rpx 12rpx 0}.completion-textarea,.modal-body textarea{box-sizing:border-box;width:100%;height:150rpx;background:#f4f7f8;border-radius:14rpx;padding:20rpx;margin-top:18rpx}.safe-bottom{height:150rpx}.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;padding:18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));box-shadow:0 -10rpx 35rpx rgba(25,50,56,.09)}.bottom-icon{background:transparent!important;font-size:22rpx;line-height:1.3;margin:0 18rpx;padding:0;color:#52666b}.bottom-icon:after{border:0}.bottom-icon text{font-size:40rpx;color:#00aabd}.bottom-bar>.cu-btn{height:76rpx;margin-left:12rpx}.bottom-modal .cu-dialog{border-radius:24rpx 24rpx 0 0}.modal-body{padding:26rpx 30rpx calc(34rpx + env(safe-area-inset-bottom))}.quote-reminder{padding:18rpx;background:#fff8e8;border-radius:12rpx;color:#8d6428}.amount-input{margin-top:22rpx;padding:18rpx 12rpx;border-bottom:2rpx solid #00b9cb}.amount-input input{font-size:44rpx;height:70rpx;margin-left:16rpx;flex:1}.picker-row{gap:18rpx}.picker-row picker{flex:1}.picker-box{background:#f4f7f8;border-radius:12rpx;padding:22rpx;text-align:center}.arrival-tags .cu-tag{margin-right:16rpx}
+
+/* 2026-08-25：V2.0.1 订单详情恢复原品牌青色，不再按师傅角色覆盖为绿色。 */
+.detail-page{background:#f2f7f8}.bg-gradual-cyan{background-image:linear-gradient(135deg,#00b9cb,#16a6c7)!important}.hero{box-shadow:0 16rpx 42rpx rgba(0,185,203,.18)}.detail-page .text-cyan,.bottom-icon text{color:#009baa!important}.detail-page .bg-cyan,.detail-page .bg-green{background:#00b9cb!important;color:#fff!important}.detail-page .line-cyan{color:#009baa!important;background:#fff!important;box-shadow:inset 0 0 0 1rpx #00b9cb!important}.step-dot.done{background:#00b9cb}.amount-input{border-bottom-color:#00b9cb}.detail-page .bg-cyan.light{background:#e9fbfd!important;color:#007f8d!important}
+/* 2026-08-27：管理员编辑入口仅放在详情头部，表单使用品牌色弹窗。 */
+.admin-edit-trigger{width:auto!important;height:56rpx!important;line-height:56rpx!important;margin:22rpx 0 0 auto!important;padding:0 22rpx!important;border-radius:28rpx!important;background:rgba(255,255,255,.18)!important;color:#fff!important;font-size:23rpx!important}.admin-edit-trigger:after{border:1rpx solid rgba(255,255,255,.46)!important}.admin-edit-mask{position:fixed;inset:0;z-index:70;display:flex;align-items:center;padding:38rpx;background:rgba(13,37,40,.58)}.admin-edit-modal{box-sizing:border-box;width:100%;padding:30rpx;border-radius:22rpx;background:#fff}.admin-edit-modal input,.admin-edit-modal textarea{box-sizing:border-box;width:100%;margin-top:20rpx;border:1rpx solid #dce8e9;border-radius:14rpx;background:#f8fbfb;padding:20rpx}.admin-edit-modal input{height:82rpx}.admin-edit-modal textarea{height:210rpx}
+/* 2026-08-28：管理员底部“管理”替代客服，黄色图标用于提示进入管理详情。 */
+.bottom-icon.admin-manage text{color:#d69b16!important}
+/* 2026-08-28：加价状态使用固定语义色，用户拒绝结果保持醒目且不与尾款延期混淆。 */
+.fee-change-panel{border-top:7rpx solid #f0a23b}.fee-change-item{padding:22rpx 0;border-bottom:1rpx solid #edf1f2}.fee-change-item:last-child{padding-bottom:0;border-bottom:0}.fee-change-reason{margin:15rpx 0;padding:17rpx;border-radius:12rpx;background:#f7f9fa;color:#586c71;line-height:1.6}.change-status{flex:none;margin-left:14rpx;padding:5rpx 13rpx;border-radius:18rpx;font-size:21rpx}.change-status.pending{background:#fff1d8;color:#b66c00}.change-status.accepted{background:#e7f8f0;color:#19885a}.change-status.rejected{background:#ffeded;color:#cf4841}.change-result{margin-top:14rpx;padding:16rpx 18rpx;border-radius:12rpx;font-size:22rpx;line-height:1.6}.change-result.rejected{background:#fff0ef;color:#b94742}.change-result.accepted{background:#eaf8f2;color:#1c8059}.change-result>text{margin-right:7rpx}
+/* 2026-08-27：施工与结算拆成清晰的连续步骤，师傅完工后可直接上传凭证并支付服务费。 */
+.fulfillment-panel{border-top:7rpx solid #00b9cb}.settlement-panel{border-top:7rpx solid #23b678}.settlement-progress{display:flex;align-items:center;justify-content:center;padding:28rpx 6rpx 18rpx}.settlement-progress>view:not(.line){width:112rpx;text-align:center;color:#a5b2b4}.settlement-progress>view>text{display:block;font-size:42rpx}.settlement-progress small{display:block;margin-top:5rpx;font-size:20rpx}.settlement-progress .done{color:#22aa70}.settlement-progress .line{width:62rpx;height:4rpx;margin-top:-28rpx;background:#dfe8e7}.settlement-progress .line.done{background:#55c89a}.receipt-box{margin-top:16rpx;padding:20rpx;border-radius:15rpx;background:#f5faf8}.commission-bill{margin-top:18rpx;padding:20rpx;border-radius:15rpx;background:#f7f9f9}.commission-bill>view{display:flex;justify-content:space-between;padding:11rpx 0;color:#66787c}.commission-bill .bill-total{margin-top:8rpx;padding-top:18rpx;border-top:1rpx solid #dfe7e8;color:#263b40;font-size:31rpx;font-weight:700}.settlement-note,.settlement-success{margin-top:18rpx;padding:18rpx;border-radius:13rpx;background:#fff7e7;color:#8c692b;text-align:center}.settlement-success{background:#eaf9f2;color:#198a5a}.settlement-success text{margin-right:8rpx}
+/* 2026-08-31：首张卡片的上间距由父容器承担，消除暗黑模式导航栏下方黑条。 */
+page{background:#f2f7f8!important}.detail-page{box-sizing:border-box;padding-top:0}.detail-page>.hero{margin-top:0}
+/* 2026-09-02：实际尾款调整在服务费支付前独立成块，审批状态与金额差异一眼可见。 */
+.tail-adjustment{margin-top:18rpx;padding:20rpx;border-radius:15rpx;background:#f4fbfc}.tail-input{display:flex;align-items:center;margin:16rpx 0;padding:0 18rpx;border:1rpx solid #c7e9ed;border-radius:13rpx;background:#fff}.tail-input text{font-size:32rpx;color:#008f9e}.tail-input input{flex:1;height:76rpx;margin-left:12rpx;font-size:34rpx}.tail-adjustment textarea{box-sizing:border-box;width:100%;height:130rpx;padding:18rpx;margin-bottom:16rpx;border-radius:13rpx;background:#fff}.adjustment-result{display:flex;flex-direction:column;gap:8rpx;margin-top:15rpx;padding:17rpx;border-radius:12rpx;background:#fff3dc;color:#9b681b}.adjustment-result.approved{background:#e9f8f1;color:#178357}.adjustment-result.rejected{background:#fff0ef;color:#b7443f}.watermark-canvas{position:fixed;left:-9999px;top:-9999px;pointer-events:none;opacity:.01}
+.receipt-thumb-row{display:flex;flex-wrap:wrap}.receipt-thumb{position:relative}.receipt-thumb image{display:block}.receipt-delete{position:absolute;right:-8rpx;top:-8rpx;display:flex;align-items:center;justify-content:center;width:42rpx!important;height:42rpx!important;min-height:42rpx!important;margin:0!important;padding:0!important;border-radius:50%;background:#e54d42!important;color:#fff!important;font-size:24rpx!important;line-height:42rpx!important;z-index:2}.receipt-delete:after{border:0}
+/* 2026-09-03：拒绝加价后的跑空费协商单独立展示，不与加价结果或尾款延期混淆。 */
+.run-empty-status{margin-top:18rpx;padding:18rpx;border-radius:13rpx;background:#fff8e9;color:#6e5a37}
+/* 2026-09-15：报价暂停原因与售后事项采用清晰的提示色，避免和主履约状态混淆。 */
+.detail-page .notice.quote-paused{background:#fff4e5;color:#8d5c1b;border-left:6rpx solid #e8a23d}.after-sales-item{padding:20rpx 0;border-bottom:1rpx solid #edf1f2}.after-sales-item:last-child{border-bottom:0;padding-bottom:0}.after-sales-status{flex:none;padding:6rpx 14rpx;border-radius:18rpx;background:#fff4df;color:#a56a10;font-size:21rpx}.after-sales-status.resolved,.after-sales-status.closed{background:#e9f8f1;color:#168254}.after-sales-status.rejected{background:#fff0ef;color:#bc4942}.after-sales-resolution{margin-top:14rpx;padding:16rpx;border-radius:12rpx;background:#eaf8f2;color:#237452;line-height:1.6}
+/* 2026-09-15：覆盖页面级浅色底色，避免系统暗色时安全区露出浅色条。 */
+@media (prefers-color-scheme:dark){page{background:#101718!important}}
+/* 2026-09-15：弱网失败后保留重试入口，明确已成功上传的图片不会重复上传。 */
+.upload-retry-card{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin:18rpx 22rpx;padding:18rpx 20rpx;border:1rpx solid #f0d49a;border-radius:16rpx;background:#fff8e9;color:#805817;font-size:23rpx;line-height:1.45}.upload-retry-card>view{min-width:0;flex:1}.upload-retry-card>view>text{margin-right:8rpx;color:#d28a1a}.upload-retry-card button{flex:none;margin:0!important}
+@media (prefers-color-scheme:dark){.upload-retry-card{background:#352a18;border-color:#725820;color:#f0d599}.upload-retry-card>view>text{color:#f2c555}}
+/* 2026-09-15：结构化报价字段有清晰分组，师傅端暗色模式同样保持可读。 */
+.quote-field{margin-top:18rpx}.quote-field>text{display:block;margin:0 0 8rpx;color:#596b70;font-size:23rpx;font-weight:600}.quote-field input,.quote-field textarea{box-sizing:border-box;width:100%;margin:0;padding:16rpx 18rpx;border:1rpx solid #dce7e8;border-radius:12rpx;background:#f8fbfb;color:#33494e;font-size:24rpx}.quote-field input{height:76rpx}.quote-field textarea{min-height:100rpx}.modal-body .quote-field textarea{height:110rpx}
+@media (prefers-color-scheme:dark){.quote-field>text{color:#c5d3d5}.quote-field input,.quote-field textarea{border-color:#3a4c4f;background:#1c282a;color:#e4eeee}.quote-field input::placeholder,.quote-field textarea::placeholder{color:#829396}}
+/* 2026-09-15：结构化报价字段有清晰分组，师傅端暗色模式同样保持可读。 */
+.quote-field{margin-top:18rpx}.quote-field>text{display:block;margin:0 0 8rpx;color:#596b70;font-size:23rpx;font-weight:600}.quote-field input,.quote-field textarea{box-sizing:border-box;width:100%;margin:0;padding:16rpx 18rpx;border:1rpx solid #dce7e8;border-radius:12rpx;background:#f8fbfb;color:#33494e;font-size:24rpx}.quote-field input{height:76rpx}.quote-field textarea{min-height:100rpx}.modal-body .quote-field textarea{height:110rpx}
+@media (prefers-color-scheme:dark){.quote-field>text{color:#c5d3d5}.quote-field input,.quote-field textarea{border-color:#3a4c4f;background:#1c282a;color:#e4eeee}.quote-field input::placeholder,.quote-field textarea::placeholder{color:#829396}}
+
+.repair-priority-notice{border:2rpx solid #ef9d35!important;font-weight:700;box-shadow:0 8rpx 24rpx rgba(239,157,53,.12)}
+
+/* V2.2.5：施工模块改为结果优先的卡片式流程，已提交内容折叠为摘要。 */
+.fulfillment-title{display:flex;align-items:center;justify-content:space-between}.stage-status{padding:6rpx 14rpx;border-radius:18rpx;background:#e9fbfd;color:#008b99;font-size:21rpx;font-weight:500}.work-stage-card{margin-top:18rpx;padding:20rpx;border:1rpx solid #e6eef0;border-radius:18rpx;background:#fbfdfd}.work-stage-card.is-done{background:#f5fbf8;border-color:#dcefe4}.work-stage-head{display:flex;align-items:center;gap:16rpx}.work-stage-index{display:flex;align-items:center;justify-content:center;width:54rpx;height:54rpx;flex:none;border-radius:16rpx;background:#eaf8fa;color:#0098a7;font-size:28rpx}.work-stage-card.is-done .work-stage-index{background:#e5f6ed;color:#1d9b67}.work-stage-main{min-width:0;flex:1}.work-stage-title{font-weight:700;color:#243a3f}.work-stage-summary{margin-top:6rpx;color:#7a8c90;font-size:22rpx;line-height:1.5}.work-stage-note{margin:14rpx 0 0 70rpx;padding:12rpx 16rpx;border-radius:12rpx;background:#f2f6f7;color:#64777b;font-size:22rpx}.stage-mini-action{flex:none!important;width:auto!important;min-width:104rpx!important;height:58rpx!important;min-height:58rpx!important;margin:0!important;padding:0 18rpx!important;border-radius:30rpx!important;background:#fff!important;color:#0096a5!important;font-size:22rpx!important;line-height:58rpx!important;box-shadow:inset 0 0 0 1rpx #bfe7eb!important}.stage-mini-action:after{border:0!important}.stage-mini-action.warning{color:#b9781f!important;box-shadow:inset 0 0 0 1rpx #f0d59f!important}.optional-tag{margin-left:8rpx;color:#94a3a6;font-size:20rpx;font-weight:400}.completion-editor{margin-top:18rpx;padding-top:18rpx;border-top:1rpx solid #edf2f3}.completion-upload-head{display:flex;align-items:center;justify-content:space-between;gap:16rpx}.submit-completion-btn{margin-top:20rpx!important}.stage-done-mark{flex:none;color:#239465;font-size:22rpx}.stage-done-mark>text{margin-right:6rpx}.compact-thumbs{margin-left:70rpx}.compact-thumbs image{width:104rpx;height:104rpx}.exception-entry{display:flex!important;align-items:center!important;justify-content:flex-start!important;width:100%!important;height:68rpx!important;min-height:68rpx!important;margin:18rpx 0 0!important;padding:0 18rpx!important;border-radius:14rpx!important;background:#fffaf1!important;color:#9b6a25!important;font-size:22rpx!important;line-height:68rpx!important;text-align:left!important}.exception-entry:after{border:0!important}.exception-entry>text:first-child{margin-right:10rpx}.exception-entry>text:last-child{margin-left:auto}.repair-priority-notice{font-weight:600;border-left:6rpx solid #f09b31}
+
+/* V2.2.6：底部流程栏只导航到处理模块，避免误触即执行关键动作。 */
+.workflow-bottom-bar{gap:10rpx}.workflow-nav-action{min-width:170rpx;flex:1;height:72rpx;padding:0 18rpx;border-radius:36rpx;font-size:25rpx;font-weight:700}.workflow-target-panel{scroll-margin-top:100rpx}.assignment-actions{display:flex;gap:16rpx}.assignment-actions .cu-btn{flex:1}
+@media(max-width:360px){.workflow-nav-action{min-width:146rpx;padding:0 12rpx;font-size:23rpx}}
+
+/* V2.2.7：预约常用时间快捷选择，减少重复点日期和时间。 */
+.appointment-presets{margin-bottom:18rpx}.preset-row{display:flex;gap:10rpx;flex-wrap:wrap}.preset-button{margin:0!important;padding:0 20rpx!important}
+
+
+/* V2.2.8：预约“等待客户另行通知”控件，浅色/暗色均保持可读。 */
+.appointment-wait-option{display:flex;align-items:center;gap:12rpx;padding:18rpx 20rpx;border:1rpx solid #d8e4e6;border-radius:14rpx;background:#f7fbfb;color:#26383b}
+@media (prefers-color-scheme:dark){
+  .appointment-wait-option{background:#1c292b;border-color:#3a4c4f;color:#e4eeee}
+}
+
+/* 2026-09-28：抢单模式强调先锁单、再沟通报价。 */
+.grab-mode-notice,.grab-pending-notice{border-left:6rpx solid #e7a23a!important;background:#fff8e9!important;color:#795521!important}.grab-mode-notice>text:first-child,.grab-pending-notice>text:first-child{margin-right:8rpx;color:#d98919}.grab-action-panel{border-top:5rpx solid rgba(231,162,58,.68)}.grab-action-panel .bg-orange{background:#e7a23a!important}@media(prefers-color-scheme:dark){.grab-mode-notice,.grab-pending-notice{background:#362d1e!important;color:#e6c28a!important;border-color:#bd8030!important}.grab-action-panel{border-top-color:#9d6d2e}}
+.info-line .value{min-width:0;overflow-wrap:anywhere;word-break:break-all}
+
+/* 履约卡片、金额与固定底栏：按实际安全区预留空间。 */
+.detail-page .safe-bottom{height:calc(150rpx + env(safe-area-inset-bottom))}
+.detail-page .expected-fee-value{color:#8a5c1e;font-weight:600}
+.detail-page .expected-fee-value.fixed{color:#9b570c;font-weight:700}
+.detail-page .work-stage-title,.detail-page .work-stage-summary{overflow-wrap:anywhere}
+.detail-page .stage-mini-action{display:flex!important;align-items:center;justify-content:center}
+@media (prefers-color-scheme:dark){
+  .detail-page .work-stage-card{background:#162225;border-color:#2d4145}
+  .detail-page .work-stage-card.is-done{background:#182e26;border-color:#315344}
+  .detail-page .work-stage-title{color:#e7f0f1}
+  .detail-page .work-stage-summary,.detail-page .optional-tag{color:#a7b9bc}
+  .detail-page .work-stage-index{background:#12383d;color:#80e7ee}
+  .detail-page .work-stage-card.is-done .work-stage-index{background:#1c4031;color:#8ce3b7}
+  .detail-page .work-stage-note{background:#203438;color:#c0d4d7}
+  .detail-page .stage-mini-action{background:#20363a!important;color:#80e7ee!important;box-shadow:inset 0 0 0 1rpx #41636a!important}
+  .detail-page .stage-mini-action.warning{color:#f0c86a!important;box-shadow:inset 0 0 0 1rpx #80672f!important}
+  .detail-page .stage-done-mark{color:#8ce3b7}
+  .detail-page .expected-fee-value,.detail-page .expected-fee-value.fixed{color:#f0c780}
+}
+/* V2.5.0：完工主流程只保留照片；说明和保障由 worker-completion-submit 的选填弹层接管。 */
+.completion-editor>.completion-textarea,.completion-editor>.warranty-box{display:none!important}
+.quote-agreement-notice{margin-top:24rpx;padding:20rpx;border:2rpx solid #16a568;border-radius:14rpx;background:rgba(22,165,104,.08)}.quote-agreement-link{display:block;margin:12rpx 0;color:var(--ui-brand,#008f9c);font-weight:700;text-decoration:underline;line-height:1.7}
+/* 报价与总价抢单共用表单，包含输入值、提示及协议的明暗样式。 */
+.detail-page .quote-sheet .cu-dialog{max-height:88vh;display:flex;flex-direction:column;background:#fff;color:#293a3f}
+.detail-page .quote-sheet .cu-bar{flex:none;background:#fff!important;color:#293a3f}
+.detail-page .quote-sheet .modal-body{height:68vh;max-height:calc(88vh - 100rpx);box-sizing:border-box;min-height:0}
+.detail-page .quote-sheet .quote-preview{color:#293a3f;background:#f5f8f9}
+.detail-page .quote-sheet .quote-placeholder{color:#667b80}
+.detail-page .quote-sheet .quote-field textarea{height:190rpx;color:#293a3f}
+.detail-page .quote-sheet .grab-fixed-amount{font-size:44rpx;font-weight:700;margin-left:16rpx}
+.detail-page .quote-sheet .ack{color:#344c50}
+@media (prefers-color-scheme:dark){
+ .detail-page .quote-sheet .cu-dialog,.detail-page .quote-sheet .cu-bar{background:#192629!important;color:#e7f0f1}
+ .detail-page .quote-sheet .cu-bar .content,.detail-page .quote-sheet .amount-input,.detail-page .quote-sheet input,.detail-page .quote-sheet textarea{color:#e7f0f1}
+ .detail-page .quote-sheet .quote-field input,.detail-page .quote-sheet .quote-field textarea{background:#162225;border-color:#456068;color:#e7f0f1}
+ .detail-page .quote-sheet .quote-field>text,.detail-page .quote-sheet .ack{color:#c4d5d8}
+ .detail-page .quote-sheet .quote-placeholder{color:#a7b9bc}
+ .detail-page .quote-sheet .quote-preview{background:#162225;color:#e7f0f1}
+ .detail-page .quote-sheet .quote-reminder{background:#382f20;color:#f0d49a}
+ .detail-page .quote-sheet .quote-agreement-notice{background:#16352d;border-color:#529d80}
+ .detail-page .quote-sheet .quote-agreement-link,.detail-page .quote-sheet .text-cyan{color:#80e7ee!important}
+ .detail-page .quote-sheet .text-grey{color:#a7b9bc!important}
+ .detail-page .quote-sheet .text-green{color:#8ce3b7!important}
+}

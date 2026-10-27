@@ -1,0 +1,43 @@
+<!-- 实名资料仅用于身份核验；微信识别只作为辅助录入能力，不替代原认证说明。 -->
+<view wx:if="{{!loading}}" class="kyc-page">
+  <view class="legal-tip"><text class="cuIcon-safe text-green"></text><text>按上门服务实名要求核验身份，请确认资料与支付宝实名信息一致。</text></view>
+  <view class="status-card"><view><view class="text-grey text-sm">当前状态</view><view class="text-xl text-bold margin-top-xs">{{statusText}}</view></view><text class="status {{verification.status}}">{{statusText}}</text><view wx:if="{{verification.review_reason}}" class="reason">审核说明：{{verification.review_reason}}</view></view>
+  <view wx:if="{{verification.status !== 'approved' && verification.status !== 'pending'}}">
+    <view wx:if="{{editingReauth}}" class="legal-tip">正式提交前，原认证继续有效；已保存的资料可在下次进入时继续填写。</view>
+    <view class="photo-card">
+      <view class="card-heading"><view class="text-xl text-bold">上传身份证照片</view><text class="ocr-source">微信识别</text></view>
+      <view class="orange-tip">请保证四角完整、文字清晰；上传时会添加“{{watermarkText}}”水印。</view>
+      <view class="id-photo {{verification.media.id_front ? 'done' : ''}}" data-purpose="id_front" bindtap="chooseIdImage">
+        <image wx:if="{{verification.media.id_front}}" src="{{verification.media.id_front.url}}" mode="aspectFill"></image>
+        <view wx:else><text class="cuIcon-cameraadd"></text><text>上传/拍摄身份证人像面</text><small>支持自动识别姓名和身份证号</small></view>
+        <text wx:if="{{ocrFrontOk}}" class="ocr-badge"><text class="cuIcon-roundcheckfill"></text> 已识别</text>
+        <text wx:if="{{verification.media.id_front}}" class="photo-replace">点击重新拍摄/上传</text>
+      </view>
+      <view class="id-photo {{verification.media.id_back ? 'done' : ''}}" data-purpose="id_back" bindtap="chooseIdImage">
+        <image wx:if="{{verification.media.id_back}}" src="{{verification.media.id_back.url}}" mode="aspectFill"></image>
+        <view wx:else><text class="cuIcon-cameraadd"></text><text>上传/拍摄身份证国徽面</text><small>请保持证件完整清晰</small></view>
+        <text wx:if="{{ocrBackOk}}" class="ocr-badge"><text class="cuIcon-roundcheckfill"></text> 已识别</text>
+        <text wx:if="{{verification.media.id_back}}" class="photo-replace">点击重新拍摄/上传</text>
+      </view>
+    </view>
+    <view class="form-card">
+      <view class="form-hint"><text class="cuIcon-info"></text> 识别后请核对姓名与身份证号。</view>
+      <view class="form-row"><text>真实姓名</text><input placeholder="识别后自动填入" maxlength="80" value="{{realName}}" bindinput="nameInput" bindblur="saveDraft"/></view>
+      <view class="form-row"><text>身份证号码</text><input placeholder="识别后自动填入" maxlength="18" value="{{idNumber}}" bindinput="idInput" bindblur="saveDraft"/></view>
+    </view>
+    <view class="bottom"><button class="cu-btn lg round worker-primary text-white block" loading="{{submitting}}" disabled="{{recognizingPurpose || restarting}}" bindtap="submit">提交实名认证</button></view>
+  </view>
+  <view wx:else class="result-card">
+    <text class="{{verification.status === 'approved' ? 'cuIcon-roundcheckfill text-green' : 'cuIcon-timefill text-orange'}}"></text>
+    <view class="text-xl text-bold">{{statusText}}</view>
+    <view class="text-grey margin-top">{{verification.real_name_masked}}　{{verification.id_number_masked}}</view>
+    <view wx:if="{{verification.status === 'pending'}}" class="result-note">资料审核期间暂不能修改。</view>
+    <block wx:if="{{verification.status === 'approved' && reauthPolicy.loaded}}">
+      <view wx:if="{{reauthPolicy.can_self_reauth}}" class="result-note">证件信息发生变化时，可自主重新认证 {{reauthPolicy.self_reauth_remaining}} 次。</view>
+      <view wx:elif="{{reauthPolicy.requires_admin_revoke}}" class="result-note">已达到自主重新认证次数，如需修改请联系管理员取消认证。</view>
+      <button wx:if="{{reauthPolicy.can_self_reauth}}" class="cu-btn round line-green reauth-btn" loading="{{restarting}}" bindtap="restartVerification">重新认证</button>
+    </block>
+  </view>
+</view>
+<!-- 画布放在视区外但保持可渲染，display:none 会导致 Canvas 2D 无法导出。 -->
+<canvas type="2d" id="idWatermarkCanvas" class="watermark-canvas"></canvas>

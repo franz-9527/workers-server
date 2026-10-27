@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "order-product-field": "/components/order-product-field/index"
+  },
+  "navigationBarTitleText": "商品模板",
+  "navigationBarBackgroundColor": "#00b9cb",
+  "navigationBarTextStyle": "white"
+}

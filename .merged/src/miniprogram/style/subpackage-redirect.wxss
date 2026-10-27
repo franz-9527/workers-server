@@ -1,0 +1,1 @@
+.subpackage-redirect{min-height:100vh;box-sizing:border-box;padding:100rpx 40rpx;text-align:center;color:#64748b;background:#f5f7fa}.subpackage-redirect button{margin-top:32rpx;color:#fff;background:#00aeba}.subpackage-redirect__title{font-size:30rpx;margin-bottom:16rpx}@media(prefers-color-scheme:dark){.subpackage-redirect{color:#cbd5e1;background:#111827}}

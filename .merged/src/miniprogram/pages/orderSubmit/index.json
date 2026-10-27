@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "order-announcement": "/components/order-announcement/index",
+    "order-product-field": "/components/order-product-field/index"
+  },
+  "navigationBarTitleText": "我要下单",
+  "navigationBarBackgroundColor": "#00b9cb",
+  "navigationBarTextStyle": "white"
+}
