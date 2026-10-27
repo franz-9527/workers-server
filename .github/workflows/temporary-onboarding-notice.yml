@@ -1,0 +1,62 @@
+name: Temporary onboarding notification regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation-onboarding/**'
+      - '.github/workflows/temporary-onboarding-notice.yml'
+permissions:
+  contents: read
+jobs:
+  notification-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: test-only
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest-only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, pdo_mysql
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact source snapshot
+        working-directory: .validation-onboarding
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),crypto=require('crypto'),m=require('./source-manifest.json');
+          for(const [p,sha] of Object.entries(m.files)){
+            const b=fs.readFileSync(p);
+            const actual=crypto.createHash('sha1').update(Buffer.from('blob '+b.length+'\0')).update(b).digest('hex');
+            if(actual!==sha)throw Error('Source blob differs: '+p);
+          }
+          console.log('Exact source '+m.source+': '+Object.keys(m.files).length+' files verified');
+          NODE
+      - name: PHP syntax and provider regression
+        working-directory: .validation-onboarding
+        run: |
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l
+          php server/tests/v260_wecom_onboarding_receipt.php
+          php server/tests/v260_message_outbox_dispatch_policy.php
+      - name: Review page runtime regression
+        working-directory: .validation-onboarding
+        run: node tools/test_review_notice_reconciliation.js
+      - name: MySQL receipt and notification matching regression
+        working-directory: .validation-onboarding
+        env:
+          ONBOARDING_NOTICE_MYSQL_TEST: '1'
+        run: php server/tests/v260_onboarding_notice_mysql.php
