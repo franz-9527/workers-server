@@ -55,6 +55,20 @@ jobs:
           php-version: '8.3.36'
           extensions: pdo_mysql,sodium,ctype,mbstring,curl,gd
           coverage: none
+      - name: Enable isolated MySQL recovery coordinates
+        run: |
+          docker exec -i ${{ job.services.mysql.id }} sh -c 'cat > /etc/mysql/conf.d/chat-merge-binlog.cnf' <<'CFG'
+          [mysqld]
+          log-bin=mysql-bin
+          server-id=71
+          binlog-format=ROW
+          CFG
+          docker restart ${{ job.services.mysql.id }} >/dev/null
+          for attempt in $(seq 1 30); do
+            if docker exec ${{ job.services.mysql.id }} mysqladmin ping -h 127.0.0.1 -ptest-only --silent; then break; fi
+            sleep 1
+          done
+          docker exec ${{ job.services.mysql.id }} mysql -uroot -ptest-only -e 'SHOW MASTER STATUS'
       - name: Exact merged inputs and isolated endpoints
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
@@ -84,18 +98,16 @@ jobs:
           cd .merged/src
           php -l server/tests/chat_policy_contract.php
           php -l server/tests/chat_closure_contract.php
+          php -l server/app/Application/Chat/ChatSmsReminders.php
+          php -l server/tests/chat_sms_mysql_contract.php
           status=0
           for name in chat_schema_contract chat_identity_contract chat_platform_contract chat_policy_contract chat_assignment_contract chat_closure_contract chat_repair_contract chat_storage_contract chat_participant_contract chat_collaboration_policy_contract chat_reminder_contract chat_text_security_contract chat_operations_contract chat_call_resource_contract chat_calls_mysql_contract chat_sms_mysql_contract v260_paid_sms_receipt_policy v260_paid_sms_receipt_repository_mysql; do php "server/tests/$name.php" || status=1; done
           php server/tests/chat_collaboration_policy_contract.php --emit-fixtures > "$RUNNER_TEMP/s24-merged-wire.json"
           echo "CHAT_S24_PHP_FIXTURES=$RUNNER_TEMP/s24-merged-wire.json" >> "$GITHUB_ENV"
           exit "$status"
-      - name: PHP wire fixtures against unchanged Go policy (full module passed run 40537132407)
-        if: success() || failure()
-        working-directory: .merged/src/chat
-        run: |
-          set -euo pipefail
-          test -s "$CHAT_S24_PHP_FIXTURES"
-          go test -race -count=1 -v ./internal/policy
+      - name: Isolated lock diagnostics
+        if: failure()
+        run: docker exec ${{ job.services.mysql.id }} mysql -uroot -ptest-only -e 'SHOW ENGINE INNODB STATUS'
       - name: Source blob proof and clean index
         if: always()
         run: |

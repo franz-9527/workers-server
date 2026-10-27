@@ -97,11 +97,16 @@ try{
  $failed=$payload($quote('91010'));$service->create('90001',$failed);$fid=(int)$db->fetchValue('SELECT id FROM chat_sms_nudges WHERE client_request_id=:r',['r'=>$failed['client_request_id']]);
  $gateway->outcome='accepted';$gateway->status=2;$delivery->dispatchOutbox((int)$db->fetchValue('SELECT outbox_id FROM chat_sms_nudges WHERE id=:id',['id'=>$fid]),$fid);$delivery->checkReceipt($fid);
  $assert($service->status('90001',['client_request_id'=>$failed['client_request_id']])['billing_status']==='released','explicit failed receipt refunds exactly once');
- // Eight independent connections compete for one recipient/wave and the final balance.
- $db->execute('UPDATE user_wallets SET available_cents=10,reserved_cents=0 WHERE user_id=90001');$race=$payload($quote('91006'));$children=[];
- foreach(range(1,8) as $n){$r=$race;$r['client_request_id']=bin2hex(random_bytes(16));$pipes=[];$p=proc_open([PHP_BINARY,__FILE__,'--child',json_encode($r,JSON_THROW_ON_ERROR)],[['pipe','r'],['pipe','w'],['pipe','w']],$pipes,null,array_merge(getenv(),['CHAT_SMS_DATABASE'=>$name]));fclose($pipes[0]);$children[]=[$p,$pipes];}
- foreach($children as [$p,$pipes]){$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$exit=proc_close($p);$assert($exit===0&&$err==='','isolated child execution');$assert($out==='created','same wave resolves idempotently '.$out);}
- $assert((int)$db->fetchValue("SELECT COUNT(*) FROM chat_sms_nudges WHERE recipient_id=91006")===1,'concurrent devices create only one task');$assert((int)$db->fetchValue('SELECT reserved_cents FROM user_wallets WHERE user_id=90001')===10,'one hold under eight processes');
+ // Repeat cold recipient-guard creation with eight processes and only one fee left.
+ foreach(['91006','91011','91012'] as $round=>$recipient){
+  $db->execute('UPDATE user_wallets SET available_cents=10 WHERE user_id=90001');$race=$payload($quote($recipient));$children=[];
+  foreach(range(1,8) as $n){$r=$race;$r['client_request_id']=bin2hex(random_bytes(16));$pipes=[];$p=proc_open([PHP_BINARY,__FILE__,'--child',json_encode($r,JSON_THROW_ON_ERROR)],[['pipe','r'],['pipe','w'],['pipe','w']],$pipes,null,array_merge(getenv(),['CHAT_SMS_DATABASE'=>$name]));fclose($pipes[0]);$children[]=[$p,$pipes];}
+  foreach($children as [$p,$pipes]){$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$exit=proc_close($p);$assert($exit===0&&$err==='','isolated child execution');$assert($out==='created','same wave resolves idempotently '.$out);}
+  $assert((int)$db->fetchValue('SELECT COUNT(*) FROM chat_sms_nudges WHERE recipient_id=:id',['id'=>$recipient])===1,'concurrent devices create only one task');
+  $assert((int)$db->fetchValue('SELECT reserved_cents FROM user_wallets WHERE user_id=90001')===10,'one hold under eight processes');
+  $assert((int)$db->fetchValue('SELECT available_cents FROM user_wallets WHERE user_id=90001')===0,'only one fee leaves available balance');
+  if($round<2){$GLOBALS['allowed']=false;$delivery->dispatchPending(50);$GLOBALS['allowed']=true;$assert((int)$db->fetchValue('SELECT reserved_cents FROM user_wallets WHERE user_id=90001')===0,'cancelled race task releases its hold');}
+ }
  $GLOBALS['smsConfig']['chat.sms_reminders_enabled']=false;$delivery->dispatchPending(50);
  $assert((int)$db->fetchValue('SELECT reserved_cents FROM user_wallets WHERE user_id=90001')===0,'closing admission refunds unsent tasks');
  echo 'Chat paid SMS MySQL: '.$count." assertions passed\n";

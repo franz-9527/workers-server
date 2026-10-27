@@ -80,9 +80,10 @@ final class ChatSmsReminders
   $phone=$this->currentMobile($q['recipient_id']);if($phone==='')throw new RuntimeException('CHAT_SMS_INELIGIBLE',409);
   $hmac=$this->mobile->hmac($phone);
   return $this->db->transaction(function()use($payer,$uid,$q,$fingerprint,$phone,$hmac):array{
-   // Permanent guard rows serialize shared-phone spam limits across conversations and payers.
+   // Acquire an exclusive guard lock atomically; INSERT IGNORE then FOR UPDATE can deadlock on duplicate-key shared-lock upgrades.
+   // Sorted permanent guards serialize shared-phone spam limits across conversations and payers.
    $guards=['mobile:'.$hmac,'payer:'.$payer];sort($guards);
-   foreach($guards as $key){$this->db->execute('INSERT IGNORE INTO chat_sms_guards(guard_key) VALUES(:key)',['key'=>$key]);$this->db->fetchValue('SELECT guard_key FROM chat_sms_guards WHERE guard_key=:key FOR UPDATE',['key'=>$key]);}
+   foreach($guards as $key){$this->db->execute('INSERT INTO chat_sms_guards(guard_key) VALUES(:key) ON DUPLICATE KEY UPDATE guard_key=VALUES(guard_key)',['key'=>$key]);$this->db->fetchValue('SELECT guard_key FROM chat_sms_guards WHERE guard_key=:key FOR UPDATE',['key'=>$key]);}
    $wallet=$this->wallet->lockWallet($uid);
    $existing=$this->existing($payer,$q['client_request_id']);
    if($existing){if(!hash_equals($existing['request_fingerprint'],$fingerprint))throw new RuntimeException('CHAT_SMS_CONFLICT',409);return $this->view($existing);}
