@@ -3,7 +3,7 @@ function fixture(){
  const requests=[],routes=[],storage=new Map();let definition,quote
  const item={recipient_id:'12',display_name:'李师傅',message_id:'8',policy_version:'1',wave:'a'.repeat(64),fee_cents:10,quote_token:'signed'}
  quote={enabled:true,payer_id:'11',items:[item],available_cents:100}
- const manager={epoch:1,enabled:true,io:{now:()=>100000,randomBytes:async()=> 'b'.repeat(32),async sms(action,data){requests.push({action,data:structuredClone(data)});if(action==='quote')return structuredClone(quote);if(action==='create')return{state:'queued',fee_cents:10,client_request_id:data.client_request_id};return{state:'delivered',fee_cents:10}}}
+ const manager={epoch:1,enabled:true,io:{now:()=>100000,randomBytes:async()=> 'b'.repeat(32),async sms(action,data){requests.push({action,data:structuredClone(data)});if(action==='quote')return structuredClone(quote);if(action==='create')return{state:'queued',fee_cents:10,client_request_id:data.client_request_id};return{state:'delivered',fee_cents:10}}}}
  const wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),navigateTo:r=>routes.push(r.url),showToast(){}}
  const module={exports:{}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../miniprogram/subpackages/chat/conversation/sms.js'),'utf8'),{module,require:()=>({storageKey:x=>'test:'+x}),wx,setTimeout:()=>1,clearTimeout(){}})

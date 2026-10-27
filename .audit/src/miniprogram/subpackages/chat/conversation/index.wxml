@@ -114,7 +114,7 @@
   <view wx:if="{{smsDialog}}" class="sms-mask" catchtouchmove="stopImageTouch" bindtap="closeSMS">
     <view class="sms-dialog" role="dialog" aria-label="短信提醒确认" catchtap="stopImageTouch">
       <view class="sms-dialog-title">短信提醒</view>
-      <scroll-view wx:if="{{smsDialog.state === 'confirm'}}" scroll-y class="sms-recipient-list">
+      <scroll-view wx:if="{{smsDialog.state === 'confirm'}}" scroll-y class="sms-recipient-list {{smsDialog.items.length === 1 ? 'sms-one' : (smsDialog.items.length === 2 ? 'sms-two' : '')}}">
         <button wx:for="{{smsDialog.items}}" wx:key="id" class="sms-recipient {{smsDialog.selected === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="selectSMSRecipient" disabled="{{smsBusy}}"><text>{{item.name}}</text><text>{{smsDialog.selected === item.id ? '✓' : ''}}</text></button>
       </scroll-view>
       <view wx:if="{{smsDialog.state === 'confirm'}}" class="sms-fee">本次 {{smsDialog.fee}} · 可用余额 {{smsDialog.balance}}</view>

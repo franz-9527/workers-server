@@ -68,7 +68,7 @@ final class ChatCredentialApiModule implements ApiModule
             // Deliberately don't pass the exception/SQL/token to the global API logger.
             $status = $exception instanceof RuntimeException && in_array($exception->getCode(),[400,401,403,404,409,429],true) ? $exception->getCode() : 503;
             if($exception instanceof RuntimeException && str_starts_with($exception->getMessage(),'CHAT_')){
-                $messages=['CHAT_SMS_BALANCE_INSUFFICIENT'=>'余额不足，请先充值','CHAT_SMS_PRICE_CHANGED'=>'费用或确认已更新，请重新确认','CHAT_SMS_INELIGIBLE'=>'对方可能已读或沟通状态变化，未扣费','CHAT_SMS_RATE_LIMIT'=>'该对象近期已收到提醒，请稍后再试','CHAT_SMS_CONFLICT'=>'请先核对上次短信结果','CHAT_SMS_UNAVAILABLE'=>'短信提醒暂不可用','CHAT_SMS_INVALID'=>'短信请求无效','CHAT_GROUP_FULL'=>'协作群已满，请联系邀请人调整人数或等待成员退出','CHAT_VERSION_CONFLICT'=>'群信息已变化，请刷新后重试','CHAT_INVITE_INVALID'=>'分享邀请已失效，请联系邀请人重新生成','CHAT_INVITE_REGENERATE_REQUIRED'=>'请联系邀请人重新生成分享后再加入'];
+                $messages=['CHAT_SMS_BALANCE_INSUFFICIENT'=>'余额不足，请先充值','CHAT_SMS_PRICE_CHANGED'=>'费用或确认已更新，请重新确认','CHAT_SMS_INELIGIBLE'=>'对方可能已读或沟通状态变化，未扣费','CHAT_SMS_RATE_LIMIT'=>'该对象近期提醒次数已达限制，请稍后再试','CHAT_SMS_CONFLICT'=>'请先核对上次短信结果','CHAT_SMS_UNAVAILABLE'=>'短信提醒暂不可用','CHAT_SMS_INVALID'=>'短信请求无效','CHAT_GROUP_FULL'=>'协作群已满，请联系邀请人调整人数或等待成员退出','CHAT_VERSION_CONFLICT'=>'群信息已变化，请刷新后重试','CHAT_INVITE_INVALID'=>'分享邀请已失效，请联系邀请人重新生成','CHAT_INVITE_REGENERATE_REQUIRED'=>'请联系邀请人重新生成分享后再加入'];
                 $this->fail($messages[$exception->getMessage()]??'当前操作不可用，请刷新后重试',$exception->getMessage(),$status);return;
             }
             $this->fail($status === 400 ? '展示范围无效' : ($status === 401 ? '登录状态已失效，请重新进入' : '聊天身份暂不可用，请稍后重试'),

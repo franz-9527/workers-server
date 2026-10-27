@@ -71,7 +71,7 @@ function fixture(name,tools=false){
  return {p,data}
 }
 async function render(browser,name,theme,width=375,large=false,tools=false){
- const {p,data}=fixture(name,tools);if(tools==='audio-off')Object.assign(data,{showTools:false,voiceMode:true,audioEnabled:false,draft:'可以继续发送文字'});if(typeof tools==='string'&&tools.startsWith('sms-'))Object.assign(data,{showTools:false,smsAnchor:'4',smsFirstHint:true,smsDialog:{state:tools==='sms-pending'?'pending':'confirm',items:[{id:'12',name:'李师傅'},{id:'13',name:'商家138****8000'}],selected:'12',fee:'¥0.10',balance:tools==='sms-zero'?'¥0.00':'¥1.00',insufficient:tools==='sms-zero',notice:tools==='sms-pending'?'提交结果待核对，请核对原短信，勿重复发送。':'确认后先预占余额，运营商确认送达才扣费；失败或超时未确认会退回。'}});const page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
+ const {p,data}=fixture(name,tools);if(tools==='audio-off')Object.assign(data,{showTools:false,voiceMode:true,audioEnabled:false,draft:'可以继续发送文字'});if(typeof tools==='string'&&tools.startsWith('sms-'))Object.assign(data,{showTools:false,smsAnchor:'4',smsFirstHint:true,smsDialog:{state:tools==='sms-pending'?'pending':'confirm',items:[{id:'12',name:'李师傅'},{id:'13',name:'商家138****8000'}],selected:'12',fee:'¥0.10',balance:tools==='sms-zero'?'¥0.00':'¥1.00',insufficient:tools==='sms-zero',notice:tools==='sms-pending'?'提交结果待核对，请核对原短信，勿重复发送。':'确认后先预占余额，运营商确认送达才扣费；失败或超时未确认会退回。'}});if(tools==='sms-group')data.smsDialog.items=Array.from({length:64},(_,i)=>({id:String(i+12),name:i===0?'项目负责人 · 用户ABC123':'协作成员'+String(i+1)}));const page=await browser.newPage({viewport:{width,height:812},deviceScaleFactor:1,colorScheme:theme})
  await page.route('**/*',r=>/^(file:|data:|about:)/.test(r.request().url())?r.continue():r.abort())
  const source=read(p+'.wxml'),html=children(parseDocument(source,{xmlMode:true,decodeEntities:true}).children,data)
  await page.setContent('<html><head><meta charset="utf-8"><style>html,body{margin:0;width:100%;font-family:"Noto Sans CJK SC",sans-serif}*{box-sizing:border-box}button,textarea{font-family:inherit}button{display:block;border:0;cursor:pointer}img{object-fit:cover}textarea{resize:none;border:0;outline:0}'+css(p+'.wxss',width)+'</style></head><body>'+html+'</body></html>')
@@ -93,7 +93,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
  assert(measure.scroll<=width+1,'horizontal overflow: '+name+' '+theme+' '+width+' '+large+' '+JSON.stringify(measure))
  if(tools==='audio-off')assert(measure.buttons.some(b=>b.label==='发送文字消息'),'text sending must survive audio capability loss')
  if(name==='conversation')assert(measure.composer<=813,'composer clipped below viewport')
- if(typeof tools==='string'&&tools.startsWith('sms-')){const box=await page.locator('.sms-dialog').boundingBox();assert(box.y>=0&&box.y+box.height<=813,'SMS popup clipped');if(!large)await page.screenshot({path:path.join(out,tools+'-'+theme+'.png')})}
+ if(typeof tools==='string'&&tools.startsWith('sms-')){const box=await page.locator('.sms-dialog').boundingBox();assert(box.y>=0&&box.y+box.height<=813,'SMS popup clipped');if(tools==='sms-group'){const list=await page.locator('.sms-recipient-list').evaluate(el=>({client:el.clientHeight,scroll:el.scrollHeight}));assert(list.scroll>list.client&&list.client>0,'large recipient list must scroll within popup')}if(!large)await page.screenshot({path:path.join(out,tools+'-'+theme+'.png')})}
  if(!large&&width===375&&!tools)await page.screenshot({path:path.join(out,name+'-'+theme+'.png')})
  console.log('VISUAL_LAYOUT',name,theme,width,large?'large':'normal',tools?'tools-open':'default',JSON.stringify(measure))
  await page.close()
@@ -101,7 +101,7 @@ async function render(browser,name,theme,width=375,large=false,tools=false){
 ;(async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROME_BIN,args:['--no-sandbox','--disable-dev-shm-usage']})
  for(const theme of ['light','dark'])for(const name of ['inbox','conversation','call','group','storage','audit','governance']){await render(browser,name,theme);await render(browser,name,theme,320,true);if(name==='conversation'){await render(browser,name,theme,375,false,true);await render(browser,name,theme,320,true,'audio-off')}}
- for(const theme of ['light','dark'])for(const kind of ['sms-confirm','sms-zero','sms-pending']){await render(browser,'conversation',theme,375,false,kind);await render(browser,'conversation',theme,320,true,kind)}
+ for(const theme of ['light','dark'])for(const kind of ['sms-confirm','sms-zero','sms-pending','sms-group']){await render(browser,'conversation',theme,375,false,kind);await render(browser,'conversation',theme,320,true,kind)}
  await browser.close()
  for(const kind of ['sms-confirm','sms-zero'])for(const theme of ['light','dark'])console.log('UI_IMAGE',kind,theme,fs.readFileSync(path.join(out,kind+'-'+theme+'.png')).toString('base64'))
  for(const name of ['inbox','conversation','call','group','storage','audit','governance'])for(const theme of ['light','dark'])console.log('UI_IMAGE',name,theme,fs.readFileSync(path.join(out,name+'-'+theme+'.png')).toString('base64'))

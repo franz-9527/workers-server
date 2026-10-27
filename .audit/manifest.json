@@ -133,7 +133,7 @@
     "chat/internal/message/moderation_integration_test.go": "a837629f616ecbda4e02937735e6e39127a0b38a",
     "chat/internal/message/mysql_integration_test.go": "732f26143663f33e11edcad2df84e444a0670cc3",
     "chat/internal/message/paid_sms.go": "67fbddfe40efb3aeb3f0f8e28f8db5ef886f4a28",
-    "chat/internal/message/paid_sms_integration_test.go": "b950b19a89c4f1cf2bf4747bdc0f6107f51d39e0",
+    "chat/internal/message/paid_sms_integration_test.go": "05c0dddd24f53dc95a1749a3576a5cf46bb1bc64",
     "chat/internal/message/preferences.go": "59a40514b7d2a4b0b262b1583f00a8b3d7c3d998",
     "chat/internal/message/preferences_http.go": "42cb9e921f6e16c4274dfd3251d0044209b17026",
     "chat/internal/message/preferences_integration_test.go": "596416b97267bab57d0d36dd943e00cc73308ed9",
@@ -226,8 +226,8 @@
     "miniprogram/subpackages/chat/conversation/group.js": "e60ef17c9dc37e833575d215c44f6a3b1ecf2849",
     "miniprogram/subpackages/chat/conversation/index.js": "d42c45c0f9e6fd40a02d86a692a60abe48e6cd4c",
     "miniprogram/subpackages/chat/conversation/index.json": "443790c451ddae7086820b1244203e9b4d48cd73",
-    "miniprogram/subpackages/chat/conversation/index.wxml": "3697d5fb0bcf95dd1f03b310ed0a43709ebc6dc0",
-    "miniprogram/subpackages/chat/conversation/index.wxss": "b0110a0807cfcc6fe0f2e32053f8635c0cab82ce",
+    "miniprogram/subpackages/chat/conversation/index.wxml": "5f32bd888d5283a773a4a439dbf113b9dfeb96c1",
+    "miniprogram/subpackages/chat/conversation/index.wxss": "d5520571d1f1981f11b8f1bd98b9839133bf58b3",
     "miniprogram/subpackages/chat/conversation/interaction.js": "cfee70aa47f8a1b2fee17e69e93f8b9d04808003",
     "miniprogram/subpackages/chat/conversation/sms.js": "749ce9ca307262d1000413ee757312076979734c",
     "miniprogram/subpackages/chat/governance/index.js": "676961f1ed8baa90de704bbf614b181ed9badda2",
@@ -337,7 +337,7 @@
     "server/app/Http/Admin/Modules/ChatCallsAdminModule.php": "8b1d08fc58814e3913bdcec6918923edd0213415",
     "server/app/Http/Admin/Modules/ChatStorageAdminModule.php": "b7007db2072458a57a7af485567881553e9c3836",
     "server/app/Http/Api/ApiModule.php": "e666b1fa4218d66873be101ec1d6a86ac1a71e92",
-    "server/app/Http/Api/Modules/ChatCredentialApiModule.php": "b81c2e18bba55afa147afd659a4f09279840b65d",
+    "server/app/Http/Api/Modules/ChatCredentialApiModule.php": "60b52878f53d1a1bfe18473fca802f086c726f5b",
     "server/app/Infrastructure/Chat/ChatRecoveryCheckpoint.php": "ec707a4c433bbc0fc96ecb1a564df1af2c77f42d",
     "server/app/Infrastructure/Chat/ChatRecoveryGate.php": "5c8751009e230ecd7490537ebecdc11aab4d3880",
     "server/app/Infrastructure/External/WeChatAccessTokenProvider.php": "d9f55090c7e284ae363872f189371c7218e75082",
@@ -490,6 +490,6 @@
     "tools/test_chat_s12_business_entry.js": "60bdb87a46a7a68f367d1bfccc5dc40f82571519",
     "tools/test_chat_s18_s20.js": "9400fbbf28fc95d0268ffb6a4cc0bda7db49c22f",
     "tools/test_chat_s24.js": "282b15a7cb27a7b86a2f74f0a20b065750bfb283",
-    "tools/test_chat_sms.js": "c70c0b928960f8614ebc4ccba218960ccf91e91e"
+    "tools/test_chat_sms.js": "e788905b441ef82d43ddbde402232a65b683f6ed"
   }
 }
