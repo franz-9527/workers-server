@@ -1,0 +1,32 @@
+{
+  "source": "3f5f08da529e2c61cd8eeb8e42c51c34a900f251",
+  "files": {
+    "server/app/Infrastructure/Messaging/WeComAdminNotifier.php": "f43548786dad56ac7f406a12c71022da80ec4217",
+    "server/app/Contracts/MessageDeliveryReceiptQueue.php": "210e8f3519feadedb7ea0fbdbaab8d22a92935f9",
+    "server/app/Infrastructure/Messaging/DatabaseMessageDeliveryQueue.php": "82c3e1f5e7d313ff60d0deb6842f795dc275d71c",
+    "server/app/Application/Messaging/MessageOutboxDispatch.php": "fd16171e127950a5c65e82bc5c97be4b4ccd4765",
+    "server/app/Contracts/MiniAdminWorkerStoreRepository.php": "86a6bf50e92faae7eec88e3757d72a1828b46131",
+    "server/app/Infrastructure/Persistence/DatabaseMiniAdminWorkerStoreRepository.php": "d9a8f924847988cbe3e8439a8b1c3c93344df84a",
+    "tools/test-mini-admin-worker-store-migration.php": "fddcdc0d4b9b58cdd4d5054902c90cf7411d6987",
+    "server/app/Application/Admin/MiniAdminWorkerStoreOperations.php": "affa8e7629b2ceab88adeedf8411dbaaf85dab39",
+    "miniprogram/subpackages/account/review/index.js": "5597e514179e6b80f9f3a35161302f6498dc6d0d",
+    "server/app/Application/Messaging/MessageOutboxConsole.php": "426b4e582b5650363f6e3a1856614510b65b5f94",
+    "server/views/admin/message-outbox.php": "29c6f9a0ce653776344c61c349ebc82f35dd15bb",
+    "server/tests/support/auxiliary_http_router.php": "243f5490ad626c19b3fb31f56ab4ae5863ee4e04",
+    "server/tests/support/message_delivery_fakes.php": "eaa8f6909b13ae701dbb11e771896e73ee260c86",
+    "server/tests/v260_message_outbox_dispatch_policy.php": "aec53a3a83e52078c7be18743c9a0d5680ef7b34",
+    "miniprogram/subpackages/account/review/index.wxml": "11f10dc4e9766f25b2f7ab1de8dd63a94f827505",
+    "server/tests/v260_wecom_onboarding_receipt.php": "64a4d5598d636b5b3f376e085b01d62d81fa1ba6",
+    "tools/test_review_notice_reconciliation.js": "a9abce28ba74a8d1532b265f2805e7179b361c21",
+    "server/tests/v260_onboarding_notice_mysql.php": "8021b89a4b379feb2bf458cb80245ae7d363a4b3",
+    "server/app/Core/Database.php": "631670362d8b9b9fe2b85df77d7175da5e87225d",
+    "server/app/Contracts/WorkerCloudGateway.php": "dc41d980e38d43d76d5c51844f7cd8b98406ff42",
+    "server/app/Contracts/MessageDeliveryQueue.php": "f8137dc30dcb57e5c8a9c803877a5cf6a0d08e63",
+    "server/app/Contracts/SmsGateway.php": "b64ece8a408380e8ec3471059395b7e130264561",
+    "server/app/Contracts/SubscribeMessageGateway.php": "f53e82eb866b2b1581e39dd2b475c53b93e0760e",
+    "server/app/Contracts/AdminAlertGateway.php": "85a49d80a8a08df82ef3195a87914a1f82d50416",
+    "server/app/Domain/Messaging/MessageDeliveryFailurePolicy.php": "5f8a4adb35202e1c50ec7c5c60ae21324b2ecfa0",
+    "server/app/Domain/Admin/MiniAdminOperationException.php": "77dbd90b028549dae86cdedccc29e874a163874f",
+    "server/app/Infrastructure/Safety/TestingEnvironmentPolicy.php": "899b373b409ef7efab788749b3957b36dee1cd35"
+  }
+}
