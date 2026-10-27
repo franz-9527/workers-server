@@ -1412,7 +1412,7 @@
   "server/tests/chat_collaboration_policy_contract.php": "79c3f78a1e33f47af93c938551ca8786d6fa96e3",
   "server/tests/chat_identity_contract.php": "75eaf09479963ed476641b1e82263c91c5bc50a1",
   "server/tests/chat_migration_fixture.php": "229c0c1fcf39b82b1d3cd6c3349e7fe5579a3ae1",
-  "server/tests/chat_operations_contract.php": "3530e00c6fe9bbdaf8ca2e780fe8a22ad5b31dae",
+  "server/tests/chat_operations_contract.php": "b998852fed60bc6e819daa9bb3ed9fa6f946f798",
   "server/tests/chat_participant_contract.php": "cddaae34cd20547f422fd080adc710db2669b16e",
   "server/tests/chat_platform_contract.php": "2b0df2406fe59ce9ad48e65a72a8437eafdae98b",
   "server/tests/chat_platform_fixture.php": "bb982b682a142dcab7ab3389d5f5a190c8a842af",

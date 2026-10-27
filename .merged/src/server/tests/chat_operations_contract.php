@@ -147,7 +147,6 @@ try{
  operationsEnsure($ops->verify()['status']==='blocked','post-backup recall and receipt changes not detected');
  $db->execute("UPDATE users SET status='disabled' WHERE id=10203");$ops->capture();
  $new=file_get_contents($dir.'/checkpoint.json');
- $authority=$db->fetchAll('SELECT user_id,authority_version FROM chat_staff_authority_versions ORDER BY user_id');
  file_put_contents($dir.'/checkpoint.json',$old);
  operationsReject(static fn()=>$ops->verify(),'old signed checkpoint accepted');
  file_put_contents($dir.'/checkpoint.json',$new);
@@ -155,7 +154,11 @@ try{
  $mismatch=$ops->verify();
  operationsEnsure($mismatch['status']==='blocked'&&in_array('users',$mismatch['mismatched_tables'],true)&&!ChatRecoveryGate::ready($gate,'test'),'restored old authority reopened');
  $db->execute("UPDATE users SET status='disabled' WHERE id=10203");
- foreach($authority as $row)$db->execute('UPDATE chat_staff_authority_versions SET authority_version=:version WHERE user_id=:user',['version'=>$row['authority_version'],'user'=>$row['user_id']]);
+ // Returning to the same status still advances monotonic staff/collaboration authority.
+ $stillBlocked=$ops->verify();
+ operationsEnsure($stillBlocked['status']==='blocked'&&in_array('users',$stillBlocked['mismatched_tables'],true),'same status must not rewind collaboration authority');
+ // Explicitly capture the final disabled-account state while the maintenance gate remains blocked.
+ $ops->capture();$new=file_get_contents($dir.'/checkpoint.json');
  // A separate archive validator supplies this HMAC proof; this fixture models a
  // complete verified archive, never a live channel or an automatic success fallback.
  $sealed=json_decode($new,true);$proof=['schema'=>1,'environment'=>'test','epoch'=>$epoch,'watermark'=>$sealed['payload']['watermark'],'complete'=>true];
