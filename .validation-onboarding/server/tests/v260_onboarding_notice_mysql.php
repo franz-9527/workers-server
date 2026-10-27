@@ -54,6 +54,10 @@ try{
  ensure($items['CW-skipped']['status']==='skipped','local-only notice is not confused with another worker prefix');
  $invalid=false;try{$app->execute('admin.review.records',[],['cloud_ids'=>'CW-1,../../bad']);}catch(\WorkerAdmin\Domain\Admin\MiniAdminOperationException $e){$invalid=true;}
  ensure($invalid,'invalid requested IDs are rejected');
+ $queueCheck=new \WorkerAdmin\Infrastructure\Messaging\DatabaseMessageDeliveryQueue($db);
+ $due=$queueCheck->pending(100);
+ ensure(count($due)===1&&$due[0]['business_key']==='worker-review:CW-pending:approved:1','terminal failures and future retries are excluded from send candidates');
+ ensure(!$queueCheck->claim(1),'terminal failure cannot be reclaimed');
  $db->execute('DELETE FROM message_outbox');
  $id=$insert('worker-profile:CW-1:admin:wecom','pending',0,null,'wecom_webhook');
  $db->execute("UPDATE message_outbox SET payload_json=:payload WHERE id=:id",['id'=>$id,'payload'=>json_encode(['content'=>'【入驻】','event_type'=>'worker_profile_submitted'])]);
