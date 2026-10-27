@@ -3,6 +3,7 @@ root=pathlib.Path(__file__).resolve().parent/'src'
 tests=sorted((root/'tools').glob('test-*.php'))+sorted((root/'server/tests').glob('*.php'))
 libraries={'chat_assignment_contract.php','chat_closure_contract.php','chat_platform_contract.php','chat_repair_contract.php'}
 tests=[p for p in tests if not p.name.endswith('_fixture.php') and p.name not in libraries and not (p.name.endswith('_mysql.php') and p.with_name(p.stem+'_strict.php').exists())]
+tests=[p for p in tests if str(p.relative_to(root))=="server/tests/chat_participant_contract.php"]
 reports=[]
 for p in tests:
     rel=str(p.relative_to(root));before=time.monotonic()

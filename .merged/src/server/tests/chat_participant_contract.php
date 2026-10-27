@@ -52,9 +52,9 @@ try{
  $ddl=[
  "users(id BIGINT UNSIGNED PRIMARY KEY,public_id VARCHAR(26),status VARCHAR(24),mobile_ciphertext TEXT,mobile_hmac CHAR(64))",
  "login_sessions(id BIGINT PRIMARY KEY,user_id BIGINT,token_hash CHAR(64),status VARCHAR(24),expires_at DATETIME,demo_actor_user_id BIGINT,test_actor_user_id BIGINT,test_instance_id BIGINT,test_actor_expires_at DATETIME)",
- "orders(id BIGINT PRIMARY KEY,is_demo INT,order_source_type VARCHAR(24))",
+ "orders(id BIGINT PRIMARY KEY,is_demo INT,order_source_type VARCHAR(24),current_assignment_id BIGINT)",
  "chat_policy_guards(scope_key VARCHAR(96) PRIMARY KEY,order_id BIGINT,policy_version BIGINT,snapshot_hash CHAR(64),snapshot_json MEDIUMTEXT)",
- "chat_conversations(id BIGINT PRIMARY KEY,scope_key VARCHAR(96),conversation_type VARCHAR(24),snapshot_hash CHAR(64),policy_version BIGINT,sync_floor_seq BIGINT,last_seq BIGINT)",
+ "chat_conversations(id BIGINT PRIMARY KEY,scope_key VARCHAR(96),conversation_type VARCHAR(24),snapshot_hash CHAR(64),policy_version BIGINT,sync_floor_seq BIGINT,last_seq BIGINT,order_id BIGINT,assignment_id BIGINT)",
  "chat_members(conversation_id BIGINT,actor_id BIGINT,actor_kind VARCHAR(16),can_read INT,role VARCHAR(24))",
  "chat_messages(conversation_id BIGINT,sender_id BIGINT,policy_version BIGINT,seq BIGINT)",
  "chat_member_intervals(conversation_id BIGINT,actor_id BIGINT,start_version BIGINT,end_version BIGINT)",
@@ -68,13 +68,13 @@ try{
  }
  $tokenHash=hash('sha256',str_repeat('a',64));
  $db->execute("INSERT INTO login_sessions VALUES(1,10202,:hash,'active',UTC_TIMESTAMP()+INTERVAL 1 HOUR,0,0,0,NULL)",['hash'=>$tokenHash]);
- foreach(["INSERT INTO orders VALUES(401,0,'merchant')","INSERT INTO assignments VALUES(801,501)","INSERT INTO worker_profiles VALUES(501,10203)","INSERT INTO worker_real_name_verifications VALUES(501,'approved','fixture:王明')"] as $sql)$db->pdo()->exec($sql);
+ foreach(["INSERT INTO orders VALUES(401,0,'merchant',801)","INSERT INTO assignments VALUES(801,501)","INSERT INTO worker_profiles VALUES(501,10203)","INSERT INTO worker_real_name_verifications VALUES(501,'approved','fixture:王明')"] as $sql)$db->pdo()->exec($sql);
  $scope='order:401:assignment:801';
  $snapshot=['schema_version'=>1,'scope_key'=>$scope,'order_id'=>'401','assignment_id'=>'801','episode_key'=>'assignment:801:service','state'=>'open','can_invite'=>false,
   'members'=>[['actor_id'=>'10202','kind'=>'mini','role'=>'customer','can_read'=>true,'can_send'=>true],['actor_id'=>'10203','kind'=>'mini','role'=>'worker','can_read'=>true,'can_send'=>true]]];
  $body=json_encode($snapshot,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);$hash=hash('sha256',$body);
  $db->execute('INSERT INTO chat_policy_guards VALUES(:scope,401,1,:hash,:body)',['scope'=>$scope,'hash'=>$hash,'body'=>$body]);
- $db->execute("INSERT INTO chat_conversations VALUES(9,:scope,'order',:hash,1,0,10)",['scope'=>$scope,'hash'=>$hash]);
+ $db->execute("INSERT INTO chat_conversations VALUES(9,:scope,'order',:hash,1,0,10,401,801)",['scope'=>$scope,'hash'=>$hash]);
  $db->pdo()->exec("INSERT INTO chat_members VALUES(9,10202,'mini',1,'customer'),(9,10203,'mini',1,'worker'),(9,10204,'mini',0,'platform_staff')");
  $service=new ChatParticipantProfiles($db,$cipher);$requests=[['conversation_id'=>'9','policy_version'=>'1','sender_ids'=>['10204']]];
  $data=$service->read('10202',$tokenHash,$requests);$names=array_column($data['items'][0]['members'],'display_name','actor_id');
