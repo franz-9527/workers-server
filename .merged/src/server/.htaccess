@@ -1,0 +1,38 @@
+# 2026-08-14：Apache 兼容配置；Nginx 环境必须改用 nginx.worker.conf.example 中的规则。
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 2026-08-14：禁止访问应用源码、数据库脚本、私有文件、日志和 CLI 工具目录。
+    RewriteRule ^(?:app|config|database|storage|views|bin)(?:/|$) - [R=404,L,NC]
+
+    # 2026-08-14：安装页面保持可用，但安装令牌和安装服务源码永不公开。
+    RewriteRule ^install/(?:install-token\.php|Installer\.php)(?:/|$) - [R=404,L,NC]
+
+    # 2026-08-14：禁止访问根目录启动文件、版本文件和部署说明配置。
+    RewriteRule ^(?:bootstrap\.php|VERSION|README\.md|nginx\.worker\.conf\.example)(?:/|$) - [R=404,L,NC]
+
+    # 2026-08-14：阻止隐藏文件、备份文件、密钥配置和脚本文件被静态下载。
+    RewriteRule (^|/)\.(?!well-known(?:/|$)) - [R=404,L,NC]
+    RewriteRule \.(?:sql|log|ini|conf|env|bak|backup|old|orig|save|swp|dist|md|lock|ya?ml|toml|sh|ps1|phar|zip|tar|gz)$ - [R=404,L,NC]
+
+    # 2026-08-14：仅允许受信任的前端入口执行 PHP，其他 PHP 文件一律返回 404。
+    RewriteCond %{REQUEST_URI} !^/(?:index|admin/index|api/index|install/index|adminapi/upgrade/index)\.php$
+    RewriteRule \.php(?:/|$) - [R=404,L,NC]
+
+    # 2026-08-14：已有文件和目录直接处理，其余请求交给站点入口。
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # 2026-08-14：为后台及安装页面增加基础浏览器安全响应头。
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "same-origin"
+    Header always unset X-Powered-By
+</IfModule>

@@ -1,0 +1,57 @@
+/* 订阅提醒保留原版橙色卡片形态，按钮减小占位但保留淡色底框。 */
+.subscription-health-banner{
+  display:flex;align-items:center;gap:12rpx;
+  margin:16rpx 24rpx;padding:16rpx 12rpx 16rpx 18rpx;
+  border:1rpx solid rgba(211,118,47,.18);
+  border-radius:16rpx;background:#fff8f1;
+}
+.subscription-health-banner.warning{background:#fff5ee}
+.subscription-health-banner.attention{background:#fffaf0}
+.subscription-health-mark{
+  flex:none;width:34rpx;height:34rpx;border-radius:50%;
+  background:#d77735;color:#fff;font-size:22rpx;
+  font-weight:700;line-height:34rpx;text-align:center;
+}
+.subscription-health-copy{min-width:0;flex:1}
+.subscription-health-title,.subscription-health-desc{display:block}
+.subscription-health-title{color:#6f4a2e;font-size:23rpx;font-weight:650;line-height:1.35}
+.subscription-health-desc{margin-top:3rpx;color:#9b765d;font-size:19rpx;line-height:1.4}
+.subscription-health-action{
+  display:flex;flex:none;align-items:center;justify-content:center;
+  box-sizing:border-box;width:84rpx;min-width:84rpx;height:50rpx;margin:0;padding:0 4rpx;
+  border:0;border-radius:12rpx;
+  background:rgba(215,119,53,.1);color:#bf6427;
+  font-size:23rpx;font-weight:650;line-height:1.2;white-space:nowrap;
+}
+/* 消息页在单一业务入口下使用短提示，不增加第二张大卡片。 */
+.subscription-health-banner.compact{box-sizing:border-box;min-height:88rpx;margin:0;padding:6rpx 10rpx 6rpx 22rpx;border-width:1rpx 0 0;border-radius:0;gap:10rpx}
+.subscription-health-banner.compact .subscription-health-mark{width:28rpx;height:28rpx;font-size:20rpx;line-height:28rpx}
+.subscription-health-banner.compact .subscription-health-title{font-size:24rpx;line-height:1.5}
+.subscription-health-banner.compact .subscription-health-action{width:100rpx;min-width:100rpx;min-height:76rpx;height:auto;border:0;background:transparent;font-size:24rpx;color:#8b4c20}
+/* 原“已进入审核”卡片样式原样移入组件：与原页面布局完全同宽。 */
+.review-waiting-card{display:flex;align-items:flex-start;gap:18rpx;margin-top:22rpx;padding:22rpx 24rpx;border:1rpx solid #cde9dc;border-radius:22rpx;background:#eef9f3;color:#285844}.review-waiting-icon{display:flex;flex:none;align-items:center;justify-content:center;width:58rpx;height:58rpx;border-radius:18rpx;background:#d8f1e4;color:#16845e;font-size:30rpx}.review-waiting-copy{min-width:0;flex:1}.review-waiting-title,.review-waiting-desc{display:block}.review-waiting-title{font-size:26rpx;font-weight:700;color:#1b6749}.review-waiting-desc{margin-top:6rpx;color:#668579;font-size:21rpx;line-height:1.55}
+.onboarding-notice-swiper{width:100%;height:152rpx;margin-top:22rpx}
+.onboarding-notice-swiper swiper-item{height:100%}
+.onboarding-notice-swiper .review-waiting-card,
+.onboarding-notice-swiper .onboarding-health-banner{box-sizing:border-box;width:100%;height:100%;margin:0}
+.onboarding-notice-swiper .onboarding-health-banner{padding:16rpx 12rpx 16rpx 18rpx}
+@media (prefers-color-scheme:dark){
+  /* 注意：warning/attention 的亮色规则比单类选择器更具体，
+     需要逐一覆盖，否则暗黑模式会保留浅橙背景而把文字变为浅色。 */
+  .subscription-health-banner,
+  .subscription-health-banner.warning,
+  .subscription-health-banner.attention{
+    background:#30271f;
+    border-color:#795238;
+  }
+  .subscription-health-mark{background:#c97736;color:#fff}
+  .subscription-health-title{color:#ffe0b8}
+  .subscription-health-desc{color:#f5cda7}
+  .subscription-health-action{
+    background:#533622;
+    color:#ffe0b8;
+    border:1rpx solid #98673d;
+  }
+  .subscription-health-banner.compact .subscription-health-action{background:transparent;color:#ffe0b8;border:0}
+  .review-waiting-card{border-color:#2e5a47;background:#173126;color:#d9eee5}.review-waiting-icon{background:#214735;color:#74d5a9}.review-waiting-title{color:#a7e7ca}.review-waiting-desc{color:#91aa9f}
+}

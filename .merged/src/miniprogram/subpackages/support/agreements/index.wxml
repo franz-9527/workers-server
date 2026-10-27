@@ -1,0 +1,103 @@
+<view class="agreement-page">
+  <view wx:if="{{loading}}" class="agreement-state"><text class="cuIcon-loading2 spin"></text><view>正在读取协议…</view></view>
+  <view wx:elif="{{errorText}}" class="agreement-state"><text class="cuIcon-warn text-orange"></text><view>{{errorText}}</view><button class="cu-btn round line-cyan margin-top" bindtap="retry">重新加载</button></view>
+
+  <block wx:elif="{{!selected}}">
+    <view class="agreement-hero">
+      <view class="agreement-hero-title">协议与平台规则</view>
+      <view class="agreement-hero-desc">协议约定稳定权利义务，平台规则说明交易流程；这里展示当前生效版本和已公示的下一版本。</view>
+    </view>
+    <view class="agreement-search">
+      <text class="cuIcon-search agreement-search-icon"></text>
+      <input class="agreement-search-input" value="{{searchQuery}}" bindinput="inputSearch" placeholder="搜索服务费、退款、隐私、安全等条款" confirm-type="search" />
+      <text wx:if="{{searchQuery}}" class="cuIcon-roundclosefill agreement-search-clear" bindtap="clearSearch"></text>
+    </view>
+    <view wx:if="{{searchQuery}}" class="agreement-search-summary">找到 {{displayItems.length}} 份相关协议或规则</view>
+    <view class="agreement-list">
+      <view wx:for="{{displayItems}}" wx:key="key" class="agreement-card" data-key="{{item.key}}" bindtap="openItem">
+        <view class="agreement-card-main">
+          <view class="agreement-card-title-row">
+            <view class="agreement-card-title">{{item.title}}</view>
+            <view class="agreement-type-tag">{{item.typeText}}</view>
+          </view>
+          <view wx:if="{{item.summary}}" class="agreement-card-summary">{{item.summary}}</view>
+          <view class="agreement-card-meta">版本 {{item.published_version}} · {{item.audienceText}}</view>
+          <view class="agreement-card-meta">生效 {{item.effectiveText}}</view>
+          <view wx:if="{{item.upcoming}}" class="agreement-upcoming"><text class="cuIcon-time"></text> 新版本将于 {{item.upcomingText}} 生效</view>
+        </view>
+        <text class="cuIcon-right agreement-arrow"></text>
+      </view>
+      <view wx:if="{{searchQuery && !displayItems.length}}" class="agreement-search-empty">没有找到包含“{{searchQuery}}”的协议条款，可换一个关键词。</view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="agreement-detail-head">
+      <view class="agreement-back" bindtap="backList"><text class="cuIcon-back"></text> 全部协议</view>
+      <view class="agreement-detail-title">{{selected.title}}</view>
+      <view wx:if="{{selected.summary}}" class="agreement-detail-summary">{{selected.summary}}</view>
+      <view class="agreement-card-meta">{{selected.typeText}} · 当前版本 {{selected.published_version}} · 生效 {{selected.effectiveText}}</view>
+      <button class="cu-btn sm round line-cyan agreement-copy-btn" bindtap="copyCurrent"><text class="cuIcon-copy"></text> 复制当前全文</button>
+    </view>
+
+    <view wx:if="{{selected.important_notice}}" class="agreement-important">
+      <view class="agreement-important-title"><text class="cuIcon-warnfill"></text> 重点提示</view>
+      <view class="agreement-important-text">{{selected.important_notice}}</view>
+    </view>
+
+    <rich-text wx:if="{{selected.content_format === 'html'}}" class="agreement-content agreement-rich-text" nodes="{{selected.content}}"></rich-text>
+    <view wx:else class="agreement-content">{{selected.content}}</view>
+
+    <view class="agreement-history">
+      <view class="agreement-history-toggle" bindtap="toggleHistory">
+        <view>
+          <view class="agreement-next-title">历史发布版本</view>
+          <view class="agreement-card-meta">查看此前实际生效过的完整协议正文</view>
+        </view>
+        <text class="{{historyOpen ? 'cuIcon-fold' : 'cuIcon-unfold'}} agreement-history-arrow"></text>
+      </view>
+      <view wx:if="{{historyOpen}}" class="agreement-history-body">
+        <view wx:if="{{historyLoading}}" class="agreement-history-state"><text class="cuIcon-loading2 spin"></text> 正在读取历史版本…</view>
+        <view wx:elif="{{historyError}}" class="agreement-history-state text-orange">{{historyError}} <text class="text-cyan" bindtap="toggleHistory">重新加载</text></view>
+        <view wx:elif="{{!historyItems.length}}" class="agreement-history-state">暂无历史版本</view>
+        <block wx:else>
+          <view wx:for="{{historyItems}}" wx:key="version" class="agreement-history-item">
+            <view class="agreement-history-head" data-index="{{index}}" bindtap="toggleHistoryItem">
+              <view class="agreement-history-copy">
+                <view class="agreement-history-version">{{item.version}} <text wx:if="{{item.is_current}}" class="agreement-current-tag">当前</text></view>
+                <view class="agreement-card-meta">生效 {{item.effectiveText}}{{item.publishedText ? ' · 发布 ' + item.publishedText : ''}}</view>
+              </view>
+              <text class="{{item.expanded ? 'cuIcon-fold' : 'cuIcon-unfold'}} agreement-history-arrow"></text>
+            </view>
+            <view wx:if="{{item.expanded}}" class="agreement-history-detail">
+              <button class="cu-btn sm round line-cyan agreement-history-copy-btn" data-index="{{index}}" bindtap="copyHistory"><text class="cuIcon-copy"></text> 复制该版本</button>
+              <view wx:if="{{item.important_notice}}" class="agreement-important agreement-history-important">
+                <view class="agreement-important-title">重点提示</view>
+                <view class="agreement-important-text">{{item.important_notice}}</view>
+              </view>
+              <rich-text wx:if="{{item.content_format === 'html'}}" class="agreement-content agreement-rich-text agreement-history-content" nodes="{{item.content}}"></rich-text>
+              <view wx:else class="agreement-content agreement-history-content">{{item.content}}</view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <view wx:if="{{selected.upcoming}}" class="agreement-next">
+      <view class="agreement-next-title">已公示的下一版本</view>
+      <view class="agreement-card-meta">版本 {{selected.upcoming.version}} · 将于 {{selected.upcomingText}} 生效</view>
+      <view wx:if="{{selected.upcoming.requires_reacceptance}}" class="agreement-reaccept-tag">生效后需重新确认</view>
+      <view class="agreement-feedback">
+        <view class="agreement-feedback-title"><text class="cuIcon-comment"></text> 规则意见反馈</view>
+        <view class="agreement-card-meta">对拟生效内容有意见，可在生效前通过平台客服反馈；平台将结合适用规则记录和处理合理意见。</view>
+        <button class="cu-btn sm round line-cyan agreement-feedback-btn" open-type="contact">反馈意见</button>
+      </view>
+      <view wx:if="{{selected.upcoming.important_notice}}" class="agreement-important agreement-important-next">
+        <view class="agreement-important-title">重点提示</view>
+        <view class="agreement-important-text">{{selected.upcoming.important_notice}}</view>
+      </view>
+      <rich-text wx:if="{{selected.upcoming.content_format === 'html'}}" class="agreement-content agreement-rich-text agreement-content-next" nodes="{{selected.upcoming.content}}"></rich-text>
+      <view wx:else class="agreement-content agreement-content-next">{{selected.upcoming.content}}</view>
+    </view>
+  </block>
+</view>

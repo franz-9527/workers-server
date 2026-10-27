@@ -1,0 +1,139 @@
+<view class="conversation-page" style="padding-bottom:{{keyboardHeight}}px">
+  <view class="conversation-context">
+    <view class="conversation-context-copy"><view class="conversation-context-main">{{orderLabel}}</view><view class="conversation-context-sub">{{orderContext ? orderContext.publicNo : '订单沟通'}}{{!canSend ? ' · 只读' : ''}}</view></view>
+    <button wx:if="{{enabled}}" class="chat-icon-button chat-details" bindtap="chatInfo" aria-label="聊天信息与更多操作"><text class="chat-icon chat-icon-more" aria-hidden="true"></text></button>
+  </view>
+  <view wx:if="{{invalid}}" class="conversation-empty"><text class="cuIcon-warn"></text><view>会话编号无效</view></view>
+  <view wx:elif="{{!enabled}}" class="conversation-empty"><text class="cuIcon-comment"></text><view>订单聊天尚未开放</view><view class="muted">可先通过订单详情或通知与待办联系相关人员</view></view>
+  <block wx:else>
+    <view wx:if="{{status === 'denied'}}" class="conversation-warning">当前无权继续查看此会话，原有内容已清理</view>
+    <view wx:elif="{{status === 'unavailable'}}" class="conversation-warning">连接暂不可用，已加载内容可能不是最新<button class="retry-button" bindtap="retryConnection">重新同步</button></view>
+    <view wx:if="{{restrictionText}}" class="conversation-warning" role="alert">{{restrictionText}}<button bindtap="openGovernance">查看状态与申诉</button></view>
+    <view wx:if="{{notice}}" class="conversation-warning" role="alert">{{notice}}</view>
+    <view wx:if="{{status !== 'denied' && (firstUnread || hasReturn || newCount || showJump)}}" class="reading-actions">
+      <button wx:if="{{firstUnread}}" bindtap="firstUnread" disabled="{{windowBusy}}">首条未读 · {{unreadLabel}}</button>
+      <button wx:if="{{newCount || showJump}}" bindtap="latestMessages" disabled="{{windowBusy}}">{{newCount ? newCount + '条新消息 · ' : ''}}回到底部</button>
+      <button wx:if="{{hasReturn}}" bindtap="returnToPosition" disabled="{{windowBusy}}">返回刚才位置</button>
+      <button wx:if="{{unreadCount > 0}}" bindtap="readLatest" disabled="{{!readReady || readBusy}}" loading="{{readBusy}}" aria-label="将本次已完成同步的范围标为已读">读至当前最新</button>
+    </view>
+    <scroll-view class="message-scroll" scroll-y scroll-top="{{scrollTop}}" scroll-into-view="{{scrollInto}}" scroll-with-animation="{{false}}" bindtap="dismissTools" bindscroll="onScroll" bindscrolltoupper="loadEarlier" bindscrolltolower="onBottom" upper-threshold="60" lower-threshold="30">
+      <view class="message-content">
+        <button wx:if="{{hasHistory}}" class="history-button" bindtap="loadEarlier" disabled="{{windowBusy}}" loading="{{windowBusy}}">加载更早消息</button>
+        <block wx:for="{{messages}}" wx:key="messageId"><view wx:if="{{item.timeDivider}}" class="message-divider">{{item.timeDivider}}</view><view id="message-{{item.messageId}}" class="message-item {{item.isPlaceholder ? 'is-placeholder' : ''}} {{item.isMine ? 'is-mine' : ''}}" data-id="{{item.messageId}}" bindlongpress="messageActions" role="text" aria-label="{{item.displayName}}：{{item.body}}">
+          <image class="message-avatar" src="{{item.avatarPath}}" mode="aspectFill" aria-label="{{item.displayName}}的固定头像"/>
+          <view class="message-bubble"><view wx:if="{{isGroup && !item.isMine}}" class="message-sender">{{item.displayName}}</view><button wx:if="{{isGroup &amp;&amp; item.isMine}}" class="message-reader-button" size="mini" data-id="{{item.messageId}}" bindtap="showReaders">阅读情况</button>
+          <button wx:if="{{item.reply}}" class="reference-preview" data-id="{{item.messageId}}" catchtap="locateReference" aria-label="查看被回复的原消息">{{item.replyText}}</button>
+          <button wx:if="{{item.editedFrom}}" class="reedit-source" data-id="{{item.messageId}}" data-source="edited" catchtap="locateReference" aria-label="定位重新编辑来源">由已撤回消息重新编辑</button>
+          <view wx:if="{{!item.isAV && !item.isImage}}" class="message-text">{{item.body}}</view>
+          <view wx:if="{{item.isAV}}" class="av-card">
+            <button data-id="{{item.messageId}}" catchtap="playAV" aria-label="播放{{item.isAudio ? '语音' : '视频'}}">
+              <text class="chat-icon {{item.isAudio ? 'chat-icon-voice' : 'chat-icon-video'}}" aria-hidden="true"></text><text>{{item.duration}}″{{playingAudio === item.messageId ? ' · 播放中' : ''}}</text>
+              <text wx:if="{{item.isAudio && !item.heard && !item.isMine}}" class="av-unheard">●</text>
+            </button>
+            <button wx:if="{{!item.isAudio}}" data-id="{{item.messageId}}" catchtap="showFrames">查看保留的封面与抽帧</button>
+            <text wx:if="{{item.isAudio && item.transcript}}" class="av-transcript">{{item.transcript}}</text>
+          </view>
+          <view wx:if="{{item.isImage}}" class="image-card">
+            <view>{{item.imageCount > 1 ? '共' + item.imageCount + '张' : '图片'}}</view>
+            <view class="image-grid">
+              <view wx:for="{{item.images}}" wx:for-item="photo" wx:key="item_id" class="chat-image" id="image-{{item.messageId}}-{{photo.item_id}}" data-message="{{item.messageId}}" data-item="{{photo.item_id}}" catchtap="previewImage" catchlongpress="imageActions" aria-label="查看第{{photo.ordinal + 1}}张图片，长按回复此图">
+                <image wx:if="{{photo.url}}" src="{{photo.url}}" mode="aspectFill" lazy-load/><text wx:else>第{{photo.ordinal + 1}}张</text>
+              </view>
+            </view>
+            <button wx:if="{{item.imageCount > 4}}" data-id="{{item.messageId}}" catchtap="toggleImages">{{item.imageExpanded ? '收起' : '展开全部图片'}}</button>
+          </view>
+          <view wx:if="{{smsAnchor === item.messageId}}" class="sms-nudge-row">
+            <text wx:if="{{smsFirstHint}}" class="sms-nudge-hint">暂未读，可用余额发短信提醒</text>
+            <button class="sms-nudge-button" catchtap="openSMS" aria-label="短信提醒，点击查看费用与余额"><text class="chat-icon chat-icon-notice" aria-hidden="true"></text></button>
+          </view>
+          </view>
+        </view></block>
+        <view wx:if="{{loading}}" class="conversation-empty compact"><text class="cuIcon-loading2 cuIconfont-spin"></text> 正在同步会话</view>
+        <view wx:elif="{{!messages.length && status !== 'denied'}}" class="conversation-empty compact"><text class="cuIcon-comment"></text> 暂无可查看的消息</view>
+        <view wx:for="{{attempts}}" wx:key="clientId" class="attempt-item">
+          <view wx:if="{{item.body}}" class="message-text">{{item.body}}</view>
+          <view class="attempt-state">{{item.label}}</view>
+          <view wx:if="{{item.reason}}" class="attempt-reason">{{item.reason}}</view>
+          <button wx:if="{{item.canRetry}}" data-id="{{item.clientId}}" bindtap="retryMessage">核验并重试原消息</button>
+          <button wx:if="{{item.canEdit}}" data-id="{{item.clientId}}" bindtap="editAttempt">放回输入框修改</button>
+        </view>
+        <view wx:for="{{albums}}" wx:for-item="album" wx:key="clientId" class="album-attempt">
+          <view>图片{{album.items.length > 1 ? '合集' : ''}} · {{album.label}}</view><view wx:if="{{!album.submitted}}" class="draft-hint">选图和上传不会发送；本机选择短时保留，需点击下方发送。</view>
+          <view wx:for="{{album.items}}" wx:for-item="photo" wx:key="index" class="album-item">
+            <image wx:if="{{photo.path}}" src="{{photo.path}}" mode="aspectFill"/><text>第{{photo.index + 1}}张 · {{photo.label}}{{photo.state === 'uploading' ? ' ' + photo.progress + '%' : ''}}</text>
+            <button wx:if="{{photo.canRetry}}" data-client="{{album.clientId}}" data-index="{{photo.index}}" bindtap="retryImage">重试此图</button>
+            <view wx:if="{{album.canChange}}" class="album-tools">
+              <button data-client="{{album.clientId}}" data-index="{{photo.index}}" data-action="up" bindtap="changeImage" disabled="{{photo.index === 0}}">上移</button>
+              <button data-client="{{album.clientId}}" data-index="{{photo.index}}" data-action="down" bindtap="changeImage" disabled="{{photo.index === album.items.length - 1}}">下移</button>
+              <button data-client="{{album.clientId}}" data-index="{{photo.index}}" data-action="replace" bindtap="changeImage">替换</button>
+              <button data-client="{{album.clientId}}" data-index="{{photo.index}}" data-action="remove" bindtap="changeImage">移除</button>
+            </view>
+          </view>
+          <button wx:if="{{album.state === 'rejected'}}" data-client="{{album.clientId}}" bindtap="appealImages">核验并申诉此次图片检查</button><view wx:if="{{album.reason}}" class="attempt-reason">{{album.reason}}</view>
+          <button wx:if="{{!album.submitted}}" data-client="{{album.clientId}}" bindtap="sendImages" disabled="{{!album.canSend || !canSend}}">发送{{album.items.length}}张图片</button>
+          <button wx:if="{{album.submitted && album.state !== 'accepted' && album.state !== 'canceled'}}" data-client="{{album.clientId}}" bindtap="imageStatus">核验原发送状态</button>
+          <button wx:if="{{album.canCancel}}" data-client="{{album.clientId}}" bindtap="cancelImages">取消本次发送</button>
+        </view>
+        <view wx:for="{{avAttempts}}" wx:for-item="av" wx:key="client" class="av-attempt">
+          <view>{{av.kind === 'audio' ? '语音' : '视频'}} · {{av.label}} · {{av.duration}}秒 {{av.size}}</view>
+          <view wx:if="{{av.busy}}">上传进度 {{av.progress}}%</view>
+          <view wx:if="{{av.code}}" class="attempt-reason">{{av.code}}</view><button wx:if="{{av.state === 'rejected'}}" data-client="{{av.client}}" bindtap="appealAV">核对检查结果与申诉</button>
+          <button wx:if="{{av.path}}" data-client="{{av.client}}" bindtap="previewAV">试听 / 预览</button>
+          <button wx:if="{{!av.submitted}}" data-client="{{av.client}}" bindtap="sendAV" disabled="{{!canSend || av.busy}}">确认发送</button>
+          <button wx:if="{{av.submitted && av.state !== 'accepted' && av.state !== 'canceled' && av.state !== 'rejected'}}" data-client="{{av.client}}" bindtap="retryAV" disabled="{{av.busy}}">核对状态 / 继续上传</button>
+          <button wx:if="{{av.state !== 'accepted' && av.state !== 'canceled'}}" data-client="{{av.client}}" bindtap="cancelAV">取消</button>
+        </view>
+        <view id="message-bottom" class="message-bottom"></view>
+      </view>
+    </scroll-view>
+    <view wx:if="{{status !== 'denied'}}" class="composer">
+      <block wx:if="{{canSend}}">
+        <view wx:if="{{replyTarget}}" class="composer-reference"><text>回复：{{replyPreview}}</text><button bindtap="cancelReply" aria-label="取消回复引用">取消引用</button></view>
+        <view wx:if="{{editedSource}}" class="composer-reedit"><text>由已撤回消息重新编辑 · 将作为新消息发送</text><button bindtap="cancelReedit">取消重新编辑</button></view>
+        <view class="composer-row">
+          <button wx:if="{{audioEnabled}}" class="chat-icon-button composer-mode" bindtap="toggleVoiceMode" aria-label="{{voiceMode ? '切换键盘输入' : '切换语音输入'}}"><text class="chat-icon {{voiceMode ? 'chat-icon-keyboard' : 'chat-icon-voice'}}" aria-hidden="true"></text></button>
+          <button wx:if="{{voiceMode && audioEnabled}}" class="voice-hold {{recording ? 'is-recording' : ''}}" bindtouchstart="beginVoice" catchtouchmove="moveVoice" bindtouchend="endVoice" bindtouchcancel="cancelVoice" aria-label="按住录音，松开后试听，上滑取消">{{recording ? '松开后试听 · 上滑取消' : '按住说话'}}</button>
+          <textarea wx:else class="composer-input" value="{{draft}}" maxlength="2000" auto-height adjust-position="{{false}}" show-confirm-bar="{{false}}" confirm-type="return" bindinput="inputText" bindfocus="focusComposer" bindblur="inputBlur" bindkeyboardheightchange="keyboardChange" placeholder="输入消息" placeholder-class="composer-placeholder" aria-label="消息内容，回车只换行"></textarea>
+          <button wx:if="{{draft && (!voiceMode || !audioEnabled)}}" class="send-button" bindtap="sendText" disabled="{{!!inputError}}" aria-label="发送文字消息">发送</button>
+          <button class="chat-icon-button composer-more" bindtap="toggleTools" aria-label="{{showTools ? '收起更多功能' : '更多功能'}}" aria-expanded="{{showTools}}"><text class="chat-icon {{showTools ? 'chat-icon-close' : 'chat-icon-plus'}}" aria-hidden="true"></text></button>
+        </view>
+        <view wx:if="{{voiceMode}}" class="recording-tip">松开后试听，上滑取消</view>
+        <view wx:if="{{showTools}}" class="chat-tools">
+          <button class="chat-tool" bindtap="chooseImages"><view class="chat-tool-icon"><text class="chat-icon chat-icon-photo" aria-hidden="true"></text></view><text>照片</text></button>
+          <button class="chat-tool" bindtap="takePhoto"><view class="chat-tool-icon"><text class="chat-icon chat-icon-camera" aria-hidden="true"></text></view><text>拍摄</text></button>
+          <button wx:if="{{videoEnabled}}" class="chat-tool" bindtap="chooseVideo" disabled="{{avSelecting}}"><view class="chat-tool-icon"><text class="chat-icon chat-icon-video" aria-hidden="true"></text></view><text>视频</text></button>
+          <button wx:if="{{callAudio && canSend}}" class="chat-tool" data-media="audio" bindtap="openCall"><view class="chat-tool-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>语音通话</text></button>
+          <button wx:if="{{callVideo && canSend}}" class="chat-tool" data-media="video" bindtap="openCall"><view class="chat-tool-icon"><text class="chat-icon chat-icon-video" aria-hidden="true"></text></view><text>视频通话</text></button>
+        </view>
+        <view wx:if="{{inputError}}" class="input-error" role="alert">{{inputError}}</view>
+        <view wx:if="{{sendReason}}" class="input-error" role="alert">上次发送：{{sendReason}}</view>
+      </block>
+      <view wx:else class="composer-closed">当前会话只读，可通过上方入口查看订单</view>
+    </view>
+  </block>
+  <view wx:if="{{smsDialog}}" class="sms-mask" catchtouchmove="stopImageTouch" bindtap="closeSMS">
+    <view class="sms-dialog" role="dialog" aria-label="短信提醒确认" catchtap="stopImageTouch">
+      <view class="sms-dialog-title">短信提醒</view>
+      <scroll-view wx:if="{{smsDialog.state === 'confirm'}}" scroll-y class="sms-recipient-list {{smsDialog.items.length === 1 ? 'sms-one' : (smsDialog.items.length === 2 ? 'sms-two' : '')}}">
+        <button wx:for="{{smsDialog.items}}" wx:key="id" class="sms-recipient {{smsDialog.selected === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="selectSMSRecipient" disabled="{{smsBusy}}"><text>{{item.name}}</text><text>{{smsDialog.selected === item.id ? '✓' : ''}}</text></button>
+      </scroll-view>
+      <view wx:if="{{smsDialog.state === 'confirm'}}" class="sms-fee">本次 {{smsDialog.fee}} · 可用余额 {{smsDialog.balance}}</view>
+      <view wx:if="{{smsDialog.insufficient}}" class="sms-insufficient">余额不足，充值后可提醒。充值不会自动发送短信。</view>
+      <view class="sms-dialog-note">{{smsDialog.notice}}</view>
+      <view class="sms-dialog-actions"><button bindtap="closeSMS" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? '取消' : '关闭'}}</button><button class="sms-confirm" bindtap="confirmSMS" loading="{{smsBusy}}" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? (smsDialog.insufficient ? '去充值' : '确认提醒') : (smsDialog.state === 'pending' ? '核对结果' : '知道了')}}</button></view>
+    </view>
+  </view>
+  <view wx:if="{{activeFrames}}" class="av-viewer" catchtouchmove="stopImageTouch"><button bindtap="closeAV">关闭图片</button><view>{{activeFrames.label}}</view><image wx:if="{{activeFrames.src}}" src="{{activeFrames.src}}" mode="aspectFit" style="width:100%;height:65vh"/><view class="av-composer"><button bindtap="previousFrame" disabled="{{activeFrames.index < 0}}">上一张</button><button bindtap="nextFrame" disabled="{{activeFrames.index + 1 >= activeFrames.count}}">下一张</button></view></view>
+  <view wx:if="{{activeVideo}}" class="av-viewer" catchtouchmove="stopImageTouch">
+    <button bindtap="closeAV">关闭视频</button>
+    <video id="chat-video" src="{{activeVideo.src}}" controls autoplay="{{false}}" show-center-play-btn object-fit="contain" binderror="closeAV" />
+    <view wx:if="{{activeVideo.preview}}">预览不会发送，请关闭后点击确认发送</view>
+  </view>
+  <view wx:if="{{largeImage}}" class="image-viewer" catchtouchmove="stopImageTouch">
+    <view class="image-viewer-bar"><button bindtap="closeImage">关闭</button><text>{{largeImage.index + 1}} / {{largeImage.count}}</text><button bindtap="saveImage" disabled="{{!largeImage.url}}">保存此图</button></view>
+    <view class="image-viewer-body" bindtouchstart="imageTouchStart" bindtouchend="imageTouchEnd">
+      <image wx:if="{{largeImage.url}}" src="{{largeImage.url}}" mode="aspectFit"/><text wx:else>{{largeImage.loading ? '图片加载中' : largeImage.error}}</text>
+    </view>
+    <view class="image-viewer-bar"><button bindtap="previousImage" disabled="{{largeImage.index === 0}}">上一张</button><button bindtap="nextImage" disabled="{{largeImage.index + 1 >= largeImage.count}}">下一张</button></view>
+  </view>
+</view>

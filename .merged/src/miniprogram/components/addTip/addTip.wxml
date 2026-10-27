@@ -1,0 +1,12 @@
+<!--components/addTip/addTip.wxml-->
+<!-- 添加到我的小程序提示组件 -->
+<view class="box" wx:if="{{SHOW_TOP}}">
+  <view class='arrow' style="margin-right:{{marRight}}px"></view>
+  <view class='body' >
+     <view class="textContent">{{text}}</view>
+     <view class="split-line"></view>
+     <view class="cancle_btn" bindtap="okHandler">
+       <image src="/images/close-icon.png"  />
+     </view>
+  </view>
+</view>

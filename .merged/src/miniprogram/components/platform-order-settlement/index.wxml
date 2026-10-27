@@ -1,0 +1,18 @@
+<!-- 平台承接单内部结算层：只对成交师傅和管理员展示，不进入客户价格明细。 -->
+<view wx:if="{{visible}}" class="pos-card">
+  <view class="pos-heading">
+    <view class="pos-heading-text">
+      <view class="pos-title">师傅结算明细</view>
+      <view class="pos-subtitle">工费、平台收入款与师傅余额独立核对</view>
+    </view>
+    <view class="pos-badge">{{viewerLabel}}</view>
+  </view>
+  <view class="pos-status {{settlementStatus}}"><text class="cuIcon-infofill"></text><text>{{settlementStatusText}}</text></view>
+  <view class="pos-row"><text>工费结算方式</text><text class="pos-mode">{{settlementLabel}}</text></view>
+  <view class="pos-row"><text>师傅最终工费</text><text class="pos-strong">{{workerLaborText}}</text></view>
+  <view class="pos-row"><text>{{platformIncomeLabel}}</text><text>{{workerRemitText}}</text></view>
+  <view wx:if="{{showWorkerBalance}}" class="pos-row"><text>{{workerBalanceLabel}}</text><text class="pos-strong pos-green">{{workerBalanceText}}</text></view>
+  <view class="pos-note">{{settlementRuleText}}</view>
+  <view class="pos-note pos-income-note">{{platformIncomeHint}}</view>
+  <view class="pos-note pos-muted">{{estimateText}}</view>
+</view>

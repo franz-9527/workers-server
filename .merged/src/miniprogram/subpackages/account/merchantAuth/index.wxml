@@ -1,0 +1,45 @@
+<view class="merchant-shell">
+  <view wx:if="{{!loading}}" class="merchant-page">
+    <view class="merchant-hero">
+      <fullscreen-nav title="商家认证" tone="light" testing-title-only="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+      <view class="merchant-hero-main">
+        <view class="merchant-hero-copy">
+          <text class="cuIcon-shop"></text>
+          <view><small>商家认证</small><strong>{{statusText}}</strong></view>
+        </view>
+        <text class="status {{status}}">{{statusText}}</text>
+      </view>
+      <view class="hero-note">认证通过后，第二单起享 {{serviceFeePercent}}% 平台优惠服务费，首单按普通费率。</view>
+    </view>
+
+    <view class="merchant-content">
+      <order-announcement scene="merchant_auth"></order-announcement>
+      <view wx:if="{{reviewReason}}" class="review-reason"><text class="cuIcon-warn"></text>{{reviewReason}}</view>
+      <view class="card">
+        <view class="card-title-row"><view class="card-title">营业执照认证</view><text class="ocr-source">微信识别</text></view>
+        <view class="license-box {{license ? 'has-image' : ''}}" bindtap="previewLicense">
+          <image wx:if="{{license}}" src="{{license.url}}" mode="aspectFit"></image>
+          <view wx:else><text class="cuIcon-cameraadd"></text><strong>拍摄或选择营业执照</strong><small>支持自动识别；图片压缩后留存，不保存原图</small></view>
+          <text wx:if="{{licenseOcrOk}}" class="ocr-badge"><text class="cuIcon-roundcheckfill"></text> 已识别</text>
+        </view>
+        <button wx:if="{{license && status !== 'approved' && status !== 'pending'}}" class="cu-btn round line-orange change-license" loading="{{uploading}}" bindtap="chooseLicense">重新上传</button>
+      </view>
+      <view class="card form-card">
+        <view class="card-title">商家资料</view>
+        <view class="form-tip"><text class="cuIcon-info"></text> 请核对识别后的商家名称和经营地址，识别不完整可修改。</view>
+        <view class="field"><text>商家名称</text><input disabled="{{status === 'approved' || status === 'pending'}}" value="{{form.business_name}}" data-key="business_name" bindinput="input" placeholder-class="merchant-placeholder" placeholder="识别后自动填入"/></view>
+        <view class="field"><text>商家地址</text><input disabled="{{status === 'approved' || status === 'pending'}}" value="{{form.business_address}}" data-key="business_address" bindinput="input" placeholder-class="merchant-placeholder" placeholder="识别后自动填入，可补充"/></view>
+        <view wx:if="{{status !== 'approved' && status !== 'pending'}}" class="form-submit-wrap"><button class="submit cu-btn" loading="{{submitting}}" disabled="{{uploading || submitting}}" bindtap="submit">提交认证</button></view>
+      </view>
+      <view wx:if="{{legacyStores.length}}" class="card legacy-store-card">
+        <view class="card-title">旧版门店资料</view><view class="legacy-help">以下为已有门店记录，仅用于兼容查看；新的经营资料请以上方商家认证为准。</view>
+        <view class="legacy-store-item" wx:for="{{legacyStores}}" wx:key="_id" data-id="{{item._id}}" bindtap="goLegacyStore"><view class="legacy-icon"><text class="cuIcon-shop"></text></view><view class="legacy-copy"><strong>{{item.StoreName || '未命名门店'}}</strong><small>{{item.StoreType || '门店资料'}} · {{item.time || '历史记录'}}</small></view><text class="cuIcon-right"></text></view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="merchant-loading-page">
+    <fullscreen-nav title="商家认证" tone="dark" testing-title-only="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+    <view class="loading"><text class="cuIcon-loading2 spin"></text> 正在加载商家资料</view>
+  </view>
+</view>
