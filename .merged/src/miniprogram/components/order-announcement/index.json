@@ -1,6 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "subscription-health-banner": "/components/subscription-health-banner/index"
-  }
-}

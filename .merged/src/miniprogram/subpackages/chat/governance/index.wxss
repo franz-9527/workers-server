@@ -1,6 +1,0 @@
-@import "../audit/index.wxss";
-.audit-page textarea{box-sizing:border-box;width:100%;padding:20rpx;background:#f6f7f8;min-height:180rpx;margin:20rpx 0}
-
-.audit-page textarea{font-size:28rpx;line-height:1.6;color:#191919}
-.governance-placeholder{color:#68747a}
-@media(prefers-color-scheme:dark){.audit-page textarea{background:#2a2a2a;color:#eee}.governance-placeholder{color:#b2b8bb}}
