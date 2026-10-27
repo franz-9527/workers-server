@@ -52,6 +52,8 @@ jobs:
           find server tools -name '*.php' -print0 | xargs -0 -n1 php -l
           php server/tests/v260_wecom_onboarding_receipt.php
           php server/tests/v260_message_outbox_dispatch_policy.php
+          php tools/test-message-delivery.php
+          php tools/test-mini-admin-worker-store-migration.php
       - name: Review page runtime regression
         working-directory: .validation-onboarding
         run: node tools/test_review_notice_reconciliation.js
@@ -60,3 +62,4 @@ jobs:
         env:
           ONBOARDING_NOTICE_MYSQL_TEST: '1'
         run: php server/tests/v260_onboarding_notice_mysql.php
+# Source c12ce0bc23adac1dcf5c6bb6c2e3ea133aff4262
