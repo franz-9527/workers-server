@@ -1272,7 +1272,7 @@
   "server/tests/v250_mini_platform_order_creation_mysql.php": "65a1010249135db860bd7d303a702bdd4f86cc24",
   "server/tests/v250_negotiation_policy_regression.php": "deb56483157242922522609a1fa203778fa01b6d",
   "server/tests/v250_order_cancellation_mysql.php": "b4ad2db29862616966689363a0cdb11fa3580695",
-  "server/tests/v250_order_cancellation_regression.php": "4a80181c08e5d633dbfe80e75b8fad5294736285",
+  "server/tests/v250_order_cancellation_regression.php": "c5540882e5e4bc5facd0bdb6ebe168d741a957ac",
   "server/tests/v250_order_cancellation_risk_mysql.php": "6cb9ed50c3a041569a16186d2be0e40a6e08d58f",
   "server/tests/v250_order_cancellation_risk_regression.php": "5ebf51136de59a902301ed88af61470867168419",
   "server/tests/v250_order_cancellation_web_review_mysql.php": "0d1b84156637d991c86dab81a276c59a61f3adab",

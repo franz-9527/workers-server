@@ -178,7 +178,7 @@ cancelAssert(strpos($dashboardSource, "admin_url('refund-review'") !== false, '�
 
 cancelAssert(strpos($retryProcessorSource, "c.status IN ('approved','processing')") !== false, '退款重试桥同时覆盖自动批准与人工批准');
 cancelAssert(strpos($retryProcessorSource, "r.status IN ('pending_review','approved')") !== false, '退款在已抢占 approved 后进程中断仍可继续恢复');
-cancelAssert(strpos($retrySource, "status IN ('approved','processing')") !== false, '退款提交成功写回允许幂等处理中状态');
+cancelAssert(strpos($retryProcessorSource, "status IN ('approved','processing')") !== false, '退款提交成功写回允许幂等处理中状态');
 cancelAssert(strpos($gatewaySource, "\$task === 'auto_cancel' || \$task === 'all'") !== false, '自动取消任务会推进已批准退款重试');
 
 echo "\nV2.5.0 order cancellation automation regression: OK\n";

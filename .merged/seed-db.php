@@ -8,5 +8,5 @@ foreach($arguments as $name){
  if(!preg_match('/^worker_test(?:_[a-z0-9_]+)?$/D',$name))throw new RuntimeException('Invalid isolated schema');
  $pdo->exec('DROP DATABASE IF EXISTS `'.$name.'`');$pdo->exec('CREATE DATABASE `'.$name.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');$pdo->exec('USE `'.$name.'`');
  (new WorkerAdmin\Support\SqlScriptRunner())->runFile($pdo,__DIR__.($core?'/src/server/tests/v260_core_schema.sql':'/src/server/database/database.sql'));
- if($core)(new WorkerAdmin\Support\SqlScriptRunner())->runFile($pdo,__DIR__.'/src/server/database/upgrades/2.6.0.sql');
+ if($core)foreach(['2.6.0','2.7.0'] as $version)(new WorkerAdmin\Support\SqlScriptRunner())->runFile($pdo,__DIR__.'/src/server/database/upgrades/'.$version.'.sql');
 }
