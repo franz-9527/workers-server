@@ -94,7 +94,6 @@ $exceptionTasks = [
     'refund_review',
     'dispute_open',
     'platform_finance_risk',
-    'platform_income_verification',
     'contact_reveal_review',
     'after_sale_intervention',
 ];
@@ -112,6 +111,7 @@ $assert(($projected[0]['task_type'] ?? '') === 'platform_auto_publish_failed', '
 $assert(($projected[1]['task_type'] ?? '') === 'contact_reveal_review', '异常投影必须保留电话公开申请');
 $assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'platform_auto_publish_failed'], 'publish'), '自动发布失败必须进入 publish scope');
 $assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'platform_finance_risk'], 'finance'), '资金风险必须进入 finance scope');
+$assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'platform_income_verification'], 'operation') && !WorkbenchTaskProjection::matchesScope(['task_type'=>'platform_income_verification'], 'exception'), '线下收入核实是正常运营决策，不能被标成异常');
 $assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'platform_income_verification'], 'income_verification'), '线下收入核实必须进入 income_verification scope');
 $assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'contact_reveal_review'], 'privacy'), '电话公开申请必须进入 privacy scope');
 $summary = WorkbenchTaskProjection::summary([

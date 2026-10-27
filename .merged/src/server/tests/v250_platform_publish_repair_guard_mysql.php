@@ -8,6 +8,7 @@ use WorkerAdmin\Domain\Order\OrderOperationException;
 use WorkerAdmin\Infrastructure\Persistence\RepairGuardedPlatformOrderAdminRepository;
 
 $root = dirname(__DIR__, 2);
+spl_autoload_register(static function(string $class)use($root):void{if(str_starts_with($class,'WorkerAdmin\\')){$file=$root.'/server/app/'.str_replace('\\','/',substr($class,12)).'.php';if(is_file($file))require_once $file;}});
 require_once $root.'/server/app/Core/Database.php';
 require_once $root.'/server/app/Contracts/PlatformOrderAdminRepository.php';
 require_once $root.'/server/app/Domain/Order/OrderOperationException.php';

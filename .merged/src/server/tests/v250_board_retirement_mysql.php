@@ -26,7 +26,7 @@ boardAssert(strpos((string)$server->query('SELECT VERSION()')->fetchColumn(),'5.
 try{
  $server->exec('CREATE DATABASE worker_board_retirement_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');$created=true;
  $db=new \WorkerAdmin\Core\Database($config);$other=new \WorkerAdmin\Core\Database($config);
- foreach([$root.'/server/database/database.sql',$root.'/server/database/upgrades/2.5.0.sql']as$file){$sql=(string)file_get_contents($file);if(preg_match('/^\s*(?:USE |CREATE DATABASE|DROP DATABASE)/mi',$sql))throw new RuntimeException('Fixture SQL cannot switch databases');$db->pdo()->exec($sql);}
+ foreach([$root.'/server/database/database.sql',$root.'/server/database/upgrades/2.5.0.sql']as$file){$sql=(string)file_get_contents($file);if(preg_match('/^\s*(?:USE |CREATE DATABASE|DROP DATABASE)/mi',$sql))throw new RuntimeException('Fixture SQL cannot switch databases');(new \WorkerAdmin\Support\SqlScriptRunner())->run($db->pdo(),$sql,$file);}
  $settings=new BoardSettings();$cipher=new BoardCipher();$identity=new \WorkerAdmin\Infrastructure\Persistence\DatabaseIdentityRepository($db,$cipher,$settings);$identityOther=new \WorkerAdmin\Infrastructure\Persistence\DatabaseIdentityRepository($other,$cipher,$settings);
  $row=$identity->createWechatIdentity(['app_id'=>'wx-board','openid'=>'board-owner-openid'],['nickname'=>'Board owner','mobile'=>'13800131234']);$user=(int)$row['user_id'];
  boardAssert((int)$identity->findWechatIdentity('wx-board','board-owner-openid')['user_id']===$user,'native identity creation and lookup');boardAssert($identity->findWechatIdentity('wx-board','BOARD-OWNER-OPENID')===null,'identity lookup remains case-sensitive');

@@ -147,7 +147,7 @@ foreach (['assignments','quote_selections','appointment_records','change_request
     cancelAssert(strpos($repositorySource, 'FROM '.$table.' WHERE order_id=') !== false, '自动取消检查 '.$table.' 历史事实');
 }
 cancelAssert(strpos($repositorySource, "lifecycle_status='cancel_approved_pending_refund'") !== false, '自动批准只进入待原路退款生命周期');
-cancelAssert(strpos($repositorySource, "'notify_recipients'=>\$agreed ? ['user','worker'] : ['user']") !== false, '自动取消事件只通知用户不制造管理员噪音');
+cancelAssert(strpos($repositorySource, "'notify_recipients'=>(\$agreed || \$workerFault) ? ['user','worker'] : ['user']") !== false, '自动取消事件只通知用户不制造管理员噪音');
 cancelAssert(strpos($repositorySource, "WHERE id=:id AND status='pending'") !== false, '退款审核用 pending 条件写防止重复处理');
 cancelAssert(strpos($repositorySource, 'REFUND_AMOUNT_EXCEEDS_AVAILABLE') !== false, '服务端重新校验当前最大可退金额');
 cancelAssert(strpos($repositorySource, 'REFUND_EXECUTION_WEB_REQUIRED') !== false, '双方已同意但资金复杂时普通审核接口硬阻断');

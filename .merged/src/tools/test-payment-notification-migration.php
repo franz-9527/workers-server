@@ -123,7 +123,7 @@ $legacy=(string)file_get_contents($root.'/server/app/Http/Api/Modules/LegacyApiM
 $paymentModule=(string)file_get_contents($root.'/server/app/Http/Api/Modules/PaymentNotificationApiModule.php');
 $refundModule=(string)file_get_contents($root.'/server/app/Http/Api/Modules/RefundNotificationApiModule.php');
 $refundRepository=(string)file_get_contents($root.'/server/app/Infrastructure/Persistence/DatabaseRefundResultSettlement.php');
-$controller=(string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller=(is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 foreach ([['PaymentNotificationApiModule','wechatpay.notify'],['RefundNotificationApiModule','wechatpay.refund_notify']] as [$name,$route]) {
     $owner=(new ReflectionClass('WorkerAdmin\\Http\\Api\\Modules\\'.$name))->newInstanceWithoutConstructor();
     $other=$route==='wechatpay.notify'?'wechatpay.refund_notify':'wechatpay.notify';

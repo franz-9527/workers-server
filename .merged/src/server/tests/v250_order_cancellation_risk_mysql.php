@@ -43,9 +43,9 @@ $rootDb->pdo()->exec('CREATE DATABASE `'.$dbName.'` CHARACTER SET utf8mb4 COLLAT
 $config['database']=$dbName;
 $db=new Database($config);
 try {
-    $db->pdo()->exec((string)file_get_contents(dirname(__DIR__).'/database/database.sql'));
+    (new \WorkerAdmin\Support\SqlScriptRunner())->runFile($db->pdo(),dirname(__DIR__).'/database/database.sql');
     $upgrade=(string)file_get_contents(dirname(__DIR__).'/database/upgrades/2.5.0.sql');
-    $db->pdo()->exec($upgrade); $db->pdo()->exec($upgrade);
+    (new \WorkerAdmin\Support\SqlScriptRunner())->run($db->pdo(),$upgrade,'2.5.0'); (new \WorkerAdmin\Support\SqlScriptRunner())->run($db->pdo(),$upgrade,'2.5.0-repeat');
     same((int)$db->fetchValue("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name LIKE 'order_cancellation_risk_%'"),4,'完整安装及升级重放四张风控表');
     for ($id=1001;$id<=1012;$id++) $db->execute("INSERT INTO users(id,public_id,nickname,created_at,updated_at) VALUES(:id,:no,'取消风控测试',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['id'=>$id,'no'=>public_id()]);
     foreach ([77=>1009,78=>1010,79=>1001] as $id=>$user) $db->execute('INSERT INTO worker_profiles(id,user_id,public_id,created_at,updated_at) VALUES(:id,:user,:no,UTC_TIMESTAMP(),UTC_TIMESTAMP())',['id'=>$id,'user'=>$user,'no'=>public_id()]);

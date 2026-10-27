@@ -51,7 +51,7 @@ paidProbeAssert(strpos($runner,"\$delays!==[30,120,600,1800,3600]||\$facts!==6")
 paidProbeAssert(strpos($runner,"\$result['wallet_mutated']=false")!==false&&strpos($runner,"\$result['provider_query_executed']=false")!==false,'probe explicitly records wallet/provider boundaries');
 
 paidProbeAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false,'composition wires paid SMS receipt probe');
-paidProbeAssert(strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,$paidSmsReceiptActions)')!==false,'replay capture wraps paid SMS receipt probe');
+paidProbeAssert(strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,new \\WorkerAdmin\\Infrastructure\\Testing\\DatabaseTestCenterChatActionRunner($db,$paidSmsReceiptActions))')!==false,'replay capture wraps paid SMS receipt probe');
 paidProbeAssert(strpos($wrapper,'test-center-paid-sms-receipt-actions')!==false,'v260 detail renders paid SMS receipt panel');
 paidProbeAssert(strpos($view,'receipt_scenario')!==false,'paid SMS UI submits bounded scenario only');
 paidProbeAssert(strpos($view,'不会发送真实短信')!==false&&strpos($view,'不会修改真实钱包')!==false,'paid SMS UI states external and wallet boundaries');

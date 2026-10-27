@@ -41,6 +41,10 @@ jobs:
       ONBOARDING_NOTICE_MYSQL_TEST: '1'
       V250_DB_HOST: 127.0.0.1
       V250_DB_NAME: worker_test
+      V260_DB_NAME: worker_test
+      V260_DB_HOST: 127.0.0.1
+      V260_DB_USER: root
+      V260_DB_PASSWORD: test-only
       V250_DB_USER: root
       V250_DB_PASSWORD: test-only
       AUXILIARY_RETIREMENT_MYSQL_TEST: '1'
@@ -106,6 +110,7 @@ jobs:
           echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
           echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
           echo "CHAT_SMS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "V260_DB_PORT=$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
           echo "V250_DB_PORT=$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
           echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
           echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
@@ -140,7 +145,7 @@ jobs:
         run: |
           mkdir "$RUNNER_TEMP/php83-analyzer"
           cd "$RUNNER_TEMP/php83-analyzer"
-          composer require --no-interaction --no-progress --no-plugins --no-scripts 'phpcompatibility/php-compatibility:dev-develop#4b1ac835da9b71a6ac3bc70ff903638187f33674' 'squizlabs/php_codesniffer:4.0.2' 'phpcsstandards/phpcsutils:1.1.2'
+          composer require --no-interaction --no-progress --no-plugins --no-scripts 'phpcompatibility/php-compatibility:dev-develop#4b1ac835da9b71a6ac3bc70ff903638187f33674' 'squizlabs/php_codesniffer:4.0.2' 'phpcsstandards/phpcsutils:1.2.3'
           vendor/bin/phpcs --config-set installed_paths "$RUNNER_TEMP/php83-analyzer/vendor/phpcompatibility/php-compatibility,$RUNNER_TEMP/php83-analyzer/vendor/phpcsstandards/phpcsutils"
           status=0
           vendor/bin/phpcs "$GITHUB_WORKSPACE/.merged/src/server" "$GITHUB_WORKSPACE/.merged/src/tools" --standard=PHPCompatibility --runtime-set testVersion 8.3 --extensions=php --report=json --report-file="$RUNNER_TEMP/php83-compat.json" || status=$?

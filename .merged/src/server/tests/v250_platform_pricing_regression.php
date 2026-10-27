@@ -37,11 +37,11 @@ final class PricingFakeDatabase extends Database
         $this->order = [
             'id'=>42,'public_no'=>'QT-PLATFORM-42','order_source_type'=>'platform',
             'lifecycle_status'=>'active','fulfillment_status'=>'in_progress',
-            'booking_fee_cents'=>5000,'assigned_worker_id'=>7,'current_assignment_id'=>71,
+            'booking_fee_cents'=>0,'assigned_worker_id'=>7,'current_assignment_id'=>71,
             'final_amount_cents'=>80480,'version'=>1,
         ];
         $this->terms = [
-            'customer_pricing_mode'=>'itemized','customer_contract_total_cents'=>80480,
+            'customer_flow_mode'=>'platform_managed','booking_paid_cents'=>5000,'customer_pricing_mode'=>'itemized','customer_contract_total_cents'=>80480,
             'worker_settlement_mode'=>$mode,'worker_labor_cents'=>70000,
             'settlement_status'=>'pending',
         ];
@@ -75,6 +75,7 @@ final class PricingFakeDatabase extends Database
 
     public function fetchAll($sql, array $params = [])
     {
+        if (strpos($sql, 'FROM payment_orders') !== false) return [];
         if (strpos($sql, 'FROM order_pricing_items') === false) throw new RuntimeException('Unexpected fake SELECT ALL: '.$sql);
         $baseOnly = strpos($sql, "item_source='base'") !== false;
         return array_values(array_filter($this->lines, static function (array $row) use ($baseOnly): bool {

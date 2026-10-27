@@ -49,7 +49,7 @@ auxAssert(strpos((string)$server->query('SELECT VERSION()')->fetchColumn(),'5.7.
 try {
  $server->exec('CREATE DATABASE worker_auxiliary_retirement_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');$created=true;
  $db=new \WorkerAdmin\Core\Database($config);$other=new \WorkerAdmin\Core\Database($config);
- foreach([$root.'/server/database/database.sql',$root.'/server/database/upgrades/2.5.0.sql']as$file){$sql=(string)file_get_contents($file);if(preg_match('/^\s*(?:USE |CREATE DATABASE|DROP DATABASE)/mi',$sql))throw new RuntimeException('Fixture SQL cannot switch databases');$db->pdo()->exec($sql);}
+ foreach([$root.'/server/database/database.sql',$root.'/server/database/upgrades/2.5.0.sql']as$file){$sql=(string)file_get_contents($file);if(preg_match('/^\s*(?:USE |CREATE DATABASE|DROP DATABASE)/mi',$sql))throw new RuntimeException('Fixture SQL cannot switch databases');(new \WorkerAdmin\Support\SqlScriptRunner())->run($db->pdo(),$sql,$file);}
  $db->execute('CREATE TABLE fixture_notifications(id INT AUTO_INCREMENT PRIMARY KEY,kind VARCHAR(80),target_id BIGINT) ENGINE=InnoDB');
  $owner=$db->insert("INSERT INTO users(public_id,nickname,created_at,updated_at) VALUES(:id,'Aux owner',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['id'=>public_id()]);
  $cloud=new AuxiliaryCloud();$workerData=['_id'=>'CW-aux','_openid'=>'oyAohABCDEFGHIJKLMNO123','workerName'=>'审核师傅','status'=>'approved','mobile'=>'13900131234','location'=>['city'=>'杭州','district'=>'西湖','address'=>'测试地址','latitude'=>30,'longitude'=>120]];

@@ -33,7 +33,7 @@ foreach(array_merge($writeRoutes,['media.order','media.worker']) as $route){
     $assert(count($owners)===1,'route must have one formal owner: '.$route);
 }
 
-$controller=(string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller=(is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 $oldMap=[
     "'media.upload' => ['POST', 'uploadMedia']"=>'private function uploadMedia(',
     "'media.delete' => ['POST', 'deleteOrderMedia']"=>'private function deleteOrderMedia(',

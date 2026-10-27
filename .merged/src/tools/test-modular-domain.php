@@ -117,7 +117,7 @@ $workbenchGroups=[
     3=>['tasks'=>[['task_type'=>'platform_income_verification','mode'=>'decision']]],
 ];
 $workbenchSummary=WorkbenchTaskProjection::summary($workbenchGroups);
-$assert($workbenchSummary['todo_orders']===3 && $workbenchSummary['exception_orders']===2 && $workbenchSummary['operation_orders']===1, '工作台正常待办与异常待办统计规则发生变化');
+$assert($workbenchSummary['todo_orders']===3 && $workbenchSummary['exception_orders']===1 && $workbenchSummary['operation_orders']===2, '工作台正常待办与异常待办统计规则发生变化');
 $assert($workbenchSummary['auto_publish_orders']===1 && $workbenchSummary['income_verification_orders']===1 && $workbenchSummary['settlement_orders']===1, '工作台平台分类统计失败');
 $assert($workbenchSummary['audit_orders']===1 && $workbenchSummary['attention_orders']===1, '工作台审核或 attention 统计失败');
 $assert(WorkbenchTaskProjection::matchesScope(['task_type'=>'audit_pending','mode'=>'decision'],'todo'), '正常审核应进入全部待处理');

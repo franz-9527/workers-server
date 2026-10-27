@@ -66,7 +66,7 @@ m2fAssert(strpos($composition,'new DatabaseTestCenterCleanupSafetyRepository($db
 
 $view=m2fFile($root,'server/views/admin/test-center-detail.php');
 foreach(['执行真实预约','执行真实完工','执行真实验收'] as $label)m2fAssert(strpos($view,$label)!==false,'detail exposes '.$label);
-m2fAssert(strpos($view,'不代表七牛/上传 API 已通过')!==false,'completion fixture limitation is explicit in UI');
+m2fAssert(strpos($view,'不代表七牛存储或上传接口 已通过')!==false,'completion fixture limitation is explicit in UI');
 m2fAssert(strpos($view,'不会伪装成真实上传或真实线下收款核验')!==false,'receipt fixture limitation is explicit in UI');
 
 m2fPass('V2.6.0 test center M2 fulfillment contract regression completed');

@@ -1,6 +1,6 @@
 # 服务端升级与发布指南
 
-适用运行基线：PHP 7.4 / MySQL 5.7.44。代码目标读取 VERSION，迁移目标与前置依赖读取 database/upgrades/manifest.json；现场版本读取升级页和迁移台账。文档不证明某版已经发行。
+适用运行基线：PHP 8.3.36 / MySQL 5.7.44。代码目标读取 VERSION，迁移目标与前置依赖读取 database/upgrades/manifest.json；现场版本读取升级页和迁移台账。文档不证明某版已经发行。
 
 ## 1. 先判断安装方式
 
@@ -65,7 +65,7 @@ runuser -u www -- test -r /www/wwwroot/worker/app/Support/functions.php && echo 
 
 ## 5. 发行门禁
 
-按交付提交验证 PHP 7.4、MySQL 5.7.44 增量迁移/全新安装/幂等、包 CRC/SHA-256、ZIP 顶层结构和 Unix 权限（目录 `0755`、普通文件 `0644`），并确认 `.user.ini`、`.env`、`config/installed.php`、`storage/` 未进入覆盖包。
+按交付提交验证 PHP 8.3.36、MySQL 5.7.44 增量迁移/全新安装/幂等、包 CRC/SHA-256、ZIP 顶层结构和 Unix 权限（目录 `0755`、普通文件 `0644`），并确认 `.user.ini`、`.env`、`config/installed.php`、`storage/` 未进入覆盖包。
 新增分层类必须全部打包；业务、资金并发与外部联调结果分别记录，旧版 CI 成功不自动覆盖新提交。
 版本升级包须包含交付提交的全部正式运行文件，不能假设线上上一版本与开发分支的文件集相同；差异清单只用于审计，不能据此省略已有依赖类。
 详细规则见仓库 docs/数据库升级与发行手册.md；具体变更及已通过验证写 Release notes，不在此累加 RC 修复记录。

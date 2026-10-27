@@ -4,7 +4,7 @@
 
 - 站点域名：`worker.20m.cc`
 - 站点根目录：`/www/wwwroot/worker`
-- PHP：`7.4`
+- PHP：`8.3.36`（本分支运行基线；FPM 与计划任务 CLI 均须核对，安装/升级预检会检查扩展和 GD 格式能力）
 - MySQL：`5.7.44`
 - 数据库字符集：`utf8mb4`
 - 管理方式：宝塔面板、Nginx、phpMyAdmin 4.4
@@ -30,7 +30,7 @@
 - `finance.summary`、`finance.realname.*`、`commission.payment.create`、`finance.account.save`、`finance.withdraw`：实名认证、服务费、余额、支付宝账号和提现；
 - `admin.dashboard`、`admin.orders`、`admin.order.action`、`admin.order.share`：仅配置的管理员 OpenID 可使用的小程序基础工作台与分享码。
 
-上线前还要在微信公众平台把 `https://worker.20m.cc` 加入 request、uploadFile、downloadFile 合法域名，并在后台“基础设置 → 小程序绑定”填写当前小程序的 AppID、AppSecret 和云环境 ID。PHP 7.4 需启用 `curl`、`gd`、`fileinfo`、`pdo_mysql`、`mbstring` 与 `openssl`。
+上线前还要在微信公众平台把 `https://worker.20m.cc` 加入 request、uploadFile、downloadFile 合法域名，并在后台“基础设置 → 小程序绑定”填写当前小程序的 AppID、AppSecret 和云环境 ID。PHP 8.3.36 需启用 `curl`、`gd`（JPEG/PNG/WebP 读写）、`fileinfo`、`pdo_mysql`、`mbstring`、`openssl`、`simplexml`、`ctype`、`sodium`、`session` 与 `filter`。
 
 ## 一、上线后的地址
 
@@ -50,10 +50,10 @@
 
 ### 1. 创建运行环境
 
-1. 在宝塔安装 Nginx、PHP 7.4、MySQL 5.7.44。不要把生产数据库升级到不兼容版本。
-2. 在“软件商店 → PHP 7.4 → 安装扩展”确认启用 `pdo_mysql`、`mbstring`、`openssl`、`fileinfo`、`gd` 和 `curl`；接单图片压缩与微信登录分别依赖 `gd`、`curl`。
+1. 在宝塔安装 Nginx、PHP 8.3.36、MySQL 5.7.44。不要把生产数据库升级到不兼容版本。
+2. 在“软件商店 → PHP 8.3.36 → 安装扩展”确认启用 `pdo_mysql`、`mbstring`、`openssl`、`fileinfo`、`gd`（JPEG/PNG/WebP）、`curl`、`simplexml`、`ctype` 和 `sodium`；接单图片压缩与微信登录分别依赖 `gd`、`curl`。
 3. 新建数据库 `worker`，字符集选择 `utf8mb4`。为站点创建独立数据库账号，只授予该数据库所需权限，不要在网页安装器中使用 MySQL 的 `root` 账号。
-4. 创建站点 `worker.20m.cc`，PHP 版本选择 PHP 7.4，根目录设为 `/www/wwwroot/worker`。
+4. 创建站点 `worker.20m.cc`，PHP 版本选择 PHP 8.3.36，根目录设为 `/www/wwwroot/worker`。
 
 ### 2. 上传文件
 
@@ -74,7 +74,7 @@
 
 1. 先在宝塔为 `worker.20m.cc` 申请并部署有效 SSL 证书，开启 HTTP 跳转 HTTPS。
 2. 备份宝塔当前站点配置。
-3. 参考根目录的 `nginx.worker.conf.example` 替换站点配置，并在保存前核对证书路径、站点根目录和 PHP 7.4 Socket。
+3. 参考根目录的 `nginx.worker.conf.example` 替换站点配置，并在保存前核对证书路径、站点根目录和 PHP 8.3.36 Socket。
 4. 示例已经使用 PHP 入口白名单。不要再保留宝塔自动生成的通用 `include enable-php-74.conf` 或另一段可执行任意 PHP 文件的规则，否则会绕过白名单。
 5. 在宝塔测试配置并重载 Nginx。确认 `/assets/` 可以访问，而 `/config/`、`/database/database.sql`、`/storage/` 和 `/install/install-token.php` 均返回 404。
 
@@ -130,7 +130,7 @@ SQL 文件故意不包含固定后台密码。安装页面负责创建首位超�
 
 1. 在宝塔暂停“壁选订单调度器”，并把站点临时停用或切到宝塔维护页，确认上传过程中没有普通后台、API 或小程序请求进入。
 2. 在备份完成后上传新版本文件，保留服务器现有的 `config/installed.php` 和整个 `storage` 目录；不要手工创建 `storage/maintenance.lock`。
-3. 完整上传后重载 PHP 7.4，确保新 PHP 文件和 OPcache 同步，再恢复站点访问。代码 `VERSION` 与安装配置不一致时，程序会自动暂停 API、普通后台页面和计划任务，只放行后台登录与升级入口。
+3. 完整上传后重载 PHP 8.3.36，确保新 PHP 文件和 OPcache 同步，再恢复站点访问。代码 `VERSION` 与安装配置不一致时，程序会自动暂停 API、普通后台页面和计划任务，只放行后台登录与升级入口。
 4. 使用超级管理员登录，打开 `/adminapi/upgrade`，先执行升级预检，确认版本、数据库连接、目录权限和 SQL 校验全部通过。
 5. 勾选已完成备份，填写上一步的备份标识，再输入当前管理员密码。执行升级并保存结果。
 
@@ -153,7 +153,7 @@ V1.0.1 起，普通 Web 请求会持有共享升级屏障，升级器取得独�
 - 脚本内容：
 
 ```sh
-/www/server/php/74/bin/php /www/wwwroot/worker/bin/scheduler.php all --limit=100
+/www/server/php/83/bin/php /www/wwwroot/worker/bin/scheduler.php all --limit=100
 ```
 
 先在宝塔终端手工执行一次，确认输出 JSON 且退出正常，再启用计划任务。调度器只能由 PHP CLI 运行，Nginx 已禁止从网址访问 `bin`。同一分钟重复触发时，程序仍会根据订单状态、期限版本和任务抢占记录避免重复验收、评价或记账；升级维护、代码版本待同步时会输出 `skipped_maintenance` 或 `skipped_upgrade_required` 并安全跳过。
@@ -167,12 +167,12 @@ V1.0.1 起，普通 Web 请求会持有共享升级屏障，升级器取得独�
 推荐设置：
 
 - 宝塔 Nginx `client_max_body_size`：`12m`；
-- PHP 7.4 `upload_max_filesize`：`12M`；
-- PHP 7.4 `post_max_size`：`14M`；
-- PHP 7.4 `max_file_uploads`：按前端单次上传数量设置，建议不低于 `20`；
+- PHP 8.3.36 `upload_max_filesize`：`12M`；
+- PHP 8.3.36 `post_max_size`：`14M`；
+- PHP 8.3.36 `max_file_uploads`：按前端单次上传数量设置，建议不低于 `20`；
 - 应用单张成品：最长边不超过 1600 像素，JPEG 质量约 80，目标不超过 1 MiB。
 
-修改 PHP 配置后要重载 PHP 7.4。即使小程序已经压缩，服务端仍要校验真实 MIME、扩展名、图片尺寸和文件大小，并重新编码后保存；不要信任客户端文件名。私有图片放在 `storage/private` 或 `storage/uploads`，由后续鉴权接口输出，禁止 Nginx 直接提供静态访问。
+修改 PHP 配置后要重载 PHP 8.3.36。即使小程序已经压缩，服务端仍要校验真实 MIME、扩展名、图片尺寸和文件大小，并重新编码后保存；不要信任客户端文件名。私有图片放在 `storage/private` 或 `storage/uploads`，由后续鉴权接口输出，禁止 Nginx 直接提供静态访问。
 
 ## 七、微信支付与回调准备
 

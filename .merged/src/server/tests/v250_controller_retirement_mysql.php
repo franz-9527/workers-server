@@ -116,7 +116,7 @@ try {
     $db->execute("CREATE TABLE users(id INT PRIMARY KEY,public_id VARCHAR(80),status VARCHAR(20),nickname VARCHAR(80),avatar_url VARCHAR(200),mobile_masked VARCHAR(30)) ENGINE=InnoDB");
     $db->execute("CREATE TABLE worker_profiles(id INT PRIMARY KEY,user_id INT,public_id VARCHAR(80),display_name VARCHAR(80),verification_status VARCHAR(20),rejection_reason TEXT,invited_only TINYINT,lat DOUBLE,lng DOUBLE,city VARCHAR(80),district VARCHAR(80)) ENGINE=InnoDB");
     $db->execute("CREATE TABLE merchant_profiles(id INT PRIMARY KEY,user_id INT) ENGINE=InnoDB");
-    $db->execute("CREATE TABLE login_sessions(id INT PRIMARY KEY,user_id INT,demo_actor_user_id INT NULL,token_hash CHAR(64),status VARCHAR(20),expires_at DATETIME,last_seen_at DATETIME NULL) ENGINE=InnoDB");
+    $db->execute("CREATE TABLE login_sessions(id INT PRIMARY KEY,user_id INT,demo_actor_user_id INT NULL,test_actor_user_id INT NULL,test_instance_id INT NULL,test_actor_expires_at DATETIME NULL,token_hash CHAR(64),status VARCHAR(20),expires_at DATETIME,last_seen_at DATETIME NULL) ENGINE=InnoDB");
     $db->execute("CREATE TABLE wechat_identities(id INT PRIMARY KEY,user_id INT,openid VARCHAR(80),app_id VARCHAR(80),status VARCHAR(20)) ENGINE=InnoDB");
     $db->execute("INSERT INTO users(id,public_id,status) VALUES(10,'real-admin','active'),(501,'01K2DEMOVTESTUSER','active'),(502,'01K2DEMOVTESTMERCHANT','active'),(503,'01K2DEMOVTESTWORKER','active')");
     $db->execute("INSERT INTO merchant_profiles(id,user_id) VALUES(1,502)");

@@ -61,7 +61,7 @@ $assert($repairCall[2]['evidence_ids']===['M1','M2'], 'repair evidence must dedu
 
 $module = (string)file_get_contents($root.'/server/app/Http/Api/Modules/OrderFulfillmentApiModule.php');
 $legacy = (string)file_get_contents($root.'/server/app/Http/Api/Modules/LegacyApiModule.php');
-$controller = (string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller = (is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 $persistence = (string)file_get_contents($root.'/server/app/Infrastructure/Persistence/DatabaseOrderFulfillmentAuxiliaryRepository.php');
 $routes = [
     'arrivals.report'=>'reportArrival',

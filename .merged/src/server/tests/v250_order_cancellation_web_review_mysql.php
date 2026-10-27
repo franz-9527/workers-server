@@ -66,6 +66,7 @@ namespace {
     $db = new Database($config);
 
     $ddl = [
+        "CREATE TABLE system_settings(setting_key VARCHAR(100) PRIMARY KEY,setting_value TEXT) ENGINE=InnoDB",
         "CREATE TABLE admin_users(id BIGINT UNSIGNED PRIMARY KEY) ENGINE=InnoDB",
         "CREATE TABLE orders(
             id BIGINT UNSIGNED PRIMARY KEY,public_no VARCHAR(80) NOT NULL UNIQUE,user_id BIGINT UNSIGNED NOT NULL,

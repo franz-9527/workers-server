@@ -1,0 +1,296 @@
+name: Backend validation and release packaging
+on:
+  push:
+    branches:
+      - dev/2.4.1
+      - dev/2.5.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_mode: ${{ steps.mode.outputs.release_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend release mode
+        id: mode
+        shell: bash
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d '\r\n ' < server/VERSION)"
+          if [[ "$VERSION" == "2.5.0" && "${COMMIT_MESSAGE:-}" == *"[publish-v250]"* ]]; then
+            echo "release_mode=v250_release" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" == "2.4.0" ]]; then
+            echo "release_mode=legacy_hotfix" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_mode=migration_validation" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Backend VERSION=$VERSION"
+
+      - uses: shivammathur/setup-php@v2
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,pdo_sqlite,mbstring,curl,openssl,fileinfo,gd,simplexml,ctype,sodium
+
+      - name: PHP 7.4 syntax
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          set -euo pipefail
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l >/tmp/php-lint.log
+          tail -n 5 /tmp/php-lint.log
+
+      - name: Modular architecture guard
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          set -euo pipefail
+          php tools/check-modular-architecture.php
+          php tools/test-modular-domain.php
+          php tools/test-actor-capabilities.php
+          php tools/test-architecture-wiring.php
+
+      - name: OCR result persistence regression
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: php tools/test-ocr-result-recorder.php
+
+      - name: Wallet recharge lifecycle regression
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          php tools/test-wallet-recharge-lifecycle.php
+          php tools/test-wallet-recharge-scheduler-wiring.php
+
+      - name: Content security error contract
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: php tools/test-content-security-errors.php
+
+      - name: Cloud function syntax
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          node --check cloudfunctions/store/index.js
+          node --check cloudfunctions/worker/index.js
+
+      - name: Form designer component regression
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          php tools/test-form-designer-ui.php
+          node --check /tmp/designer-inline-smoke.js
+
+      - name: Message configuration and rendered UI regression
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          php tools/test-message-configuration.php
+          node --check server/assets/admin.js
+
+      - name: Notification routes smoke
+        if: steps.mode.outputs.release_mode != 'v250_release'
+        run: |
+          php -r 'require "server/app/Services/OrderNotificationService.php"; $m=new ReflectionMethod("WorkerAdmin\\Services\\OrderNotificationService","adminActionPath"); $m->setAccessible(true); foreach ([["merchant_auth_submitted",0,"/admin/?route=merchants"],["order_submitted",7,"/admin/?route=orders.view&id=7"],["withdrawal_submitted",0,"/admin/?route=withdrawals"]] as $v) { if ($m->invoke(null,$v[0],$v[1]) !== $v[2]) exit(1); } echo "route mapping OK\n";'
+
+      - name: Validate current database migration package metadata
+        if: steps.mode.outputs.release_mode == 'migration_validation'
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '
+            $version=trim(file_get_contents("server/VERSION"));
+            $manifest=json_decode(file_get_contents("server/database/upgrades/manifest.json"),true);
+            if(!is_array($manifest)) {fwrite(STDERR,"invalid manifest\n");exit(1);}
+            $found=null;
+            foreach(($manifest["upgrades"]??[]) as $row){if(($row["version"]??"")===$version){$found=$row;break;}}
+            if(!$found){fwrite(STDERR,"manifest missing current version\n");exit(1);}
+            $file="server/database/upgrades/".$version.".sql";
+            if(!is_file($file)){fwrite(STDERR,"migration file missing\n");exit(1);}
+            $actual=hash_file("sha256",$file);
+            $expected=strtolower((string)($found["checksum"]??""));
+            if(!hash_equals($expected,strtolower($actual))){fwrite(STDERR,"migration checksum mismatch: expected={$expected} actual={$actual}\n");exit(1);}
+            if(($found["idempotent"]??false)!==true){fwrite(STDERR,"current migration must declare idempotent=true\n");exit(1);}
+            echo "migration metadata OK: {$version} {$actual}\n";
+          '
+          node - <<'NODE'
+          const fs = require('fs')
+          const serverVersion = fs.readFileSync('server/VERSION', 'utf8').trim()
+          const { APICONFIG } = require('./miniprogram/config/config.js')
+          if (APICONFIG.VERSION !== serverVersion) {
+            console.error(`API_VERSION ${APICONFIG.VERSION} != server VERSION ${serverVersion}`)
+            process.exit(1)
+          }
+          console.log(`API compatibility version OK: ${serverVersion}`)
+          NODE
+          VERSION="$(tr -d '\r\n ' < server/VERSION)"
+          if [[ "$VERSION" == "2.4.1" ]]; then
+            grep -q "ocr_payload_ciphertext" "server/database/upgrades/$VERSION.sql"
+            grep -q "ocr_usage_logs" "server/database/upgrades/$VERSION.sql"
+          elif [[ "$VERSION" == "2.5.0" ]]; then
+            grep -q "attitude_rating" "server/database/upgrades/$VERSION.sql"
+            grep -q "craft_rating" "server/database/upgrades/$VERSION.sql"
+            grep -q "customer_flow_mode" "server/database/upgrades/$VERSION.sql"
+          fi
+
+      - name: Build legacy V2.4.0 backend overlay
+        if: steps.mode.outputs.release_mode == 'legacy_hotfix'
+        run: bash tools/package-server-2.4.0-hotfix.sh "$RUNNER_TEMP/release"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.mode.outputs.release_mode == 'legacy_hotfix'
+        with:
+          name: workers-server-v2.4.0-backend-hotfix
+          path: ${{ runner.temp }}/release/*
+          retention-days: 7
+
+      - name: Verify validated V2.5.0 manifest
+        id: v250meta
+        if: steps.mode.outputs.release_mode == 'v250_release'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_SQL_SHA="a8fb5669fafcfbf5ea24afd338c534229b9921e10b5310af611ead60cb871bb3"
+          SQL_SHA="$(sha256sum server/database/upgrades/2.5.0.sql | awk '{print $1}')"
+          [[ "$SQL_SHA" == "$EXPECTED_SQL_SHA" ]] || {
+            echo "ERROR: formal 2.5.0.sql differs from the MySQL 5.7.44 validated SQL" >&2
+            echo "expected=$EXPECTED_SQL_SHA actual=$SQL_SHA" >&2
+            exit 1
+          }
+          python3 - "$SQL_SHA" <<'PY'
+          import json
+          import pathlib
+          import sys
+          checksum = sys.argv[1]
+          data = json.loads(pathlib.Path('server/database/upgrades/manifest.json').read_text(encoding='utf-8'))
+          target = next((row for row in data.get('upgrades', []) if row.get('version') == '2.5.0'), None)
+          if target is None:
+              raise SystemExit('manifest missing 2.5.0')
+          if target.get('checksum') != checksum:
+              raise SystemExit('manifest checksum does not match the validated 2.5.0.sql')
+          if target.get('idempotent') is not True or target.get('retry_failed') is not False:
+              raise SystemExit('manifest 2.5.0 retry/idempotency flags are incorrect')
+          PY
+          RELEASE_SHA="$(git rev-parse HEAD)"
+          echo "release_sha=$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "sql_sha256=$SQL_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Build formal V2.5.0 release packages
+        if: steps.mode.outputs.release_mode == 'v250_release'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev/2.4.1:refs/remotes/origin/dev/2.4.1
+          bash tools/package-release.sh origin/dev/2.4.1 "$RUNNER_TEMP/release"
+          cd "$RUNNER_TEMP/release"
+          sha256sum -c SHA256SUMS.txt
+          for archive in *.zip; do unzip -t "$archive" >/dev/null; done
+          BACKEND_ZIP="$(find . -maxdepth 1 -type f -name 'workers-server-upgrade-*-to-2.5.0.zip' -printf '%f\n' | head -n1)"
+          [[ -n "$BACKEND_ZIP" && -f "$BACKEND_ZIP" ]]
+          ! unzip -Z1 "$BACKEND_ZIP" | grep -Eq '^(tests/|tools/|storage/|config/installed\.php$|\.env$|\.user\.ini$)'
+          BAD_PERMISSIONS="$(zipinfo -l "$BACKEND_ZIP" | awk '
+            $1 ~ /^d/ && $1 != "drwxr-xr-x" { print $1 " " $NF }
+            $1 ~ /^-/ && $1 != "-rw-r--r--" { print $1 " " $NF }
+            $1 ~ /^l/ { print $1 " " $NF }
+          ')"
+          [[ -z "$BAD_PERMISSIONS" ]] || { echo "ERROR: backend ZIP permission gate failed" >&2; printf '%s\n' "$BAD_PERMISSIONS" >&2; exit 1; }
+          echo "Release source: ${{ steps.v250meta.outputs.release_sha }}"
+          cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        if: steps.mode.outputs.release_mode == 'v250_release'
+        with:
+          name: workers-v2.5.0-formal-release
+          path: ${{ runner.temp }}/release/*
+          retention-days: 30
+
+      - name: Publish formal V2.5.0 release
+        if: steps.mode.outputs.release_mode == 'v250_release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_SHA: ${{ steps.v250meta.outputs.release_sha }}
+          SQL_SHA: ${{ steps.v250meta.outputs.sql_sha256 }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/release"
+          BACKEND_ZIP="$(find . -maxdepth 1 -type f -name 'workers-server-upgrade-*-to-2.5.0.zip' -printf '%f\n' | head -n1)"
+          MINI_ZIP="workers-miniapp-v2.5.0.zip"
+          [[ -n "$BACKEND_ZIP" && -f "$BACKEND_ZIP" ]]
+          [[ -f "$MINI_ZIP" && -f SHA256SUMS.txt ]]
+          if gh release view v2.5.0 >/dev/null 2>&1; then
+            echo "ERROR: v2.5.0 release already exists; refusing to retarget a formal release" >&2
+            exit 1
+          fi
+          gh release create v2.5.0 \
+            "$BACKEND_ZIP" \
+            "$MINI_ZIP" \
+            SHA256SUMS.txt \
+            --target "$RELEASE_SHA" \
+            --title "V2.5.0" \
+            --notes "正式 V2.5.0 发布。后台包按 dev/2.4.1 → V2.5.0 生成；数据库通过升级器执行 2.5.0.sql。六类 BXDEMOHALL 审核展示订单已直接并入该迁移，不再提供独立 demo SQL。合并迁移已在隔离测试仓库使用 MySQL 5.7.44 连续执行两次通过，SQL SHA-256: $SQL_SHA。"
+
+  publish-release:
+    name: Publish legacy V2.4.0 overlay
+    if: >-
+      needs.build-backend.outputs.release_mode == 'legacy_hotfix' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-backend]')))
+    needs: build-backend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: workers-server-v2.4.0-backend-hotfix
+          path: ${{ runner.temp }}/release
+      - name: Verify downloaded package and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/release"
+          sha256sum -c workers-server-v2.4.0-hotfix.zip.sha256
+          unzip -t workers-server-v2.4.0-hotfix.zip >/dev/null
+          [[ "$(unzip -p workers-server-v2.4.0-hotfix.zip VERSION | tr -d '\r\n')" == "2.4.0" ]]
+          [[ "$(unzip -p workers-server-v2.4.0-hotfix.zip SOURCE-COMMIT.txt | tr -d '\r\n')" == "$GITHUB_SHA" ]]
+          ! unzip -Z1 workers-server-v2.4.0-hotfix.zip | grep -Eq '^(server/|tests/|tools/|config/installed.php|storage/|\.env$|\.user\.ini$|database/upgrades/2\.4\.1\.sql$)'
+          BAD_PERMISSIONS="$(zipinfo -l workers-server-v2.4.0-hotfix.zip | awk '
+            $1 ~ /^d/ && $1 != "drwxr-xr-x" { print $1 " " $NF }
+            $1 ~ /^-/ && $1 != "-rw-r--r--" { print $1 " " $NF }
+            $1 ~ /^l/ { print $1 " " $NF }
+          ')"
+          [[ -z "$BAD_PERMISSIONS" ]] || { echo "ERROR: backend ZIP permission gate failed" >&2; printf '%s\n' "$BAD_PERMISSIONS" >&2; exit 1; }
+      - name: Publish latest validated prerelease and prune old overlays
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="v2.4.0-backend-2.4.1-${GITHUB_SHA:0:8}"
+          ASSET_DIR="$RUNNER_TEMP/release"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              "$ASSET_DIR/workers-server-v2.4.0-hotfix.zip" \
+              "$ASSET_DIR/workers-server-v2.4.0-hotfix.zip.sha256" --clobber
+          else
+            gh release create "$TAG" \
+              "$ASSET_DIR/workers-server-v2.4.0-hotfix.zip" \
+              "$ASSET_DIR/workers-server-v2.4.0-hotfix.zip.sha256" \
+              --target "$GITHUB_SHA" --prerelease \
+              --title "V2.4.0 后台覆盖包（2.4.1 开发热修）" \
+              --notes "仅用于仍保持 V2.4.0 数据库版本的旧后台覆盖更新；包含数据库迁移的开发提交不会进入本发布任务。"
+          fi
+          OLD_TAGS="$(gh release list --limit 100 --json tagName --jq '.[] | select(.tagName | startswith("v2.4.0-backend-2.4.1-")) | .tagName')"
+          while IFS= read -r OLD_TAG; do
+            [[ -z "$OLD_TAG" || "$OLD_TAG" == "$TAG" ]] && continue
+            gh release delete "$OLD_TAG" --cleanup-tag --yes
+          done <<< "$OLD_TAGS"
+          REMAINING="$(gh release list --limit 100 --json tagName --jq '[.[] | select(.tagName | startswith("v2.4.0-backend-2.4.1-"))] | length')"
+          [[ "$REMAINING" == "1" ]] || { echo "ERROR: expected exactly one current V2.4.0 overlay release, found $REMAINING" >&2; exit 1; }

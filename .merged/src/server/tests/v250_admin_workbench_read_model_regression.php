@@ -264,7 +264,7 @@ workbenchReadAssert(strpos($builderSource, 'DatabaseAdminWorkbenchTaskRepository
 workbenchReadAssert(strpos($builderSource, 'OperationalOrderWorkbenchTaskSource') === false, '旧 Builder 不再自行组合 Source');
 workbenchReadAssert(strpos($builderSource, 'OrderExceptionWorkbenchTaskSource') === false, '旧 Builder 不再自行维护异常规则');
 
-workbenchReadAssert(strpos($moduleSource, "['admin.dashboard','admin.orders','admin.workbench.order']") !== false, '小程序工作台三条读路由由新模块无条件接管');
+workbenchReadAssert(strpos($moduleSource, "['admin.dashboard','admin.orders','admin.workbench.order','admin.workbench.workers']") !== false, '小程序工作台三条读路由由新模块无条件接管');
 workbenchReadAssert(strpos($moduleSource, 'ADMIN_WORKBENCH_SCOPE_NOT_ALLOWED') !== false, '未知 scope 仍由工作台新模块明确拒绝而非回退 Legacy');
 workbenchReadAssert(strpos($moduleSource, "'todo','all','operation','exception','audit','assignment','pricing','refund_after_sale','settlement'") !== false, '小程序工作台同时暴露正常待办、全部订单、异常和核心业务分类');
 workbenchReadAssert(strpos($moduleSource, "\$scope === 'all'") !== false && strpos($moduleSource, 'allOrders(') !== false, '全部订单 scope 使用独立读模型');

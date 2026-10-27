@@ -7,9 +7,15 @@ reports=[]
 for p in tests:
     rel=str(p.relative_to(root));before=time.monotonic()
     try:
+        if '_mysql' in p.name:
+            source=p.read_text()
+            if p.name.endswith('_strict.php'):source+=p.with_name(p.name.replace('_strict.php','.php')).read_text()
+            databases={'worker_test'}|set(re.findall(r'''['\"](worker_test_[a-z0-9_]+)['\"]''',source))
+            seed=subprocess.run(['php',str(root.parent/'seed-db.php'),*sorted(databases)],cwd=root,text=True,capture_output=True,timeout=90)
+            if seed.returncode:raise RuntimeError(seed.stderr)
         r=subprocess.run(['php','-d','error_reporting=-1','-d','display_errors=stderr',str(p)],cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=150)
         diagnostics=re.findall(r'(?im)^(?:PHP )?(?:Warning|Deprecated|Notice|Fatal error|Parse error):.*$',r.stdout+'\n'+r.stderr)
-        skipped=bool(re.search(r'(?i)(?:SKIP|skipped|未启用|未开启)',r.stdout))
+        skipped=bool(re.search(r'(?im)^\\s*(?:\\[SKIP\\]|SKIP[: ]|[^\\n]*验证未启用|[^\\n]*测试未启用)',r.stdout))
         helper=not r.stdout.strip() and not r.stderr.strip()
         status='FAIL' if r.returncode or diagnostics else ('SKIP' if skipped else ('LIBRARY' if helper else 'PASS'))
         item={'path':rel,'status':status,'exit':r.returncode,'seconds':round(time.monotonic()-before,2),'diagnostics':diagnostics}

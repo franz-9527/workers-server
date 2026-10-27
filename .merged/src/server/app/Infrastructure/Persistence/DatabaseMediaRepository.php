@@ -33,8 +33,8 @@ final class DatabaseMediaRepository implements MediaRepository
     {
         $order = $this->order($orderPublicNo);
         $isAdmin = !empty($actor['is_admin']);
-        if ($isAdmin && !$isOwner && in_array($purpose, ['product','wall'], true)) $this->assertProxyEditable($order);
         $isOwner = (int)$order['user_id'] === (int)($actor['user_id'] ?? 0);
+        if ($isAdmin && !$isOwner && in_array($purpose, ['product','wall'], true)) $this->assertProxyEditable($order);
         $imageRule = in_array($purpose, ['product','wall'], true)
             ? $this->orderImageRule((int)($order['form_schema_version_id'] ?? 0), $purpose) : null;
         if (in_array($purpose, ['product','wall'], true)) {

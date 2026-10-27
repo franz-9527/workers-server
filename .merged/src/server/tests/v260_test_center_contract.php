@@ -166,6 +166,6 @@ $migration=v260File($root,'server/database/upgrades/2.6.0.sql');
 foreach(['test_batches','test_instances','test_runs','test_assertion_results','test_payment_facts','test_participants','test_media_facts'] as $table){
     v260Assert(strpos($migration,'CREATE TABLE IF NOT EXISTS `'.$table.'`')!==false,'migration creates '.$table);
 }
-v260Assert(trim(v260File($root,'server/VERSION'))==='2.6.0','server VERSION is 2.6.0');
+v260Assert(version_compare(trim(v260File($root,'server/VERSION')),'2.6.0','>='),'server VERSION retains the 2.6.0 test-center baseline');
 
 v260Pass('V2.6.0 test center contract regression completed');

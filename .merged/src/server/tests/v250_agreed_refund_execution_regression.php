@@ -73,8 +73,8 @@ agreedRefundAssert(strpos($cancellationSource, "lifecycle_status='cancel_approve
 agreedRefundAssert(strpos($cancellationSource, "UPDATE assignments SET status='cancelled'") !== false, '双方接受后真实师傅指派同步关闭');
 agreedRefundAssert(strpos($cancellationSource, "UPDATE order_deadlines SET status='cancelled'") !== false, '双方接受后自动履约期限同步关闭');
 agreedRefundAssert(strpos($cancellationSource, '订单已停止履约；涉及资金分配或可退金额变化') !== false, '双方收到明确的停止履约与待财务执行提示');
-agreedRefundAssert(strpos($orderDetailQuerySource, "=== 'cancel_approved_pending_refund'") !== false, '订单详情把冻结待退款状态识别为退款处理中');
-agreedRefundAssert(strpos($orderDetailQuerySource, "\$lifecycleActive = (string)(\$order['lifecycle_status'] ?? '') === 'active';") !== false, '订单详情动作继续要求 active 生命周期，冻结后不再开放履约操作');
+agreedRefundAssert(strpos($orderDetailQuerySource, "==='cancel_approved_pending_refund'") !== false, '订单详情把冻结待退款状态识别为退款处理中');
+agreedRefundAssert(strpos($orderDetailQuerySource, "\$lifecycleActive=(string)(\$order['lifecycle_status']??'')==='active';") !== false, '订单详情动作继续要求 active 生命周期，冻结后不再开放履约操作');
 agreedRefundAssert(strpos($viewSource, '不重新判断是否同意退款') !== false, 'Web 页面明确平台不能重新否定双方协议');
 agreedRefundAssert(strpos($viewSource, '本次核账就是最后一次人工确认') !== false, 'Web 页面明确核账后无需第二次管理员审核');
 agreedRefundAssert(strpos($viewSource, '自动进入原路退款') !== false, 'Web 页面明确后续退款由系统推进');

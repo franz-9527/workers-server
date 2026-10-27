@@ -99,7 +99,7 @@ expectContains($proxyView,'name="address[lat]"','代下单保存地图纬度');
 expectContains($proxyView,'name="address[lng]"','代下单保存地图经度');
 expectContains($proxyView,'locationPicker','代下单同样使用腾讯 locpicker');
 expectContains($proxyView,'name="answers[category_ids][]"','代下单沿用普通多类目数据结构');
-expectContains($proxyView,'当前已发布 order_submit','代下单页面明确复用当前普通表单');
+expectContains($proxyView,'当前已发布 动态下单表单','代下单页面明确复用当前普通表单');
 expectContains($proxyView,"in_array(\$type,['wechat_address','address','map','image_upload','image'],true)",'代下单动态表单避免重复地址/图片组件');
 expectContains($webAdminOrder,"unset(\$input['approve_now'], \$input['publish_now'])",'普通代下单应用层丢弃旧立即审核/发布参数');
 expectContains($webAdminOrder,"payment_status'] ?? '') !== 'paid'",'普通代下单未真实支付禁止审核/公开');

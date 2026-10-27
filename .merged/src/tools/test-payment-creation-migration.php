@@ -110,7 +110,7 @@ catch(RuntimeException $e){$missing=$e->getCode()===409;}
 $assert($missing,'缺失 OpenID 在 Application 边界拒绝');
 
 $legacy=(string)file_get_contents($root.'/server/app/Http/Api/Modules/LegacyApiModule.php');
-$controller=(string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller=(is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 $module=(string)file_get_contents($root.'/server/app/Http/Api/Modules/PaymentCreationApiModule.php');
 $repository=(string)file_get_contents($root.'/server/app/Infrastructure/Persistence/DatabasePaymentCreationRepository.php');
 $class = new ReflectionClass(\WorkerAdmin\Http\Api\Modules\PaymentCreationApiModule::class);

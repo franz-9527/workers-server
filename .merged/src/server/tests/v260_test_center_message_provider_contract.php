@@ -53,7 +53,7 @@ providerProbeAssert(substr_count($runner,'$this->insertFallback(')>=4,'probe int
 providerProbeAssert(strpos($runner,"external_delivery_executed'=>false")!==false,'provider probe explicitly records no external delivery');
 
 providerProbeAssert(strpos($composition,'new DatabaseTestCenterMessageProviderFailureActionRunner($db,$messageSimulationActions)')!==false,'composition wires provider probe after message decision probe');
-providerProbeAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false&&strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,$paidSmsReceiptActions)')!==false,'replay capture wraps provider probe');
+providerProbeAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false&&strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,new \\WorkerAdmin\\Infrastructure\\Testing\\DatabaseTestCenterChatActionRunner($db,$paidSmsReceiptActions))')!==false,'replay capture wraps provider probe');
 providerProbeAssert(strpos($wrapper,'test-center-message-provider-actions')!==false,'v260 detail renders provider failure panel');
 providerProbeAssert(strpos($view,'source_message_id')!==false&&strpos($view,'provider_scenario')!==false,'provider UI submits only selected source and bounded scenario');
 providerProbeAssert(strpos($view,'不会真实发送消息')!==false&&strpos($view,'不会修改真实订阅次数')!==false,'provider UI states external and quota boundaries');

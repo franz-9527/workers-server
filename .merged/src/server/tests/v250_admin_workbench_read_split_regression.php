@@ -44,8 +44,8 @@ workbenchSplitAssert(strpos($component, 'actions.can_review_platform_pricing') !
 workbenchSplitAssert(strpos($component, 'OrderApi') === false && strpos($component, 'request(') === false, '运营操作组件不自行调用 API 或复制业务流程');
 
 workbenchSplitAssert(strpos($indexJs, 'returningFromOrderDetail') !== false, '工作台记录从订单详情返回状态');
-workbenchSplitAssert(strpos($indexJs, 'restoreReturnPosition') !== false, '工作台返回后恢复原订单位置');
-workbenchSplitAssert(strpos($indexJs, 'preserveItems: true') !== false, '工作台返回刷新不先清空已有列表');
+workbenchSplitAssert(strpos($indexJs, 'refreshReturnedOrder') !== false, '工作台返回后恢复原订单位置');
+workbenchSplitAssert(strpos($indexJs, "patch['items[' + index + ']'] = updated") !== false, '工作台返回刷新不先清空已有列表');
 workbenchSplitAssert(strpos($indexWxml, 'id="admin-order-{{item.public_no}}"') !== false, '工作台订单卡片提供稳定返回锚点');
 
 // 管理员邀请师傅组件与工作台属于同一 UI/能力投影边界，不再单独维护一个小 regression 文件。

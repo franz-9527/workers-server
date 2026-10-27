@@ -50,7 +50,7 @@ platformMeasurementContract(strpos($fulfillment, "customerStatus === 'platform_u
 platformMeasurementContract(strpos($fulfillment, "workflow_profile='construction'") !== false, '平台测量确认后原订单原地切回施工');
 platformMeasurementContract(strpos($fulfillment, "auto_accept_at=NULL") !== false, '已绑定客户的平台测量不进入普通测量自动结算任务');
 platformMeasurementContract(strpos($fulfillment, 'PLATFORM_MEASUREMENT_REWORK_LIMIT') !== false, '平台测量最多退回补测一次由服务端硬限制');
-platformMeasurementContract(strpos($fulfillment, "status='completed'") !== false, '普通测量仍保留原完成结算流程');
+platformMeasurementContract(strpos(source('server/app/Infrastructure/Persistence/OrdinaryMeasurementAcceptanceWriter.php'), "status='completed'") !== false, '普通测量仍保留原完成结算流程');
 platformMeasurementContract(strpos($fulfillmentModule, "'orders.measurement.submit'") !== false, '旧测量提交路由已迁入统一履约模块');
 platformMeasurementContract(strpos($fulfillmentModule, "'orders.measurement.rework'") !== false, '测量补测路由已迁入统一履约模块');
 

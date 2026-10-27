@@ -94,7 +94,7 @@ catch(RuntimeException $e){$missing=$e->getCode()===404&&$e->getMessage()==='支
 $assert($missing,'只能查询当前用户自己的支付单，不存在统一返回 PAYMENT_NOT_FOUND');
 
 $legacy=(string)file_get_contents($root.'/server/app/Http/Api/Modules/LegacyApiModule.php');
-$controller=(string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller=(is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 $kernel=(string)file_get_contents($root.'/server/app/Http/Api/ApiKernel.php');
 $money=(string)file_get_contents($root.'/server/app/Http/Api/Modules/MoneyApiModule.php');
 $assert(strpos($money,"'payments.status'=>'GET'")!==false,'MoneyApiModule 正式接管 payments.status');

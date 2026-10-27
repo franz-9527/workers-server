@@ -51,7 +51,7 @@ $missing=false;try{$useCase->createOfflineDelay($actor,['order_id'=>'missing','r
 $money=(string)file_get_contents($root.'/server/app/Http/Api/Modules/MoneyApiModule.php');
 $kernel=(string)file_get_contents($root.'/server/app/Http/Api/ApiKernel.php');
 $legacy=(string)file_get_contents($root.'/server/app/Http/Api/Modules/LegacyApiModule.php');
-$controller=(string)file_get_contents($root.'/server/app/Controllers/ApiController.php');
+$controller=(is_file($root.'/server/app/Controllers/ApiController.php') ? (string)file_get_contents($root.'/server/app/Controllers/ApiController.php') : '');
 $repository=(string)file_get_contents($root.'/server/app/Infrastructure/Persistence/DatabaseWorkerMoneyRepository.php');
 $composition=(string)file_get_contents($root.'/server/app/Foundation/MoneyComposition.php');
 $routes=[

@@ -40,7 +40,7 @@ msgFallbackAssert(strpos($runner,"hash('sha256',\$identity)")!==false,'probe ide
 
 msgFallbackAssert(strpos($composition,'DatabaseTestCenterMessageSimulationActionRunner')!==false,'composition wires message simulation decorator');
 msgFallbackAssert(strpos($composition,'new DatabaseTestCenterMessageProviderFailureActionRunner($db,$messageSimulationActions)')!==false,'provider failure probe wraps message fallback simulation');
-msgFallbackAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false&&strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,$paidSmsReceiptActions)')!==false,'replay capture wraps complete message simulation action chain');
+msgFallbackAssert(strpos($composition,'new DatabaseTestCenterPaidSmsReceiptActionRunner($db,$messageProviderActions)')!==false&&strpos($composition,'new DatabaseTestCenterReplayCaptureRunner($db,new \\WorkerAdmin\\Infrastructure\\Testing\\DatabaseTestCenterChatActionRunner($db,$paidSmsReceiptActions))')!==false,'replay capture wraps complete message simulation action chain');
 msgFallbackAssert(strpos($wrapper,"test-center-message-simulation-actions")!==false,'v260 detail renders message simulation panel');
 msgFallbackAssert(strpos($view,'source_message_id')!==false&&strpos($view,'delivery_outcome')!==false,'UI submits only server-selected source and bounded outcome');
 msgFallbackAssert(strpos($view,'不会真实发送消息')!==false,'UI states external delivery boundary');
