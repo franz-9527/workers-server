@@ -45,3 +45,5 @@ jobs:
           node tools/test_v250_cancellation_risk_ui.js
           node tools/test_v250_api_environment.js
           node tools/test_store_subpackage.js
+
+# Configured confirmation notice regression; source 810bb6f595cbedcb4d87b66b4c6647224af5e6b2
