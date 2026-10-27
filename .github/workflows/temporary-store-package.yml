@@ -31,4 +31,4 @@ jobs:
         working-directory: .validation-store-package
         run: node tools/test_store_subpackage.js
 
-# Complete immutable publisher dependency snapshot
+# Corrected regression insertion; source beaa5433e6e0e533799a588bbf03f4f1c4d6a6b6
