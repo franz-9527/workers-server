@@ -1,7 +1,7 @@
 {
   "source_repository": "franz-9527/workers",
   "branch": "dev/2.6.0",
-  "commit": "302f04d68445210ec54e4ca7e8f82ffac3e02712",
+  "commit": "beaa5433e6e0e533799a588bbf03f4f1c4d6a6b6",
   "purpose": "Store-private upload helper packaging regression; no actual cloud/network writes or local testing",
   "files": [
     "cloudfunctions/base/index.js",

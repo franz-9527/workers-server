@@ -75,8 +75,8 @@ for (const extension of ['png', 'jpg']) {
   const localPath = 'wxfile://synthetic-store.' + extension
   assert.strictEqual(publisherPage.uploadImg(localPath), uploadResult)
   assert.strictEqual(uploadOptions.filePath, localPath, 'upload must keep the original image path')
-  assert(new RegExp('^upload/\\d{6}/\\d{14}\\d+\\.' + extension + '
-).test(uploadOptions.cloudPath), 'cloud image path/extension changed')
+  assert(/^upload\/\d{6}\/\d{14}\d+\.(png|jpg)$/.test(uploadOptions.cloudPath), 'cloud image path/extension changed')
+  assert(uploadOptions.cloudPath.endsWith('.' + extension), 'image extension must be preserved')
 }
 
 console.log('store subpackage regression: ok')
