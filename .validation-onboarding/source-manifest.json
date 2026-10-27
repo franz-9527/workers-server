@@ -48,6 +48,7 @@
     "miniprogram/pages/record/detail.wxml": "9d5815389ee07b2aa8e2984f49e51923b0200d09",
     "server/app/Http/Api/Modules/MiniAdminWorkerStoreApiModule.php": "17c7e4f398e495ecff3b6ee761d29b364fecfd4a",
     "server/app/Domain/Messaging/PaidSmsPolicy.php": "2a56fabd0f830bb0cdd801fbca4a682bfe837efa",
-    "server/app/Domain/Identity/MobileNumber.php": "7c30c99e9e7e8e6d3817d805b2e259b3970adf7d"
+    "server/app/Domain/Identity/MobileNumber.php": "7c30c99e9e7e8e6d3817d805b2e259b3970adf7d",
+    "server/app/Domain/Messaging/OrderProgressMessageCatalog.php": "c5669ee24a131827cc097431c7224f3c4ec15348"
   }
 }
