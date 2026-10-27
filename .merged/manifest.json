@@ -1077,7 +1077,7 @@
   "server/app/Infrastructure/Testing/DatabaseTestCenterNegotiationCleanupRepository.php": "9ead85dafc880affcd9ee7654a956965fe808212",
   "server/app/Infrastructure/Testing/DatabaseTestCenterNegotiationVerificationRepository.php": "78ffdee84e0e7146b1dce2943868e013fc2c2339",
   "server/app/Infrastructure/Testing/DatabaseTestCenterPaidSmsReceiptActionRunner.php": "8b634870575e2efa98939f771722ebcc4416d7f4",
-  "server/app/Infrastructure/Testing/DatabaseTestCenterPlatformMeasurementActionRunner.php": "7f539124401c2224d3da2472d8584cce8e11d280",
+  "server/app/Infrastructure/Testing/DatabaseTestCenterPlatformMeasurementActionRunner.php": "f351667aab91d16275f6005fcaed4dbcfc0676c0",
   "server/app/Infrastructure/Testing/DatabaseTestCenterPlatformMeasurementRepository.php": "3358d6406c953480e9f2dedbb6f36273bcd88fa2",
   "server/app/Infrastructure/Testing/DatabaseTestCenterProgressVerificationRepository.php": "1b44c533442065b4d3319d7dc565b7da68d5dd3a",
   "server/app/Infrastructure/Testing/DatabaseTestCenterProxyOrderActionRunner.php": "a6b0f5c5f3205c8d389a90b2f06f608aa82a34a9",

@@ -3,7 +3,7 @@ root=pathlib.Path(__file__).resolve().parent/'src'
 tests=sorted((root/'tools').glob('test-*.php'))+sorted((root/'server/tests').glob('*.php'))
 libraries={'chat_assignment_contract.php','chat_closure_contract.php','chat_platform_contract.php','chat_repair_contract.php'}
 tests=[p for p in tests if not p.name.endswith('_fixture.php') and p.name not in libraries and not (p.name.endswith('_mysql.php') and p.with_name(p.stem+'_strict.php').exists())]
-selected=["server/tests/v250_order_cancellation_regression.php","server/tests/v260_test_center_expansion_mysql_strict.php"]
+selected=["server/tests/v260_test_center_expansion_mysql_strict.php","server/tests/v260_test_center_platform_measurement_mysql_strict.php"]
 tests=[p for p in tests if str(p.relative_to(root)) in selected]
 reports=[]
 for p in tests:
