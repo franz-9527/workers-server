@@ -1,0 +1,31 @@
+<!-- 入驻页：同一轮播位置展示两张各自保留原视觉的卡片。 -->
+<block wx:if="{{visible && audience === 'worker_application'}}">
+  <swiper class="onboarding-notice-swiper" vertical="{{notices.length > 1}}" autoplay="{{notices.length > 1}}" circular="{{notices.length > 1}}" interval="3000" duration="350" indicator-dots="{{false}}">
+    <swiper-item wx:for="{{notices}}" wx:key="key">
+      <view wx:if="{{item.kind === 'review'}}" class="review-waiting-card">
+        <view class="review-waiting-icon"><text class="cuIcon-timefill"></text></view>
+        <view class="review-waiting-copy">
+          <text class="review-waiting-title">{{item.title}}</text>
+          <text class="review-waiting-desc">{{item.description}}</text>
+        </view>
+      </view>
+      <view wx:else class="subscription-health-banner {{level}} onboarding-health-banner" bindtap="openNotificationSettings">
+        <view class="subscription-health-mark">!</view>
+        <view class="subscription-health-copy">
+          <text class="subscription-health-title">{{item.title}}</text>
+          <text class="subscription-health-desc">{{item.description}}</text>
+        </view>
+        <view class="subscription-health-action" role="button" aria-label="前往通知设置" catchtap="openNotificationSettings">去设置</view>
+      </view>
+    </swiper-item>
+  </swiper>
+</block>
+<!-- 其他页面保持原有订阅消息提醒卡片，而不是被入驻页的轮播影响。 -->
+<view wx:if="{{visible && audience !== 'worker_application'}}" class="subscription-health-banner {{level}}" bindtap="openNotificationSettings">
+  <view class="subscription-health-mark">!</view>
+  <view class="subscription-health-copy">
+    <text class="subscription-health-title">{{title}}</text>
+    <text class="subscription-health-desc">{{description}}</text>
+  </view>
+  <view class="subscription-health-action" role="button" aria-label="前往通知设置" catchtap="openNotificationSettings">去设置</view>
+</view>

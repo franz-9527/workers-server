@@ -1,0 +1,109 @@
+.UCenter-bg {
+  background-image: url(https://776f-worker-real-1301382302.tcb.qcloud.la/public/mineBg.jpeg);
+  background-size: cover;
+  height: 620rpx;
+  display: flex;
+  justify-content: center;
+  padding-top: 40rpx;
+  overflow: hidden;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+  font-weight: 300;
+  /*阴影 text-shadow: 0 0 3px rgba(0, 0, 0, 0.3); */
+}
+.userinfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20rpx;
+}
+
+.userinfo-avatar {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 20rpx auto;
+  justify-content: center;
+}
+
+.userinfo-nickname {
+  color: #347fd4;
+}
+
+.UCenter-bg text {
+  opacity: 0.8;
+}
+
+.UCenter-bg image {
+  width: 400rpx;
+  height: 200rpx;
+}
+
+.UCenter-bg .gif-wave{
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  z-index: 99;
+  mix-blend-mode: screen;  
+  height: 100rpx;   
+}
+
+map,.mapBox{
+  left: 0;
+  z-index: 99;
+  mix-blend-mode: screen;  
+  height: 100rpx;   
+}
+
+/* 2026-08-27：用户数据使用橙色、师傅数据使用绿色；每页固定一排四项并支持横向滑动。 */
+.business-stats{margin:0 24rpx 28rpx;border-radius:20rpx;overflow:hidden;text-align:center;color:#556064}.stats-switch{display:flex;padding:10rpx;background:#f5f7f7}.stats-switch>view{position:relative;flex:1;padding:16rpx 8rpx;border-radius:14rpx;color:#7b8588;font-size:25rpx}.stats-switch>view.active{background:#fff;font-weight:700;box-shadow:0 4rpx 14rpx rgba(40,62,67,.08)}.stats-switch>view.user-active{color:#ed7b32}.stats-switch>view.worker-active{color:#159b63}.stats-single-title{padding:22rpx 24rpx 6rpx;text-align:left;color:#49575a;font-size:26rpx;font-weight:700}.stats-swiper{height:142rpx}.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);height:142rpx;padding:24rpx 8rpx;box-sizing:border-box}.stats-grid>view{border-right:1rpx solid #edf0f1}.stats-grid>view:last-child{border-right:0}.stat-number,.stat-label{display:block}.stat-number{font-size:36rpx;font-weight:700}.stat-label{margin-top:7rpx;color:#667276;font-size:21rpx}.user-stats .stat-number{color:#ed7b32}.worker-stats .stat-number{color:#159b63}.stats-dots{display:flex;justify-content:center;gap:9rpx;height:25rpx}.stats-dots text{width:10rpx;height:10rpx;border-radius:10rpx;background:#d8dfe0}.stats-dots text.active{width:25rpx}.stats-dots .user-dot{background:#ed7b32}.stats-dots .worker-dot{background:#159b63}.legacy-counts{display:flex;justify-content:center;gap:32rpx;padding:18rpx 22rpx 8rpx;color:#a0a8aa;font-size:20rpx}.legacy-counts view{display:flex;gap:6rpx}.legacy-counts strong{font-weight:500;color:#7d8789}
+
+map,.mapBox{
+  width: 750rpx;
+  height: 300rpx;
+}
+/* 2026-09-11：师傅入驻只保留短状态标签，并靠近菜单右侧箭头。 */
+.worker-review-state{margin-left:auto;margin-right:4rpx;padding:4rpx 14rpx;border-radius:18rpx;font-size:22rpx;line-height:32rpx;background:#f3f4f6;color:#69707a}
+.worker-review-state.approved{background:#e8f8f0;color:#15945a}
+.worker-review-state.pending{background:#fff6dd;color:#b57800}
+.worker-review-state.blocked{background:#fff0ee;color:#d74b40}
+/* 2026-09-15：报价订单入口只提示待补资料数量，不影响其余订单统计布局。 */
+.mine-order-badge{margin-left:auto;padding:4rpx 12rpx;border-radius:20rpx;background:#fff0ed;color:#d94c43;font-size:20rpx;line-height:32rpx}
+.mine-todo-card{display:flex;align-items:center;margin:0 24rpx 22rpx;padding:22rpx 24rpx;border-radius:18rpx;background:linear-gradient(120deg,#fff5e9,#fffaf4);box-shadow:0 8rpx 26rpx rgba(206,126,48,.10)}.mine-todo-icon{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:18rpx;background:#f2994a;color:#fff;font-size:34rpx}.mine-todo-copy{flex:1;min-width:0;margin-left:18rpx}.mine-todo-title{color:#6c4326;font-size:27rpx;font-weight:700}.mine-todo-subtitle{margin-top:5rpx;color:#9a7b63;font-size:21rpx}.mine-todo-arrow{margin-left:12rpx;color:#bd8b65;font-size:26rpx}
+@media (prefers-color-scheme:dark){.mine-order-badge{background:#4a2725;color:#ffaaa3}}
+@media (prefers-color-scheme:dark){.mine-todo-card{background:linear-gradient(120deg,#3c3025,#322a24);box-shadow:none}.mine-todo-title{color:#f2d2b6}.mine-todo-subtitle,.mine-todo-arrow{color:#c5a78d}}
+
+/* V2.2.3：消息与待办摘要。红色仅用于必须尽快处理，橙色用于关注，青色用于普通待办。 */
+.mine-message-summary{display:flex;align-items:center;margin:0 24rpx 22rpx;padding:22rpx 22rpx;border-radius:20rpx;background:linear-gradient(120deg,#eefafb,#f8fdfd);border:1rpx solid #d8eff1;box-shadow:0 8rpx 26rpx rgba(0,158,174,.08)}
+.mine-message-summary.attention{background:linear-gradient(120deg,#fff7ea,#fffaf4);border-color:#f4dfbd;box-shadow:0 8rpx 26rpx rgba(206,126,48,.08)}
+.mine-message-summary.urgent{background:linear-gradient(120deg,#fff1ef,#fff8f7);border-color:#f3d2ce;box-shadow:0 8rpx 26rpx rgba(207,78,67,.08)}
+.mine-message-icon{position:relative;display:flex;align-items:center;justify-content:center;flex:none;width:68rpx;height:68rpx;border-radius:20rpx;background:#00aebe;color:#fff;font-size:34rpx}
+.mine-message-summary.attention .mine-message-icon{background:#e99426}.mine-message-summary.urgent .mine-message-icon{background:#df6258}
+.mine-message-dot{position:absolute;right:-3rpx;top:-3rpx;width:16rpx;height:16rpx;border:4rpx solid #fff;border-radius:50%;background:#ef5148}
+.mine-message-copy{min-width:0;flex:1;margin-left:18rpx}.mine-message-head{display:flex;align-items:center;gap:12rpx}.mine-message-title{color:#30484c;font-size:25rpx;font-weight:800}.mine-message-count{padding:3rpx 10rpx;border-radius:14rpx;background:#dff5f7;color:#008f9d;font-size:18rpx;line-height:28rpx}.mine-message-summary.attention .mine-message-count{background:#fff0d7;color:#b96c0b}.mine-message-summary.urgent .mine-message-count{background:#ffe3df;color:#ca443b}
+.mine-message-focus{display:flex;align-items:center;min-width:0;margin-top:8rpx;color:#425b60;font-size:24rpx;font-weight:700}.mine-message-role{flex:none;margin-right:10rpx;padding:3rpx 9rpx;border-radius:10rpx;background:rgba(0,174,190,.09);color:#0094a2;font-size:18rpx;font-weight:600}.mine-message-summary.attention .mine-message-role{background:rgba(233,148,38,.10);color:#c27410}.mine-message-summary.urgent .mine-message-role{background:rgba(223,98,88,.10);color:#cc4d44}
+.mine-message-meta{display:flex;align-items:center;gap:16rpx;margin-top:7rpx;color:#87999d;font-size:19rpx}.mine-message-meta text+text:before{content:'·';margin-right:16rpx;color:#bac4c6}.mine-message-arrow{flex:none;margin-left:12rpx;color:#9babad;font-size:26rpx}.mine-order-badge.important{background:#ffe8e4;color:#cf443a}
+@media (prefers-color-scheme:dark){.mine-message-summary,.mine-message-summary.attention,.mine-message-summary.urgent{background:#242a2b;border-color:#333c3e;box-shadow:none}.mine-message-title,.mine-message-focus{color:#e1e7e8}.mine-message-meta,.mine-message-arrow{color:#929fa2}.mine-message-dot{border-color:#242a2b}.mine-message-count{background:#29484b;color:#61d6df}.mine-message-summary.attention .mine-message-count{background:#4a3a25;color:#f2ba6d}.mine-message-summary.urgent .mine-message-count,.mine-order-badge.important{background:#4a2927;color:#ffaaa3}}
+
+/* V2.2.7：管理员会话代理演示身份提示。 */
+.demo-identity-banner{display:flex;gap:14rpx;align-items:flex-start;margin:18rpx 24rpx;padding:18rpx 20rpx;border-radius:16rpx;background:#fff8e8;color:#7b6122;font-size:22rpx;line-height:1.55}.demo-identity-banner>text{font-size:30rpx;margin-top:2rpx}.demo-identity-copy{flex:1;min-width:0}.demo-identity-copy .text-bold{font-size:25rpx;color:#684f18;margin-bottom:4rpx}
+
+
+/* V2.2.9：头像区展示用户充值消费余额；与师傅结算余额分离。 */
+.mine-wallet-entry{display:flex;align-items:center;justify-content:space-between;width:620rpx;box-sizing:border-box;margin-top:18rpx;padding:18rpx 22rpx 20rpx;border:1rpx solid rgba(255,255,255,.26);border-radius:20rpx;background:rgba(19,79,94,.26);backdrop-filter:blur(10px);color:#fff;z-index:101}
+.mine-wallet-entry>view:first-child{display:flex;align-items:baseline;gap:14rpx}.mine-wallet-label{font-size:22rpx;opacity:.88}.mine-wallet-balance{font-size:36rpx;font-weight:800;letter-spacing:.5rpx}
+.mine-wallet-action{display:flex;align-items:center;gap:8rpx;font-size:20rpx;opacity:.94}.mine-wallet-action .cuIcon-right{font-size:22rpx}.mine-wallet-reserved{padding:3rpx 8rpx;border-radius:10rpx;background:rgba(255,255,255,.15);font-size:18rpx}
+@media (prefers-color-scheme:dark){.mine-wallet-entry{background:rgba(6,31,37,.58);border-color:rgba(165,226,232,.24)}}
+
+/* V2.2.9：设置下方会员菜单弱状态。 */
+.mine-menu-status{margin-left:auto;padding-left:18rpx;color:#8b989b;font-size:21rpx;font-weight:400}
+@media (prefers-color-scheme:dark){.mine-menu-status{color:#98a8ab}}
+
+
+/* V2.2.9：管理工作台入口使用服务端派生订单待办数，不复用未读消息数。 */
+.mine-admin-todo-badge{margin-left:auto;padding:4rpx 12rpx;border-radius:20rpx;background:#e6f8fa;color:#008b98;font-size:22rpx;line-height:32rpx;font-weight:700}
+@media (prefers-color-scheme:dark){.mine-admin-todo-badge{background:#163b3f;color:#73dce4}}

@@ -1,0 +1,6 @@
+{
+  "usingComponents": { "order-announcement": "/components/order-announcement/index" },
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f4f7f8"
+}

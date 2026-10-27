@@ -1,0 +1,27 @@
+/* 2026-08-29：结算页使用绿色主题，三个独立页签均按 10 条上拉分页。 */
+.finance-page{min-height:100vh;background:#f2f8f4;padding:24rpx 0 70rpx;color:#24362d}
+.finance-hero{margin:0 24rpx;padding:38rpx 34rpx;border-radius:28rpx;background:linear-gradient(135deg,#38c987,#18aa6c 58%,#078553);color:#fff;box-shadow:0 16rpx 36rpx rgba(12,143,87,.23)}
+.hero-label{opacity:.9}.balance{font-size:66rpx;font-weight:700;margin:12rpx 0 26rpx}.hero-foot{display:flex;justify-content:space-between;align-items:center}
+.worker-hero-button{background:#fff!important;color:#087e4d!important;font-weight:700}.worker-primary{background:#119d62!important;color:#fff!important;border:0!important}.worker-primary:after,.worker-hero-button:after{border:0!important}.worker-text{color:#0d965c!important}
+.quick-card,.switch-card{margin:20rpx 24rpx 0;background:#fff;border-radius:22rpx;overflow:hidden;box-shadow:0 7rpx 22rpx rgba(28,94,59,.05)}
+.quick-row{display:flex;align-items:center;gap:18rpx;min-height:126rpx;padding:0 26rpx;border-bottom:1rpx solid #e7f0ea}.quick-row:last-child{border:0}
+.quick-icon{width:68rpx;height:68rpx;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34rpx}.quick-icon.orange,.quick-icon.cyan{background:#e7f8ef;color:#10955c}
+.quick-icon.green{background:#e1f6e9;color:#0c9157}.collection-notice{margin:0 24rpx 18rpx;padding:15rpx;border-radius:13rpx;background:#fff1e9;color:#b34f31;font-size:23rpx}
+.account-notice{margin:0 24rpx 22rpx;padding:16rpx 18rpx;border-radius:14rpx;background:#fff7e8;color:#a86120;font-size:23rpx;line-height:1.55}.account-notice text{margin-right:8rpx}
+.state{padding:8rpx 14rpx;border-radius:22rpx;background:#edf3ef;color:#61756a;font-size:22rpx}.state.approved,.state.auto_approved{background:#e0f6e9;color:#087b48}.state.pending{background:#fff3df;color:#a96318}
+.switch-tabs{display:flex}.switch-tabs>view{width:33.333%;padding:25rpx 4rpx;text-align:center;font-size:27rpx;font-weight:700;position:relative;color:#718078}.switch-tabs>view.active{color:#0b8d56}.switch-tabs>view.active:after{content:"";position:absolute;bottom:0;left:32%;right:32%;height:7rpx;border-radius:5rpx;background:#16a568}
+.section{margin:30rpx 24rpx}.section-title{font-size:31rpx;font-weight:700;margin:0 0 16rpx 6rpx}
+.card,.empty-card{padding:26rpx;border-radius:20rpx;background:#fff;margin-bottom:16rpx;box-shadow:0 6rpx 20rpx rgba(29,91,59,.05)}
+.empty-card{text-align:center;color:#809087;padding:90rpx 20rpx}.empty-card>text{display:block;font-size:72rpx;color:#63c795;margin-bottom:14rpx}.empty-card.small{padding:38rpx}
+.amount{font-size:34rpx;font-weight:700;color:#0d965c}.breakdown{margin-top:20rpx;padding:17rpx 20rpx;border-radius:15rpx;background:#f3f8f5}.breakdown>view{display:flex;justify-content:space-between;padding:7rpx 0;color:#62756a;font-size:24rpx}
+.warning,.tip{margin-top:17rpx;padding:17rpx;border-radius:13rpx;background:#fff5e7;color:#a85b18;font-size:24rpx;line-height:1.6}.bill-foot{display:flex;justify-content:space-between;align-items:center;margin-top:20rpx;color:#718078;font-size:23rpx}.record{display:flex;justify-content:space-between;align-items:center}
+.list-foot{min-height:52rpx;text-align:center;color:#819087;font-size:23rpx;padding:10rpx 0 18rpx}
+.mask{position:fixed;inset:0;background:rgba(5,36,22,.58);z-index:30;display:flex;align-items:center;justify-content:center;padding:42rpx}.modal{width:100%;box-sizing:border-box}
+.input,.amount-input{height:92rpx;padding:0 22rpx;border:1rpx solid #cfe2d7;border-radius:14rpx;margin-top:20rpx;background:#f8fcf9}.amount-input{display:flex;align-items:center}.amount-input input{flex:1;font-size:42rpx;margin:0 18rpx}
+.loading{text-align:center;color:#73867b;padding-top:300rpx}.loading>text{margin-right:8rpx}.spin{display:inline-block;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-color-scheme:dark){.finance-page{background:#0d1812;color:#edf6f0}.quick-card,.switch-card,.card,.empty-card{background:#17251d}.quick-row{border-color:#2d4437}.account-notice{background:#33291d;color:#efbc83}.breakdown{background:#101b15}.breakdown>view,.text-grey{color:#adbbb2!important}.input,.amount-input{background:#101b15;border-color:#324b3d;color:#fff}.modal{background:#17251d}.warning,.tip{background:#33271d}.empty-card{color:#a9b7ae}}
+
+@media (prefers-color-scheme:dark){
+  .finance-page .warning,.finance-page .tip{color:#efbc83}
+  .finance-page .amount:not(.text-orange){color:#75d9ae!important}
+}

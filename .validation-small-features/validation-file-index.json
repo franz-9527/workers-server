@@ -1,0 +1,1661 @@
+{
+  "files": {
+    "miniprogram/app.js": {
+      "sha": "0a72fe1b04506b6c10bbae75b65ae4c50b8d42fb",
+      "size": 8563
+    },
+    "miniprogram/app.json": {
+      "sha": "91e6a6049a4f68c548ce52bb721ccbff57f3fd04",
+      "size": 5134
+    },
+    "miniprogram/app.miniapp.json": {
+      "sha": "c56117e5071f56e73840900154421df9da6b84eb",
+      "size": 207
+    },
+    "miniprogram/app.wxss": {
+      "sha": "bb847eebb458ec07e6d923f554285b1d01dcaf4d",
+      "size": 10722
+    },
+    "miniprogram/components/addTip/addTip.js": {
+      "sha": "921087310470969c0d8792a1ee0edebac4ac6742",
+      "size": 3431
+    },
+    "miniprogram/components/addTip/addTip.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/components/addTip/addTip.wxml": {
+      "sha": "aca4c4d65227808c80a9855fb7984fc1c54a0553",
+      "size": 425
+    },
+    "miniprogram/components/addTip/addTip.wxss": {
+      "sha": "070bd2f803555723993c5cc719a3ddbc2d385721",
+      "size": 2175
+    },
+    "miniprogram/components/admin-order-operations/index.js": {
+      "sha": "57e94ac292fa3afca1fb0c875f4c67417a4e639b",
+      "size": 17280
+    },
+    "miniprogram/components/admin-order-operations/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/admin-order-operations/index.wxml": {
+      "sha": "01762d3556a13c66f1fa7dbc5c521a0e8f459c69",
+      "size": 9104
+    },
+    "miniprogram/components/admin-order-operations/index.wxss": {
+      "sha": "b38fc659cb4f5e4fecf555d9621d5bceb7bc465e",
+      "size": 3832
+    },
+    "miniprogram/components/admin-worker-assignment/index.js": {
+      "sha": "7367c11d16117c825d32d14da629eea1cc5ebc5f",
+      "size": 2482
+    },
+    "miniprogram/components/admin-worker-assignment/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/admin-worker-assignment/index.wxml": {
+      "sha": "f6189433415a226ad7707886154595ae065b1399",
+      "size": 2399
+    },
+    "miniprogram/components/admin-worker-assignment/index.wxss": {
+      "sha": "f3b4bfd5014ff626fa0cac7f7b5fe60150c963e0",
+      "size": 3738
+    },
+    "miniprogram/components/auth/auth.js": {
+      "sha": "fb6418c8b49484bd83a97952bd48438362e02457",
+      "size": 2331
+    },
+    "miniprogram/components/auth/auth.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/auth/auth.wxml": {
+      "sha": "23beb755ae171fc4f1babdee2f5dbe60c35ea060",
+      "size": 1499
+    },
+    "miniprogram/components/auth/auth.wxss": {
+      "sha": "994c5441ce9104ecc8bf7702ad3edc9d76b39373",
+      "size": 326
+    },
+    "miniprogram/components/fullscreen-nav/index.js": {
+      "sha": "c4c8b7d6078e599e7105598a6381961343926232",
+      "size": 2904
+    },
+    "miniprogram/components/fullscreen-nav/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/fullscreen-nav/index.wxml": {
+      "sha": "1877c2e30ece07e96a77a42a11e2e1763366db84",
+      "size": 831
+    },
+    "miniprogram/components/fullscreen-nav/index.wxss": {
+      "sha": "b9279baf97ccde013f6bf2047421778aeece4193",
+      "size": 2980
+    },
+    "miniprogram/components/measurement-order-archive/index.js": {
+      "sha": "f95f1be514cf17de6180ac1d3a7bf57a0d4381b2",
+      "size": 2055
+    },
+    "miniprogram/components/measurement-order-archive/index.json": {
+      "sha": "79f273097951c80601c6ae82f076247b52757ead",
+      "size": 60
+    },
+    "miniprogram/components/measurement-order-archive/index.wxml": {
+      "sha": "f7e8d3c193cf76ae11544935416fce4f85386242",
+      "size": 899
+    },
+    "miniprogram/components/measurement-order-archive/index.wxss": {
+      "sha": "9c41f87d99015c2721ca44a5333258edb974d4d7",
+      "size": 968
+    },
+    "miniprogram/components/measurement-order-detail/detail-core.js": {
+      "sha": "bc24d3ee1b46689efb751c3195e7364213629701",
+      "size": 20915
+    },
+    "miniprogram/components/measurement-order-detail/index.js": {
+      "sha": "f26e1ed2f6096704fa6cf0053e07863835caf0f3",
+      "size": 9043
+    },
+    "miniprogram/components/measurement-order-detail/index.json": {
+      "sha": "566ad6b15f54fbd0fa9ada1f309d76940020d226",
+      "size": 125
+    },
+    "miniprogram/components/measurement-order-detail/index.wxml": {
+      "sha": "90af6f54a9336903b8c266d4cd9d9b76294387b0",
+      "size": 11677
+    },
+    "miniprogram/components/measurement-order-detail/index.wxss": {
+      "sha": "d1c8c2014538db4c885bf7f4151b54bd83a4205d",
+      "size": 6492
+    },
+    "miniprogram/components/order-announcement/index.js": {
+      "sha": "553d161e0532def381d5248f09884ba6f1ce357e",
+      "size": 973
+    },
+    "miniprogram/components/order-announcement/index.json": {
+      "sha": "50c266705ede92acf0f4b02b84a273928f19d395",
+      "size": 133
+    },
+    "miniprogram/components/order-announcement/index.wxml": {
+      "sha": "337d1405dd0585536dafc6aafd482c15829975a5",
+      "size": 615
+    },
+    "miniprogram/components/order-announcement/index.wxss": {
+      "sha": "4b737d672cdccb930596d369c99a578dea071e01",
+      "size": 602
+    },
+    "miniprogram/components/order-dispute-panel/index.js": {
+      "sha": "d188b9b82f6016494880abf054ac184236fa9c7b",
+      "size": 2922
+    },
+    "miniprogram/components/order-dispute-panel/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/order-dispute-panel/index.wxml": {
+      "sha": "d8a29874fdb74d89b793e079d0ece5b87df51e3b",
+      "size": 2151
+    },
+    "miniprogram/components/order-dispute-panel/index.wxss": {
+      "sha": "828852b846259737594c7b734c8a90c4f2f58386",
+      "size": 1469
+    },
+    "miniprogram/components/order-fulfillment-materials/index.js": {
+      "sha": "ce5612208a19863c0490fbedb963f0d3e7a38832",
+      "size": 653
+    },
+    "miniprogram/components/order-fulfillment-materials/index.json": {
+      "sha": "d80dd20a6bff3a1e4094d2712d37b3f370dfc189",
+      "size": 19
+    },
+    "miniprogram/components/order-fulfillment-materials/index.wxml": {
+      "sha": "859888acefbe07f3f8de1f0d7f177c8db8cacc97",
+      "size": 349
+    },
+    "miniprogram/components/order-fulfillment-materials/index.wxss": {
+      "sha": "ba695cb244d6860d8b2809c328c5b97815c3ba23",
+      "size": 641
+    },
+    "miniprogram/components/order-negotiation-panel/index.js": {
+      "sha": "40bc9af3e9108b86a260129591ac4ec6ce04c2e2",
+      "size": 9742
+    },
+    "miniprogram/components/order-negotiation-panel/index.json": {
+      "sha": "d80dd20a6bff3a1e4094d2712d37b3f370dfc189",
+      "size": 19
+    },
+    "miniprogram/components/order-negotiation-panel/index.wxml": {
+      "sha": "380f756947724f6314ebe3ff97109d633cce4744",
+      "size": 4412
+    },
+    "miniprogram/components/order-negotiation-panel/index.wxss": {
+      "sha": "eae1e6872509a73e4c0bdfca095b8821de2f40b6",
+      "size": 1852
+    },
+    "miniprogram/components/order-product-field/index.js": {
+      "sha": "b27a5d177decc4a3c53bd76491e943e84ef38752",
+      "size": 2659
+    },
+    "miniprogram/components/order-product-field/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/order-product-field/index.wxml": {
+      "sha": "07bc7bd430ba1b6a3e337bd7c883a7929ab0450c",
+      "size": 2782
+    },
+    "miniprogram/components/order-product-field/index.wxss": {
+      "sha": "5104dcd6d1667e9d0236a121658d20bf316e196b",
+      "size": 1902
+    },
+    "miniprogram/components/order-run-empty-panel/index.js": {
+      "sha": "dc6776f2c2a1ecb7dcf742712c06764228f02153",
+      "size": 2599
+    },
+    "miniprogram/components/order-run-empty-panel/index.json": {
+      "sha": "a89ef4dbeefa01f5cd7971973aa4db6498d139f7",
+      "size": 49
+    },
+    "miniprogram/components/order-run-empty-panel/index.wxml": {
+      "sha": "47a873f333140d79144e6dcf1fe8af43e24cd551",
+      "size": 1755
+    },
+    "miniprogram/components/order-run-empty-panel/index.wxss": {
+      "sha": "017f8dac48587a2dd17880917081900f34d5d9df",
+      "size": 1915
+    },
+    "miniprogram/components/platform-order-pricing/index.js": {
+      "sha": "7ac35f5781e6506ea81b4367437693c5ad366e0e",
+      "size": 9282
+    },
+    "miniprogram/components/platform-order-pricing/index.json": {
+      "sha": "d6c3f40d8ae0a7f446c2d0300dd64f41d607a95a",
+      "size": 247
+    },
+    "miniprogram/components/platform-order-pricing/index.wxml": {
+      "sha": "e9e362ef769ad14bfc9a2db901cabdcf2b8e9785",
+      "size": 3310
+    },
+    "miniprogram/components/platform-order-pricing/index.wxss": {
+      "sha": "b2fcd7932fd6564b6fc6bf6c10fdf536d3751c43",
+      "size": 3940
+    },
+    "miniprogram/components/platform-order-settlement/index.js": {
+      "sha": "8a5290ce96964be1364da503945df3eb6846535a",
+      "size": 4888
+    },
+    "miniprogram/components/platform-order-settlement/index.json": {
+      "sha": "79f273097951c80601c6ae82f076247b52757ead",
+      "size": 60
+    },
+    "miniprogram/components/platform-order-settlement/index.wxml": {
+      "sha": "225dd58c0b99609633b73afc78f93562571c1e29",
+      "size": 1251
+    },
+    "miniprogram/components/platform-order-settlement/index.wxss": {
+      "sha": "36294324e4ca178f457d20cb16ae92f8a16524fa",
+      "size": 2070
+    },
+    "miniprogram/components/subscription-health-banner/index.js": {
+      "sha": "f44f55c833a4dd27dc9f9a57f39640f08ce06a65",
+      "size": 5656
+    },
+    "miniprogram/components/subscription-health-banner/index.json": {
+      "sha": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+      "size": 24
+    },
+    "miniprogram/components/subscription-health-banner/index.wxml": {
+      "sha": "793c15647236c9b8135890818a3d020a95058e18",
+      "size": 2001
+    },
+    "miniprogram/components/subscription-health-banner/index.wxss": {
+      "sha": "0322677724504203bb8e21b2dc894485dac1bd36",
+      "size": 3149
+    },
+    "miniprogram/components/worker-completion-submit/index.js": {
+      "sha": "5aaeeeda00a08927f01cdf5014942a751d6324fa",
+      "size": 7222
+    },
+    "miniprogram/components/worker-completion-submit/index.json": {
+      "sha": "79f273097951c80601c6ae82f076247b52757ead",
+      "size": 60
+    },
+    "miniprogram/components/worker-completion-submit/index.wxml": {
+      "sha": "a21cff9c48f26da2a312554aa511bf953f99a532",
+      "size": 3060
+    },
+    "miniprogram/components/worker-completion-submit/index.wxss": {
+      "sha": "cd4171568a03cacc9ee22bdbf9d030708ce3e4d1",
+      "size": 2452
+    },
+    "miniprogram/components/worker-service-appointment/index.js": {
+      "sha": "9ebbec88c625b5141ea5da92b2bf1b6a1f4b2c9e",
+      "size": 9052
+    },
+    "miniprogram/components/worker-service-appointment/index.json": {
+      "sha": "79f273097951c80601c6ae82f076247b52757ead",
+      "size": 60
+    },
+    "miniprogram/components/worker-service-appointment/index.wxml": {
+      "sha": "cd1c4a197481530849b181a5c38926f90c32e0e4",
+      "size": 3668
+    },
+    "miniprogram/components/worker-service-appointment/index.wxss": {
+      "sha": "a46f63ef198850d5ce972b2d96cafc167ad2496e",
+      "size": 1631
+    },
+    "miniprogram/config/config.js": {
+      "sha": "d6d463572875783a3e1c3452528a0c8d5c7614e8",
+      "size": 1251
+    },
+    "miniprogram/config/subscribe.js": {
+      "sha": "341383b1243ae6a4ff4534394a1087a9e9faf89a",
+      "size": 593
+    },
+    "miniprogram/custom-tab-bar/index.js": {
+      "sha": "41a2c6c61b951730919ef562399b47f08f75d874",
+      "size": 3376
+    },
+    "miniprogram/custom-tab-bar/index.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/custom-tab-bar/index.wxml": {
+      "sha": "1281d77a1562f8de14ce423379241d94c8bc8601",
+      "size": 1576
+    },
+    "miniprogram/custom-tab-bar/index.wxss": {
+      "sha": "a3536058c1b7763a59474645baadd7efb8b2a166",
+      "size": 4132
+    },
+    "miniprogram/images/2406mini.png": {
+      "sha": "e7923ed8e9ba61bacf1ec22dc2b60487e0b056de",
+      "size": 9842
+    },
+    "miniprogram/images/2406plus.png": {
+      "sha": "45292e880e36d9869ad4ad5ec9c44e03072a5ab8",
+      "size": 7263
+    },
+    "miniprogram/images/2406search.png": {
+      "sha": "e48629bb04daca4bd09d3d047992d63eb5e7e355",
+      "size": 8828
+    },
+    "miniprogram/images/2406shop.png": {
+      "sha": "74b94bb7851d253843b80db79e7e7ac2cc119ef1",
+      "size": 5102
+    },
+    "miniprogram/images/bbs.png": {
+      "sha": "8e7fe64f93199511e85accfab8397d3e41968e0f",
+      "size": 10490
+    },
+    "miniprogram/images/bbson.png": {
+      "sha": "b32ca593a7c1a5aecf52bf59472dc798d0547b8e",
+      "size": 14583
+    },
+    "miniprogram/images/chat.svg": {
+      "sha": "55d1d518839621265db15785e5db29df7e582a7c",
+      "size": 2680
+    },
+    "miniprogram/images/chaton.svg": {
+      "sha": "311a499b7439b1bd79ff08db3325711d27f0126a",
+      "size": 2680
+    },
+    "miniprogram/images/close-icon.png": {
+      "sha": "3382eea96d5fcd795183b88aaae813b1647ec727",
+      "size": 706
+    },
+    "miniprogram/images/index.png": {
+      "sha": "960f447730c868cc7fecb928320ada2097685fab",
+      "size": 5363
+    },
+    "miniprogram/images/indexon.png": {
+      "sha": "8d2bdfd714fafd2ffdccfd5d4d4c8e7acfa6c367",
+      "size": 5335
+    },
+    "miniprogram/images/local.png": {
+      "sha": "cacfb624f3081c4c0952acac16d48cf92edd167a",
+      "size": 2939
+    },
+    "miniprogram/images/mall.png": {
+      "sha": "cfe67ad60a796c0af2f070d4097d674be61826c4",
+      "size": 6596
+    },
+    "miniprogram/images/maplocation.png": {
+      "sha": "d145a43be2bc0761296e70367df7897d49b990e6",
+      "size": 8684
+    },
+    "miniprogram/images/measure-icons/LICENSE-lucide.txt": {
+      "sha": "6ad12cafa18dd357542a7862f8c173d0ed33692d",
+      "size": 959
+    },
+    "miniprogram/images/measure-icons/area.svg": {
+      "sha": "234f0624ad1765b24655d1d3ac6046e49cf28452",
+      "size": 1327
+    },
+    "miniprogram/images/measure-icons/minus.svg": {
+      "sha": "cdc3108634679293459091f1c2e0491028fec826",
+      "size": 206
+    },
+    "miniprogram/images/measure-icons/pointer.svg": {
+      "sha": "1ebe405821e458db800bba4d8f01da1df27c5f2b",
+      "size": 1771
+    },
+    "miniprogram/images/measure-icons/ruler.svg": {
+      "sha": "dcaeca12e314fcf0b88ebe13434439de1ec8028b",
+      "size": 1157
+    },
+    "miniprogram/images/measure-icons/size.svg": {
+      "sha": "5763d7f6ae10359d835bd7e04c98f4786393eabc",
+      "size": 1254
+    },
+    "miniprogram/images/mine.png": {
+      "sha": "54248fbb4a307639fe5a0c94cf7bef183ffbf3fd",
+      "size": 5284
+    },
+    "miniprogram/images/mineon.png": {
+      "sha": "fdbcfd297d43fa99123d95e36a5311faf6a4e4ad",
+      "size": 5359
+    },
+    "miniprogram/images/phoneAuth.png": {
+      "sha": "bf4b70ac8ca8db4c3b3e236fc2094c7494ec6d98",
+      "size": 11090
+    },
+    "miniprogram/images/plus.png": {
+      "sha": "65aa14680d2a79558cdb155799d4a2223163ba80",
+      "size": 4321
+    },
+    "miniprogram/images/plus2.png": {
+      "sha": "68283e36c6537a393112b6944a26995682f6a87c",
+      "size": 6977
+    },
+    "miniprogram/images/plus2on.png": {
+      "sha": "ac41873a007e2512b99edab754ee39bb84cc6354",
+      "size": 6650
+    },
+    "miniprogram/images/search.png": {
+      "sha": "7e12f469c71d3fda67fd0534d5f0e5d3595491ad",
+      "size": 4217
+    },
+    "miniprogram/images/searchon.png": {
+      "sha": "7b81a0d19a4e9b5adfb0075d9460232aa1ec61d7",
+      "size": 4295
+    },
+    "miniprogram/images/store.png": {
+      "sha": "4fbb5c217fc660bcd18b9c87d4b727b3ac1345f6",
+      "size": 6818
+    },
+    "miniprogram/images/storeon.png": {
+      "sha": "cfe67ad60a796c0af2f070d4097d674be61826c4",
+      "size": 6596
+    },
+    "miniprogram/images/worker.png": {
+      "sha": "1090edf25ee14833913ca69c432fbffa0e37c213",
+      "size": 31217
+    },
+    "miniprogram/images/wxkf.png": {
+      "sha": "993eea3025fcd64a9deb6cd4743ec27ce94f7f03",
+      "size": 11124
+    },
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.js": {
+      "sha": "8a70d7396c07571f46527f0663718965e4442415",
+      "size": 1385
+    },
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.json": {
+      "sha": "4c480fb9e9eca0574e3179bafae2d4a8f4713d59",
+      "size": 66
+    },
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.wxml": {
+      "sha": "72d31ef96b3ba3f0981decfaa31e5d77e22f5022",
+      "size": 1249
+    },
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.wxss": {
+      "sha": "0d1cbdebe03a081de6139bcdabe7663d30b64926",
+      "size": 965
+    },
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.js": {
+      "sha": "ea361dcff4650f4e255827cecdf51f04c38a07b2",
+      "size": 18457
+    },
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.json": {
+      "sha": "1c2a20fd98a2bb74e8f2e127816adbab9166a533",
+      "size": 242
+    },
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.wxml": {
+      "sha": "94dcd65e99264c76fc5d99db5e7df28d717a45b3",
+      "size": 21745
+    },
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.wxss": {
+      "sha": "7078782c6aa168c64ff20227c10355f3f99c9db9",
+      "size": 6728
+    },
+    "miniprogram/pages/adminWorkbench/creationTheme.wxss": {
+      "sha": "4467da87b4e93a30999728515c36fa0ca7adea14",
+      "size": 1209
+    },
+    "miniprogram/pages/adminWorkbench/customerShare.js": {
+      "sha": "faa08122588a11b4d1c9a61ff983821b2ed66ec2",
+      "size": 5640
+    },
+    "miniprogram/pages/adminWorkbench/customerShare.json": {
+      "sha": "312766ae17a30ee517bdc0813b7f6b6eecdfcf29",
+      "size": 184
+    },
+    "miniprogram/pages/adminWorkbench/customerShare.wxml": {
+      "sha": "b959c70f24ae90b843bf4e7dfa3f0e53c36e1b1e",
+      "size": 3324
+    },
+    "miniprogram/pages/adminWorkbench/customerShare.wxss": {
+      "sha": "cbf6c931582dde44e3924fd1c556e0900cc4db07",
+      "size": 3901
+    },
+    "miniprogram/pages/adminWorkbench/detail.js": {
+      "sha": "3cc0bfb2115eed20f3a869e423e744317d6e8201",
+      "size": 22038
+    },
+    "miniprogram/pages/adminWorkbench/detail.json": {
+      "sha": "feb57a5a6d442a848a3d81c427176aff880a3f31",
+      "size": 445
+    },
+    "miniprogram/pages/adminWorkbench/detail.wxml": {
+      "sha": "dbce354226cac7acca6ebf67592cacc7fa266483",
+      "size": 14562
+    },
+    "miniprogram/pages/adminWorkbench/detail.wxss": {
+      "sha": "87443c3e991dffa68f29b54026d35e1cc48eeeec",
+      "size": 11371
+    },
+    "miniprogram/pages/adminWorkbench/index.js": {
+      "sha": "51de6c3b1c3f27d49df0b9e5ff97d11496cf7d88",
+      "size": 20537
+    },
+    "miniprogram/pages/adminWorkbench/index.json": {
+      "sha": "7f70c8dec081943132652388f893508f9fb100b9",
+      "size": 217
+    },
+    "miniprogram/pages/adminWorkbench/index.wxml": {
+      "sha": "d4046074c196160d6ccfc24b939992a90de84e86",
+      "size": 16116
+    },
+    "miniprogram/pages/adminWorkbench/index.wxss": {
+      "sha": "fa9d78c6b30d39d6053aea6492fb47f151cee5dc",
+      "size": 15274
+    },
+    "miniprogram/pages/adminWorkbench/platformIncome.js": {
+      "sha": "b77ec562c918d9458d4ca5c97540f104d8341f39",
+      "size": 5125
+    },
+    "miniprogram/pages/adminWorkbench/platformIncome.json": {
+      "sha": "acf1070cf12ef8a9610f50defd2a9fada1b386a6",
+      "size": 184
+    },
+    "miniprogram/pages/adminWorkbench/platformIncome.wxml": {
+      "sha": "75ef777a528925f17e5f4495fcb014148d144e20",
+      "size": 3113
+    },
+    "miniprogram/pages/adminWorkbench/platformIncome.wxss": {
+      "sha": "26ab8e0cc699fe38ba9f38169eb78ef521402b31",
+      "size": 3555
+    },
+    "miniprogram/pages/adminWorkbench/pricingReview.js": {
+      "sha": "083667a9aefc6091bdf3430a79663775e41ffa33",
+      "size": 7485
+    },
+    "miniprogram/pages/adminWorkbench/pricingReview.json": {
+      "sha": "acf1070cf12ef8a9610f50defd2a9fada1b386a6",
+      "size": 184
+    },
+    "miniprogram/pages/adminWorkbench/pricingReview.wxml": {
+      "sha": "49adab3893324428f408f17800cd3b9702cb0d88",
+      "size": 5238
+    },
+    "miniprogram/pages/adminWorkbench/pricingReview.wxss": {
+      "sha": "84067ef4a349f3ef54f2d3d512f67f0e43985bdf",
+      "size": 5946
+    },
+    "miniprogram/pages/agreementCenter/index.js": {
+      "sha": "888b8716c70888a25d5c29cdfc1dfd3d6af1a5bd",
+      "size": 92
+    },
+    "miniprogram/pages/agreementCenter/index.json": {
+      "sha": "d7e4a764452fbe2c9e6964db9aed09a015ff81b7",
+      "size": 88
+    },
+    "miniprogram/pages/agreementCenter/index.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/agreementCenter/index.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/applogin/applogin.js": {
+      "sha": "bfba207e8f99ea6b29535251b2f1c51c225cda29",
+      "size": 1496
+    },
+    "miniprogram/pages/applogin/applogin.json": {
+      "sha": "8835af0699ccec004cbe685ef938cd2d63ea7037",
+      "size": 27
+    },
+    "miniprogram/pages/applogin/applogin.wxml": {
+      "sha": "a85877fd38eab4f63604820199284492a541fd9f",
+      "size": 967
+    },
+    "miniprogram/pages/applogin/applogin.wxss": {
+      "sha": "661dcbe5e8418cf016232dd989c10bc642117c37",
+      "size": 3379
+    },
+    "miniprogram/pages/constructionOrder/index.js": {
+      "sha": "fd59fdd84b008b644b40542eb6fa0e7e6f2b975c",
+      "size": 7689
+    },
+    "miniprogram/pages/constructionOrder/index.json": {
+      "sha": "8ce9c3c7a03d7dd7b618914a47f5377054b6dda5",
+      "size": 208
+    },
+    "miniprogram/pages/constructionOrder/index.wxml": {
+      "sha": "37e6988d9c9e6be7e68d444064b5040590c6bf22",
+      "size": 4480
+    },
+    "miniprogram/pages/constructionOrder/index.wxss": {
+      "sha": "30194c1c47f4a9d4170ea8a8289a1c580863a3ef",
+      "size": 5595
+    },
+    "miniprogram/pages/getCityData/getCityData.js": {
+      "sha": "b6d2ae6755d8f56ef8d63b2b51ff0fe50edcf222",
+      "size": 3542
+    },
+    "miniprogram/pages/getCityData/getCityData.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/pages/getCityData/getCityData.wxml": {
+      "sha": "1c08a0660575c6f7be364e82adbc0a5362193a9f",
+      "size": 661
+    },
+    "miniprogram/pages/getCityData/getCityData.wxss": {
+      "sha": "07864368063e925c21f9304816933b4242b4d6ca",
+      "size": 103
+    },
+    "miniprogram/pages/h5/h5.js": {
+      "sha": "45513e2569db680340d1b0d2eadd64fa34d3c209",
+      "size": 80
+    },
+    "miniprogram/pages/h5/h5.json": {
+      "sha": "a82134d86752f70d1ce86a91eafa905b52e833fa",
+      "size": 79
+    },
+    "miniprogram/pages/h5/h5.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/h5/h5.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/help/help.js": {
+      "sha": "6bf95b27270ba3b0eb9c0382bf651a12bebf9605",
+      "size": 86
+    },
+    "miniprogram/pages/help/help.json": {
+      "sha": "a82134d86752f70d1ce86a91eafa905b52e833fa",
+      "size": 79
+    },
+    "miniprogram/pages/help/help.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/help/help.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/index/index.js": {
+      "sha": "9895f224b1422773866dbb7f3a9611a18612b7f6",
+      "size": 26650
+    },
+    "miniprogram/pages/index/index.json": {
+      "sha": "7f786b2264dd3a9fed75e6af77f03f0ddd63e265",
+      "size": 104
+    },
+    "miniprogram/pages/index/index.wxml": {
+      "sha": "b03908e146e058a2b8cddbcd1b17b09060e5d9f6",
+      "size": 6814
+    },
+    "miniprogram/pages/index/index.wxss": {
+      "sha": "50d01bdfaefbe7056e526aca2846e0d5de740520",
+      "size": 3647
+    },
+    "miniprogram/pages/location/location.js": {
+      "sha": "a066e35d028f624c5fadff04cc282ecd407f331f",
+      "size": 90
+    },
+    "miniprogram/pages/location/location.json": {
+      "sha": "36da14bda452eceb4b8df3afca3c3519fc7aab96",
+      "size": 79
+    },
+    "miniprogram/pages/location/location.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/location/location.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/merchantAuth/index.js": {
+      "sha": "e9772f4294d5d7419da80c9d9f89a675b08695e9",
+      "size": 94
+    },
+    "miniprogram/pages/merchantAuth/index.json": {
+      "sha": "a82134d86752f70d1ce86a91eafa905b52e833fa",
+      "size": 79
+    },
+    "miniprogram/pages/merchantAuth/index.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/merchantAuth/index.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/mine/examine.js": {
+      "sha": "ffa9cbd63990386a2957a8be0aa51f9fd875278e",
+      "size": 88
+    },
+    "miniprogram/pages/mine/examine.json": {
+      "sha": "15cfa4a11d04739ec5c3f643983e5c2b292e94a1",
+      "size": 79
+    },
+    "miniprogram/pages/mine/examine.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/mine/examine.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/mine/mine.js": {
+      "sha": "b7424e1ebf52d246035e83ffdf47b039ec020be8",
+      "size": 16109
+    },
+    "miniprogram/pages/mine/mine.json": {
+      "sha": "ad12754fd1938fc86492eb0450044b4a0175d7d4",
+      "size": 130
+    },
+    "miniprogram/pages/mine/mine.wxml": {
+      "sha": "42e752bd89bce9a0245ca4061d46301622c01a84",
+      "size": 11120
+    },
+    "miniprogram/pages/mine/mine.wxss": {
+      "sha": "cecbe03f0ef19df17c36d29f6c5a2671fb06cdd7",
+      "size": 9282
+    },
+    "miniprogram/pages/mine/settings.js": {
+      "sha": "7aeb0ec770525b1705651f79fb7f6ed017f5e3e7",
+      "size": 90
+    },
+    "miniprogram/pages/mine/settings.json": {
+      "sha": "9d9b24d6569c210bb4b853c77415f75e525f916d",
+      "size": 73
+    },
+    "miniprogram/pages/mine/settings.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/mine/settings.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/notificationCenter/index.js": {
+      "sha": "70d31912a7eb2450d42ad8a3cb306b5ca04fd5df",
+      "size": 19087
+    },
+    "miniprogram/pages/notificationCenter/index.json": {
+      "sha": "83d664a6d81cecfec44593c6f37fc33860b652b4",
+      "size": 228
+    },
+    "miniprogram/pages/notificationCenter/index.wxml": {
+      "sha": "d320b9fe3487d5821f69fdb4df570a9b1d76d560",
+      "size": 10894
+    },
+    "miniprogram/pages/notificationCenter/index.wxss": {
+      "sha": "b95200daf2d2ff539514b4ded82b3e3803658395",
+      "size": 14520
+    },
+    "miniprogram/pages/orderCenter/index.js": {
+      "sha": "89e04e12ac2a599bb105c0b0b67baf982490fbd1",
+      "size": 13086
+    },
+    "miniprogram/pages/orderCenter/index.json": {
+      "sha": "0c584c2c7c31277cd974f54c35fa67d0921740ea",
+      "size": 186
+    },
+    "miniprogram/pages/orderCenter/index.wxml": {
+      "sha": "65f061072e5cd1934105d81295ed072f54d43d30",
+      "size": 6603
+    },
+    "miniprogram/pages/orderCenter/index.wxss": {
+      "sha": "e91a8e40bd7398a22d652c8dcab7045e8625eeee",
+      "size": 8918
+    },
+    "miniprogram/pages/orderHall/orderHall.js": {
+      "sha": "4e860b9be2dc675f263b98be7a209800506d6d07",
+      "size": 12506
+    },
+    "miniprogram/pages/orderHall/orderHall.json": {
+      "sha": "82a423b8f14d472dd50f1229b7ef8dc138040014",
+      "size": 283
+    },
+    "miniprogram/pages/orderHall/orderHall.wxml": {
+      "sha": "bc9473bce5833be09ea4a64e47f8ebd084f68e2f",
+      "size": 6827
+    },
+    "miniprogram/pages/orderHall/orderHall.wxss": {
+      "sha": "1def9865f84ae23aa8ac0be7faf0e1444e776d43",
+      "size": 5515
+    },
+    "miniprogram/pages/orderSubmit/index.js": {
+      "sha": "970d80e3996dc1f41bb2df5bf2ff16228faee689",
+      "size": 82682
+    },
+    "miniprogram/pages/orderSubmit/index.json": {
+      "sha": "9c7689df7447baced1dda17ac74dc80cf905786d",
+      "size": 290
+    },
+    "miniprogram/pages/orderSubmit/index.wxml": {
+      "sha": "04ff5da450875c52a33c4aac8bd3f6c38301cf40",
+      "size": 30524
+    },
+    "miniprogram/pages/orderSubmit/index.wxss": {
+      "sha": "237d9d9e1ddb6efd6ad50d59590de441aec88975",
+      "size": 18654
+    },
+    "miniprogram/pages/pay/pay.js": {
+      "sha": "2ce0d62898f43058a9ce9d5c95e1e5143a5decb8",
+      "size": 85
+    },
+    "miniprogram/pages/pay/pay.json": {
+      "sha": "9890af7a7c61331e67f8829a6ee64ef5c8380578",
+      "size": 79
+    },
+    "miniprogram/pages/pay/pay.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/pay/pay.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/platformOrderShare/index.js": {
+      "sha": "30191c189db3b00e74df747962f6330aba2689b3",
+      "size": 3302
+    },
+    "miniprogram/pages/platformOrderShare/index.json": {
+      "sha": "711cbf6eb3b2b6aeccf42790d2ad6f74fc51a017",
+      "size": 113
+    },
+    "miniprogram/pages/platformOrderShare/index.wxml": {
+      "sha": "ebb2a3ef2db63c3d6554cde01e78a15505ea8574",
+      "size": 2994
+    },
+    "miniprogram/pages/platformOrderShare/index.wxss": {
+      "sha": "683cff6fa012040b0dc4f18d8613b242b53fcaa4",
+      "size": 3304
+    },
+    "miniprogram/pages/plus/plus.js": {
+      "sha": "27e07c362ab1ff9e36c95cfe7c8b98af94b5e21b",
+      "size": 95
+    },
+    "miniprogram/pages/plus/plus.json": {
+      "sha": "11389a9be4752f1200c53fb566608c4844a3588e",
+      "size": 79
+    },
+    "miniprogram/pages/plus/plus.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/plus/plus.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/realName/index.js": {
+      "sha": "ab6d21822b48b03fd0363c03b672439391f88960",
+      "size": 90
+    },
+    "miniprogram/pages/realName/index.json": {
+      "sha": "2d0aeb7f2fb5e1b23f668a50f8a5aaa026101bcb",
+      "size": 79
+    },
+    "miniprogram/pages/realName/index.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/realName/index.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/recharge/recharge.js": {
+      "sha": "061759b306d6c8b52d0893b5784a3794566c256c",
+      "size": 88
+    },
+    "miniprogram/pages/recharge/recharge.json": {
+      "sha": "055889d10ccd2ddc1c8991d4ca037d6c97046a3f",
+      "size": 79
+    },
+    "miniprogram/pages/recharge/recharge.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/recharge/recharge.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/record/detail.js": {
+      "sha": "ddb33e26821c1309063608e5c92904b019c6568b",
+      "size": 40756
+    },
+    "miniprogram/pages/record/detail.json": {
+      "sha": "a69fa010984b7c25220ce0a65953b767781c8829",
+      "size": 220
+    },
+    "miniprogram/pages/record/detail.wxml": {
+      "sha": "9d5815389ee07b2aa8e2984f49e51923b0200d09",
+      "size": 39483
+    },
+    "miniprogram/pages/record/detail.wxss": {
+      "sha": "9fd835a9154ea4dccfdc779b2414fd988c5715d7",
+      "size": 11352
+    },
+    "miniprogram/pages/record/record.js": {
+      "sha": "97252640d5f91c5508f1e859607bb2db237ccc41",
+      "size": 6171
+    },
+    "miniprogram/pages/record/record.json": {
+      "sha": "02bbcd2862e9a3664c3c2ffa7a455c6517b07e4f",
+      "size": 208
+    },
+    "miniprogram/pages/record/record.wxml": {
+      "sha": "adf62b7b9e090c829b05e9b5afd7482865e2db54",
+      "size": 5279
+    },
+    "miniprogram/pages/record/record.wxss": {
+      "sha": "ee0979bf21fa995e20d1842edeb2b52fbc396e66",
+      "size": 8574
+    },
+    "miniprogram/pages/search/search.js": {
+      "sha": "7bfc116f64a4b66656ac0794120ae2de951542a3",
+      "size": 90
+    },
+    "miniprogram/pages/search/search.json": {
+      "sha": "a82134d86752f70d1ce86a91eafa905b52e833fa",
+      "size": 79
+    },
+    "miniprogram/pages/search/search.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/search/search.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/test/test.js": {
+      "sha": "92247202e01ff7aa8b3447455ff2a942a88a05a1",
+      "size": 2367
+    },
+    "miniprogram/pages/test/test.json": {
+      "sha": "f76504d175687c9b95050e3f1b69d7985a28825b",
+      "size": 36
+    },
+    "miniprogram/pages/test/test.wxml": {
+      "sha": "1240e0e336f658a5b0de15c15fe41c5b65567a14",
+      "size": 3835
+    },
+    "miniprogram/pages/test/test.wxss": {
+      "sha": "fbb37a50cde76c26a2b32e450b191687ba7d3f21",
+      "size": 389
+    },
+    "miniprogram/pages/testEntry/index.js": {
+      "sha": "2e6b1a325ad2339ad0a4b02f6e2e910d3ece4996",
+      "size": 2221
+    },
+    "miniprogram/pages/testEntry/index.json": {
+      "sha": "bcea33150a2d309e3acf12f7ddbd65e1b9b4993d",
+      "size": 80
+    },
+    "miniprogram/pages/testEntry/index.wxml": {
+      "sha": "8d761b2b0aa5cf72af03f3da218469597d798595",
+      "size": 1045
+    },
+    "miniprogram/pages/testEntry/index.wxss": {
+      "sha": "49556d5acb38f849d478d67ab9f4a4ada72d094d",
+      "size": 1909
+    },
+    "miniprogram/pages/userOrder/detail.js": {
+      "sha": "37975cd8eb834bd629fbada2e22546acd8ac79c7",
+      "size": 70486
+    },
+    "miniprogram/pages/userOrder/detail.json": {
+      "sha": "fb95d89effcc1e658531f2fd01d116f3379f9241",
+      "size": 749
+    },
+    "miniprogram/pages/userOrder/detail.wxml": {
+      "sha": "14f926ff53566987bf9a505cd1934467a1339e76",
+      "size": 59222
+    },
+    "miniprogram/pages/userOrder/detail.wxss": {
+      "sha": "b761708b97f9b9be09a561278f999e7553b55c1c",
+      "size": 30511
+    },
+    "miniprogram/pages/web-view/web.js": {
+      "sha": "54c7b369e568436f5b290751bfc29c952495bc87",
+      "size": 82
+    },
+    "miniprogram/pages/web-view/web.json": {
+      "sha": "a82134d86752f70d1ce86a91eafa905b52e833fa",
+      "size": 79
+    },
+    "miniprogram/pages/web-view/web.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/web-view/web.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/workerFinance/index.js": {
+      "sha": "60a64bc2a62d170809cf641994972e9fa754fff6",
+      "size": 88
+    },
+    "miniprogram/pages/workerFinance/index.json": {
+      "sha": "28001f5c3e4f990ad9f7a30f8e67911aae9356e5",
+      "size": 79
+    },
+    "miniprogram/pages/workerFinance/index.wxml": {
+      "sha": "afa79166efc08d86a2d54fbfcf4a32541256c255",
+      "size": 305
+    },
+    "miniprogram/pages/workerFinance/index.wxss": {
+      "sha": "baa3bfaee92282f117d60e336948a7cce314f6e1",
+      "size": 48
+    },
+    "miniprogram/pages/workerOrder/detail-polish.wxss": {
+      "sha": "7f2a359550fb9aa2369c30f56f32032820e843b5",
+      "size": 2962
+    },
+    "miniprogram/pages/workerOrder/detail.js": {
+      "sha": "54090a5ce199629f3851de32c4b67d84b833c104",
+      "size": 63637
+    },
+    "miniprogram/pages/workerOrder/detail.json": {
+      "sha": "903243671cf09153bb5a0c087302ac9ae71cdd8a",
+      "size": 628
+    },
+    "miniprogram/pages/workerOrder/detail.wxml": {
+      "sha": "0cb8d4e0e00eea34eb8399b98d10fd89181ec131",
+      "size": 47598
+    },
+    "miniprogram/pages/workerOrder/detail.wxss": {
+      "sha": "690cd98c6acc01a03d1af624cda2b073ad388b42",
+      "size": 21624
+    },
+    "miniprogram/sitemap.json": {
+      "sha": "ca02add20b581be471b8d17f887b8e8337070546",
+      "size": 191
+    },
+    "miniprogram/style/colorui/animation.wxss": {
+      "sha": "9e91ebd9056ad0e76daf063c8c8c823f196885e2",
+      "size": 2594
+    },
+    "miniprogram/style/colorui/components/calendar/calendar.js": {
+      "sha": "671fd7e909a14e4673e443ccf545743e74946022",
+      "size": 7448
+    },
+    "miniprogram/style/colorui/components/calendar/calendar.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/style/colorui/components/calendar/calendar.wxml": {
+      "sha": "ee7cbeaccab155de6a793d80ad2e39f46a270559",
+      "size": 1750
+    },
+    "miniprogram/style/colorui/components/calendar/calendar.wxss": {
+      "sha": "f6259506ba5ecbe6cc4f0706f5c727eeb7426cf0",
+      "size": 4049
+    },
+    "miniprogram/style/colorui/components/canvas2d-ring/canvas2d-ring.js": {
+      "sha": "7a87705a8aa2814219f4017bacf570dc404818fe",
+      "size": 3352
+    },
+    "miniprogram/style/colorui/components/canvas2d-ring/canvas2d-ring.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/style/colorui/components/canvas2d-ring/canvas2d-ring.wxml": {
+      "sha": "3865e4252d1174cf3e166822a8a2c1007c41bbf1",
+      "size": 491
+    },
+    "miniprogram/style/colorui/components/canvas2d-ring/canvas2d-ring.wxss": {
+      "sha": "b5843829ef6a56be71cf4a5275b9f2f3147e794a",
+      "size": 493
+    },
+    "miniprogram/style/colorui/components/cu-custom/cu-custom.js": {
+      "sha": "3cbbd06687c117985fe0abf2ef62cbe71f097468",
+      "size": 1483
+    },
+    "miniprogram/style/colorui/components/cu-custom/cu-custom.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/style/colorui/components/cu-custom/cu-custom.wxml": {
+      "sha": "093d3431a613cf8c8fab42dd7d23343b823d5afe",
+      "size": 1237
+    },
+    "miniprogram/style/colorui/components/cu-custom/cu-custom.wxss": {
+      "sha": "6300bd25dc767f6bd2b2df46da0620a110fc8885",
+      "size": 137
+    },
+    "miniprogram/style/colorui/components/skeleton/skeleton.js": {
+      "sha": "e8a28a63adeddd1965471d67c579b5a9c7ccea47",
+      "size": 592
+    },
+    "miniprogram/style/colorui/components/skeleton/skeleton.json": {
+      "sha": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+      "size": 48
+    },
+    "miniprogram/style/colorui/components/skeleton/skeleton.wxml": {
+      "sha": "c9f6ba8d271586dc755ba214bf6663118ac4c20a",
+      "size": 403
+    },
+    "miniprogram/style/colorui/components/skeleton/skeleton.wxss": {
+      "sha": "8fbcad394393860b6259c812880af720ce890dd4",
+      "size": 621
+    },
+    "miniprogram/style/colorui/dark.wxss": {
+      "sha": "8027466d347282565a7743724542601e41204945",
+      "size": 3960
+    },
+    "miniprogram/style/colorui/icon-new.wxss": {
+      "sha": "4329fc750d9a92c05214067ca3b2866882d8c729",
+      "size": 22656
+    },
+    "miniprogram/style/colorui/icon.wxss": {
+      "sha": "ca533a9772fa5103ee0dd763801808e8db5216f0",
+      "size": 71342
+    },
+    "miniprogram/style/colorui/main.wxss": {
+      "sha": "b0afc31e3186ead0aee5469e896ca3168515f7ed",
+      "size": 66631
+    },
+    "miniprogram/style/subpackage-redirect.wxss": {
+      "sha": "f828735cdaa43a7d6f9b79fade3ed2e9859d19fb",
+      "size": 361
+    },
+    "miniprogram/style/weui.wxss": {
+      "sha": "c39d44aa1e07cc565b19dd02eaa68e8de762fa6c",
+      "size": 107227
+    },
+    "miniprogram/subpackages/account/location/index.js": {
+      "sha": "528b7945d88e32be56bfb789190dceb4330d78f6",
+      "size": 3388
+    },
+    "miniprogram/subpackages/account/location/index.json": {
+      "sha": "a638956955dfd9e935fa9ed7e5428087ee583be7",
+      "size": 47
+    },
+    "miniprogram/subpackages/account/location/index.wxml": {
+      "sha": "aac867bf547664753ed09b6d5626584b586d7487",
+      "size": 922
+    },
+    "miniprogram/subpackages/account/location/index.wxss": {
+      "sha": "867edf9dddc5708de43d018d4352986040c40b12",
+      "size": 721
+    },
+    "miniprogram/subpackages/account/merchantAuth/index.js": {
+      "sha": "9ac3e6290ccf75d696998655230b9c7b7b810e33",
+      "size": 6870
+    },
+    "miniprogram/subpackages/account/merchantAuth/index.json": {
+      "sha": "3b10c09a414efd96f64db0cc76e0d88452e3377c",
+      "size": 283
+    },
+    "miniprogram/subpackages/account/merchantAuth/index.wxml": {
+      "sha": "2e4663868d6ef0a5b382914973015f4a94f6960b",
+      "size": 3909
+    },
+    "miniprogram/subpackages/account/merchantAuth/index.wxss": {
+      "sha": "c677a27fa0c4fffad09951e5a170177a21396cc4",
+      "size": 7330
+    },
+    "miniprogram/subpackages/account/realName/index.js": {
+      "sha": "0ad777ab64b5697f7f15c024d51a1fc41d077fd7",
+      "size": 12021
+    },
+    "miniprogram/subpackages/account/realName/index.json": {
+      "sha": "064375e0476a1672742d25423b9d5e2aa01dacb0",
+      "size": 161
+    },
+    "miniprogram/subpackages/account/realName/index.wxml": {
+      "sha": "8ae8e89a5e69240bb1ccbec6d160e50eb91c1984",
+      "size": 4567
+    },
+    "miniprogram/subpackages/account/realName/index.wxss": {
+      "sha": "07b5dfb4d3d25188600970ec925ec4d426c87e5e",
+      "size": 3700
+    },
+    "miniprogram/subpackages/account/review/index.js": {
+      "sha": "ad4a515444be59021f8c1c76c363cccda600584e",
+      "size": 10453
+    },
+    "miniprogram/subpackages/account/review/index.json": {
+      "sha": "fa2fc89d313144d2f4b95fd56de15e69fa5f9d15",
+      "size": 156
+    },
+    "miniprogram/subpackages/account/review/index.wxml": {
+      "sha": "997291c19cc2ca050c1a83ba0bce419fa4b7e1cf",
+      "size": 2773
+    },
+    "miniprogram/subpackages/account/review/index.wxss": {
+      "sha": "2ced23240f73075687ebb838ac9a55627d4fb3cf",
+      "size": 1577
+    },
+    "miniprogram/subpackages/account/settings/index.js": {
+      "sha": "9fa2a9b7811a48555c5a2c4add272f01d24addad",
+      "size": 21126
+    },
+    "miniprogram/subpackages/account/settings/index.json": {
+      "sha": "2ba9666cc22bd5fb49e2b39f5565dcf2f0820026",
+      "size": 155
+    },
+    "miniprogram/subpackages/account/settings/index.wxml": {
+      "sha": "c121b02628d46cd90b80cf2706a1eecf40302c35",
+      "size": 8012
+    },
+    "miniprogram/subpackages/account/settings/index.wxss": {
+      "sha": "45aeac39252965c12f551a3ab9c63689845a9e77",
+      "size": 6362
+    },
+    "miniprogram/subpackages/account/utils/WechatOcr.js": {
+      "sha": "5f37859aadc1567ee787a6d94a0f1f6e75194dcb",
+      "size": 6731
+    },
+    "miniprogram/subpackages/account/workerProfile/index.js": {
+      "sha": "bbdc8545bdd564240e95e5e64fd12093c4694d6d",
+      "size": 25598
+    },
+    "miniprogram/subpackages/account/workerProfile/index.json": {
+      "sha": "d6ae048bf0492a7e4ff87a6d0dea46ee89eebca6",
+      "size": 341
+    },
+    "miniprogram/subpackages/account/workerProfile/index.wxml": {
+      "sha": "706e35f401c6a0595265e1cd268828be84973fd4",
+      "size": 10204
+    },
+    "miniprogram/subpackages/account/workerProfile/index.wxss": {
+      "sha": "dffe49f8504a931427cef9ce6fb69446388500b6",
+      "size": 57
+    },
+    "miniprogram/subpackages/discovery/search/index.js": {
+      "sha": "3d1f283e5e36c4696b46dba74e0d2c000b50ce73",
+      "size": 5206
+    },
+    "miniprogram/subpackages/discovery/search/index.json": {
+      "sha": "84cb05048088fda25fb2937a7b716d598cc54f74",
+      "size": 66
+    },
+    "miniprogram/subpackages/discovery/search/index.wxml": {
+      "sha": "87d43e8d5b1f73233806c36415f291d9f2de2ace",
+      "size": 3736
+    },
+    "miniprogram/subpackages/discovery/search/index.wxss": {
+      "sha": "65ed20441ca1e2e56cd3871aec761af54c7ed81a",
+      "size": 126
+    },
+    "miniprogram/subpackages/finance/tip/index.js": {
+      "sha": "97e365cb689010c54c6f55050dc302f8744a70c4",
+      "size": 3734
+    },
+    "miniprogram/subpackages/finance/tip/index.json": {
+      "sha": "2a7360911eb40515cc1955b65d6288541f363e47",
+      "size": 194
+    },
+    "miniprogram/subpackages/finance/tip/index.wxml": {
+      "sha": "827b096e7f9f8e0acc434fa223116206052c60e5",
+      "size": 1644
+    },
+    "miniprogram/subpackages/finance/tip/index.wxss": {
+      "sha": "66986a514374b3f6f494a309b842eca502d80c50",
+      "size": 312
+    },
+    "miniprogram/subpackages/finance/wallet/index.js": {
+      "sha": "c3f53acdac798b2f20a6e9f6a3c00a4255b96504",
+      "size": 6924
+    },
+    "miniprogram/subpackages/finance/wallet/index.json": {
+      "sha": "25cf268423dc10a5dde16db8b5fa230a0d69a373",
+      "size": 99
+    },
+    "miniprogram/subpackages/finance/wallet/index.wxml": {
+      "sha": "7b363f3a232987a4d3d7ad05c8c8d11357c7f59c",
+      "size": 2273
+    },
+    "miniprogram/subpackages/finance/wallet/index.wxss": {
+      "sha": "72ca526a705cf9fe9ea81280e5ea84250a3dfe9b",
+      "size": 3161
+    },
+    "miniprogram/subpackages/finance/worker/index.js": {
+      "sha": "09f8e236fd9623473f7bebbd5dd4aa19588d156f",
+      "size": 11974
+    },
+    "miniprogram/subpackages/finance/worker/index.json": {
+      "sha": "87ba3ca44ee686ce47d8b52b78ee7b485abc4f9a",
+      "size": 162
+    },
+    "miniprogram/subpackages/finance/worker/index.wxml": {
+      "sha": "59d3c4ed07096ce736ba1994b657656976ae61e7",
+      "size": 7794
+    },
+    "miniprogram/subpackages/finance/worker/index.wxss": {
+      "sha": "1c27715e077d35df5917bca0cfbaca622619980c",
+      "size": 4525
+    },
+    "miniprogram/subpackages/measure/imageAnnotator/index.js": {
+      "sha": "d8da96bcc7fe32c471ba3342a85c1fec2c9d1f73",
+      "size": 110908
+    },
+    "miniprogram/subpackages/measure/imageAnnotator/index.json": {
+      "sha": "fd10dbfe6b26fe03ccb4a2911cced1a053473c99",
+      "size": 210
+    },
+    "miniprogram/subpackages/measure/imageAnnotator/index.wxml": {
+      "sha": "d6ed8e1b590753d423944dc4067f854e99aa5c8f",
+      "size": 33975
+    },
+    "miniprogram/subpackages/measure/imageAnnotator/index.wxss": {
+      "sha": "50817f36680944f38c9f0b2c83d2616402e2c8cc",
+      "size": 33403
+    },
+    "miniprogram/subpackages/orderTools/productTemplates/index.js": {
+      "sha": "30b20cbf3ab383a799be255dc238de01dbc25d36",
+      "size": 20619
+    },
+    "miniprogram/subpackages/orderTools/productTemplates/index.json": {
+      "sha": "8e8058ca7715662389ee729a2460ab24f4efeeee",
+      "size": 224
+    },
+    "miniprogram/subpackages/orderTools/productTemplates/index.wxml": {
+      "sha": "e00da9ddbc924ae409f63e58bd1d513b06f13d00",
+      "size": 3841
+    },
+    "miniprogram/subpackages/orderTools/productTemplates/index.wxss": {
+      "sha": "b83a4821c695c171092d8c5725d2a877769610a7",
+      "size": 5072
+    },
+    "miniprogram/subpackages/store/index/index.js": {
+      "sha": "b86586417e0e5fa20c727f7a529b2133a1430ca3",
+      "size": 14039
+    },
+    "miniprogram/subpackages/store/index/index.json": {
+      "sha": "5cc3dfedf0a3c408174b999872769e8a40926416",
+      "size": 33
+    },
+    "miniprogram/subpackages/store/index/index.wxml": {
+      "sha": "9cdb39934f3e2375048012b5b6af2fa23a6abffe",
+      "size": 4638
+    },
+    "miniprogram/subpackages/store/index/index.wxss": {
+      "sha": "3199bbbb14141e283391364f278cee00c6b6a976",
+      "size": 2880
+    },
+    "miniprogram/subpackages/store/plus/plus.js": {
+      "sha": "caae65e432a4366cfa9cdcfe3e928437fa6eea44",
+      "size": 9841
+    },
+    "miniprogram/subpackages/store/plus/plus.json": {
+      "sha": "c501de449bf613107bd256f44813d27a1b1ea76f",
+      "size": 258
+    },
+    "miniprogram/subpackages/store/plus/plus.wxml": {
+      "sha": "38434514a9612b8976bc0c05db63c015198b1574",
+      "size": 5026
+    },
+    "miniprogram/subpackages/store/plus/plus.wxss": {
+      "sha": "bf02d07c6915a18e8b7ad88e2b4e98264f92880b",
+      "size": 58
+    },
+    "miniprogram/subpackages/store/record/detail.js": {
+      "sha": "a153805bd89255329e69e5268e79242b7f757905",
+      "size": 11624
+    },
+    "miniprogram/subpackages/store/record/detail.json": {
+      "sha": "bd471d050c7cbc95769480b09f059f25d9bf7745",
+      "size": 220
+    },
+    "miniprogram/subpackages/store/record/detail.wxml": {
+      "sha": "b703133e288a8b0828da889095fe3b3b08dfe16b",
+      "size": 7064
+    },
+    "miniprogram/subpackages/store/record/detail.wxss": {
+      "sha": "73328c39d8d6043e41b518773abb72e579e85f6b",
+      "size": 394
+    },
+    "miniprogram/subpackages/store/utils/CloudUtils.js": {
+      "sha": "a186e5375b794636efea83325f0876f64cf7970f",
+      "size": 893
+    },
+    "miniprogram/subpackages/support/agreements/index.js": {
+      "sha": "27e8f3c416fd5477771ee1a2d8f0cfc29359fb1e",
+      "size": 6966
+    },
+    "miniprogram/subpackages/support/agreements/index.json": {
+      "sha": "312ac05bc32169af73ef2408f9b7ce5ef7c1cd75",
+      "size": 195
+    },
+    "miniprogram/subpackages/support/agreements/index.wxml": {
+      "sha": "5a3e59dd5e3abe6ecb759bcb5ae282b88e8b3805",
+      "size": 7602
+    },
+    "miniprogram/subpackages/support/agreements/index.wxss": {
+      "sha": "baa2297b4c20ceb455c03faa77a8a31d77583025",
+      "size": 6968
+    },
+    "miniprogram/subpackages/support/help/index.js": {
+      "sha": "7890022f216d6616315b6d87e5d1841a65e7f9e8",
+      "size": 14203
+    },
+    "miniprogram/subpackages/support/help/index.json": {
+      "sha": "16638cc2f7197e94acce25c4b8e3068699e0cb65",
+      "size": 158
+    },
+    "miniprogram/subpackages/support/help/index.wxml": {
+      "sha": "5f50153ff1d9e7f65f7c81218bc9cad7cce10a31",
+      "size": 9932
+    },
+    "miniprogram/subpackages/support/help/index.wxss": {
+      "sha": "f983eb5ce343dec30217bfdbfdecad98078317b9",
+      "size": 18602
+    },
+    "miniprogram/subpackages/support/utils/HelpApi.js": {
+      "sha": "265753e165051c6e7c1827c1d071b2909eda546c",
+      "size": 6880
+    },
+    "miniprogram/subpackages/web/h5/index.js": {
+      "sha": "6d0a8e5e8c58e4deb50e5fb2a6963a1f0c292f2a",
+      "size": 4637
+    },
+    "miniprogram/subpackages/web/h5/index.json": {
+      "sha": "63f1cc98272c9996c2177654abd6bc8af8ac954e",
+      "size": 49
+    },
+    "miniprogram/subpackages/web/h5/index.wxml": {
+      "sha": "678ddd7c88a5236797e3ab4d899f23387ee4cb4d",
+      "size": 61
+    },
+    "miniprogram/subpackages/web/h5/index.wxss": {
+      "sha": "34ef70cf7473b3815ef2130603e667877086bac7",
+      "size": 22
+    },
+    "miniprogram/subpackages/web/view/index.js": {
+      "sha": "6424c23d8eb6c8389712eead09b833e048023a85",
+      "size": 819
+    },
+    "miniprogram/subpackages/web/view/index.json": {
+      "sha": "8835af0699ccec004cbe685ef938cd2d63ea7037",
+      "size": 27
+    },
+    "miniprogram/subpackages/web/view/index.wxml": {
+      "sha": "ffb56fb421ff0838c0ffa3dd263e0815d301f944",
+      "size": 246
+    },
+    "miniprogram/subpackages/web/view/index.wxss": {
+      "sha": "caec0db40a88f55ee0174a32ecab8185bda6b600",
+      "size": 26
+    },
+    "miniprogram/utils/ApiEnvironment.js": {
+      "sha": "e5d319590d1aaf1c68976eac668306d98fb64497",
+      "size": 4039
+    },
+    "miniprogram/utils/CustomerService.js": {
+      "sha": "98551ba7c356ebfdb137d5537770ce40a3e65e5a",
+      "size": 1027
+    },
+    "miniprogram/utils/DateUtils.js": {
+      "sha": "decc4ee13e813a4973dfd69e97b81af88a46c9f4",
+      "size": 1510
+    },
+    "miniprogram/utils/LocationUtils.js": {
+      "sha": "7730e1b74ba7a9bfcefae96f643e8908c2b0e289",
+      "size": 900
+    },
+    "miniprogram/utils/NotificationState.js": {
+      "sha": "2edd366072551008548d426a20496ae780e7891a",
+      "size": 4349
+    },
+    "miniprogram/utils/OrderApi.js": {
+      "sha": "c4e6f938d9096c1006f04774d7ae6638e00bc54a",
+      "size": 17572
+    },
+    "miniprogram/utils/OrderStagePresentation.js": {
+      "sha": "ec6b2434e203f59b21d005b764037fdbcd6c394b",
+      "size": 1441
+    },
+    "miniprogram/utils/PlatformOrderCreateForm.js": {
+      "sha": "3c4fd80ed55f4960c1dd463f09ffa7047c526105",
+      "size": 12582
+    },
+    "miniprogram/utils/SubpackageRedirect.js": {
+      "sha": "3156f349fdd35dd07afe0b520c11d71ea91f532f",
+      "size": 948
+    },
+    "miniprogram/utils/SubscribeMessageUtils.js": {
+      "sha": "3d2f215bc42b81a7a6d815db59419ff1abcfc881",
+      "size": 27124
+    }
+  },
+  "protected": {
+    "miniprogram/components/addTip/addTip.js": "921087310470969c0d8792a1ee0edebac4ac6742",
+    "miniprogram/components/addTip/addTip.json": "e8cfaaf80c404eb97d3cf8b6277ec15f37e6905e",
+    "miniprogram/components/addTip/addTip.wxml": "aca4c4d65227808c80a9855fb7984fc1c54a0553",
+    "miniprogram/components/addTip/addTip.wxss": "070bd2f803555723993c5cc719a3ddbc2d385721",
+    "miniprogram/components/admin-order-operations/index.js": "57e94ac292fa3afca1fb0c875f4c67417a4e639b",
+    "miniprogram/components/admin-order-operations/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/admin-order-operations/index.wxml": "01762d3556a13c66f1fa7dbc5c521a0e8f459c69",
+    "miniprogram/components/admin-order-operations/index.wxss": "b38fc659cb4f5e4fecf555d9621d5bceb7bc465e",
+    "miniprogram/components/admin-worker-assignment/index.js": "7367c11d16117c825d32d14da629eea1cc5ebc5f",
+    "miniprogram/components/admin-worker-assignment/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/admin-worker-assignment/index.wxml": "f6189433415a226ad7707886154595ae065b1399",
+    "miniprogram/components/admin-worker-assignment/index.wxss": "f3b4bfd5014ff626fa0cac7f7b5fe60150c963e0",
+    "miniprogram/components/auth/auth.js": "fb6418c8b49484bd83a97952bd48438362e02457",
+    "miniprogram/components/auth/auth.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/auth/auth.wxml": "23beb755ae171fc4f1babdee2f5dbe60c35ea060",
+    "miniprogram/components/auth/auth.wxss": "994c5441ce9104ecc8bf7702ad3edc9d76b39373",
+    "miniprogram/components/fullscreen-nav/index.js": "c4c8b7d6078e599e7105598a6381961343926232",
+    "miniprogram/components/fullscreen-nav/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/fullscreen-nav/index.wxml": "1877c2e30ece07e96a77a42a11e2e1763366db84",
+    "miniprogram/components/fullscreen-nav/index.wxss": "b9279baf97ccde013f6bf2047421778aeece4193",
+    "miniprogram/components/measurement-order-archive/index.js": "f95f1be514cf17de6180ac1d3a7bf57a0d4381b2",
+    "miniprogram/components/measurement-order-archive/index.json": "79f273097951c80601c6ae82f076247b52757ead",
+    "miniprogram/components/measurement-order-archive/index.wxml": "f7e8d3c193cf76ae11544935416fce4f85386242",
+    "miniprogram/components/measurement-order-archive/index.wxss": "9c41f87d99015c2721ca44a5333258edb974d4d7",
+    "miniprogram/components/measurement-order-detail/detail-core.js": "bc24d3ee1b46689efb751c3195e7364213629701",
+    "miniprogram/components/measurement-order-detail/index.js": "f26e1ed2f6096704fa6cf0053e07863835caf0f3",
+    "miniprogram/components/measurement-order-detail/index.json": "566ad6b15f54fbd0fa9ada1f309d76940020d226",
+    "miniprogram/components/measurement-order-detail/index.wxml": "90af6f54a9336903b8c266d4cd9d9b76294387b0",
+    "miniprogram/components/measurement-order-detail/index.wxss": "d1c8c2014538db4c885bf7f4151b54bd83a4205d",
+    "miniprogram/components/order-announcement/index.js": "553d161e0532def381d5248f09884ba6f1ce357e",
+    "miniprogram/components/order-announcement/index.json": "50c266705ede92acf0f4b02b84a273928f19d395",
+    "miniprogram/components/order-announcement/index.wxml": "337d1405dd0585536dafc6aafd482c15829975a5",
+    "miniprogram/components/order-announcement/index.wxss": "4b737d672cdccb930596d369c99a578dea071e01",
+    "miniprogram/components/order-dispute-panel/index.js": "d188b9b82f6016494880abf054ac184236fa9c7b",
+    "miniprogram/components/order-dispute-panel/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/order-dispute-panel/index.wxml": "d8a29874fdb74d89b793e079d0ece5b87df51e3b",
+    "miniprogram/components/order-dispute-panel/index.wxss": "828852b846259737594c7b734c8a90c4f2f58386",
+    "miniprogram/components/order-fulfillment-materials/index.js": "ce5612208a19863c0490fbedb963f0d3e7a38832",
+    "miniprogram/components/order-fulfillment-materials/index.json": "d80dd20a6bff3a1e4094d2712d37b3f370dfc189",
+    "miniprogram/components/order-fulfillment-materials/index.wxml": "859888acefbe07f3f8de1f0d7f177c8db8cacc97",
+    "miniprogram/components/order-fulfillment-materials/index.wxss": "ba695cb244d6860d8b2809c328c5b97815c3ba23",
+    "miniprogram/components/order-negotiation-panel/index.js": "40bc9af3e9108b86a260129591ac4ec6ce04c2e2",
+    "miniprogram/components/order-negotiation-panel/index.json": "d80dd20a6bff3a1e4094d2712d37b3f370dfc189",
+    "miniprogram/components/order-negotiation-panel/index.wxml": "380f756947724f6314ebe3ff97109d633cce4744",
+    "miniprogram/components/order-negotiation-panel/index.wxss": "eae1e6872509a73e4c0bdfca095b8821de2f40b6",
+    "miniprogram/components/order-product-field/index.js": "b27a5d177decc4a3c53bd76491e943e84ef38752",
+    "miniprogram/components/order-product-field/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/order-product-field/index.wxml": "07bc7bd430ba1b6a3e337bd7c883a7929ab0450c",
+    "miniprogram/components/order-product-field/index.wxss": "5104dcd6d1667e9d0236a121658d20bf316e196b",
+    "miniprogram/components/order-run-empty-panel/index.js": "dc6776f2c2a1ecb7dcf742712c06764228f02153",
+    "miniprogram/components/order-run-empty-panel/index.json": "a89ef4dbeefa01f5cd7971973aa4db6498d139f7",
+    "miniprogram/components/order-run-empty-panel/index.wxml": "47a873f333140d79144e6dcf1fe8af43e24cd551",
+    "miniprogram/components/order-run-empty-panel/index.wxss": "017f8dac48587a2dd17880917081900f34d5d9df",
+    "miniprogram/components/platform-order-pricing/index.js": "7ac35f5781e6506ea81b4367437693c5ad366e0e",
+    "miniprogram/components/platform-order-pricing/index.json": "d6c3f40d8ae0a7f446c2d0300dd64f41d607a95a",
+    "miniprogram/components/platform-order-pricing/index.wxml": "e9e362ef769ad14bfc9a2db901cabdcf2b8e9785",
+    "miniprogram/components/platform-order-pricing/index.wxss": "b2fcd7932fd6564b6fc6bf6c10fdf536d3751c43",
+    "miniprogram/components/platform-order-settlement/index.js": "8a5290ce96964be1364da503945df3eb6846535a",
+    "miniprogram/components/platform-order-settlement/index.json": "79f273097951c80601c6ae82f076247b52757ead",
+    "miniprogram/components/platform-order-settlement/index.wxml": "225dd58c0b99609633b73afc78f93562571c1e29",
+    "miniprogram/components/platform-order-settlement/index.wxss": "36294324e4ca178f457d20cb16ae92f8a16524fa",
+    "miniprogram/components/subscription-health-banner/index.js": "f44f55c833a4dd27dc9f9a57f39640f08ce06a65",
+    "miniprogram/components/subscription-health-banner/index.json": "467ce2945f917ae0035594117b51f5304cdcdfa6",
+    "miniprogram/components/subscription-health-banner/index.wxml": "793c15647236c9b8135890818a3d020a95058e18",
+    "miniprogram/components/subscription-health-banner/index.wxss": "0322677724504203bb8e21b2dc894485dac1bd36",
+    "miniprogram/components/worker-completion-submit/index.js": "5aaeeeda00a08927f01cdf5014942a751d6324fa",
+    "miniprogram/components/worker-completion-submit/index.json": "79f273097951c80601c6ae82f076247b52757ead",
+    "miniprogram/components/worker-completion-submit/index.wxml": "a21cff9c48f26da2a312554aa511bf953f99a532",
+    "miniprogram/components/worker-completion-submit/index.wxss": "cd4171568a03cacc9ee22bdbf9d030708ce3e4d1",
+    "miniprogram/components/worker-service-appointment/index.js": "9ebbec88c625b5141ea5da92b2bf1b6a1f4b2c9e",
+    "miniprogram/components/worker-service-appointment/index.json": "79f273097951c80601c6ae82f076247b52757ead",
+    "miniprogram/components/worker-service-appointment/index.wxml": "cd1c4a197481530849b181a5c38926f90c32e0e4",
+    "miniprogram/components/worker-service-appointment/index.wxss": "a46f63ef198850d5ce972b2d96cafc167ad2496e",
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.js": "8a70d7396c07571f46527f0663718965e4442415",
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.json": "4c480fb9e9eca0574e3179bafae2d4a8f4713d59",
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.wxml": "72d31ef96b3ba3f0981decfaa31e5d77e22f5022",
+    "miniprogram/pages/adminWorkbench/createOrdinaryOrder.wxss": "0d1cbdebe03a081de6139bcdabe7663d30b64926",
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.js": "ea361dcff4650f4e255827cecdf51f04c38a07b2",
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.json": "1c2a20fd98a2bb74e8f2e127816adbab9166a533",
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.wxml": "94dcd65e99264c76fc5d99db5e7df28d717a45b3",
+    "miniprogram/pages/adminWorkbench/createPlatformOrder.wxss": "7078782c6aa168c64ff20227c10355f3f99c9db9",
+    "miniprogram/pages/adminWorkbench/creationTheme.wxss": "4467da87b4e93a30999728515c36fa0ca7adea14",
+    "miniprogram/pages/adminWorkbench/customerShare.js": "faa08122588a11b4d1c9a61ff983821b2ed66ec2",
+    "miniprogram/pages/adminWorkbench/customerShare.json": "312766ae17a30ee517bdc0813b7f6b6eecdfcf29",
+    "miniprogram/pages/adminWorkbench/customerShare.wxml": "b959c70f24ae90b843bf4e7dfa3f0e53c36e1b1e",
+    "miniprogram/pages/adminWorkbench/customerShare.wxss": "cbf6c931582dde44e3924fd1c556e0900cc4db07",
+    "miniprogram/pages/adminWorkbench/detail.js": "3cc0bfb2115eed20f3a869e423e744317d6e8201",
+    "miniprogram/pages/adminWorkbench/detail.json": "feb57a5a6d442a848a3d81c427176aff880a3f31",
+    "miniprogram/pages/adminWorkbench/detail.wxml": "dbce354226cac7acca6ebf67592cacc7fa266483",
+    "miniprogram/pages/adminWorkbench/detail.wxss": "87443c3e991dffa68f29b54026d35e1cc48eeeec",
+    "miniprogram/pages/adminWorkbench/index.js": "51de6c3b1c3f27d49df0b9e5ff97d11496cf7d88",
+    "miniprogram/pages/adminWorkbench/index.json": "7f70c8dec081943132652388f893508f9fb100b9",
+    "miniprogram/pages/adminWorkbench/index.wxml": "d4046074c196160d6ccfc24b939992a90de84e86",
+    "miniprogram/pages/adminWorkbench/index.wxss": "fa9d78c6b30d39d6053aea6492fb47f151cee5dc",
+    "miniprogram/pages/adminWorkbench/platformIncome.js": "b77ec562c918d9458d4ca5c97540f104d8341f39",
+    "miniprogram/pages/adminWorkbench/platformIncome.json": "acf1070cf12ef8a9610f50defd2a9fada1b386a6",
+    "miniprogram/pages/adminWorkbench/platformIncome.wxml": "75ef777a528925f17e5f4495fcb014148d144e20",
+    "miniprogram/pages/adminWorkbench/platformIncome.wxss": "26ab8e0cc699fe38ba9f38169eb78ef521402b31",
+    "miniprogram/pages/adminWorkbench/pricingReview.js": "083667a9aefc6091bdf3430a79663775e41ffa33",
+    "miniprogram/pages/adminWorkbench/pricingReview.json": "acf1070cf12ef8a9610f50defd2a9fada1b386a6",
+    "miniprogram/pages/adminWorkbench/pricingReview.wxml": "49adab3893324428f408f17800cd3b9702cb0d88",
+    "miniprogram/pages/adminWorkbench/pricingReview.wxss": "84067ef4a349f3ef54f2d3d512f67f0e43985bdf",
+    "miniprogram/pages/constructionOrder/index.js": "fd59fdd84b008b644b40542eb6fa0e7e6f2b975c",
+    "miniprogram/pages/constructionOrder/index.json": "8ce9c3c7a03d7dd7b618914a47f5377054b6dda5",
+    "miniprogram/pages/constructionOrder/index.wxml": "37e6988d9c9e6be7e68d444064b5040590c6bf22",
+    "miniprogram/pages/constructionOrder/index.wxss": "30194c1c47f4a9d4170ea8a8289a1c580863a3ef",
+    "miniprogram/pages/index/index.js": "9895f224b1422773866dbb7f3a9611a18612b7f6",
+    "miniprogram/pages/index/index.json": "7f786b2264dd3a9fed75e6af77f03f0ddd63e265",
+    "miniprogram/pages/index/index.wxml": "b03908e146e058a2b8cddbcd1b17b09060e5d9f6",
+    "miniprogram/pages/index/index.wxss": "50d01bdfaefbe7056e526aca2846e0d5de740520",
+    "miniprogram/pages/mine/mine.js": "b7424e1ebf52d246035e83ffdf47b039ec020be8",
+    "miniprogram/pages/mine/mine.json": "ad12754fd1938fc86492eb0450044b4a0175d7d4",
+    "miniprogram/pages/mine/mine.wxml": "42e752bd89bce9a0245ca4061d46301622c01a84",
+    "miniprogram/pages/mine/mine.wxss": "cecbe03f0ef19df17c36d29f6c5a2671fb06cdd7",
+    "miniprogram/pages/notificationCenter/index.js": "70d31912a7eb2450d42ad8a3cb306b5ca04fd5df",
+    "miniprogram/pages/notificationCenter/index.json": "83d664a6d81cecfec44593c6f37fc33860b652b4",
+    "miniprogram/pages/notificationCenter/index.wxml": "d320b9fe3487d5821f69fdb4df570a9b1d76d560",
+    "miniprogram/pages/notificationCenter/index.wxss": "b95200daf2d2ff539514b4ded82b3e3803658395",
+    "miniprogram/pages/orderCenter/index.js": "89e04e12ac2a599bb105c0b0b67baf982490fbd1",
+    "miniprogram/pages/orderCenter/index.json": "0c584c2c7c31277cd974f54c35fa67d0921740ea",
+    "miniprogram/pages/orderCenter/index.wxml": "65f061072e5cd1934105d81295ed072f54d43d30",
+    "miniprogram/pages/orderCenter/index.wxss": "e91a8e40bd7398a22d652c8dcab7045e8625eeee",
+    "miniprogram/pages/orderHall/orderHall.js": "4e860b9be2dc675f263b98be7a209800506d6d07",
+    "miniprogram/pages/orderHall/orderHall.json": "82a423b8f14d472dd50f1229b7ef8dc138040014",
+    "miniprogram/pages/orderHall/orderHall.wxml": "bc9473bce5833be09ea4a64e47f8ebd084f68e2f",
+    "miniprogram/pages/orderHall/orderHall.wxss": "1def9865f84ae23aa8ac0be7faf0e1444e776d43",
+    "miniprogram/pages/orderSubmit/index.js": "970d80e3996dc1f41bb2df5bf2ff16228faee689",
+    "miniprogram/pages/orderSubmit/index.json": "9c7689df7447baced1dda17ac74dc80cf905786d",
+    "miniprogram/pages/orderSubmit/index.wxml": "04ff5da450875c52a33c4aac8bd3f6c38301cf40",
+    "miniprogram/pages/orderSubmit/index.wxss": "237d9d9e1ddb6efd6ad50d59590de441aec88975",
+    "miniprogram/pages/platformOrderShare/index.js": "30191c189db3b00e74df747962f6330aba2689b3",
+    "miniprogram/pages/platformOrderShare/index.json": "711cbf6eb3b2b6aeccf42790d2ad6f74fc51a017",
+    "miniprogram/pages/platformOrderShare/index.wxml": "ebb2a3ef2db63c3d6554cde01e78a15505ea8574",
+    "miniprogram/pages/platformOrderShare/index.wxss": "683cff6fa012040b0dc4f18d8613b242b53fcaa4",
+    "miniprogram/pages/userOrder/detail.js": "37975cd8eb834bd629fbada2e22546acd8ac79c7",
+    "miniprogram/pages/userOrder/detail.json": "fb95d89effcc1e658531f2fd01d116f3379f9241",
+    "miniprogram/pages/userOrder/detail.wxml": "14f926ff53566987bf9a505cd1934467a1339e76",
+    "miniprogram/pages/userOrder/detail.wxss": "b761708b97f9b9be09a561278f999e7553b55c1c",
+    "miniprogram/pages/workerOrder/detail-polish.wxss": "7f2a359550fb9aa2369c30f56f32032820e843b5",
+    "miniprogram/pages/workerOrder/detail.js": "54090a5ce199629f3851de32c4b67d84b833c104",
+    "miniprogram/pages/workerOrder/detail.json": "903243671cf09153bb5a0c087302ac9ae71cdd8a",
+    "miniprogram/pages/workerOrder/detail.wxml": "0cb8d4e0e00eea34eb8399b98d10fd89181ec131",
+    "miniprogram/pages/workerOrder/detail.wxss": "690cd98c6acc01a03d1af624cda2b073ad388b42"
+  }
+}

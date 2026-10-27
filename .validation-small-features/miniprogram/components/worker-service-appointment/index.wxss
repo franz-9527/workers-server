@@ -1,0 +1,20 @@
+.service-appointment-actions{display:flex;align-items:center;gap:12rpx;flex-shrink:0}.service-appointment-actions .stage-mini-action{margin:0;white-space:nowrap}.service-quick-wait{color:#666!important;background:#f5f7f8!important}.appointment-source-tip{padding:16rpx 20rpx;margin-bottom:14rpx;border-radius:14rpx;background:#f2fbfc;color:#4b6770;font-size:24rpx;line-height:1.55}.appointment-source-tip text{margin-right:8rpx}
+
+/* 预约组件独立保证暗色可读；窄屏将两个操作移到下一行。 */
+.service-appointment .stage-mini-action{display:flex!important;align-items:center;justify-content:center}
+@media (max-width:360px){
+  .service-appointment .work-stage-head{flex-wrap:wrap}
+  .service-appointment .work-stage-main{flex-basis:calc(100% - 70rpx)}
+  .service-appointment-actions{width:100%;justify-content:flex-end}
+  .service-appointment .work-stage-note{margin-left:0}
+}
+@media (prefers-color-scheme:dark){
+  .service-appointment.work-stage-card{background:#162225;border-color:#2d4145}
+  .service-appointment.work-stage-card.is-done{background:#182e26;border-color:#315344}
+  .service-appointment .work-stage-title{color:#e7f0f1}
+  .service-appointment .work-stage-summary{color:#a7b9bc}
+  .service-appointment .work-stage-index{background:#12383d;color:#80e7ee}
+  .service-appointment .work-stage-note,.appointment-source-tip{background:#203438;color:#c0d4d7}
+  .service-appointment .stage-mini-action{background:#20363a!important;color:#80e7ee!important;box-shadow:inset 0 0 0 1rpx #41636a!important}
+  .service-appointment .service-quick-wait{background:#243237!important;color:#c3d2d5!important}
+}
