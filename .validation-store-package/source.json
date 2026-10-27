@@ -1,0 +1,26 @@
+{
+  "source_repository": "franz-9527/workers",
+  "branch": "dev/2.6.0",
+  "commit": "302f04d68445210ec54e4ca7e8f82ffac3e02712",
+  "purpose": "Store-private upload helper packaging regression; no actual cloud/network writes or local testing",
+  "files": [
+    "cloudfunctions/base/index.js",
+    "cloudfunctions/store/index.js",
+    "miniprogram/app.json",
+    "miniprogram/pages/index/index.js",
+    "miniprogram/subpackages/store/index/index.js",
+    "miniprogram/subpackages/store/index/index.json",
+    "miniprogram/subpackages/store/index/index.wxml",
+    "miniprogram/subpackages/store/index/index.wxss",
+    "miniprogram/subpackages/store/plus/plus.js",
+    "miniprogram/subpackages/store/plus/plus.json",
+    "miniprogram/subpackages/store/plus/plus.wxml",
+    "miniprogram/subpackages/store/plus/plus.wxss",
+    "miniprogram/subpackages/store/record/detail.js",
+    "miniprogram/subpackages/store/record/detail.json",
+    "miniprogram/subpackages/store/record/detail.wxml",
+    "miniprogram/subpackages/store/record/detail.wxss",
+    "miniprogram/subpackages/store/utils/CloudUtils.js",
+    "tools/test_store_subpackage.js"
+  ]
+}
