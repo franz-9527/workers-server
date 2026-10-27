@@ -1,6 +1,0 @@
-<view wx:if="{{items.length}}" class="materials-card">
-  <view class="materials-title">履约补充资料</view>
-  <view class="materials-grid"><view wx:for="{{items}}" wx:key="id" class="materials-item">
-    <image src="{{item.url}}" mode="aspectFill" data-index="{{index}}" bindtap="preview" /><view>{{item.label}}</view>
-  </view></view>
-</view>
