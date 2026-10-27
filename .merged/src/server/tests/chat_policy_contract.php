@@ -120,7 +120,7 @@ try {
     require_once __DIR__.'/chat_migration_fixture.php';foreach ([1,2] as $unused) foreach(['policy','repair'] as $section)chatFixtureMigration($db->pdo(),$section);
     $db->execute("INSERT INTO users VALUES(1,'active'),(2,'active')");$db->execute('INSERT INTO worker_profiles VALUES(10,2)');
     $db->execute("INSERT INTO assignments VALUES(100,77,10,'accepted',UTC_TIMESTAMP()),(101,77,10,'accepted',UTC_TIMESTAMP()),(102,77,10,'offered',NULL),(103,77,10,'accepted',UTC_TIMESTAMP()),(104,77,10,'accepted',UTC_TIMESTAMP())");
-    $db->execute("INSERT INTO orders VALUES(77,'CHAT-POLICY-77',1,0,'construction','consumer','active','paid','accepted',100,10)");
+    $db->execute("INSERT INTO orders(id,user_id,is_demo,workflow_profile,order_source_type,lifecycle_status,payment_status,assignment_status,current_assignment_id,assigned_worker_id) VALUES(77,1,0,'construction','consumer','active','paid','accepted',100,10)");
     // Exercise real event outlets, isolating only the outbound notification port.
     class ChatNotificationFixture {
         public static int $calls=0;
@@ -153,7 +153,7 @@ try {
     policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM chat_business_events')===1,'no duplicate event');
     foreach ([78=>201,79=>202] as $order=>$assignment) {
         $db->execute("INSERT INTO assignments VALUES(:id,:order_id,10,'accepted',UTC_TIMESTAMP())",['id'=>$assignment,'order_id'=>$order]);
-        $db->execute("INSERT INTO orders VALUES(:id,1,0,'construction','consumer','active','paid','accepted',:assignment,10)",['id'=>$order,'assignment'=>$assignment]);
+        $db->execute("INSERT INTO orders(id,user_id,is_demo,workflow_profile,order_source_type,lifecycle_status,payment_status,assignment_status,current_assignment_id,assigned_worker_id) VALUES(:id,1,0,'construction','consumer','active','paid','accepted',:assignment,10)",['id'=>$order,'assignment'=>$assignment]);
         $db->transaction(static function(Database $db)use($order):void{
             if ($order===78) {
                 $reflection=new ReflectionClass('WorkerAdmin\\Infrastructure\\Persistence\\DatabaseOrderQuoteSelectionRepository');$repository=$reflection->newInstanceWithoutConstructor();
