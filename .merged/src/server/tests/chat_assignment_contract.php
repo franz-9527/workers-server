@@ -45,14 +45,29 @@ function chatAssignmentContract(array $config): void
         $quotePublic=(string)$db->fetchValue('SELECT public_id FROM quotes WHERE id=:id',['id'=>$quote]);
         $switch=new DatabaseOrderQuoteSwitchRepository($db);
         $count=(int)$db->fetchValue('SELECT COUNT(*) FROM assignments');
+        $denied=false;
+        try{$switch->switchWorker(['user_id'=>10001],'CHAT-ASG',$quotePublic,'fixture');}
+        catch(\WorkerAdmin\Domain\Order\OrderOperationException $error){$denied=$error->apiCode()==='ORDER_SWITCH_REQUIRES_CANCELLATION';}
+        policyAssert($denied && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$offered,'customer direct switching is denied without changing assignment authority');
+        policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count,'denied customer switch preserves original history');
         $db->execute("CREATE TRIGGER fixture_switch_event_failure BEFORE INSERT ON chat_business_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture'");
-        $failed=false;try{$switch->switchWorker(['user_id'=>10001],'CHAT-ASG',$quotePublic,'fixture');}catch(PDOException $error){$failed=($error->errorInfo[1]??0)===1644;}
+        $failed=false;try{$workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',10,'fixture guard rollback');}catch(PDOException $error){$failed=($error->errorInfo[1]??0)===1644;}
         $db->execute('DROP TRIGGER fixture_switch_event_failure');
-        policyAssert($failed && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$offered,'guard failure rolls actual customer switch back');
-        policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$offered])==='offered','failed switch preserves assignment history and current offer');
-        $switch->switchWorker(['user_id'=>10001],'CHAT-ASG',$quotePublic,'fixture');
+        policyAssert($failed && (int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===$offered,'guard failure rolls actual administrator reassignment back');
+        policyAssert((int)$db->fetchValue('SELECT COUNT(*) FROM assignments')===$count && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$offered])==='offered','failed reassignment preserves assignment history and current offer');
+        $workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',10,'fixture return to prior worker');
         $current=(int)$db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77');
-        policyAssert($current!==100 && $current!==$offered && $db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=:id',['id'=>$current])==='open','same original worker returns on independent accepted scope');
+        policyAssert($current!==100 && $current!==$offered && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$current])==='offered','same original worker returns on a new offered assignment');
+        policyAssert((int)$db->fetchValue("SELECT COUNT(*) FROM chat_policy_guards WHERE state='open'")===0,'administrator offer alone never opens a chat scope');
+        $settings=new class implements \WorkerAdmin\Contracts\SettingsProvider{
+            public function get(string $key,$default=null){return $default;}
+            public function bool(string $key,bool $default=false):bool{return $default;}
+            public function int(string $key,int $default=0):int{return $default;}
+        };
+        $deal=new \WorkerAdmin\Infrastructure\Persistence\DatabaseOrderDealRepository($db,$settings);
+        $public=(string)$db->fetchValue('SELECT public_id FROM assignments WHERE id=:id',['id'=>$current]);
+        $deal->execute('assignments.accept',['user_id'=>10002,'worker_id'=>10],['assignment_id'=>$public,'rule_acknowledged'=>true],[]);
+        policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=:id',['id'=>$current])==='open','real worker acceptance opens only the new assignment scope');
         policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE assignment_id=100')==='readonly','returning worker never reopens original scope');
         policyAssert((int)$db->fetchValue("SELECT COUNT(*) FROM chat_policy_guards WHERE state='open'")===1,'only one active assignment scope');
         $workbench->reassignWorker(['user_id'=>10004],'CHAT-ASG',20,'fixture timeout');
@@ -61,7 +76,7 @@ function chatAssignmentContract(array $config): void
         policyAssert((new AssignmentTimeoutProcessor($db))->expireProduction($expiring),'actual production timeout executes');
         policyAssert($db->fetchValue('SELECT current_assignment_id FROM orders WHERE id=77')===null && $db->fetchValue('SELECT status FROM assignments WHERE id=:id',['id'=>$expiring])==='expired','timeout clears current assignment');
         policyAssert((int)$db->fetchValue("SELECT COUNT(*) FROM chat_policy_guards WHERE state='open'")===0,'timeout never invents a grant');
-        echo "完整新装库的真实管理员改派、客户换回、故障回滚与指派超时验证通过\n";
+        echo "完整新装库的真实管理员改派、直接换人阻止、改派后确认、故障回滚与指派超时验证通过\n";
         require_once __DIR__.'/chat_repair_contract.php';
         chatRepairEpisodeContract($db);
         chatPlatformStaffContract($db,$config);
