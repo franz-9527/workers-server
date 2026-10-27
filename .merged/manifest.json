@@ -1407,7 +1407,7 @@
   "server/tests/chat_assignment_contract.php": "8dc9f14b157c060dfdc9d12ab1ffd598cabd9bc9",
   "server/tests/chat_call_resource_contract.php": "18b2821c9e8ba4d5152799739926c65649634c2b",
   "server/tests/chat_calls_mysql_contract.php": "eb8b8428840374ad09f782b337f8890cf93fd049",
-  "server/tests/chat_closure_contract.php": "662a45ae2b6353d889790b1deb87afe048499f96",
+  "server/tests/chat_closure_contract.php": "6a33319d146a0e2a691ee09ce00781c825c40e4e",
   "server/tests/chat_collaboration_fixture.php": "04a4e3a7a8f7376f7b4730b966d3958d94fc1a8a",
   "server/tests/chat_collaboration_policy_contract.php": "79c3f78a1e33f47af93c938551ca8786d6fa96e3",
   "server/tests/chat_identity_contract.php": "75eaf09479963ed476641b1e82263c91c5bc50a1",
@@ -1416,7 +1416,7 @@
   "server/tests/chat_participant_contract.php": "cddaae34cd20547f422fd080adc710db2669b16e",
   "server/tests/chat_platform_contract.php": "2b0df2406fe59ce9ad48e65a72a8437eafdae98b",
   "server/tests/chat_platform_fixture.php": "bb982b682a142dcab7ab3389d5f5a190c8a842af",
-  "server/tests/chat_policy_contract.php": "ee357eb2f928f729c0a343288188ed1499793044",
+  "server/tests/chat_policy_contract.php": "d909cffb53956a99642986c83011ee74d0bfd9ce",
   "server/tests/chat_policy_fixture.php": "8a185a76557f9d0ec5547ff9532ed80d3aca4332",
   "server/tests/chat_reminder_contract.php": "41c5ea13a6dd586b5e600b69f24ed04a18297020",
   "server/tests/chat_repair_contract.php": "f11fa191460140c74528b8da92737a535948a99c",
@@ -1599,5 +1599,6 @@
   "server/views/errors/404.php": "58b550d86bbd032abf8f347470a4287c751eb311",
   "server/views/errors/500.php": "bca3f52a0d408a43674accf43658301a6af47164",
   "server/views/layouts/admin.php": "2a961c163df1d3088aade6e702b6f9fcb43c4e1f",
-  "server/views/partials/pagination.php": "0ced6498817fed1f5018135d4ce36a1fc495be57"
+  "server/views/partials/pagination.php": "0ced6498817fed1f5018135d4ce36a1fc495be57",
+  "server/tests/v250_transaction_mysql.php": "e5433b7e90345279e810a08e6f1d673e1eb04a0e"
 }

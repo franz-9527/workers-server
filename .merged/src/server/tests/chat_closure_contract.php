@@ -22,11 +22,12 @@ function chatClosureContract(Database $db,DatabaseOrderConversationBridge $bridg
         $db->transaction(static function()use($bridge,$id):void{$bridge->synchronize($id);});
         policyAssert($db->fetchValue('SELECT state FROM chat_policy_guards WHERE order_id=:id',['id'=>$id])==='open','closure fixture starts open');
     };
+    // Customer quote switching is deny-only in 2.6.0; its no-write contract is exercised by chatAssignmentContract.
     $classes=['DatabaseOrderCompletionRepository','DatabaseOrderMeasurementCompletionRepository',
         'DatabaseOrderCancellationRepository','DatabasePaidPaymentSettlement','DatabaseOrderRunEmptyRepository',
         'DatabaseOrderNegotiationRepository','DatabaseOrderDisputeRepository','DatabaseMiniAdminOrderRepository',
         'DatabaseOrderInvitationRepository','SchedulerOrderEventWriter',
-        'DatabaseOrderQuoteSwitchRepository','DatabasePaymentCreationRepository'];
+        'DatabasePaymentCreationRepository'];
     foreach($classes as $index=>$class) {
         $id=1000+$index;$create($id);
         $scope='order:'.$id.':assignment:'.$id;

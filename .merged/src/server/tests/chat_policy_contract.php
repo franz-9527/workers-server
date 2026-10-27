@@ -115,12 +115,12 @@ try {
     $db->execute('CREATE TABLE users(id BIGINT UNSIGNED PRIMARY KEY,status VARCHAR(24)) ENGINE=InnoDB');
     $db->execute('CREATE TABLE worker_profiles(id BIGINT UNSIGNED PRIMARY KEY,user_id BIGINT UNSIGNED) ENGINE=InnoDB');
     $db->execute('CREATE TABLE assignments(id BIGINT UNSIGNED PRIMARY KEY,order_id BIGINT UNSIGNED,worker_id BIGINT UNSIGNED,status VARCHAR(24),accepted_at DATETIME) ENGINE=InnoDB');
-    $db->execute('CREATE TABLE orders(id BIGINT UNSIGNED PRIMARY KEY,user_id BIGINT UNSIGNED,is_demo TINYINT,workflow_profile VARCHAR(24),order_source_type VARCHAR(24),lifecycle_status VARCHAR(40),payment_status VARCHAR(24),assignment_status VARCHAR(24),current_assignment_id BIGINT UNSIGNED,assigned_worker_id BIGINT UNSIGNED) ENGINE=InnoDB');
+    $db->execute('CREATE TABLE orders(id BIGINT UNSIGNED PRIMARY KEY,public_no VARCHAR(32) NOT NULL DEFAULT \'\',user_id BIGINT UNSIGNED,is_demo TINYINT,workflow_profile VARCHAR(24),order_source_type VARCHAR(24),lifecycle_status VARCHAR(40),payment_status VARCHAR(24),assignment_status VARCHAR(24),current_assignment_id BIGINT UNSIGNED,assigned_worker_id BIGINT UNSIGNED) ENGINE=InnoDB');
     $db->execute('CREATE TABLE after_sales(id BIGINT UNSIGNED PRIMARY KEY,order_id BIGINT UNSIGNED,user_id BIGINT UNSIGNED,type VARCHAR(32),status VARCHAR(24),closed_at DATETIME NULL) ENGINE=InnoDB');
     require_once __DIR__.'/chat_migration_fixture.php';foreach ([1,2] as $unused) foreach(['policy','repair'] as $section)chatFixtureMigration($db->pdo(),$section);
     $db->execute("INSERT INTO users VALUES(1,'active'),(2,'active')");$db->execute('INSERT INTO worker_profiles VALUES(10,2)');
     $db->execute("INSERT INTO assignments VALUES(100,77,10,'accepted',UTC_TIMESTAMP()),(101,77,10,'accepted',UTC_TIMESTAMP()),(102,77,10,'offered',NULL),(103,77,10,'accepted',UTC_TIMESTAMP()),(104,77,10,'accepted',UTC_TIMESTAMP())");
-    $db->execute("INSERT INTO orders VALUES(77,1,0,'construction','consumer','active','paid','accepted',100,10)");
+    $db->execute("INSERT INTO orders VALUES(77,'CHAT-POLICY-77',1,0,'construction','consumer','active','paid','accepted',100,10)");
     // Exercise real event outlets, isolating only the outbound notification port.
     class ChatNotificationFixture {
         public static int $calls=0;

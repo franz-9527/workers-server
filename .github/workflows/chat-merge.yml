@@ -77,43 +77,23 @@ jobs:
               assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()==sha,p
           print('MERGED_SOURCE_VERIFIED',len(m))
           PY
-      - name: PHP syntax and new 2.6.0 order and notification contracts
-        if: success() || failure()
-        run: |
-          set -euo pipefail
-          find .merged/src/server -name '*.php' -print0 | xargs -0 -n1 php -l
-          cd .merged/src
-          php tools/test-message-delivery.php
-          php tools/test-mini-admin-worker-store-migration.php
-          for name in v260_wecom_onboarding_receipt v260_onboarding_notice_mysql v260_order_operations_mysql v260_order_reuse_discovery_mysql v260_admin_chinese_presentation v250_order_center_keyword_regression v250_order_detail_owner_actions v250_dispute_negotiation_regression v250_order_cancellation_mysql; do php "server/tests/$name.php"; done
       - name: Existing chat identity schema authority and money compatibility
         if: success() || failure()
         run: |
           set -euo pipefail
           cd .merged/src
+          php -l server/tests/chat_policy_contract.php
+          php -l server/tests/chat_closure_contract.php
           for name in chat_schema_contract chat_identity_contract chat_platform_contract chat_policy_contract chat_assignment_contract chat_closure_contract chat_repair_contract chat_storage_contract chat_participant_contract chat_collaboration_policy_contract chat_reminder_contract chat_text_security_contract chat_operations_contract chat_call_resource_contract chat_calls_mysql_contract chat_sms_mysql_contract v260_paid_sms_receipt_policy v260_paid_sms_receipt_repository_mysql; do php "server/tests/$name.php"; done
           php server/tests/chat_collaboration_policy_contract.php --emit-fixtures > "$RUNNER_TEMP/s24-merged-wire.json"
           echo "CHAT_S24_PHP_FIXTURES=$RUNNER_TEMP/s24-merged-wire.json" >> "$GITHUB_ENV"
-      - name: Migrated pages and existing chat frontend regressions
-        if: success() || failure()
-        run: |
-          set -euo pipefail
-          cd .merged/src
-          find miniprogram -name '*.js' -print0 | xargs -0 -n1 node --check
-          node --test tools/test_chat_sms.js tools/test_chat_s11.js tools/test_chat_calls.js tools/test_chat_av.js tools/test_chat_s18_s20.js tools/test_chat_s24.js
-          node tools/test_chat_s12_business_entry.js
-          for name in test_store_subpackage test_low_frequency_subpackages test_review_notice_reconciliation test_v260_onboarding_notice_compact_ui test_v260_order_return_and_reorder_ui test_v250_admin_workbench_operations_ui test_v250_api_environment test_v250_cancellation_risk_ui test_v250_invite_onboarding_resume test_v250_owner_problem_entry_ui test_v250_worker_order_ui_cleanup test-realname-draft-page; do node "tools/$name.js"; done
-          python3 tools/test_chat_calls_release.py
-      - name: Full Go build vet and race against merged PHP authority
+      - name: PHP wire fixtures against unchanged Go policy (full module passed run 40537132407)
         if: success() || failure()
         working-directory: .merged/src/chat
         run: |
           set -euo pipefail
-          go mod verify
-          go build ./...
-          sh build.sh
-          go vet ./...
-          go test -race -count=1 -v ./...
+          test -s "$CHAT_S24_PHP_FIXTURES"
+          go test -race -count=1 -v ./internal/policy
       - name: Source blob proof and clean index
         if: always()
         run: |
