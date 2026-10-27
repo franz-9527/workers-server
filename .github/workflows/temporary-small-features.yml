@@ -46,4 +46,4 @@ jobs:
           node tools/test_v250_api_environment.js
           node tools/test_store_subpackage.js
 
-# Configured confirmation notice regression; source 810bb6f595cbedcb4d87b66b4c6647224af5e6b2
+# Current existing navbar contract; source ce8a50e53ecb536d0e3728ce7b4c9e433796fe1b
