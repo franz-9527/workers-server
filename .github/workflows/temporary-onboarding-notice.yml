@@ -55,11 +55,13 @@ jobs:
           php tools/test-message-delivery.php
           php tools/test-mini-admin-worker-store-migration.php
       - name: Review page runtime regression
+        if: success() || failure()
         working-directory: .validation-onboarding
         run: node tools/test_review_notice_reconciliation.js
       - name: MySQL receipt and notification matching regression
+        if: success() || failure()
         working-directory: .validation-onboarding
         env:
           ONBOARDING_NOTICE_MYSQL_TEST: '1'
         run: php server/tests/v260_onboarding_notice_mysql.php
-# Source c12ce0bc23adac1dcf5c6bb6c2e3ea133aff4262
+# Complete isolated dependency snapshot
