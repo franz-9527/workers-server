@@ -74,10 +74,11 @@ jobs:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
           REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
         run: |
-          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
-          echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
-          echo "CHAT_SMS_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
-          echo "V250_DB_PORT=$MYSQL_PORT" >> "$GITHUB_ENV"
+          CHAT_TEST_MYSQL_PORT="$(docker port ${{ job.services.mysql.id }} 3306/tcp | head -n1 | cut -d: -f2)"
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_SMS_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "V250_DB_PORT=$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
           echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
           echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
           echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
