@@ -84,9 +84,11 @@ jobs:
           cd .merged/src
           php -l server/tests/chat_policy_contract.php
           php -l server/tests/chat_closure_contract.php
-          for name in chat_schema_contract chat_identity_contract chat_platform_contract chat_policy_contract chat_assignment_contract chat_closure_contract chat_repair_contract chat_storage_contract chat_participant_contract chat_collaboration_policy_contract chat_reminder_contract chat_text_security_contract chat_operations_contract chat_call_resource_contract chat_calls_mysql_contract chat_sms_mysql_contract v260_paid_sms_receipt_policy v260_paid_sms_receipt_repository_mysql; do php "server/tests/$name.php"; done
+          status=0
+          for name in chat_schema_contract chat_identity_contract chat_platform_contract chat_policy_contract chat_assignment_contract chat_closure_contract chat_repair_contract chat_storage_contract chat_participant_contract chat_collaboration_policy_contract chat_reminder_contract chat_text_security_contract chat_operations_contract chat_call_resource_contract chat_calls_mysql_contract chat_sms_mysql_contract v260_paid_sms_receipt_policy v260_paid_sms_receipt_repository_mysql; do php "server/tests/$name.php" || status=1; done
           php server/tests/chat_collaboration_policy_contract.php --emit-fixtures > "$RUNNER_TEMP/s24-merged-wire.json"
           echo "CHAT_S24_PHP_FIXTURES=$RUNNER_TEMP/s24-merged-wire.json" >> "$GITHUB_ENV"
+          exit "$status"
       - name: PHP wire fixtures against unchanged Go policy (full module passed run 40537132407)
         if: success() || failure()
         working-directory: .merged/src/chat
