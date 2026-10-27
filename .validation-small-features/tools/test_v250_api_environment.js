@@ -378,7 +378,7 @@ async function main() {
   const navWxml = fs.readFileSync(path.join(root, 'miniprogram/components/fullscreen-nav/index.wxml'), 'utf8')
   const navJs = fs.readFileSync(path.join(root, 'miniprogram/components/fullscreen-nav/index.js'), 'utf8')
   assert(navJs.includes("testingBadgeWithTitle: { type: Boolean, value: false }"), 'shared nav must keep the legacy default')
-  assert(navWxml.includes('testingApi && (!testingBadgeWithTitle || solid || showTitle)'), 'avoid lone test badge when the title is hidden')
+  assert(navWxml.includes('testingApi && (!testingBadgeWithTitle || solid || showTitle || testingTitleOnly) && (!testingBadgeWithTitle || resolvedTitle)'), 'avoid lone test badge when the title is hidden')
   const detailWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/adminWorkbench/detail.wxml'), 'utf8')
   const detailNavs = detailWxml.split('\n').map(line => line.trim()).filter(line => line.startsWith('<fullscreen-nav '))
   assert.strictEqual(detailNavs.length, 2, 'detail page must cover loading and loaded navbar states')
