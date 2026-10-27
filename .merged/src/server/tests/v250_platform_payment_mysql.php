@@ -43,7 +43,7 @@ $ddl=[
 
 function seedManaged(Database $db,int $id,int $prepayment=5000,int $receivable=25000):void{
 $db->execute("INSERT INTO orders(id,public_no,title,order_source_type,lifecycle_status,fulfillment_status,accepted_at) VALUES(:id,:number,'测试平台托管单','platform','completed','accepted',UTC_TIMESTAMP())",['id'=>$id,'number'=>'BX'.$id]);
-$db->execute("INSERT INTO order_platform_terms(order_id,customer_flow_mode,worker_settlement_mode,customer_contract_total_cents,booking_paid_cents,customer_tail_cents,platform_receivable_cents,worker_labor_cents,worker_balance_credit_cents,settlement_status,updated_at) VALUES(:id,'platform_managed','worker_collect',100000,:prepayment,:tail,:receivable,70000,0,'awaiting_platform_income',UTC_TIMESTAMP())",['id'=>$id,'prepayment'=>$prepayment,'tail'=>100000-$prepayment,'receivable'=>$receivable]);
+$db->execute("INSERT INTO order_platform_terms(order_id,customer_flow_mode,worker_settlement_mode,customer_contract_total_cents,booking_paid_cents,customer_tail_cents,platform_receivable_cents,worker_labor_cents,worker_balance_credit_cents,settlement_status,updated_at) VALUES(:id,'platform_managed','worker_collect',100000,:prepayment,:tail,:receivable,70000,0,'awaiting_platform_income',UTC_TIMESTAMP())",['id'=>$id,'prepayment'=>$prepayment,'tail'=>max(0,100000-$prepayment),'receivable'=>$receivable]);
 }
 
 $verifier=new PlatformOrderBookingPaymentVerifier();$finance=new DatabasePlatformOrderFinanceRepository($db);

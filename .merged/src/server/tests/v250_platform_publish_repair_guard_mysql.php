@@ -49,6 +49,7 @@ $ddl = [
     "CREATE TABLE orders(
         id BIGINT UNSIGNED PRIMARY KEY,
         public_no VARCHAR(32) NOT NULL,
+        form_schema_version_id BIGINT UNSIGNED NULL,workflow_profile VARCHAR(24) DEFAULT 'construction',booking_fee_cents INT DEFAULT 0,
         order_source_type VARCHAR(24) NOT NULL,
         payment_status VARCHAR(24) NOT NULL,
         audit_status VARCHAR(24) NOT NULL,
@@ -63,7 +64,8 @@ $ddl = [
         audit_note VARCHAR(255) NULL,
         updated_at DATETIME NOT NULL
     ) ENGINE=InnoDB",
-    "CREATE TABLE order_platform_terms(order_id BIGINT UNSIGNED PRIMARY KEY) ENGINE=InnoDB",
+    "CREATE TABLE payment_orders(id BIGINT PRIMARY KEY,order_id BIGINT,business_type VARCHAR(32),status VARCHAR(24),amount_cents INT) ENGINE=InnoDB",
+    "CREATE TABLE order_platform_terms(order_id BIGINT UNSIGNED PRIMARY KEY,customer_flow_mode VARCHAR(32) DEFAULT 'platform_managed',customer_contract_total_cents INT DEFAULT 100000,booking_paid_cents INT DEFAULT 0,settlement_status VARCHAR(32) DEFAULT 'pending') ENGINE=InnoDB",
     "CREATE TABLE disputes(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,status VARCHAR(24) NOT NULL) ENGINE=InnoDB",
     "CREATE TABLE refunds(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,status VARCHAR(24) NOT NULL) ENGINE=InnoDB",
     "CREATE TABLE order_cancel_requests(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,status VARCHAR(24) NOT NULL) ENGINE=InnoDB",
@@ -114,7 +116,7 @@ $seed = static function (Database $db, int $id, string $updatedSql, bool $withTe
     $db->execute(
         "INSERT INTO orders(id,public_no,order_source_type,payment_status,audit_status,publish_status,lifecycle_status,
              refund_status,selected_quote_id,assigned_worker_id,current_assignment_id,lat,lng,updated_at)
-         VALUES(:id,:no,'platform','paid','draft','hidden','active','none',NULL,NULL,NULL,:lat,:lng,".$updatedSql.")",
+         VALUES(:id,:no,'platform','paid','pending','hidden','active','none',NULL,NULL,NULL,:lat,:lng,".$updatedSql.")",
         [
             'id'=>$id,
             'no'=>'PR'.$id,

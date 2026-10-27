@@ -8,3 +8,6 @@ foreach($files as $file)if($file->isFile()&&$file->getExtension()==='php'){requi
 echo 'PHP83_APP_LOADED '.$count.PHP_EOL;
 foreach(WorkerAdmin\Support\PhpRuntimeRequirements::checks() as $check) if(!$check['passed'])throw new RuntimeException($check['name'].': '.$check['message']);
 echo 'PHP83_RUNTIME_REQUIREMENTS_OK'.PHP_EOL;
+
+foreach(['jpeg'=>'imagejpeg','png'=>'imagepng','webp'=>'imagewebp'] as $format=>$encode){$image=imagecreatetruecolor(2,2);ob_start();$ok=$encode($image);$bytes=ob_get_clean();if(!$ok||!is_string($bytes))throw new RuntimeException('GD encode '.$format);$decoded=imagecreatefromstring($bytes);if($decoded===false||imagesx($decoded)!==2||imagesy($decoded)!==2)throw new RuntimeException('GD decode '.$format);}
+echo 'PHP83_GD_REAL_ROUNDTRIP_OK'.PHP_EOL;

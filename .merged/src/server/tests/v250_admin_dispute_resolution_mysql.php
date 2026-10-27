@@ -84,6 +84,7 @@ spl_autoload_register(static function(string $class)use($root):void{if(str_start
     $db=new Database($config);
 
     $ddl = [
+        "CREATE TABLE system_settings(setting_key VARCHAR(100) PRIMARY KEY,setting_value TEXT) ENGINE=InnoDB",
         "CREATE TABLE admin_users(
             id BIGINT UNSIGNED PRIMARY KEY,
             username VARCHAR(64) NOT NULL

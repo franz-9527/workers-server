@@ -113,6 +113,10 @@ try {
     ordinaryBlocked(static function()use($proxy,$admin,$created){$proxy->ready($admin,['order_id'=>$created['id']]);},'ORDER_IMAGES_REQUIRED','未补齐图片不能交付');
     ordinaryBlocked(static function()use($submission,$actor,$created){$submission->finalize($actor,['order_id'=>$created['id'],'agreements'=>['accepted'=>true,'versions'=>['rules'=>'1']]]);},'ORDER_IMAGES_REQUIRED','客户提前提交同样校验图片');
     $optimized=['storage_key'=>'private/test.jpg','original_name'=>'test.jpg','mime_type'=>'image/jpeg','extension'=>'jpg','size_bytes'=>100,'width_px'=>10,'height_px'=>10,'sha256'=>hash('sha256','test-image'),'compression_quality'=>80];
+    $ownContext=$media->prepareOrderUpload($actor+['is_admin'=>true],$created['id'],'product');
+    ordinarySame($ownContext['is_proxy_operator'],false,'管理员处理本人的订单图片不能误判为代录入');
+    $proxyContext=$media->prepareOrderUpload($admin,$created['id'],'product');
+    ordinarySame($proxyContext['is_proxy_operator'],true,'其他管理员仍按代录入权限检查');
     // 使用真实媒体仓储插入；外部压缩/七牛链路由 Media 原有专项覆盖。
     foreach(['product'=>'product-file','wall'=>'wall-file'] as $purpose=>$publicId){
         $context=$media->prepareOrderUpload($admin,$created['id'],$purpose);

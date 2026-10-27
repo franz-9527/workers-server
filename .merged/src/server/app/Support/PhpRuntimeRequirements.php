@@ -25,8 +25,9 @@ final class PhpRuntimeRequirements
                 'message' => $enabled ? '已启用' : '请在当前 PHP 的扩展中启用',
             ];
         }
+        $gd = function_exists('gd_info') ? gd_info() : [];
         foreach (['JPEG' => ['imagecreatefromjpeg', 'imagejpeg'], 'PNG' => ['imagecreatefrompng', 'imagepng'], 'WebP' => ['imagecreatefromwebp', 'imagewebp']] as $format => $functions) {
-            $supported = function_exists($functions[0]) && function_exists($functions[1]);
+            $supported = !empty($gd[$format . ' Support']) && function_exists($functions[0]) && function_exists($functions[1]);
             $checks[] = [
                 'name' => 'GD ' . $format . ' 读写',
                 'passed' => $supported,

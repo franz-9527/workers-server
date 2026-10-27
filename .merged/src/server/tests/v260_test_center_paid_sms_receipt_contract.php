@@ -56,6 +56,6 @@ paidProbeAssert(strpos($wrapper,'test-center-paid-sms-receipt-actions')!==false,
 paidProbeAssert(strpos($view,'receipt_scenario')!==false,'paid SMS UI submits bounded scenario only');
 paidProbeAssert(strpos($view,'不会发送真实短信')!==false&&strpos($view,'不会修改真实钱包')!==false,'paid SMS UI states external and wallet boundaries');
 
-paidProbeAssert(strpos($paidPolicy,"\$expected='nearby-invite:'")!==false,'production receipt matcher keeps stable OutId convention');
+paidProbeAssert(strpos($paidPolicy,"'nearby-invite:'")!==false && strpos($paidPolicy,"'chat-nudge:'")!==false,'production receipt matcher keeps stable OutId convention');
 
 fwrite(STDOUT,"Test-center paid SMS receipt simulation contract passed.\n");

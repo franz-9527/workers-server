@@ -98,7 +98,7 @@ final class WeChatPayService
                 'appid'=>$this->appId(), 'mch_id'=>$this->mchId(), 'out_refund_no'=>$outRefundNo,
                 'nonce_str'=>$this->nonce(), 'sign_type'=>'HMAC-SHA256',
             ]);
-            $index=0; for($i=0;$i<(int)($row['refund_count']??1);$i++) if(($row['out_refund_no_'.$i]??'')===$outRefundNo){$index=$i;break;}
+            $index=0; for($i=0;$i<(int)($row['refund_count']??1);$i++){if(($row['out_refund_no_'.$i]??'')===$outRefundNo){$index=$i;break;}}
             $map=['SUCCESS'=>'SUCCESS','PROCESSING'=>'PROCESSING','REFUNDCLOSE'=>'CLOSED','CHANGE'=>'ABNORMAL'];
             $status=(string)($row['refund_status_'.$index]??'PROCESSING');
             return ['refund_id'=>(string)($row['refund_id_'.$index]??''),'out_refund_no'=>$outRefundNo,

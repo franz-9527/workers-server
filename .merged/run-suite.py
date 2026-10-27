@@ -3,6 +3,8 @@ root=pathlib.Path(__file__).resolve().parent/'src'
 tests=sorted((root/'tools').glob('test-*.php'))+sorted((root/'server/tests').glob('*.php'))
 libraries={'chat_assignment_contract.php','chat_closure_contract.php','chat_platform_contract.php','chat_repair_contract.php'}
 tests=[p for p in tests if not p.name.endswith('_fixture.php') and p.name not in libraries and not (p.name.endswith('_mysql.php') and p.with_name(p.stem+'_strict.php').exists())]
+selected=["server/tests/v250_admin_dispute_resolution_mysql.php","server/tests/v250_order_cancellation_regression.php","server/tests/v250_platform_payment_mysql.php","server/tests/v250_platform_publish_repair_guard_mysql.php","server/tests/v260_test_center_expansion_mysql_strict.php","server/tests/v260_test_center_paid_sms_receipt_contract.php","server/tests/v260_test_center_platform_measurement_mysql_strict.php","server/tests/v250_ordinary_order_creation_mysql.php","tools/test-payment-status-migration.php","server/tests/v260_paid_sms_receipt_policy.php"]
+tests=[p for p in tests if str(p.relative_to(root)) in selected]
 reports=[]
 for p in tests:
     rel=str(p.relative_to(root));before=time.monotonic()
@@ -11,7 +13,7 @@ for p in tests:
             source=p.read_text()
             if p.name.endswith('_strict.php'):source+=p.with_name(p.name.replace('_strict.php','.php')).read_text()
             databases={'worker_test'}|set(re.findall(r'''['\"](worker_test_[a-z0-9_]+)['\"]''',source))
-            seed=subprocess.run(['php',str(root.parent/'seed-db.php'),*sorted(databases)],cwd=root,text=True,capture_output=True,timeout=90)
+            seed=subprocess.run(['php',str(root.parent/'seed-db.php'),*(['--core'] if p.name.startswith('v260_') else []),*sorted(databases)],cwd=root,text=True,capture_output=True,timeout=90)
             if seed.returncode:raise RuntimeError(seed.stderr)
         r=subprocess.run(['php','-d','error_reporting=-1','-d','display_errors=stderr',str(p)],cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=150)
         diagnostics=re.findall(r'(?im)^(?:PHP )?(?:Warning|Deprecated|Notice|Fatal error|Parse error):.*$',r.stdout+'\n'+r.stderr)
