@@ -6,7 +6,7 @@ CHAT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 BIN="$CHAT/bin"
 STATE="$BIN/state"
 mkdir -p "$STATE" || exit 2
-exec 8>"$STATE/run.lock"
+if [[ $(readlink "/proc/$/fd/8" 2>/dev/null || true) != "$STATE/run.lock" ]]; then exec 8>"$STATE/run.lock"; fi
 flock -n 8 || { echo 'CHAT_RUN_ALREADY_STARTED'; exit 2; }
 STOP=0
 SERVE=''
@@ -46,11 +46,12 @@ while (( STOP == 0 )); do
   WORKER=$!
   printf '%s %s\n' "$SERVE" "$WORKER" > "$STATE/processes"
   STABLE=0
+  CHANGED=0
   while (( STOP == 0 )); do
     if ! kill -0 "$SERVE" 2>/dev/null || ! kill -0 "$WORKER" 2>/dev/null; then
       echo 'CHAT_RUN_CHILD_EXITED: restarting pair'; break
     fi
-    [[ $(readlink "$BIN/current" 2>/dev/null || true) == "$TARGET" ]] || { echo 'CHAT_RUN_RELEASE_CHANGED'; break; }
+    [[ $(readlink "$BIN/current" 2>/dev/null || true) == "$TARGET" ]] || { CHANGED=1; echo 'CHAT_RUN_RELEASE_CHANGED'; break; }
     if (( STABLE == 2 )); then
       printf '%s\n' "${TARGET#releases/}" > "$STATE/.running-sha.$$"
       mv -f "$STATE/.running-sha.$$" "$STATE/running-sha"
@@ -60,5 +61,9 @@ while (( STOP == 0 )); do
     sleep 1
   done
   stop_pair
+  if (( STOP == 0 && CHANGED == 1 )); then
+    # Keep the panel PID/lock, but load the newly synced launcher too.
+    exec /bin/bash "$CHAT/deploy/bt-run.sh"
+  fi
   if (( STOP == 0 )); then sleep 2; fi
 done

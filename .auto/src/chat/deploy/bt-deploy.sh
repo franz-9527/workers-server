@@ -25,7 +25,7 @@ SHA=$(git -C "$ROOT" rev-parse --verify HEAD)
 # This helper is deliberately test-only; it never migrates SQL or enables features.
 "$PHP_BIN" -r '$c=require $argv[1]; if(($c["app"]["env"]??"")!=="testing"){fwrite(STDERR,"CHAT_DEPLOY_TEST_SITE_REQUIRED\n");exit(2);}' "$ROOT/server/config/installed.php"
 if [[ ! -e "$CONFIG" ]]; then
-  "$PHP_BIN" -r '$c=json_decode(file_get_contents($argv[1]),true,64,JSON_THROW_ON_ERROR);$c["env"]="test";$c["dependencies"]["redis"]["key_prefix"]="bxchat:test:";$p=$argv[2];$h=fopen($p,"x");if(!$h)exit(2);fwrite($h,json_encode($c,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");fclose($h);' "$CHAT/config.example.json" "$CONFIG"
+  "$PHP_BIN" -r '$c=json_decode(file_get_contents($argv[1]),false,64,JSON_THROW_ON_ERROR);$c->env="test";$c->dependencies->redis->key_prefix="bxchat:test:";$p=$argv[2];$h=fopen($p,"x");if(!$h)exit(2);fwrite($h,json_encode($c,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");fclose($h);' "$CHAT/config.example.json" "$CONFIG"
   if [[ $EUID == 0 ]]; then chgrp "$(id -gn "$RUN_USER")" "$CONFIG"; fi
   chmod 640 "$CONFIG"
   echo 'CHAT_DEPLOY_TEST_CONFIG_CREATED (features remain disabled)'
