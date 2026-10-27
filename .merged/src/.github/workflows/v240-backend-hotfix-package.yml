@@ -44,7 +44,7 @@ jobs:
           php-version: '8.3.36'
           extensions: pdo_mysql,pdo_sqlite,mbstring,curl,openssl,fileinfo,gd,simplexml,ctype,sodium
 
-      - name: PHP 7.4 syntax
+      - name: PHP 8.3.36 syntax
         if: steps.mode.outputs.release_mode != 'v250_release'
         run: |
           set -euo pipefail

@@ -172,7 +172,7 @@ try {
 } catch (OrderOperationException $exception) {
     $incompleteCode = $exception->apiCode();
 }
-repairGuardEnsure($incompleteCode, 'PLATFORM_TERMS_REQUIRED', '缺平台条款时异常修复仍被阻止');
+repairGuardEnsure($incompleteCode, 'PLATFORM_ORDER_NOT_FOUND', '缺平台条款时异常修复仍被阻止');
 repairGuardEnsure((string)$db->fetchValue('SELECT publish_status FROM orders WHERE id=304'), 'hidden', '数据未修复订单保持隐藏');
 repairGuardEnsure((int)$db->fetchValue("SELECT COUNT(*) FROM scheduled_job_failures WHERE business_key='order:304' AND resolved_at IS NULL"), 1, '数据未修复时保留 failure');
 

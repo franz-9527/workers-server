@@ -156,7 +156,7 @@ cancelAssert(strpos($workbenchSource, "cr.reason_code='bilateral_refund_executio
 cancelAssert(strpos($workbenchSource, "'refund_execution_attention'") !== false, '资金核账投影为退款执行异常而非再次退款裁决');
 cancelAssert(strpos($workbenchSource, "'双方已同意退款，待财务核账执行'") !== false, '工作台标题明确双方协议已成立');
 cancelAssert(strpos($workbenchSource, "'attention',[]") !== false, '资金执行异常在小程序只提醒且无通过/拒绝按钮');
-cancelAssert(strpos($workbenchSource, "\$task['facts']=[") !== false && strpos($workbenchSource, "'requested_refund_cents'=>max(0, (int)\$row['requested_refund_cents'])") !== false, '普通退款审核任务提供结构化申请金额给 Web 页面');
+cancelAssert(strpos($workbenchSource, "\$task['facts']=[") !== false && strpos($workbenchSource, "'requested_refund_cents'=>max(0,(int)\$row['requested_refund_cents'])") !== false, '普通退款审核任务提供结构化申请金额给 Web 页面');
 cancelAssert(strpos($repositorySource, "'publish_status'=>\$order['publish_status'] ?? null") !== false, '取消申请快照保存真实 publish_status');
 cancelAssert(strpos($repositorySource, 'decodeSnapshot') !== false && strpos($repositorySource, "'restored_publish_status'=>\$restorePublish") !== false, '拒绝退款从申请前快照恢复发布状态并写入审计事件');
 cancelAssert(strpos($repositorySource, "if (\$hasMeasurementLink) \$restorePublish = 'hidden';") !== false, '关联测量施工单拒绝退款后仍强制保持隐藏');

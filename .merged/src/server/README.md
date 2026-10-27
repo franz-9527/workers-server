@@ -1,5 +1,7 @@
 # 壁选师傅订单管理系统 · 服务器部署说明
 
+当前聊天测试站采用**全仓 Git 同步**：仓库目录 `/www/wwwroot/workers-test`，网站运行目录 `/server`。下文 `/www/wwwroot/worker` 代表 PHP 服务目录，套用到该测试站时替换为 `/www/wwwroot/workers-test/server`；聊天 Go 代码仍在仓库的 `chat/`。
+
 当前安装包面向以下环境：
 
 - 站点域名：`worker.20m.cc`
@@ -51,9 +53,9 @@
 ### 1. 创建运行环境
 
 1. 在宝塔安装 Nginx、PHP 8.3.36、MySQL 5.7.44。不要把生产数据库升级到不兼容版本。
-2. 在“软件商店 → PHP 8.3.36 → 安装扩展”确认启用 `pdo_mysql`、`mbstring`、`openssl`、`fileinfo`、`gd`（JPEG/PNG/WebP）、`curl`、`simplexml`、`ctype` 和 `sodium`；接单图片压缩与微信登录分别依赖 `gd`、`curl`。
+2. 在“软件商店 → PHP 8.3 → 安装扩展”确认启用 `pdo_mysql`、`mbstring`、`openssl`、`fileinfo`、`gd`（JPEG/PNG/WebP）、`curl`、`simplexml`、`ctype` 和 `sodium`；接单图片压缩与微信登录分别依赖 `gd`、`curl`。
 3. 新建数据库 `worker`，字符集选择 `utf8mb4`。为站点创建独立数据库账号，只授予该数据库所需权限，不要在网页安装器中使用 MySQL 的 `root` 账号。
-4. 创建站点 `worker.20m.cc`，PHP 版本选择 PHP 8.3.36，根目录设为 `/www/wwwroot/worker`。
+4. 创建站点 `worker.20m.cc`，PHP 版本选择 PHP 8.3（核对实际补丁为 8.3.36），根目录设为 `/www/wwwroot/worker`。
 
 ### 2. 上传文件
 
