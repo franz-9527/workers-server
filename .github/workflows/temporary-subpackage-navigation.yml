@@ -49,9 +49,9 @@ jobs:
           node tools/test_v250_invite_onboarding_resume.js
           node tools/test_v260_onboarding_notice_compact_ui.js
           node tools/test-realname-draft-page.js
-          node tools/test_chat_s11.js
-          node tools/test_chat_s12_business_entry.js
-          node tools/test_chat_s24.js
-          node tools/test_chat_sms.js
-          NODE_PATH="$RUNNER_TEMP/wxml-compiler/node_modules" node tools/check-wxml.js --compile
-# Shared route resolver fixture included
+          result=0
+          for test in tools/test_chat_s11.js tools/test_chat_s12_business_entry.js tools/test_chat_s24.js tools/test_chat_sms.js; do
+            node "$test" || result=1
+          done
+          NODE_PATH="$RUNNER_TEMP/wxml-compiler/node_modules" node tools/check-wxml.js --compile || result=1
+          exit "$result"
