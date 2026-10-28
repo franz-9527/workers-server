@@ -30,7 +30,7 @@ jobs:
           NODE
       - name: Install WXML compiler
         run: |
-          npm install --prefix "$RUNNER_TEMP/wxml-compiler" --no-save --no-audit --no-fund miniprogram-compiler
+          npm install --prefix "$RUNNER_TEMP/wxml-compiler" --no-save --no-audit --no-fund miniprogram-compiler@0.2.3
           NODE_PATH="$RUNNER_TEMP/wxml-compiler/node_modules" node -e "console.log('miniprogram-compiler '+require('miniprogram-compiler/package.json').version)"
       - name: Guard regression and original failure reproduction
         working-directory: .validation-wxml
