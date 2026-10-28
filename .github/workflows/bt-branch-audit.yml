@@ -34,6 +34,7 @@ jobs:
           test "$(go env GOVERSION)" = go1.27.3
           php -r 'if(PHP_VERSION!=="8.3.36")exit(1);'
           bash -n .bt-audit/src/chat/deploy/bt-deploy.sh .bt-audit/src/chat/deploy/bt-run.sh
-          shellcheck -e SC1091 .bt-audit/src/chat/deploy/bt-deploy.sh .bt-audit/src/chat/deploy/bt-run.sh
+          # PHP snippets must stay single-quoted; the existing user guard requires both checks.
+          shellcheck -e SC1091,SC2015,SC2016 .bt-audit/src/chat/deploy/bt-deploy.sh .bt-audit/src/chat/deploy/bt-run.sh
       - name: Real build and full paired process lifecycle
         run: python3 .bt-audit/src/chat/deploy/test-bt-deploy.py .bt-audit/src ${{ matrix.branch }}
