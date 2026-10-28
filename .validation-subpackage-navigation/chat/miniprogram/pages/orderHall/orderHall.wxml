@@ -1,0 +1,71 @@
+<!-- 2026-10-06：施工、测量、平台承接单统一混排；来源/模式只做弱标签，不新增业务导航。 -->
+<view class="hall-page">
+  <order-announcement scene="order_hall"></order-announcement>
+  <view class="identity-card bg-gradual-cyan text-white">
+    <view class="flex justify-between align-center">
+      <view>
+        <view class="text-xl text-bold">{{identity.is_worker ? (identity.worker_name || '师傅接单') : '接单大厅'}}</view>
+        <view class="margin-top-xs text-sm opacity">{{identity.worker_status === 'approved' ? '已审核，可查看附近订单并报价' : (identity.worker_status === 'rejected' ? '入驻已驳回：仍可浏览公开订单，重新审核通过后可报价' : (identity.worker_status === 'suspended' ? '接单已暂停：仍可浏览公开订单，进行中订单正常处理' : (identity.is_worker ? '资料待审核：可看订单，暂不可报价' : '可浏览公开订单，申请成为师傅并审核通过后可报价')))}}</view>
+      </view>
+      <text class="cuIcon-peoplefill identity-icon"></text>
+    </view>
+    <navigator wx:if="{{identity.worker_status === 'approved'}}" class="cu-btn round bg-white text-cyan margin-top-sm" url="/pages/constructionOrder/index">我的接单 · 管理订单 <text class="cuIcon-right"></text></navigator>
+    <button wx:if="{{!identity.is_worker}}" class="cu-btn round bg-white text-cyan margin-top-sm" bindtap="goJoin">我是师傅，申请入驻</button>
+  </view>
+
+  <view wx:if="{{identity.can_view_hall || identity.can_browse_hall}}" class="hall-filter bg-white">
+    <scroll-view scroll-x class="category-scroll">
+      <view class="category-row">
+        <block wx:for="{{categories}}" wx:key="id">
+          <view wx:if="{{index === 0}}" class="cu-tag round category-tag category-tag-all {{categoryId === item.id ? 'bg-cyan text-white' : 'bg-gray'}}" data-id="{{item.id}}" bindtap="selectCategory">
+            <text>{{item.name}}</text>
+            <text class="category-filter-divider"></text>
+            <text class="cuIcon-filter category-filter-icon {{sortKey !== defaultSortKey ? 'active' : ''}}" catchtap="chooseSort" aria-label="排序筛选：{{sortLabel}}"></text>
+            <text wx:if="{{sortKey !== defaultSortKey}}" class="sort-active-dot"></text>
+          </view>
+          <view wx:else class="cu-tag round category-tag {{categoryId === item.id ? 'bg-cyan text-white' : 'bg-gray'}}" data-id="{{item.id}}" bindtap="selectCategory">{{item.name}}</view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+  <view wx:if="{{hallPaused && !(identity.is_admin || identity.business_admin)}}" class="notice bg-orange light margin"><text class="cuIcon-infofill text-orange"></text> 系统维护中，暂时停止接单；已经接下的订单仍可在“我的接单”正常处理。</view>
+
+  <view wx:if="{{errorText && !orders.length}}" class="empty-box text-center">
+    <text class="cuIcon-warn text-orange empty-icon"></text><view class="margin-top">{{errorText}}</view>
+    <button class="cu-btn round bg-cyan margin-top text-white" bindtap="retry">重新加载</button>
+  </view>
+  <view wx:elif="{{!loading && !orders.length}}" class="empty-box text-center">
+    <text class="cuIcon-search text-grey empty-icon"></text>
+    <view class="margin-top text-bold">{{hallPaused && !(identity.is_admin || identity.business_admin) ? '接单大厅维护中' : '暂时没有符合条件的公开订单'}}</view>
+    <view class="text-grey margin-top-xs">下拉刷新，或切换类目和排序方式再看看</view>
+  </view>
+
+  <view class="order-list">
+    <view wx:for="{{orders}}" wx:key="id" class="order-card bg-white {{item.business_type === 'measurement' ? 'measurement-card' : ''}}" data-index="{{index}}" bindtap="openOrder">
+      <view class="flex">
+        <image wx:if="{{item.cover_display_url}}" class="order-cover" mode="aspectFill" src="{{item.cover_display_url}}" data-index="{{index}}" binderror="coverError"></image>
+        <view wx:else class="order-cover placeholder flex align-center justify-center"><text class="cuIcon-pic text-grey text-xxl"></text></view>
+        <view class="order-main">
+          <view class="order-card-head">
+            <view class="text-bold text-lg order-title">{{item.title || item.category_name + '订单'}}</view>
+            <view class="card-status-stack"><view class="cu-tag sm round bg-cyan light">{{item.status_text}}</view></view>
+          </view>
+          <view class="margin-top-xs">
+            <text wx:if="{{item.order_source_type === 'platform'}}" class="cu-tag sm line-blue">平台单</text>
+            <text wx:if="{{item.business_type === 'measurement'}}" class="cu-tag sm measurement-badge">测量</text>
+            <text wx:if="{{item.dispatch_mode === 'single_grab'}}" class="cu-tag sm grab-badge">抢单</text>
+            <text class="cu-tag sm line-cyan order-category-label">{{item.category_name}}</text>
+            <text wx:if="{{item.expected_fee_text && item.expected_fee_type !== 'unit'}}" class="expected-fee-meta {{item.fixed_grab_total ? 'fixed' : ''}}">{{item.order_source_type === 'platform' ? '工费 ' : '期望总价 '}}{{item.expected_fee_text}}{{item.fixed_grab_total ? ' · 抢单即成交' : ''}}</text>
+            <text wx:if="{{item.quantity_text}}" class="text-grey margin-left-xs">{{item.quantity_text}}</text>
+          </view>
+          <view class="text-grey margin-top-xs text-sm"><text class="cuIcon-locationfill text-cyan"></text> {{item.display_address || item.address}}</view>
+          <view class="text-grey margin-top-xs text-sm"><text class="cuIcon-timefill text-cyan"></text> 发布时间 {{item.published_at || item.created_at}}</view>
+          <view class="flex justify-between margin-top-xs text-sm"><text class="{{item.distance_warning ? 'text-red text-bold' : 'text-grey'}}">{{item.distance_warning ? '距离较远 ' : ''}}{{item.distance_text}}</text><text class="{{item.dispatch_mode === 'single_grab' ? 'grab-mode-meta' : 'text-grey'}}">{{item.quote_meta_text || (item.quote_count + '人报价')}}</text></view>
+        </view>
+      </view>
+      <view class="order-footer flex justify-between"><text class="text-grey"><text class="cuIcon-time"></text> <text wx:if="{{item.expected_visit_today}}" class="today-label">今日</text>{{item.expected_visit_at}}</text><text wx:if="{{item.own_quote_text}}" class="text-orange text-bold">{{item.own_quote_text}}</text><text wx:else class="text-cyan">查看详情 <text class="cuIcon-right"></text></text></view>
+    </view>
+  </view>
+  <view wx:if="{{loading || loadingMore}}" class="padding text-center text-grey"><text class="cuIcon-loading2 cuIconfont-spin"></text> 加载中</view>
+  <view wx:if="{{!hasMore && orders.length}}" class="padding text-center text-grey text-sm">已经到底了</view>
+</view>

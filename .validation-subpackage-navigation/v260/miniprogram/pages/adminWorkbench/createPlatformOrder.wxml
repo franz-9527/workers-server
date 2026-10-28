@@ -1,0 +1,121 @@
+<view class="create-page">
+  <view class="create-hero">
+    <fullscreen-nav title="新增平台承接单" tone="dark" testing-title-only="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+    <view class="create-heading">新增平台承接单</view>
+    <view class="create-subtitle">录入平台外部承接的客户合同，安排师傅履约</view>
+    <view wx:if="{{!createdOrderId && !pending}}" class="create-steps">
+      <view wx:for="{{steps}}" wx:key="*this" class="create-step {{step === index ? 'current' : ''}} {{step > index ? 'done' : ''}}"><text>{{index + 1}}</text><view>{{item}}</view></view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">正在校验管理员并读取开单配置…</view>
+  <view wx:elif="{{loadError}}" class="state-card"><view class="error-text">{{loadError}}</view><button wx:if="{{!forbidden}}" class="secondary-btn" bindtap="loadOptions">重新加载</button><button class="secondary-btn" bindtap="openWorkbench">返回工作台</button></view>
+  <view wx:elif="{{createdOrderId}}" class="state-card success-card">
+    <text class="cuIcon-roundcheckfill success-icon"></text>
+    <view class="section-title">承接单已创建</view><view class="order-id">{{createdOrderId}}</view>
+    <view class="hint">合同、施工资料、位置及必传图片满足规则后，系统自动发布。请补齐下方图片，再在详情跟进师傅与履约。</view>
+    <view wx:if="{{mediaRequirements.length}}" class="created-media-section">
+      <view wx:for="{{mediaRequirements}}" wx:key="purpose" class="created-media-rule"><view>{{item.label}} · 已上传 {{item.count}}/{{item.max}}</view><view class="created-media-grid"><image wx:for="{{item.media}}" wx:for-item="photo" wx:key="id" src="{{photo.url}}" mode="aspectFill" data-url="{{photo.url}}" bindtap="previewCreatedImage"/></view><view class="hint">{{item.min ? '至少上传 ' + item.min + ' 张后可发布' : '当前阶段可选上传'}}</view><button class="secondary-btn" data-purpose="{{item.purpose}}" disabled="{{uploadingMedia || item.count >= item.max}}" loading="{{uploadingMedia}}" bindtap="uploadCreatedImages">上传{{item.label}}</button></view>
+      <view wx:if="{{mediaError}}" class="error-text">{{mediaError}}</view><button class="text-btn" disabled="{{uploadingMedia}}" bindtap="loadCreatedMedia">刷新图片状态</button>
+    </view>
+    <button class="primary-btn" bindtap="openDetail">查看订单与安排师傅</button>
+    <button class="secondary-btn" bindtap="openShare">生成客户分享</button>
+    <button class="secondary-btn" disabled="{{uploadingMedia}}" bindtap="createAnother">继续开单</button>
+  </view>
+  <view wx:elif="{{pending}}" class="state-card">
+    <view class="section-title">{{submitting ? '正在创建承接单' : '核对开单结果'}}</view><view class="order-id">{{pending.title}}</view>
+    <view class="hint">当前请求已经保存。网络中断或退出后，使用同一请求核对结果，避免重复开单。</view>
+    <view wx:if="{{errorText}}" class="error-text">{{errorText}}</view>
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting || forbidden}}" bindtap="submitPending">{{submitting ? '正在处理' : '核对创建结果'}}</button>
+    <button class="secondary-btn" disabled="{{submitting}}" bindtap="openWorkbench">查看全部订单</button>
+  </view>
+  <block wx:else>
+    <view class="notice">平台承接单无需微信预约费；外部预付款按实际填写。施工资料复用当前下单表单，创建后补齐必传图片再自动发布。</view>
+
+    <block wx:if="{{step === 0}}">
+      <view class="section">
+        <view class="section-title">客户关联 <text class="optional">选填</text></view>
+        <view class="hint">客户尚未注册也能开单，之后可通过客户分享绑定。已注册客户可搜索并关联。</view>
+        <view wx:if="{{selectedCustomer}}" class="selected-customer"><view><view>{{selectedCustomer.nickname || '已注册客户'}} · {{selectedCustomer.mobile_masked}}</view><view class="hint">{{selectedCustomer.public_id}}</view></view><button class="text-btn" bindtap="clearCustomer">取消关联</button></view>
+        <block wx:else>
+          <view class="search-row"><input placeholder-class="create-placeholder" maxlength="80" value="{{customerSearch}}" placeholder="昵称、完整手机号或客户编号" bindinput="inputCustomerSearch" bindconfirm="searchCustomers"/><button class="search-btn" loading="{{customerSearching}}" disabled="{{customerSearching}}" bindtap="searchCustomers">搜索</button></view>
+          <view wx:if="{{customerError}}" class="error-text">{{customerError}}</view>
+          <view wx:if="{{customerSearched && !customers.length}}" class="hint">未找到可关联客户，可继续使用待绑定客户开单。</view>
+          <view wx:for="{{customers}}" wx:key="public_id" class="customer-row" data-index="{{index}}" bindtap="selectCustomer"><view>{{item.nickname || '已注册客户'}} · {{item.mobile_masked}}<view class="hint">{{item.public_id}}</view></view><text>关联</text></view>
+        </block>
+      </view>
+      <view class="section">
+        <view class="section-title">施工资料</view>
+        <view class="field"><text class="field-label">服务类目（可多选，最多 6 项） <text class="required">*</text></text><view class="category-choices"><button wx:for="{{categories}}" wx:key="id" class="choice {{item.selected ? 'active' : ''}}" data-id="{{item.id}}" bindtap="toggleCategory">{{item.name}}</button></view><view class="hint">{{categoryName || '请选择服务类目'}}</view><view wx:if="{{!categories.length}}" class="error-text">暂无可用类目，请在后台启用服务类目。</view></view>
+        <view class="field"><text class="field-label">订单标题 <text class="required">*</text></text><input placeholder-class="create-placeholder" maxlength="160" value="{{form.title}}" data-key="title" bindinput="inputField" placeholder="例如：客厅及卧室墙布安装"/></view>
+        <view class="field"><text class="field-label">施工说明</text><textarea placeholder-class="create-placeholder" maxlength="2000" auto-height value="{{form.description}}" data-key="description" bindinput="inputField" placeholder="施工范围、现场条件和提前约定的事项"/></view>
+        <view class="field"><text class="field-label">联系人 <text class="required">*</text></text><input placeholder-class="create-placeholder" maxlength="80" value="{{form.contact_name}}" data-key="contact_name" bindinput="inputField" placeholder="现场联系人姓名"/></view>
+        <view class="field"><text class="field-label">联系电话 <text class="required">*</text></text><input placeholder-class="create-placeholder" maxlength="22" value="{{form.contact_mobile}}" data-key="contact_mobile" bindinput="inputField" placeholder="11 位手机号，虚拟号可填手机号-转拨号"/></view>
+      </view>
+      <view class="section">
+        <view class="section-title">施工位置</view>
+        <view class="field"><text class="field-label">所在地区 <text class="required">*</text></text><picker mode="region" value="{{region}}" bindchange="changeRegion"><view class="picker-value">{{form.city ? form.city + ' ' + form.district : '请选择省、市、区县'}}<text class="cuIcon-right"></text></view></picker></view>
+        <button class="secondary-btn" bindtap="chooseLocation"><text class="cuIcon-location"></text> {{form.map_lat !== '' ? '重新地图选点' : '地图选点（必填）'}}</button>
+        <view wx:if="{{form.map_lat !== ''}}" class="map-result"><view>已选位置：{{form.map_point_name || '地图定位点'}}</view><view class="hint">{{form.map_point_address}}</view></view>
+        <view class="field"><text class="field-label">详细地址 <text class="required">*</text></text><textarea placeholder-class="create-placeholder" maxlength="255" auto-height value="{{form.address}}" data-key="address" bindinput="inputField" placeholder="补充小区、楼栋、单元及门牌；修改门牌会保留地图点位"/></view>
+        <view class="hint">更改地区后需要重新选点；详细门牌可在选点后补充。</view>
+      </view>
+      <view wx:if="{{commonFields.length}}" class="section">
+        <view class="section-title">商品与施工条件</view><view class="hint">字段、选项、必填与显隐规则均使用当前已发布的下单配置；后台草稿需发布后，重新进入本页才会生效。</view>
+        <view wx:for="{{commonFields}}" wx:key="field_key" class="field">
+          <text class="field-label">{{item.label}} <text wx:if="{{item.runtime_required}}" class="required">*</text></text><view wx:if="{{item.help_text}}" class="hint">{{item.help_text}}</view>
+          <block wx:if="{{item.component_type === 'date' || item.component_type === 'date_picker'}}"><picker mode="date" value="{{item.runtime_value}}" data-key="{{item.field_key}}" bindchange="changeAnswer"><view class="picker-value">{{item.runtime_value || '选择日期'}}<text class="cuIcon-right"></text></view></picker><view wx:if="{{item.field_key === 'expected_visit_date'}}" class="choices"><button wx:for="{{visitPeriods}}" wx:for-item="period" wx:key="key" class="choice {{answers.expected_visit_period === period.key ? 'active' : ''}}" data-value="{{period.key}}" bindtap="selectVisitPeriod">{{period.label}}</button></view></block>
+          <view wx:elif="{{item.component_type === 'date_range'}}" class="pair"><picker mode="date" value="{{item.runtime_range[0]}}" data-key="{{item.field_key}}" data-side="0" bindchange="changeDateRange"><view class="picker-value">{{item.runtime_range[0] || '开始日期'}}</view></picker><picker mode="date" value="{{item.runtime_range[1]}}" data-key="{{item.field_key}}" data-side="1" bindchange="changeDateRange"><view class="picker-value">{{item.runtime_range[1] || '结束日期'}}</view></picker></view>
+          <textarea wx:elif="{{item.component_type === 'textarea'}}" placeholder-class="create-placeholder" auto-height maxlength="{{item.validation.max_length || 2000}}" value="{{item.runtime_value}}" data-key="{{item.field_key}}" placeholder="{{item.placeholder}}" bindinput="changeAnswer"/>
+          <order-product-field wx:else field="{{item}}" answers="{{answers}}" bind:valuechange="changeAnswer"></order-product-field>
+        </view>
+      </view>
+    </block>
+
+    <block wx:elif="{{step === 1}}">
+      <view class="section">
+        <view class="section-title">履约安排</view><view class="choices"><button wx:for="{{fulfillmentOptions}}" wx:key="key" class="choice {{form.fulfillment_mode === item.key ? 'active' : ''}}" data-key="fulfillment_mode" data-value="{{item.key}}" bindtap="selectOption">{{item.label}}</button></view>
+        <view wx:if="{{form.fulfillment_mode === 'measure_then_install'}}" class="hint">在同一承接单内先测量，成果确认后由平台核价，再进入施工。当前合同价作为开单金额；抢单工费为当前测量阶段工费，施工工费在核价时确认。</view>
+      </view>
+      <view class="section">
+        <view class="section-title">客户合同</view><view class="choices"><button wx:for="{{pricingOptions}}" wx:key="key" class="choice {{form.customer_pricing_mode === item.key ? 'active' : ''}}" data-key="customer_pricing_mode" data-value="{{item.key}}" bindtap="selectOption">{{item.label}}</button></view>
+        <view wx:if="{{form.customer_pricing_mode === 'fixed_total'}}" class="field"><text class="field-label">客户合同总价（元） <text class="required">*</text></text><input placeholder-class="create-placeholder" type="digit" maxlength="11" value="{{form.customer_total}}" data-key="customer_total" bindinput="inputField" placeholder="与客户约定的总价，最多两位小数"/></view>
+        <block wx:else>
+          <view wx:for="{{items}}" wx:key="rowId" wx:for-item="row" wx:for-index="rowIndex" class="pricing-item">
+            <view class="item-head"><text>项目 {{rowIndex + 1}}</text><button class="text-btn" data-index="{{rowIndex}}" bindtap="removeItem">删除</button></view>
+            <view class="field"><text class="field-label">项目名称 <text class="required">*</text></text><input placeholder-class="create-placeholder" maxlength="160" value="{{row.description}}" data-index="{{rowIndex}}" data-key="description" bindinput="inputItem" placeholder="例如：墙布铺贴"/></view>
+            <view class="pair"><view class="field"><text class="field-label">数量 <text class="required">*</text></text><input placeholder-class="create-placeholder" type="digit" maxlength="13" value="{{row.quantity}}" data-index="{{rowIndex}}" data-key="quantity" bindinput="inputItem" placeholder="最多三位小数"/></view><view class="field"><text class="field-label">单位 <text class="required">*</text></text><input placeholder-class="create-placeholder" maxlength="24" value="{{row.unit}}" data-index="{{rowIndex}}" data-key="unit" bindinput="inputItem" placeholder="㎡、米、项"/></view></view>
+            <view class="field"><text class="field-label">单价（元） <text class="required">*</text></text><input placeholder-class="create-placeholder" type="digit" maxlength="11" value="{{row.unit_price}}" data-index="{{rowIndex}}" data-key="unit_price" bindinput="inputItem" placeholder="最多两位小数，可为 0"/></view>
+            <view class="field"><text class="field-label">项目备注</text><input placeholder-class="create-placeholder" maxlength="500" value="{{row.note}}" data-index="{{rowIndex}}" data-key="note" bindinput="inputItem" placeholder="计算依据或服务范围"/></view><view class="money-row"><text>项目金额</text><text>{{row.amount_text}}</text></view>
+          </view>
+          <button class="secondary-btn" disabled="{{items.length >= 50}}" bindtap="addItem">＋ 添加计价项目</button>
+        </block>
+        <view class="field"><text class="field-label">外部已收预付款（元） <text class="required">*</text></text><input placeholder-class="create-placeholder" type="digit" maxlength="11" value="{{form.external_prepayment}}" data-key="external_prepayment" bindinput="inputField" placeholder="未预收填 0"/><view class="hint">仅录入外部渠道真实已收金额，不产生微信支付单。</view></view>
+        <view class="money-row"><text>客户合同价</text><text>{{totals.totalText}}</text></view><view class="money-row"><text>客户现场应收</text><text>{{totals.tailText}}</text></view>
+      </view>
+      <view class="section">
+        <view class="section-title">师傅成交与结算</view><view class="field-label">成交方式</view><view class="choices"><button wx:for="{{dispatchOptions}}" wx:key="key" class="choice {{form.dispatch_mode === item.key ? 'active' : ''}}" data-key="dispatch_mode" data-value="{{item.key}}" bindtap="selectOption">{{item.label}}</button></view>
+        <view wx:if="{{form.dispatch_mode === 'multi_quote'}}" class="hint">师傅提交工费报价，平台选择报价成交。</view>
+        <view wx:else class="field"><text class="field-label">{{form.fulfillment_mode === 'measure_then_install' ? '当前测量阶段师傅工费（元）' : '师傅工费（元）'}} <text class="required">*</text></text><input placeholder-class="create-placeholder" type="digit" maxlength="11" value="{{form.worker_labor}}" data-key="worker_labor" bindinput="inputField" placeholder="抢单即按此工费成交"/></view>
+        <view class="field-label spaced">工费结算方式</view><view class="choices"><button wx:for="{{settlementOptions}}" wx:key="key" class="choice {{form.worker_settlement_mode === item.key ? 'active' : ''}}" data-key="worker_settlement_mode" data-value="{{item.key}}" bindtap="selectOption">{{item.label}}</button></view>
+        <view wx:if="{{form.worker_settlement_mode === 'worker_collect'}}" class="hint">师傅代收客户现场款，保留工费后向平台缴收入款。现场应收必须覆盖师傅工费。</view>
+        <view wx:else class="hint">平台核对客户收款，师傅工费计入余额；冻结 {{freezeDays}} 天（以订单结算及风险规则为准）。</view>
+        <view class="money-row"><text>平台收入款预估</text><text>{{form.dispatch_mode === 'multi_quote' && form.worker_settlement_mode === 'worker_collect' ? '选定工费后计算' : totals.receivableText}}</text></view>
+      </view>
+      <view class="section">
+        <view class="section-title">后续新增施工内容</view><view class="hint">新增项目协商时使用的默认平台收入规则；原合同项目数量调整仍沿用原单价。</view><view class="choices"><button wx:for="{{extraOptions}}" wx:key="key" class="choice {{form.extra_income_mode === item.key ? 'active' : ''}}" data-key="extra_income_mode" data-value="{{item.key}}" bindtap="selectOption">{{item.label}}</button></view>
+        <view wx:if="{{form.extra_income_mode === 'rate'}}" class="field"><text class="field-label">加项平台收入比例（%）</text><input placeholder-class="create-placeholder" type="digit" maxlength="6" value="{{form.extra_income_rate_percent}}" data-key="extra_income_rate_percent" bindinput="inputField" placeholder="0 至 100"/></view>
+        <view wx:else class="field"><text class="field-label">加项平台固定收入（元）</text><input placeholder-class="create-placeholder" type="digit" maxlength="11" value="{{form.extra_income_fixed}}" data-key="extra_income_fixed" bindinput="inputField" placeholder="可为 0，最多两位小数"/></view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view wx:if="{{commonFields.length}}" class="section"><view class="section-title">核对商品与施工条件</view><view wx:for="{{commonFields}}" wx:key="field_key" class="review-row"><text>{{item.label}}</text><view>{{item.display_value || '未填写'}}</view></view></view>
+      <view class="section"><view class="section-title">核对客户与现场</view><view class="review-row"><text>客户关联</text><view>{{selectedCustomer ? selectedCustomer.nickname + ' · ' + selectedCustomer.mobile_masked : '待绑定客户'}}</view></view><view class="review-row"><text>服务类目</text><view>{{categoryName}}</view></view><view class="review-row"><text>订单标题</text><view>{{form.title}}</view></view><view wx:if="{{form.description}}" class="review-row"><text>施工说明</text><view>{{form.description}}</view></view><view class="review-row"><text>联系人</text><view>{{form.contact_name}} · {{form.contact_mobile}}</view></view><view class="review-row"><text>施工地区</text><view>{{form.city}} {{form.district}}</view></view><view class="review-row"><text>详细地址</text><view>{{form.address}}</view></view><view class="review-row"><text>地图位置</text><view>{{form.map_point_name}} {{form.map_point_address}}</view></view></view>
+      <view class="section"><view class="section-title">核对合同与师傅</view><view class="review-row"><text>履约安排</text><view>{{form.fulfillment_mode === 'measure_then_install' ? '先测量后施工' : '直接施工'}}</view></view><view class="review-row"><text>计价方式</text><view>{{form.customer_pricing_mode === 'itemized' ? '明细计价' : '合同总价'}}</view></view><view wx:if="{{form.customer_pricing_mode === 'itemized'}}" class="review-items"><view wx:for="{{items}}" wx:key="rowId" class="review-item"><view>{{item.description}} · {{item.quantity}} {{item.unit}} × ¥{{item.unit_price}}</view><text>{{item.amount_text}}</text><view wx:if="{{item.note}}" class="hint">{{item.note}}</view></view></view><view class="money-row"><text>客户合同总价</text><text>{{totals.totalText}}</text></view><view class="money-row"><text>外部已收预付款</text><text>{{totals.prepaidText}}</text></view><view class="money-row"><text>客户现场应收</text><text>{{totals.tailText}}</text></view><view class="review-row"><text>成交方式</text><view>{{form.dispatch_mode === 'single_grab' ? '一口价抢单' : '多师傅报价'}}</view></view><view class="review-row"><text>{{form.fulfillment_mode === 'measure_then_install' ? '当前阶段工费' : '师傅工费'}}</text><view>{{form.dispatch_mode === 'single_grab' ? totals.laborText : '师傅报价后选定'}}</view></view><view class="review-row"><text>工费结算</text><view>{{form.worker_settlement_mode === 'worker_collect' ? '师傅代收' : '平台余额结算'}}</view></view><view class="money-row"><text>平台收入款预估</text><text>{{form.dispatch_mode === 'multi_quote' && form.worker_settlement_mode === 'worker_collect' ? '选定工费后计算' : totals.receivableText}}</text></view><view class="review-row"><text>新增项目收入规则</text><view>{{form.extra_income_mode === 'rate' ? form.extra_income_rate_percent + '%' : '固定 ¥' + form.extra_income_fixed}}</view></view><view class="hint">以上为开单预估；先测量后施工单在成果确认后核定施工价格和工费，最终以服务端结算为准。</view></view>
+    </block>
+    <view wx:if="{{errorText}}" class="error-banner">{{errorText}}</view>
+    <view wx:if="{{forbidden}}" class="error-banner">管理员权限已失效，请返回工作台重新确认身份。</view>
+    <view class="create-footer"><button wx:if="{{step > 0}}" class="secondary-btn" disabled="{{submitting || forbidden}}" bindtap="previousStep">上一步</button><button class="primary-btn" disabled="{{submitting || forbidden || !categories.length}}" loading="{{submitting}}" bindtap="{{step === 2 ? 'createOrder' : 'nextStep'}}">{{step === 2 ? '确认创建承接单' : '下一步'}}</button></view>
+  </block>
+</view>

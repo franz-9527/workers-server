@@ -1,0 +1,74 @@
+<view class="template-page">
+  <block wx:if="{{loading}}">
+    <view class="page-state"><text class="cuIcon-loading2 spin"></text><view>正在读取商品模板</view></view>
+  </block>
+
+  <block wx:elif="{{loadError}}">
+    <view class="page-state error"><text class="cuIcon-warn"></text><view>{{loadError}}</view><button class="retry-button" bindtap="retryLoad">重新加载</button></view>
+  </block>
+
+  <block wx:elif="{{!editing}}">
+    <view class="template-head">
+      <view class="template-head-copy">
+        <view class="page-title">常用商品资料</view>
+        <view class="page-desc">保存常用商品类目、类型和商品链接，下单时可直接带入；地址、联系人、预约、现场图和费用不会保存。</view>
+      </view>
+      <button class="add-template-button" bindtap="createTemplate"><text class="cuIcon-add"></text>{{sourceAvailable ? '按当前资料新建' : '新建'}}</button>
+    </view>
+
+    <view wx:if="{{templates.length}}" class="template-list">
+      <view wx:for="{{templates}}" wx:key="id" class="template-card">
+        <view class="template-card-main">
+          <view class="template-name">{{item.name}}</view>
+          <view class="template-summary">{{item.summary}}</view>
+          <view class="template-time">{{item.timeLabel}} {{item.savedText}}</view>
+        </view>
+        <view class="template-actions">
+          <button class="template-action secondary" data-id="{{item.id}}" bindtap="editTemplate">编辑</button>
+          <button class="template-action primary" data-id="{{item.id}}" bindtap="useTemplate">使用</button>
+          <text class="template-delete cuIcon-delete" data-id="{{item.id}}" bindtap="deleteTemplate"></text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <view class="empty-icon"><text class="cuIcon-copy"></text></view>
+      <view class="empty-title">还没有商品模板</view>
+      <view class="empty-desc">{{sourceAvailable ? '可直接按当前下单页已填写的商品资料新建，不用重复录入。' : '直接在这里添加商品资料，不需要先返回下单页填写。'}}</view>
+      <button class="empty-add" bindtap="createTemplate">{{sourceAvailable ? '按当前资料新建' : '新建商品模板'}}</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="editor-head">
+      <view class="editor-title">{{editingId ? '编辑商品模板' : '新建商品模板'}}</view>
+      <view class="editor-desc">只保存商品资料，不保存业主、地址、时间、现场图片和期望费用。</view>
+    </view>
+
+    <view class="editor-card">
+      <view class="editor-field template-name-field">
+        <view class="field-label"><text class="required">*</text>模板名称</view>
+        <input class="name-input" value="{{editorName}}" maxlength="30" placeholder="例如：常用热胶墙布" bindinput="templateNameInput"/>
+      </view>
+
+      <view wx:for="{{editorFields}}" wx:key="id" class="editor-field">
+        <view class="field-label"><text wx:if="{{item.runtime_required}}" class="required">*</text>{{item.label}}</view>
+        <view wx:if="{{item.help_text}}" class="field-help">{{item.help_text}}</view>
+        <order-product-field
+          field="{{item}}"
+          answers="{{editorAnswers}}"
+          categories="{{editorCategories}}"
+          selected-category-ids="{{selectedCategoryIds}}"
+          selected-category-name="{{selectedCategoryName}}"
+          bind:valuechange="productValueChange"
+          bind:categorychange="productCategoryChange"
+        ></order-product-field>
+      </view>
+    </view>
+
+    <view class="editor-bottom">
+      <button class="cancel-button" bindtap="cancelEdit">取消</button>
+      <button class="save-button" bindtap="saveTemplate">保存模板</button>
+    </view>
+  </block>
+</view>

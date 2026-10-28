@@ -1,0 +1,8 @@
+{
+  "usingComponents": { "order-announcement": "/components/order-announcement/index" },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "light",
+  "navigationBarBackgroundColor": "#00b9cb",
+  "navigationBarTitleText": "接单大厅",
+  "navigationBarTextStyle": "white"
+}

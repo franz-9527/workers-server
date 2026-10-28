@@ -1,0 +1,19 @@
+/* miniprogram/pages/pay/pay.wxss */
+.wrap {
+  height: 500rpx;
+  background: #fff;
+  text-align: center;
+  font-size: 32rpx;
+}
+ 
+.show-input-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 40rpx;
+}
+ 
+.other-pay-count {
+  font-size: 30rpx;
+  color: #00b26a;
+  margin: 40rpx 0;
+}

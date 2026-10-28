@@ -1,0 +1,35 @@
+<view class="wallet-page">
+  <view class="wallet-hero">
+    <view class="wallet-label">可用余额</view>
+    <view class="wallet-balance">{{wallet.balance_text}}</view>
+    <view wx:if="{{wallet.reserved_cents > 0}}" class="wallet-reserved">其中另有 {{wallet.reserved_text}} 正在等待短信送达结果</view>
+    <view class="wallet-note">余额用于平台内支持的服务，比如：短信推送师傅接单，不支持提现；师傅结算工钱为另一套余额。</view>
+  </view>
+
+  <view class="wallet-card">
+    <view class="wallet-title">充值金额</view>
+    <view class="preset-grid">
+      <view wx:for="{{presets}}" wx:key="*this" class="preset {{selectedCents === item.cents && !customAmount ? 'active' : ''}}" data-cents="{{item.cents}}" bindtap="choosePreset">
+        <text>{{item.text}}</text>
+      </view>
+    </view>
+    <view class="custom-row">
+      <text>¥</text>
+      <input type="digit" inputmode="decimal" value="{{customAmount}}" bindinput="customInput" placeholder="其他金额，最低0.10元"/>
+    </view>
+    <button class="recharge-button" loading="{{submitting || confirming}}" disabled="{{submitting || confirming}}" bindtap="recharge">{{confirming ? '正在确认到账' : '微信充值 ' + selectedText}}</button>
+    <view class="wallet-safe">充值到账以服务器收到微信支付成功结果为准。</view>
+  </view>
+
+  <view class="wallet-card ledger-card">
+    <view class="wallet-title">余额明细</view>
+    <view wx:if="{{!ledger.length && !loading}}" class="wallet-empty">暂无余额明细</view>
+    <view wx:for="{{ledger}}" wx:key="public_no" class="ledger-row">
+      <view class="ledger-main"><text class="ledger-title">{{item.type_text}}</text><text class="ledger-desc">{{item.description}}</text><text class="ledger-time">{{item.time_text}}</text></view>
+      <view class="ledger-amount {{item.available_delta_cents < 0 || item.entry_type === 'sms_charge' ? 'negative' : ''}}">{{item.delta_text}}</view>
+    </view>
+    <button wx:if="{{ledgerHasMore}}" class="load-more" loading="{{ledgerLoading}}" bindtap="loadMore">加载更多</button>
+  </view>
+
+  <view wx:if="{{confirming}}" class="confirming"><text class="cuIcon-loading2 spin"></text> 正在确认微信支付到账</view>
+</view>

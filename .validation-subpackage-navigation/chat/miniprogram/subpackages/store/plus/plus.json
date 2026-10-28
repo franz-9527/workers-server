@@ -1,0 +1,10 @@
+{
+  "usingComponents": {
+    "auth": "/components/auth/auth"
+  },
+  "backgroundColor": "#f1f1f1",
+  "backgroundTextStyle": "light",
+  "navigationBarBackgroundColor": "#00b9cb",
+  "navigationBarTitleText": "门店登记",
+  "navigationBarTextStyle": "white"
+}

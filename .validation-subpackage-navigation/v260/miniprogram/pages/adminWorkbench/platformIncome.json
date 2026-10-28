@@ -1,0 +1,8 @@
+{
+  "navigationStyle": "custom",
+  "backgroundColor": "#f4f7f8",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "fullscreen-nav": "/components/fullscreen-nav/index"
+  }
+}

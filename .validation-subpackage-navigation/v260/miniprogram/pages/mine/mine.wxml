@@ -1,0 +1,177 @@
+<scroll-view scroll-y class="scrollPage">
+  <view class="UCenter-bg">
+    <view class="userinfo" bindtap="goAuth">
+      <view class="userinfo-avatar">
+          <image src="../../images/mine.png" ></image>   
+      </view>
+      <view class="userinfo-nickname" wx:if="{{userInfo.openid}}">
+        <!-- mobile 为当前手机号，lastmobile 为历史手机号 -->
+        壁选用户{{displayMobile}}
+      </view>
+      <view class="userinfo-nickname" wx:else>
+        登录用户
+      </view>
+    </view>
+    <view class="mine-wallet-entry" bindtap="goRecharge">
+      <view><text class="mine-wallet-label">我的余额</text><text class="mine-wallet-balance">{{walletBalanceText}}</text></view>
+      <view class="mine-wallet-action"><text wx:if="{{walletReservedCents > 0}}" class="mine-wallet-reserved">预占 {{walletReservedText}}</text><text>充值 / 明细</text><text class="cuIcon-right"></text></view>
+    </view>
+    <image src="https://776f-worker-real-1301382302.tcb.qcloud.la/public/wave-min.gif" mode="scaleToFill" class="gif-wave">
+    </image>
+  </view>
+  <!-- 2026-08-27：用户和师傅订单数据各占一页；师傅同时是用户，可左右滑动查看两种身份数据。 -->
+  <view class="business-stats bg-white shadow-warp">
+    <view wx:if="{{isServerWorker}}" class="stats-switch">
+      <view class="{{statsSwiperCurrent === 0 ? 'active user-active' : ''}}" data-index="0" bindtap="switchStats">我的下单</view>
+      <view class="{{statsSwiperCurrent === 1 ? 'active worker-active' : ''}}" data-index="1" bindtap="switchStats">我的接单</view>
+    </view>
+    <view wx:else class="stats-single-title">我的下单</view>
+    <swiper wx:if="{{isServerWorker}}" class="stats-swiper" current="{{statsSwiperCurrent}}" duration="220" bindchange="onStatsSwiperChange">
+      <swiper-item><view class="stats-grid user-stats"><view wx:for="{{customerOrderStats}}" wx:key="key" data-scope="user" data-status="{{item.key}}" bindtap="openOrderStat"><text class="stat-number">{{item.num}}</text><text class="stat-label">{{item.label}}</text></view></view></swiper-item>
+      <swiper-item><view class="stats-grid worker-stats"><view wx:for="{{workerOrderStats}}" wx:key="key" data-scope="worker" data-status="{{item.key}}" bindtap="openOrderStat"><text class="stat-number">{{item.num}}</text><text class="stat-label">{{item.label}}</text></view></view></swiper-item>
+    </swiper>
+    <view wx:else class="stats-grid user-stats"><view wx:for="{{customerOrderStats}}" wx:key="key" data-scope="user" data-status="{{item.key}}" bindtap="openOrderStat"><text class="stat-number">{{item.num}}</text><text class="stat-label">{{item.label}}</text></view></view>
+    <view wx:if="{{isServerWorker}}" class="stats-dots"><text class="{{statsSwiperCurrent === 0 ? 'active user-dot' : ''}}"></text><text class="{{statsSwiperCurrent === 1 ? 'active worker-dot' : ''}}"></text></view>
+  </view>
+  <!-- V2.2.3：用户/师傅待办与未读消息统一成一个摘要入口，优先露出最高优先级动作。 -->
+  <view wx:if="{{messageTodoCount > 0 || notificationUnreadCount > 0}}" class="mine-message-summary {{messageTopTodoTone}}" bindtap="goNotifications">
+    <view class="mine-message-icon"><text class="cuIcon-noticefill"></text><text wx:if="{{notificationUnreadCount > 0}}" class="mine-message-dot"></text></view>
+    <view class="mine-message-copy">
+      <view class="mine-message-head"><text class="mine-message-title">消息与待办</text><text wx:if="{{messageTodoCount > 0}}" class="mine-message-count">{{messageTodoCount > 99 ? '99+' : messageTodoCount}} 项待处理</text></view>
+      <view wx:if="{{messageTodoCount > 0}}" class="mine-message-focus"><text class="mine-message-role">{{messageTopTodoRole}}</text><text>{{messageTopTodoText}}</text></view>
+      <view wx:else class="mine-message-focus">有 {{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}} 条新消息</view>
+      <view class="mine-message-meta"><text wx:if="{{messageTodoCount > 0}}">优先处理当前订单事项</text><text wx:if="{{notificationUnreadCount > 0}}">{{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}} 条未读</text></view>
+    </view>
+    <text class="cuIcon-right mine-message-arrow"></text>
+  </view>
+  <view class="cu-list menu card-menu margin-top-xl shadow-lg radius">
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goOffer">
+        <text class="cuIcon-form text-orange"></text>
+        <text class="text-black" style="font-weight:normal;">我的下单</text>
+        <text wx:if="{{customerSupplementCount > 0}}" class="mine-order-badge">待补资料 {{customerSupplementCount > 99 ? '99+' : customerSupplementCount}}</text>
+      </button>
+    </view>
+    <!-- V2.2.3：菜单入口与上方摘要保持一致，待办优先于普通未读。 -->
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goNotifications">
+        <text class="cuIcon-notice text-orange"></text>
+        <text class="text-black" style="font-weight:normal;">消息与待办</text>
+        <text wx:if="{{messageTodoCount > 0}}" class="mine-order-badge important">{{messageTodoCount > 99 ? '99+' : messageTodoCount}} 项待处理</text>
+        <text wx:elif="{{notificationUnreadCount > 0}}" class="mine-order-badge">{{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}} 条未读</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goMerchantAuth">
+        <text class="cuIcon-shop text-orange"></text>
+        <text class="text-black" style="font-weight:normal;">商家认证</text>
+      </button>
+    </view>
+  </view>
+  <!-- 2026-09-02：居住地址只对后端确认审核通过的师傅显示。 -->
+  <view wx:if="{{demoMode}}" class="demo-identity-banner">
+    <text class="cuIcon-infofill"></text>
+    <view class="demo-identity-copy"><view class="text-bold">当前：{{demoRoleText}}</view><view>这是管理员当前会话的独立演示身份，不会修改真实账号。可进入管理工作台切回真实管理员。</view></view>
+  </view>
+  <view class="cu-list menu card-menu shadow-lg radius">
+    <view class="cu-item arrow" wx:if="{{canShowWorkerLocation}}" bindtap="goLocation">
+      <view class="content">
+        <text class="cuIcon-locationfill text-green"></text>
+        <text class="text-black" style="font-weight:normal;">居住地址</text>
+      </view>
+      <view class="action" wx:if="{{addressText}}">
+        <text class="text-grey text-sm text-cut">{{addressText}}</text>
+      </view>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goRecord">
+        <text class="cuIcon-list text-green"></text>
+        <text class="text-black" style="font-weight:normal;">师傅入驻</text>
+        <!-- 2026-09-11：只显示审核状态，驳回或暂停原因进入师傅入驻页后查看。 -->
+        <text wx:if="{{workerReviewText}}" class="worker-review-state {{workerReviewText === '已通过' ? 'approved' : (workerReviewText === '待审核' ? 'pending' : 'blocked')}}">{{workerReviewText}}</text>
+      </button>
+    </view>
+    <!-- 2026-08-26：师傅、受邀和旧版工单统一收进“我的接单”页面，首页菜单不再拆成三个按钮。 -->
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goConstructionOrders">
+        <text class="cuIcon-repair text-green"></text>
+        <text class="text-black" style="font-weight:normal;">我的接单</text>
+      </button>
+    </view>
+    <!-- V2.2.4：结算工钱只属于已建立后端师傅身份的账号。 -->
+    <view wx:if="{{isServerWorker}}" class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goMoney">
+        <text class="cuIcon-sponsor text-green"></text>
+        <text class="text-black" style="font-weight:normal;">结算工钱</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goImageAnnotator">
+        <text class="cuIcon-edit text-green"></text>
+        <text class="text-black" style="font-weight:normal;">量房工具</text>
+      </button>
+    </view>
+  </view>
+  <view class="cu-list menu card-menu shadow-lg radius">
+    <!-- 2026-10-09：仅 PHP 后端明确返回管理员身份时显示管理工作台；红点统计全部管理员待处理订单。 -->
+    <view class="cu-item arrow" wx:if="{{isOrderAdmin}}">
+      <button class="cu-btn content" bindtap="goAdminWorkbench">
+        <text class="cuIcon-commandfill text-yellow"></text>
+        <text class="text-black" style="font-weight:normal;">管理工作台</text>
+        <text wx:if="{{adminTodoCount > 0}}" class="mine-admin-todo-badge">{{adminTodoCount > 99 ? '99+' : adminTodoCount}}</text>
+      </button>
+    </view>
+    <view class="cu-item arrow" wx:if="{{isOrderAdmin}}">
+      <button class="cu-btn content" bindtap="RecordList">
+        <text class="cuIcon-list text-yellow"></text>
+        <text class="text-black" style="font-weight:normal;">发布审核</text>
+      </button>
+    </view>
+  </view>
+  <!-- 2026-08-07：在帮助中心上方新增 ColorUI 风格设置入口。 -->
+  <view class="cu-list menu card-menu margin-bottom-xl shadow-lg radius">
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goSettings">
+        <text class="cuIcon-settingsfill text-blue"></text>
+        <text class="text-black" style="font-weight:normal;">设置</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goHelp">
+        <text class="cuIcon-question text-blue"></text>
+        <text class="text-black" style="font-weight:normal;">帮助中心</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goTest">
+        <text class="cuIcon-creative text-grey"></text>
+        <text class="text-black" style="font-weight:normal;">实验功能</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goUpdateLog">
+        <text class="cuIcon-newshot text-grey"></text>
+        <text class="text-black" style="font-weight:normal;">更新日志</text>
+      </button>
+    </view>
+    <view class="cu-item arrow">
+      <button class="cu-btn content" bindtap="goPact">
+        <text class="cuIcon-safe text-grey"></text>
+        <text class="text-black" style="font-weight:normal;">平台协议</text>
+      </button>
+    </view>
+  </view>
+  <view class="legacy-counts">
+    <view wx:for="{{count}}" wx:key="index"><text>{{item.type}}</text><strong>{{item.num}}{{item.unit}}</strong></view>
+  </view>
+</scroll-view>
+
+<view class="weui-footer">
+	<text class="text-gray padding-bottom">Powered By 壁选 © 2013-现在</text>
+</view>
+<!-- 自定义tab遮挡解决 -->
+<view style="width: 100%;height: calc(150rpx + env(safe-area-inset-bottom) / 2);"></view>
+
+
+<!-- 登录弹窗 -->
+<auth is-show="{{isShowAuth}}" bind:onAuthEvent="onAuthEvent" bind:onAuthClose="onAuthClose"></auth>

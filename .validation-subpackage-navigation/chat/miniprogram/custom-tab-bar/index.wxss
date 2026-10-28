@@ -1,0 +1,54 @@
+/* tabBar样式定义 */
+.publish-mask{position:fixed;inset:0;z-index:99;background:rgba(16,35,39,.46)}.publish-menu{position:absolute;left:50%;bottom:145rpx;transform:translateX(-50%);width:640rpx;padding:16rpx;background:#fff;border-radius:28rpx;box-shadow:0 18rpx 55rpx rgba(0,0,0,.18)}.publish-choice{display:flex;align-items:center;padding:24rpx;border-radius:20rpx}.publish-choice:active{background:#f1f8f9}.choice-icon{width:88rpx;height:88rpx;line-height:88rpx;text-align:center;border-radius:24rpx;color:#fff;font-size:44rpx;margin-right:22rpx}.choice-icon.order{background:linear-gradient(135deg,#00b9cb,#20a7d0)}.choice-icon.worker{background:linear-gradient(135deg,#ff9c52,#f47735)}.choice-title{font-size:31rpx;font-weight:700;color:#273d42}.choice-desc{font-size:23rpx;color:#849296;margin-top:7rpx}
+.tabBar {
+  z-index: 100;
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  font-size: 28rpx;
+  background-color: #fff;
+  color: #636363;
+  border-radius: 50rpx 50rpx 0px 0px;
+  padding-bottom: calc(env(safe-area-inset-bottom) / 2);
+  padding-bottom: 30rpx;
+}
+.cont {
+  z-index: 0;
+  min-height: 100rpx;
+  height: calc(100rpx + env(safe-area-inset-bottom) / 2);
+  padding-bottom: calc(env(safe-area-inset-bottom) / 2);
+  padding-bottom: 30rpx;
+  display: flex;
+  justify-content: space-around;
+}
+.cont .item {
+  font-size: 24rpx;
+  position: relative;
+  width: 15%;
+  text-align: center;
+  padding: 0;
+  display: block;
+  height: auto;
+  line-height: 1;
+  margin: 0;
+  background-color: inherit;
+  overflow: initial;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20rpx;
+}
+.cont .item:nth-child(2){right:60rpx}.cont .item:nth-child(4){left:60rpx}
+.cont .item .image-style{width:50rpx!important;height:50rpx!important;margin:auto}
+.cont .txt{margin-top:10rpx}.cont .on{position:relative}
+.cont .on:not(:nth-child(3)):before{content:"";display:block;position:absolute;top:0;width:100%;height:6rpx;background-color:#00b9cb;border-radius:120rpx!important}
+.cont .plus{position:absolute;left:50%;transform:translate(-50%,0);top:25rpx;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.cont .plus .image-style{width:117rpx;height:80rpx;z-index:2}.cont .plus .txt{margin-top:26rpx}.cont .selectedColor{color:#00b9cb}
+/* V2.2.3：底部“我的”徽标与三级提醒保持一致：必须处理红、需要关注橙、普通待办/未读青。 */
+.tab-notice-badge{position:absolute;z-index:4;top:8rpx;right:2rpx;display:flex;align-items:center;justify-content:center;min-width:30rpx;height:30rpx;padding:0 7rpx;box-sizing:border-box;border:3rpx solid #fff;border-radius:18rpx;color:#fff;font-size:17rpx;font-weight:700;line-height:1;box-shadow:0 4rpx 10rpx rgba(0,0,0,.12)}
+.tab-notice-badge.urgent{background:#e6544b}.tab-notice-badge.attention{background:#e99426}.tab-notice-badge.todo,.tab-notice-badge.unread{background:#00aebe}
+@media(prefers-color-scheme:dark){.tabBar{background-color:#121212;color:#ccc}.cont .item{color:inherit}.cont .on:not(:nth-child(3)):before{background-color:#00b9cb}.cont .selectedColor,.cont .item.on .txt{color:#00b9cb}.tab-notice-badge{border-color:#121212;box-shadow:none}}
+/* 2026-08-24：发布选择层与底部导航保留清晰间距，并完整避开全面屏底部安全区域。 */
+.publish-menu{bottom:176rpx;bottom:calc(176rpx + constant(safe-area-inset-bottom));bottom:calc(176rpx + env(safe-area-inset-bottom));width:650rpx;box-sizing:border-box;padding:18rpx;border:1rpx solid rgba(27,70,78,.06);box-shadow:0 22rpx 65rpx rgba(16,43,49,.2)}
+.publish-choice{min-height:112rpx;box-sizing:border-box;padding:22rpx 24rpx;transition:background-color .15s ease,transform .15s ease}.publish-choice+.publish-choice{margin-top:4rpx}.publish-choice:active{background:#edf9fa;transform:scale(.99)}
+.tabBar{padding-bottom:10rpx;padding-bottom:calc(10rpx + constant(safe-area-inset-bottom));padding-bottom:calc(10rpx + env(safe-area-inset-bottom));border-top:1rpx solid rgba(38,78,86,.06);box-shadow:0 -12rpx 34rpx rgba(25,58,64,.11)}
+.cont{min-height:108rpx;height:108rpx;padding-bottom:0}.cont .item{padding-top:16rpx}.cont .plus{top:18rpx}
