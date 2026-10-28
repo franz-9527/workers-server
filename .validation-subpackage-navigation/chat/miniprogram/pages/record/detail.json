@@ -1,9 +1,0 @@
-{
-  "navigationBarTitleText": "师傅详情",
-  "navigationStyle": "default",
-  "navigationBarBackgroundColor": "#00b9cb",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "auth": "/components/auth/auth"
-  }
-}

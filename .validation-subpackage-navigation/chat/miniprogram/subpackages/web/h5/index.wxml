@@ -1,2 +1,0 @@
-<!--pages/h5/h5.wxml-->
-<web-view src="{{H5Url}}"></web-view>

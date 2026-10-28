@@ -1,9 +1,0 @@
-/* miniprogram/pages/search/search.wxss */
-.record-list{
-  padding-top:102rpx; 
-}
-
-.footer{
-  padding-top: 40rpx;
-}
-
