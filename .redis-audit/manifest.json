@@ -1027,5 +1027,17 @@
   "miniprogram/components/admin-worker-assignment/index.wxml": "f6189433415a226ad7707886154595ae065b1399",
   "miniprogram/pages/adminWorkbench/detail.js": "3cc0bfb2115eed20f3a869e423e744317d6e8201",
   "miniprogram/pages/userOrder/detail.wxml": "14f926ff53566987bf9a505cd1934467a1339e76",
-  "miniprogram/pages/userOrder/detail.json": "fb95d89effcc1e658531f2fd01d116f3379f9241"
+  "miniprogram/pages/userOrder/detail.json": "fb95d89effcc1e658531f2fd01d116f3379f9241",
+  "tools/test-admin-service-category-migration.php": "3d67e416334979c7cfef348aacfba5674fdcf2d7",
+  "tools/test-admin-order-form-designer-migration.php": "985e30c3b188b7a4141eb86a3a8ceef1f61b15c6",
+  "tools/test-admin-account-migration.php": "1576ff7b9dbce38d36160819de5070e88c4a2767",
+  "tools/test-admin-user-merchant-credential-migration.php": "5e8ab0e3e718879f37623141d06c96e3c3efc5a2",
+  "tools/test-admin-review-migration.php": "f2cfc28e5a2729942092c0470c3e9c96b37f1d57",
+  "tools/test-admin-worker-migration.php": "b7e299d3e9f93c2911cf7cd639550e1090273066",
+  "tools/test-admin-oversight-migration.php": "83dae4511452668242b3cbd7db8b257ce37a48f8",
+  "tools/test-admin-finance-migration.php": "a3c768371dde6b20128757033ed76095515d9f25",
+  "tools/test-admin-order-migration.php": "feb3bbc5d446aa51e9008a333ea14158cd80ee02",
+  "tools/support/message_configuration_fixture.php": "49508a189576c41a9f6fa585a0466a6b5300e519",
+  "tools/test-payment-notification-migration.php": "8ece18eb0a14b7db45dba573a9703a35327c86a7",
+  "server/views/admin/categories.php": "3588d54c79e138106a2e5a0dc31083ffefc6578d"
 }

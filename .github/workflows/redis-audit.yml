@@ -92,6 +92,7 @@ jobs:
           find .redis-audit/src/server -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
           php .redis-audit/src/tools/check-modular-architecture.php
       - name: Go formatting, module verification, vet and build
+        if: success() || failure()
         working-directory: .redis-audit/src/chat
         run: |
           gofmt -w internal/auth/redis_integration_test.go internal/dependencies/integration_test.go
@@ -100,6 +101,7 @@ jobs:
           sh build.sh
           echo "CHAT_INTEGRATION_CHATD_BIN=$(realpath bin/chatd)" >> "$GITHUB_ENV"
       - name: Full Go race with Redis 8.10.3, MySQL and PHP
+        if: success() || failure()
         working-directory: .redis-audit/src/chat
         run: |
           set -o pipefail
