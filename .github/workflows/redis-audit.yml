@@ -1,0 +1,136 @@
+name: Redis 8.10.3 chat compatibility
+on:
+  push:
+    branches: [main]
+    paths: ['.redis-audit/**', '.github/workflows/redis-audit.yml']
+permissions:
+  contents: read
+concurrency:
+  group: redis-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: redis-audit-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -predis-audit-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:8.10.3
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_INTEGRATION: '1'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: redis-audit-fixture-only
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .redis-audit/src/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,pdo_sqlite,mbstring,curl,openssl,fileinfo,gd,simplexml,ctype,sodium
+          coverage: none
+      - name: Verify exact source snapshot
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          root=pathlib.Path('.redis-audit/src');manifest=json.loads(pathlib.Path('.redis-audit/manifest.json').read_text())
+          for path,sha in manifest.items():
+              data=(root/path).read_bytes()
+              assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==sha,path
+          print('REDIS_SOURCE_VERIFIED',len(manifest))
+          PY
+          php -r 'if(PHP_VERSION!=="8.3.36")exit(1);echo "PHP ".PHP_VERSION.PHP_EOL;'
+      - name: Exact Redis 8.10.3 and password-protected fixture
+        env:
+          REDIS_SERVICE_ID: ${{ job.services.redis.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(docker exec "$REDIS_SERVICE_ID" redis-cli --raw INFO server | tr -d '\r' | sed -n 's/^redis_version://p')"
+          test "$version" = "8.10.3"
+          echo "Redis $version verified"
+          fixture="chat-redis-auth-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "CHAT_REDIS_AUTH_CONTAINER=$fixture" >> "$GITHUB_ENV"
+          docker run -d --name "$fixture" -p 127.0.0.1::6379 redis:8.10.3 redis-server --requirepass redis-ci-fixture-only >/dev/null
+          for attempt in $(seq 1 30); do
+            if docker exec -e REDISCLI_AUTH=redis-ci-fixture-only "$fixture" redis-cli ping | grep -qx PONG; then break; fi
+            sleep 1
+          done
+          version="$(docker exec -e REDISCLI_AUTH=redis-ci-fixture-only "$fixture" redis-cli --raw INFO server | tr -d '\r' | sed -n 's/^redis_version://p')"
+          test "$version" = "8.10.3"
+          port="$(docker port "$fixture" 6379/tcp | head -n1 | awk -F: '{print $NF}')"
+          echo "CHAT_REDIS_AUTH_TEST_ADDRESS=127.0.0.1:$port" >> "$GITHUB_ENV"
+          echo "CHAT_REDIS_AUTH_TEST_PASSWORD=redis-ci-fixture-only" >> "$GITHUB_ENV"
+      - name: Isolated service endpoints
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        run: |
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+          echo "CHAT_CALLS_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: PHP architecture and fixture syntax
+        run: |
+          find .redis-audit/src/server -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php .redis-audit/src/tools/check-modular-architecture.php
+      - name: Go formatting, module verification, vet and build
+        working-directory: .redis-audit/src/chat
+        run: |
+          gofmt -w internal/auth/redis_integration_test.go internal/dependencies/integration_test.go
+          go mod verify
+          go vet ./...
+          sh build.sh
+          echo "CHAT_INTEGRATION_CHATD_BIN=$(realpath bin/chatd)" >> "$GITHUB_ENV"
+      - name: Full Go race with Redis 8.10.3, MySQL and PHP
+        working-directory: .redis-audit/src/chat
+        run: |
+          set -o pipefail
+          go test -race -count=1 -json ./... | tee "$RUNNER_TEMP/redis-go-results.jsonl"
+      - name: Exact test results and formatted source proof
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os,json,pathlib,base64,hashlib
+          f=pathlib.Path(os.environ['RUNNER_TEMP'])/'redis-go-results.jsonl'
+          records=[json.loads(x) for x in f.read_text().splitlines()] if f.exists() else []
+          tests=[x for x in records if x.get('Test') and x.get('Action') in ('pass','fail','skip')]
+          print('REDIS_GO_TEST_TOTALS',json.dumps({s:sum(x['Action']==s for x in tests) for s in ['pass','fail','skip']}))
+          for x in tests:
+              if x['Action']!='pass':print('REDIS_GO_RESULT',json.dumps(x))
+          required=['TestRedisAtomicTicketAndNonce','TestRedisExpiryAndFailureClosed','TestRedisPasswordCompatibility','TestMySQL57RedisIntegration','TestMySQLRedisS10HTTPAndWSSUseTheSameCommands']
+          for name in required:
+              ok=any(x.get('Test')==name and x['Action']=='pass' for x in tests)
+              print('REDIS_REQUIRED',name,ok)
+          root=pathlib.Path('.redis-audit/src')
+          for p in sorted(root.rglob('*')):
+              if p.is_file() and '/bin/' not in str(p) and p.name!='chatd':
+                  b=p.read_bytes();print('TESTED_BLOB',p.relative_to(root),hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest())
+          for path in ['chat/internal/auth/redis_integration_test.go','chat/internal/dependencies/integration_test.go']:
+              print('FORMATTED_SOURCE',path,base64.b64encode((root/path).read_bytes()).decode())
+          if not all(any(x.get('Test')==name and x['Action']=='pass' for x in tests) for name in required):raise SystemExit('required Redis tests did not run and pass')
+          PY
+          git rm -r --cached .redis-audit .github/workflows/redis-audit.yml >/dev/null
+          python3 tools/check-clean-state.py
+          git diff --cached --check
+      - name: Remove isolated password fixture
+        if: always()
+        run: |
+          if [ -n "${CHAT_REDIS_AUTH_CONTAINER:-}" ]; then docker rm -f "$CHAT_REDIS_AUTH_CONTAINER" >/dev/null; fi

@@ -1,0 +1,111 @@
+name: Chat contracts
+
+# Verification is performed in the isolated workers-server test repository.
+# No push-triggered private-repository CI; manual dispatch kept for maintainers.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chat-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity-and-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: chat-ci-fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pchat-ci-fixture-only"
+          --health-interval=5s --health-timeout=3s --health-retries=30
+      redis:
+        image: redis:8.10.3
+        ports: ['6379/tcp']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      GOTOOLCHAIN: local
+      CHAT_AUTH_TEST_INTEGRATION: '1'
+      CHAT_INTEGRATION_ADMIN_PASSWORD: chat-ci-fixture-only
+      # Docker port publishing exposes a bridge source address to MySQL.
+      # Only random, temporary fixture users use this host grant.
+      CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: chat/go.mod
+          cache-dependency-path: chat/go.sum
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,pdo_sqlite,mbstring,curl,openssl,fileinfo,gd,simplexml,ctype,sodium
+          coverage: none
+      - name: Verify PHP development target
+        run: php -r 'if (PHP_VERSION !== "8.3.36") { fwrite(STDERR, "Expected PHP 8.3.36, got ".PHP_VERSION."\n"); exit(1); } echo "PHP ".PHP_VERSION." verified\n";'
+      - name: Exact Redis 8.10.3 and password-protected fixture
+        env:
+          REDIS_SERVICE_ID: ${{ job.services.redis.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(docker exec "$REDIS_SERVICE_ID" redis-cli --raw INFO server | tr -d '\r' | sed -n 's/^redis_version://p')"
+          test "$version" = "8.10.3"
+          echo "Redis $version verified"
+          fixture="chat-redis-auth-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "CHAT_REDIS_AUTH_CONTAINER=$fixture" >> "$GITHUB_ENV"
+          docker run -d --name "$fixture" -p 127.0.0.1::6379 redis:8.10.3 redis-server --requirepass redis-ci-fixture-only >/dev/null
+          for attempt in $(seq 1 30); do
+            if docker exec -e REDISCLI_AUTH=redis-ci-fixture-only "$fixture" redis-cli ping | grep -qx PONG; then break; fi
+            sleep 1
+          done
+          version="$(docker exec -e REDISCLI_AUTH=redis-ci-fixture-only "$fixture" redis-cli --raw INFO server | tr -d '\r' | sed -n 's/^redis_version://p')"
+          test "$version" = "8.10.3"
+          port="$(docker port "$fixture" 6379/tcp | head -n1 | awk -F: '{print $NF}')"
+          echo "CHAT_REDIS_AUTH_TEST_ADDRESS=127.0.0.1:$port" >> "$GITHUB_ENV"
+          echo "CHAT_REDIS_AUTH_TEST_PASSWORD=redis-ci-fixture-only" >> "$GITHUB_ENV"
+      - name: Isolated service endpoints
+        env:
+          CHAT_TEST_MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+          CHAT_TEST_REDIS_PORT: ${{ job.services.redis.ports['6379'] }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$CHAT_TEST_MYSQL_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$CHAT_TEST_REDIS_PORT" >> "$GITHUB_ENV"
+          echo "CHAT_AUTH_TEST_REDIS_ADDRESS=127.0.0.1:$CHAT_TEST_REDIS_PORT" >> "$GITHUB_ENV"
+      - name: PHP syntax and chat contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php tools/check-modular-architecture.php
+          php server/tests/v250_async_transaction_regression.php
+          php server/tests/chat_text_security_contract.php
+          php server/tests/chat_identity_contract.php
+          php server/tests/chat_schema_contract.php
+          php server/tests/chat_policy_contract.php
+          echo "CHAT_AUTH_TEST_PHP=$(command -v php)" >> "$GITHUB_ENV"
+      - name: Go module, build, static and race checks
+        working-directory: chat
+        shell: bash
+        run: |
+          set -euo pipefail
+          go mod verify
+          go vet ./...
+          sh build.sh
+          go test -race -count=1 ./...
+      - name: Remove isolated password fixture
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${CHAT_REDIS_AUTH_CONTAINER:-}" ]; then docker rm -f "$CHAT_REDIS_AUTH_CONTAINER" >/dev/null; fi
