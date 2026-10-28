@@ -52,6 +52,7 @@ function check(root, compile = false) {
   if (compile) {
     const compiler = require('miniprogram-compiler')
     const result = compiler.wxmlToJs(root, {
+      maxBuffer: 32 * 1024 * 1024,
       wxmlList: files.map(file => path.relative(root, file).replace(/\\/g, '/')),
     })
     if (typeof result !== 'string' || !result.trim()) throw new Error('WXML 编译器未返回有效产物')

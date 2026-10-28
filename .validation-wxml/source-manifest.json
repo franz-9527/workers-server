@@ -1,7 +1,7 @@
 {
   "branches": {
-    "v260": "f89d6819dc8f8aa25a39c4152f886ba67b3dc2bd",
-    "chat": "1774bc71ae4fd5444a5822a194b26c8bf9cd1414"
+    "v260": "4b9b430cf5946b4ba1b865a282f9a064e7fe2832",
+    "chat": "e906b5d98e88a58141768148700a0a3ea0eb0443"
   },
   "files": {
     "v260/miniprogram/components/addTip/addTip.wxml": "aca4c4d65227808c80a9855fb7984fc1c54a0553",
@@ -83,7 +83,7 @@
     "v260/miniprogram/subpackages/support/help/index.wxml": "5f50153ff1d9e7f65f7c81218bc9cad7cce10a31",
     "v260/miniprogram/subpackages/web/h5/index.wxml": "678ddd7c88a5236797e3ab4d899f23387ee4cb4d",
     "v260/miniprogram/subpackages/web/view/index.wxml": "ffb56fb421ff0838c0ffa3dd263e0815d301f944",
-    "v260/tools/check-wxml.js": "8df804f16a220f9ecb60848a415c85955ae51644",
+    "v260/tools/check-wxml.js": "a91fd6f5841f531e235ee3f73e5e98186c2bf72a",
     "chat/miniprogram/components/addTip/addTip.wxml": "aca4c4d65227808c80a9855fb7984fc1c54a0553",
     "chat/miniprogram/components/admin-order-operations/index.wxml": "01762d3556a13c66f1fa7dbc5c521a0e8f459c69",
     "chat/miniprogram/components/admin-worker-assignment/index.wxml": "f6189433415a226ad7707886154595ae065b1399",
@@ -170,7 +170,7 @@
     "chat/miniprogram/subpackages/support/help/index.wxml": "5f50153ff1d9e7f65f7c81218bc9cad7cce10a31",
     "chat/miniprogram/subpackages/web/h5/index.wxml": "678ddd7c88a5236797e3ab4d899f23387ee4cb4d",
     "chat/miniprogram/subpackages/web/view/index.wxml": "ffb56fb421ff0838c0ffa3dd263e0815d301f944",
-    "chat/tools/check-wxml.js": "8df804f16a220f9ecb60848a415c85955ae51644",
+    "chat/tools/check-wxml.js": "a91fd6f5841f531e235ee3f73e5e98186c2bf72a",
     "before/conversation.wxml": "5f32bd888d5283a773a4a439dbf113b9dfeb96c1"
   }
 }
