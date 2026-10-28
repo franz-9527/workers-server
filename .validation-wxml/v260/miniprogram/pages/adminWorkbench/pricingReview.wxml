@@ -1,0 +1,102 @@
+<view class="pricing-page">
+  <fullscreen-nav title="平台核价" tone="dark" testing-title-only="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+
+  <view class="pricing-hero">
+    <view class="hero-kicker">平台单 · 测量后核价</view>
+    <view class="hero-title">核定实际数量与施工价格</view>
+    <view class="hero-desc">核价后仍沿用同一订单进入施工衔接；需要客户确认的订单，确认最终价格后才开放施工预约。数量变化沿用原单价，不作为加价。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card"><text class="cuIcon-loading2 spin"></text> 正在加载核价资料</view>
+  <view wx:elif="{{errorText}}" class="state-card error-card">
+    <view>{{errorText}}</view>
+    <button class="secondary-button" bindtap="backToOrder">返回订单</button>
+  </view>
+
+  <block wx:if="{{!loading && !errorText && order && platform}}">
+    <view class="section compact-section">
+      <view class="section-head">
+        <view>
+          <view class="section-title">订单摘要</view>
+          <view class="section-desc">{{order.id}} · {{order.title || order.category_name}}</view>
+        </view>
+        <text class="status-chip">待核价</text>
+      </view>
+      <view class="summary-grid">
+        <view><text>当前客户金额</text><text>¥{{currentCustomerTotalText}}</text></view>
+        <view><text>当前师傅工费</text><text>¥{{currentWorkerLaborText}}</text></view>
+        <view><text>计价方式</text><text>{{platform.customer_pricing_mode === 'itemized' ? '明细计价' : '固定总价'}}</text></view>
+        <view><text>测量成果</text><text>{{measurement && measurement.result_status === 'accepted' ? '已确认' : '待确认'}}</text></view>
+      </view>
+    </view>
+
+    <view wx:if="{{platform.customer_pricing_mode === 'itemized'}}" class="section">
+      <view class="section-title">实际数量</view>
+      <view class="section-desc">仅调整原基础项目的实际数量，原单价锁定；新增项目请施工阶段另走加项。</view>
+
+      <view wx:for="{{itemDrafts}}" wx:key="sort_order" class="pricing-item">
+        <view class="item-head">
+          <view>
+            <view class="item-name">{{item.description}}</view>
+            <view class="item-note" wx:if="{{item.note}}">{{item.note}}</view>
+          </view>
+          <text class="item-price">¥{{item.unit_price_text}} / {{item.unit || '单位'}}</text>
+        </view>
+        <view class="quantity-row">
+          <view class="quantity-field">
+            <text class="field-label">实际数量</text>
+            <view class="input-with-unit">
+              <input type="digit" value="{{item.quantity_text}}" data-index="{{index}}" bindinput="quantityInput" placeholder="0"/>
+              <text>{{item.unit}}</text>
+            </view>
+          </view>
+          <view class="amount-preview">
+            <text>核定金额</text>
+            <text>¥{{item.amount_text}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="total-bar">
+        <text>客户核定总额</text>
+        <text>¥{{previewTotalText}}</text>
+      </view>
+    </view>
+
+    <view wx:else class="section">
+      <view class="section-title">客户最终金额</view>
+      <view class="section-desc">固定总价订单由平台根据测量结果直接核定最终成交金额。</view>
+      <view class="field">
+        <text class="field-label">客户最终金额（元）</text>
+        <input type="digit" value="{{customerTotal}}" bindinput="customerTotalInput" placeholder="请输入金额"/>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">施工工费</view>
+      <view class="section-desc">这是当前成交师傅最终施工工费，不是普通订单平台服务费。</view>
+      <view class="field">
+        <text class="field-label">师傅施工工费（元）</text>
+        <input type="digit" value="{{workerLabor}}" bindinput="workerLaborInput" placeholder="请输入工费"/>
+      </view>
+      <view class="field note-field">
+        <text class="field-label">核价备注（选填）</text>
+        <textarea maxlength="500" value="{{note}}" bindinput="noteInput" placeholder="例如：按测量结果调整墙布实际用量" placeholder-class="placeholder"></textarea>
+      </view>
+    </view>
+
+    <view class="rule-card">
+      <view class="rule-title">核价规则</view>
+      <view>· 实际数量变化按原约定单价重算，不生成加价申请。</view>
+      <view>· 真正新增施工内容仍由师傅在施工阶段发起加项协商。</view>
+      <view>· 客户金额、师傅工费和转入施工衔接在服务端一次提交，失败会整体回滚。</view>
+      <view>· 平台核价提交后即生效，师傅可按最新订单状态预约施工，无需客户再次确认。</view>
+    </view>
+
+    <view class="bottom-space"></view>
+    <view class="bottom-actions">
+      <button class="secondary-button" bindtap="backToOrder" disabled="{{saving}}">返回</button>
+      <button class="primary-button" bindtap="submit" loading="{{saving}}" disabled="{{saving}}">确认并提交核价</button>
+    </view>
+  </block>
+</view>

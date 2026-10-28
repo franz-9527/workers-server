@@ -1,0 +1,9 @@
+<!-- 2026-10-05：下单/我的下单检查用户通知；接单大厅检查师傅通知。 -->
+<subscription-health-banner
+  wx:if="{{scene === 'order_submit' || scene === 'quote_orders' || scene === 'order_hall'}}"
+  audience="{{scene === 'order_hall' ? 'worker' : 'user'}}"
+></subscription-health-banner>
+<!-- 2026-09-02：下单、接单、商家认证和报价订单按场景独立显示公告。 -->
+<view wx:if="{{visible}}" class="notice" bindtap="openLink">
+  <text class="notice__icon">公告</text><text class="notice__text">{{text}}</text><text wx:if="{{link}}" class="notice__arrow">›</text>
+</view>

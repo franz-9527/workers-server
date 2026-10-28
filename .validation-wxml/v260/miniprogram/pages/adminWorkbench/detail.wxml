@@ -1,0 +1,223 @@
+<view class="detail-page">
+  <view wx:if="{{loading}}" class="detail-loading-shell">
+    <fullscreen-nav title="订单运营详情" tone="dark" show-title="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+    <view class="page-loading"><text class="cuIcon-loading2 spin"></text>加载订单运营详情</view>
+  </view>
+
+  <block wx:if="{{!loading && order}}">
+    <view class="detail-hero">
+      <fullscreen-nav title="订单运营详情" tone="light" show-title="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+      <view class="hero-top">
+        <view class="hero-title">{{order.title || order.category_name || '订单'}}</view>
+        <text class="workflow-tag">{{order.is_platform_order ? '平台·' : ''}}{{order.workflow_profile === 'measurement' ? '测量' : '施工'}}</text>
+      </view>
+      <view class="hero-no">{{order.id}}</view>
+      <view class="hero-phase">{{measurement && measurement.awaiting_pricing_review ? '待平台核价' : phaseText}}</view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <view>
+          <view class="section-title">当前待处理</view>
+          <view class="section-desc">正常运营事项与异常兜底分层展示；系统能自动完成的流程不会因此增加人工步骤</view>
+        </view>
+        <text class="count-badge">{{tasks.length}}</text>
+      </view>
+      <view wx:if="{{tasks.length}}" class="task-summary-strip">
+        <text class="summary-normal">正常 {{operationCount}}</text>
+        <text class="summary-exception">异常 {{exceptionCount}}</text>
+      </view>
+
+      <view wx:if="{{!tasks.length}}" class="empty-card">
+        <text class="cuIcon-roundcheckfill"></text>
+        <view>当前没有管理员待办</view>
+        <view class="empty-sub">仍可继续查看订单事实和当前可用运营操作</view>
+      </view>
+
+      <view wx:if="{{operationCount}}" class="task-group task-group-operation">
+        <view class="task-group-head">
+          <view><text class="cuIcon-roundcheckfill"></text> 正常运营待办</view>
+          <text>{{operationCount}} 项</text>
+        </view>
+        <block wx:for="{{tasks}}" wx:for-index="taskIndex" wx:key="task_id">
+          <view wx:if="{{item.task_kind === 'operation'}}" class="task-card tone-{{item.tone}}">
+            <view class="task-head">
+              <view>
+                <view class="task-title-row"><text class="task-kind operation">正常待办</text><text class="task-title">{{item.title}}</text></view>
+                <view class="task-source">{{item.source_id}} · {{item.waiting_text}}</view>
+              </view>
+              <text class="priority">{{item.priority}}</text>
+            </view>
+            <view class="task-summary">{{item.summary}}</view>
+            <view class="task-flags"><text>{{item.blocking ? '阻塞业务' : '不阻塞业务'}}</text><text>{{item.mode === 'attention' ? '需关注' : '可处理'}}</text></view>
+            <view wx:if="{{item.action_buttons.length || item.native_path}}" class="task-actions">
+              <navigator wx:if="{{item.native_path}}" class="action-button action-primary" url="{{item.native_path}}">核实到账</navigator>
+              <button wx:for="{{item.action_buttons}}" wx:for-item="button" wx:key="key" wx:if="{{button.key !== 'platform_income_confirm'}}" class="action-button action-{{button.tone}}" data-action="{{button.key}}" data-task-index="{{taskIndex}}" bindtap="openAction">{{button.label}}</button>
+            </view>
+          </view>
+        </block>
+      </view>
+
+      <view wx:if="{{exceptionCount}}" class="task-group task-group-exception">
+        <view class="task-group-head">
+          <view><text class="cuIcon-warnfill"></text> 异常 / 风险兜底</view>
+          <text>{{exceptionCount}} 项</text>
+        </view>
+        <block wx:for="{{tasks}}" wx:for-index="taskIndex" wx:key="task_id">
+          <view wx:if="{{item.task_kind !== 'operation'}}" class="task-card tone-{{item.tone}}">
+            <view class="task-head">
+              <view>
+                <view class="task-title-row"><text class="task-kind exception">异常</text><text class="task-title">{{item.title}}</text></view>
+                <view class="task-source">{{item.source_id}} · {{item.waiting_text}}</view>
+              </view>
+              <text class="priority">{{item.priority}}</text>
+            </view>
+            <view class="task-summary">{{item.summary}}</view>
+            <view class="task-flags"><text>{{item.blocking ? '阻塞业务' : '不阻塞业务'}}</text><text>{{item.mode === 'attention' ? '需关注' : '可处理'}}</text></view>
+            <view wx:if="{{item.mode === 'attention'}}" class="attention-note">当前事项需要关注；若没有安全的移动端业务动作，只提供事实查看并转网页后台或专项资金流程，避免小程序出现万能修复按钮。</view>
+            <view wx:if="{{item.action_buttons.length}}" class="task-actions">
+              <button wx:for="{{item.action_buttons}}" wx:for-item="button" wx:key="key" class="action-button action-{{button.tone}}" data-action="{{button.key}}" data-task-index="{{taskIndex}}" bindtap="openAction">{{button.label}}</button>
+            </view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <admin-order-operations
+      order-id="{{id}}"
+      actions="{{actions}}"
+      is-platform-order="{{order.is_platform_order}}"
+      bindpricing="openPricingReview"
+      bindinvite="openAssignment"
+      bindquote="openOrderOperations"
+      bindshare="openCustomerShare"
+      bindmore="openOrderOperations"
+      bindhide="moderateOrder" bindreject="moderateOrder" bindcancel="moderateOrder"
+      bindassisted="refreshAssisted"
+    ></admin-order-operations>
+
+    <admin-worker-assignment
+      id="workbenchAssignment"
+      order-id="{{id}}"
+      actions="{{actions}}"
+      show-trigger="{{false}}"
+      bindstale="assignmentStale"
+    ></admin-worker-assignment>
+
+    <view class="section">
+      <view class="section-title">订单快照</view>
+      <view class="kv-grid">
+        <view><text>订单阶段</text><text>{{measurement && measurement.awaiting_pricing_review ? '待平台核价' : phaseText}}</text></view>
+        <view><text>预约费</text><text>¥{{order.booking_fee_cents / 100}}</text></view>
+        <view><text>当前总额</text><text>¥{{order.final_amount_cents / 100}}</text></view>
+        <view><text>地区</text><text>{{order.city}}{{order.district}}</text></view>
+        <view class="wide"><text>地址</text><text>{{order.address || '未填写'}}</text></view>
+        <view><text>联系人</text><text>{{order.contact_name || '未填写'}}</text></view>
+        <view><text>联系电话</text><text>{{order.contact_mobile || '未填写'}}</text></view>
+      </view>
+    </view>
+
+    <view wx:if="{{assignedWorker}}" class="section">
+      <view class="section-title">当前师傅</view>
+      <view class="person-row">
+        <view>
+          <view class="person-name">{{assignedWorker.name}}</view>
+          <view class="person-sub">{{assignedWorker.status}} · {{assignedWorker.mobile || '未填写'}}</view>
+        </view>
+        <view class="person-actions">
+          <button wx:if="{{assignedWorker.can_call}}" class="mini-button" bindtap="callWorker">拨打</button>
+          <button wx:if="{{adminCapabilities.can_reassign_worker}}" class="mini-button" bindtap="openReassignWorker">改派师傅</button>
+        </view>
+      </view>
+      <view wx:if="{{!adminCapabilities.can_reassign_worker && adminCapabilities.reassign_reason}}" class="record-sub">{{adminCapabilities.reassign_reason}}</view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <view><view class="section-title">内部跟进</view><view class="section-desc">仅管理员可见，不进入用户/师傅时间线，也不改变订单状态</view></view>
+        <button class="mini-button" bindtap="addInternalFollowup">新增</button>
+      </view>
+      <view wx:if="{{!internalFollowups.length}}" class="empty-card"><view>暂无内部备注或跟进事项</view></view>
+      <view wx:for="{{internalFollowups}}" wx:key="id" class="issue-box">
+        <view class="record-title">{{item.completed ? '已完成' : (item.due ? '待跟进 · 已到期' : (item.follow_up_at ? '待跟进' : '内部备注'))}}</view>
+        <view class="record-sub">{{item.note}}</view>
+        <view class="record-sub">记录于 {{item.created_at}}<text wx:if="{{item.follow_up_at}}"> · 跟进时间 {{item.follow_up_at}}</text></view>
+        <button wx:if="{{!item.completed && item.follow_up_at}}" class="mini-button" data-id="{{item.id}}" bindtap="completeFollowup">完成跟进</button>
+      </view>
+    </view>
+
+    <view wx:if="{{media.length}}" class="section">
+      <view class="section-title">订单图片</view>
+      <view class="gallery"><image wx:for="{{media}}" wx:key="id" src="{{item.url}}" mode="aspectFill" data-url="{{item.url}}" bindtap="preview"></image></view>
+    </view>
+
+    <view wx:if="{{quotes.length}}" class="section">
+      <view class="section-title">报价记录</view>
+      <view wx:for="{{quotes}}" wx:key="id" class="record-row">
+        <view><view class="record-title">{{item.type === 'platform' ? '平台报价' : (item.worker_name || '师傅报价')}}</view><view class="record-sub">{{item.status}}{{item.is_selected ? ' · 已选中' : ''}}</view></view>
+        <text class="money">¥{{item.amount_cents / 100}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{cancelRequest || refund || dispute}}" class="section">
+      <view class="section-title">退款与争议</view>
+      <view wx:if="{{cancelRequest}}" class="issue-box"><view class="record-title">取消/退款申请 · {{cancelRequest.status}}</view><view class="record-sub">{{cancelRequest.reason || '未填写原因'}}</view><view class="record-sub">申请金额：¥{{cancelRequest.requested_refund_cents / 100}}</view></view>
+      <view wx:if="{{refund}}" class="issue-box"><view class="record-title">退款执行 · {{refund.status}}</view><view class="record-sub">金额：¥{{refund.amount_cents / 100}} · 共 {{refund.refund_count || 1}} 笔</view><view wx:if="{{refund.failure_message}}" class="danger-text">{{refund.failure_message}}</view></view>
+      <view wx:if="{{dispute}}" class="issue-box"><view class="record-title">争议 · {{dispute.status}}</view><view class="record-sub">{{dispute.description || dispute.title}}</view></view>
+    </view>
+
+    <view wx:if="{{measurement}}" class="section">
+      <view class="section-title">测量状态</view>
+      <view class="issue-box">
+        <view class="record-sub">成果：{{measurement.result_status || '—'}} · 结算：{{measurement.settlement_status || '—'}}</view>
+        <view wx:if="{{measurement.awaiting_pricing_review}}" class="pricing-pending-note">测量成果已确认，当前属于正常平台核价待办，可直接从本页进入核价。</view>
+        <button wx:if="{{measurement.awaiting_pricing_review && actions.can_review_platform_pricing}}" class="operation-button primary compact" bindtap="openPricingReview">进入平台核价</button>
+        <view wx:if="{{measurement.hold_until}}" class="record-sub">冻结至：{{measurement.hold_until}}</view>
+        <view wx:if="{{measurement.hold_extension}}" class="record-sub">最新延期：{{measurement.hold_extension.status}} · {{measurement.hold_extension.requested_hold_until}}</view>
+      </view>
+    </view>
+
+    <measurement-order-detail wx:if="{{measurement}}" order-id="{{id}}"></measurement-order-detail>
+
+    <view wx:if="{{afterSales.length}}" class="section">
+      <view class="section-title">售后记录</view>
+      <view wx:for="{{afterSales}}" wx:key="id" class="issue-box">
+        <view class="record-title">{{item.id}} · {{item.status}}</view>
+        <view class="record-sub">{{item.description}}</view>
+        <view wx:if="{{item.resolution}}" class="record-sub">{{item.resolution}}</view>
+        <button wx:if="{{adminCapabilities.can_intervene_repair && item.id === adminCapabilities.active_repair_id}}" class="mini-button" bindtap="openRepairIntervention">平台主动介入</button>
+      </view>
+    </view>
+
+    <view wx:if="{{events.length}}" class="section">
+      <view class="section-title">最近时间线</view>
+      <view wx:for="{{events}}" wx:key="time" class="timeline-row"><view class="timeline-dot"></view><view><view class="record-title">{{item.text}}</view><view class="record-sub">{{item.time}}</view></view></view>
+    </view>
+  </block>
+
+  <view wx:if="{{actionKey}}" class="mask" catchtouchmove="true">
+    <view class="modal">
+      <view class="modal-title">{{actionTitle}}</view>
+      <view class="modal-subtitle">订单 {{id}}</view>
+
+      <block wx:if="{{actionKey === 'refund_approve' || actionKey === 'refund_reject'}}">
+        <view class="field"><text class="field-label">退款金额（元）</text><input type="digit" value="{{actionAmount}}" bindinput="actionAmountInput" disabled="{{actionKey === 'refund_reject'}}"/></view>
+        <view class="switch-row"><text>师傅已经上门</text><switch checked="{{actionArrived === 'yes'}}" bindchange="actionArrivedChange" color="#00aebd"/></view>
+      </block>
+
+      <picker wx:if="{{actionKey === 'refund_approve' || actionKey === 'refund_reject' || actionKey === 'dispute_resolve'}}" range="{{responsibilityOptions}}" value="{{responsibilityIndex}}" bindchange="responsibilityChange">
+        <view class="picker-row"><text>责任归属</text><text>{{responsibilityOptions[responsibilityIndex]}} <text class="cuIcon-right"></text></text></view>
+      </picker>
+
+      <view class="field">
+        <text class="field-label">{{actionKey === 'dispute_resolve' ? '处理结果' : '处理说明'}}</text>
+        <textarea placeholder-class="admin-placeholder" maxlength="1000" value="{{actionReason}}" placeholder="{{actionKey === 'audit_approve' || actionKey === 'contact_reveal_approve' || actionKey === 'measurement_hold_approve' ? '可选；服务端仍会重新校验当前事实' : '请填写处理原因/说明'}}" bindinput="actionReasonInput"></textarea>
+      </view>
+
+      <view class="modal-actions">
+        <button class="secondary-button" bindtap="closeAction" disabled="{{submitting}}">取消</button>
+        <button class="primary-button" bindtap="submitAction" loading="{{submitting}}" disabled="{{submitting}}">确认处理</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,210 @@
+<template name="faq-card">
+  <view class="help-faq-card tone-{{item.tone}} {{expandedId == item.faq_id ? 'is-open' : ''}}">
+    <view class="help-faq-head" bindtap="questionTap" data-id="{{item.faq_id}}" hover-class="help-tap">
+      <view class="help-faq-main">
+        <view class="help-faq-labels">
+          <text class="help-faq-tag">{{item.category_name || item.scene_label}}</text>
+          <text wx:if="{{item.is_featured}}" class="help-faq-featured">常见</text>
+        </view>
+        <view class="help-faq-question">{{item.question}}</view>
+        <view class="help-faq-preview" wx:if="{{expandedId != item.faq_id}}">{{item.answer}}</view>
+      </view>
+      <view class="help-faq-chevron {{expandedId == item.faq_id ? 'is-open' : ''}}">
+        <text class="cuIcon-right"></text>
+      </view>
+    </view>
+
+    <view class="help-faq-answer" wx:if="{{expandedId == item.faq_id}}">
+      <text class="help-answer-text" selectable>{{item.answer_text}}</text>
+
+      <view wx:if="{{item.business_entry && item.business_entry.path}}" class="help-business-link" bindtap="openBusinessEntry" data-path="{{item.business_entry.path}}" hover-class="help-tap">
+        <text>{{item.business_entry.label || '前往对应页面'}}</text>
+        <text class="cuIcon-right"></text>
+      </view>
+
+      <view class="help-related" wx:if="{{expandedRelated.length}}">
+        <view class="help-related-title">相关问题</view>
+        <view class="help-related-item" wx:for="{{expandedRelated}}" wx:key="faq_id" bindtap="relatedTap" data-id="{{item.faq_id}}" hover-class="help-tap">
+          <text>{{item.question}}</text>
+          <text class="cuIcon-right"></text>
+        </view>
+      </view>
+
+      <view class="help-answer-meta" wx:if="{{item.updated_text}}">
+        <text>更新于 {{item.updated_text}}</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<view class="help-page">
+  <view class="help-scroll-nav {{showNav ? 'is-visible' : ''}}" style="height:{{navBarHeight}}px;padding-top:{{statusBarHeight}}px;">
+    <view class="help-scroll-nav-inner" style="height:{{navContentHeight}}px;">
+      <view class="help-nav-back" bindtap="goBack" hover-class="help-nav-hover">
+        <text class="cuIcon-back"></text>
+      </view>
+      <view class="help-nav-title">帮助中心</view>
+    </view>
+  </view>
+
+  <view class="help-hero" style="padding-top:{{heroTop}}px;">
+    <view class="help-hero-back" style="top:{{statusBarHeight}}px;height:{{navContentHeight}}px;" bindtap="goBack" hover-class="help-hero-back-hover">
+      <text class="cuIcon-back"></text>
+    </view>
+    <view class="help-hero-glow help-hero-glow-a"></view>
+    <view class="help-hero-glow help-hero-glow-b"></view>
+    <view class="help-hero-inner">
+      <view class="help-title">帮助中心</view>
+      <view class="help-subtitle">搜索问题，快速找到对应答案</view>
+
+      <view class="help-search">
+        <text class="cuIcon-search help-search-icon"></text>
+        <input
+          value="{{query}}"
+          placeholder="搜索预约费、量房、退款、提现…"
+          placeholder-class="help-search-placeholder"
+          bindinput="searchInput"
+          bindconfirm="searchConfirm"
+          confirm-type="search"
+        />
+        <view wx:if="{{query}}" class="help-search-clear" bindtap="clearSearch">
+          <text class="cuIcon-close"></text>
+        </view>
+      </view>
+
+      <view class="help-hot-row" wx:if="{{hotSearches.length}}">
+        <text class="help-hot-label">热门</text>
+        <view class="help-hot-list">
+          <view class="help-hot-item" wx:for="{{hotSearches}}" wx:key="*this" bindtap="hotSearchTap" data-keyword="{{item}}" hover-class="help-hero-hover">{{item}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="help-notice {{builtInFallback ? 'is-builtin' : ''}}" wx:if="{{(cachedFallback || builtInFallback) && cacheNotice}}">
+    <text class="cuIcon-info"></text>
+    <text>{{cacheNotice}}</text>
+  </view>
+
+  <view class="help-body">
+    <view class="help-loading-card" wx:if="{{loading}}">
+      <view class="help-skeleton help-skeleton-title"></view>
+      <view class="help-skeleton help-skeleton-role"></view>
+      <view class="help-skeleton"></view>
+      <view class="help-skeleton"></view>
+      <view class="help-skeleton help-skeleton-short"></view>
+    </view>
+
+    <view class="help-state-card" wx:elif="{{loadError}}">
+      <view class="help-state-icon"><text class="cuIcon-warn"></text></view>
+      <view class="help-state-title">帮助内容暂时不可用</view>
+      <view class="help-state-desc">请检查网络后重新加载。</view>
+      <button class="help-btn help-btn-primary" bindtap="retryLoad">重新加载</button>
+    </view>
+
+    <block wx:elif="{{!loading}}">
+      <view class="help-role-section">
+        <view class="help-role-title">按身份查看</view>
+        <scroll-view scroll-x class="help-role-scroll" show-scrollbar="{{false}}">
+          <view class="help-role-row">
+            <view class="help-role-chip {{activeRole == item.key ? 'is-active' : ''}}" wx:for="{{roles}}" wx:key="key" bindtap="roleTap" data-role="{{item.key}}" hover-class="help-tap">
+              {{item.name}}
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="help-search-section" wx:if="{{searchMode}}">
+        <view class="help-section-head">
+          <view>
+            <view class="help-section-title">搜索结果</view>
+            <view class="help-section-sub">“{{query}}” · {{searchResults.length}} 条结果</view>
+          </view>
+          <view class="help-section-link" bindtap="clearSearch">清除搜索</view>
+        </view>
+
+        <view class="help-searching" wx:if="{{searchLoading}}">
+          <view class="help-spinner"></view>
+          <text>正在搜索</text>
+        </view>
+
+        <view class="help-empty-card" wx:elif="{{!searchResults.length}}">
+          <view class="help-state-icon is-soft"><text class="cuIcon-search"></text></view>
+          <view class="help-state-title">没有找到对应问题</view>
+          <view class="help-state-desc">换一个更短的关键词试试，或者清除搜索后按身份和场景浏览。</view>
+          <view class="help-empty-link" bindtap="clearSearch">返回常见问题</view>
+        </view>
+
+        <view wx:else>
+          <template is="faq-card" wx:for="{{searchResults}}" wx:key="faq_id" data="{{item:item,expandedId:expandedId,expandedRelated:expandedRelated}}" />
+        </view>
+      </view>
+
+      <block wx:else>
+        <view class="help-question-section" wx:if="{{commonItems.length}}">
+          <view class="help-section-head">
+            <view>
+              <view class="help-section-title">{{commonTitle}}</view>
+              <view class="help-section-sub">优先展示当前身份最常用的问题</view>
+            </view>
+          </view>
+          <template is="faq-card" wx:for="{{commonItems}}" wx:key="faq_id" data="{{item:item,expandedId:expandedId,expandedRelated:expandedRelated}}" />
+        </view>
+
+        <view class="help-scene-section" wx:if="{{scenes.length}}">
+          <view class="help-section-head">
+            <view>
+              <view class="help-section-title">按场景找答案</view>
+              <view class="help-section-sub">根据你当前正在处理的事情查找</view>
+            </view>
+            <view wx:if="{{scenes.length > 4}}" class="help-section-link" bindtap="toggleScenes">{{sceneExpanded ? '收起' : '展开全部'}}</view>
+          </view>
+
+          <view class="help-scene-grid">
+            <view class="help-scene-card tone-{{item.tone}} {{activeScene == item.key ? 'is-active' : ''}}" wx:for="{{visibleScenes}}" wx:key="key" bindtap="sceneTap" data-scene="{{item.key}}" hover-class="help-scene-hover">
+              <view class="help-scene-icon"><text class="{{item.icon}}"></text></view>
+              <view class="help-scene-copy">
+                <view class="help-scene-name">{{item.name}}</view>
+                <view class="help-scene-desc">{{item.desc}}</view>
+              </view>
+              <view class="help-scene-count">{{item.count}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="help-scene-results" wx:if="{{activeScene && sceneItems.length}}">
+          <view class="help-section-head">
+            <view>
+              <view class="help-section-title">{{sceneTitle}}</view>
+              <view class="help-section-sub">{{sceneItems.length}} 个问题</view>
+            </view>
+            <view class="help-section-link" bindtap="clearScene">关闭</view>
+          </view>
+          <template is="faq-card" wx:for="{{sceneItems}}" wx:key="faq_id" data="{{item:item,expandedId:expandedId,expandedRelated:expandedRelated}}" />
+        </view>
+
+        <view class="help-state-card" wx:if="{{!allItems.length}}">
+          <view class="help-state-icon is-soft"><text class="cuIcon-question"></text></view>
+          <view class="help-state-title">帮助内容正在整理</view>
+          <view class="help-state-desc">当前还没有已发布问答，请稍后下拉刷新。</view>
+        </view>
+      </block>
+
+      <view class="help-contact-card" bindtap="openCustomerService" hover-class="help-tap">
+        <view class="help-contact-copy">
+          <view class="help-contact-title">以上内容仍未解决？</view>
+          <view class="help-contact-desc">确认常见问题和场景答案都无法解决后，再联系人工客服。</view>
+        </view>
+        <view class="help-contact-action">
+          <text>联系客服</text>
+          <text class="cuIcon-right"></text>
+        </view>
+      </view>
+
+      <view class="help-footer">
+        <text wx:if="{{contentUpdatedAt}}">帮助内容更新：{{contentUpdatedAt}}</text>
+        <text>壁选帮助中心</text>
+      </view>
+    </block>
+  </view>
+</view>
