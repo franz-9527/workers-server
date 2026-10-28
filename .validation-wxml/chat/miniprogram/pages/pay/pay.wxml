@@ -1,1 +1,0 @@
-<view class="subpackage-redirect"><view class="subpackage-redirect__title">{{redirectError ? '页面暂时无法打开' : '正在打开页面…'}}</view><view wx:if="{{redirectError}}">请检查网络后重试</view><button wx:if="{{redirectError}}" bindtap="openSubpackage">重新打开</button></view>
