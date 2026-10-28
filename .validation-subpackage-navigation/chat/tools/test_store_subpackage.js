@@ -37,6 +37,7 @@ const vmHome = require('vm')
 let homePage
 vmHome.runInNewContext(index.replace(/^import[^\n]*\n/gm, ''), {
   MAPCONFIG:{MAPKEY:'synthetic'},CLOUDCONFIG:{},getApp:()=>({globalData:{}}),requirePlugin:()=>({}),Page:value=>{homePage=value},
+  require:name=>name.includes('SubpackageRedirect')?require('../miniprogram/utils/SubpackageRedirect.js'):{},
   console,Date,Math,setTimeout,clearTimeout,wx:{getSystemInfoSync:()=>({windowWidth:375})}
 })
 for(const old of ['pages/store/store','/pages/store/store']){

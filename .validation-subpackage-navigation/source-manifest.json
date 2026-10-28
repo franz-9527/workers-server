@@ -1,7 +1,7 @@
 {
   "branches": {
     "v260": "838c5d23113600994c41e9e2bbef8e68a2e90599",
-    "chat": "7dba07676392a9a43db3685e4a6d39b78ce6ef41"
+    "chat": "d7b303350e8af0170d3b1abb5804d775b90cde29"
   },
   "files": {
     "v260/cloudfunctions/base/index.js": "f425d34294e28d67608911a4c125eb2afe91c9e6",
@@ -763,7 +763,7 @@
     "chat/tools/test_chat_s24.js": "282b15a7cb27a7b86a2f74f0a20b065750bfb283",
     "chat/tools/test_chat_sms.js": "d4feed6bee96122eb84c31d20cc50c47030a893d",
     "chat/tools/test_low_frequency_subpackages.js": "91942b6707970eda970ccc993b2fa9081c4622e5",
-    "chat/tools/test_store_subpackage.js": "fa4108ccf9d4bb385f59edd6a47c25e8b038b78b",
+    "chat/tools/test_store_subpackage.js": "8646d2e84d8c17fb7059905478b4d573517ac0ba",
     "chat/tools/test_v250_invite_onboarding_resume.js": "3ada336a902d8e881bb26dee594ccfb3fd70830f",
     "chat/tools/test_v260_onboarding_notice_compact_ui.js": "8e632548ebe54a1336366416f2501f84e101a438"
   }
