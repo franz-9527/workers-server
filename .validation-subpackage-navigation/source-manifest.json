@@ -765,6 +765,7 @@
     "chat/tools/test_low_frequency_subpackages.js": "91942b6707970eda970ccc993b2fa9081c4622e5",
     "chat/tools/test_store_subpackage.js": "8646d2e84d8c17fb7059905478b4d573517ac0ba",
     "chat/tools/test_v250_invite_onboarding_resume.js": "3ada336a902d8e881bb26dee594ccfb3fd70830f",
-    "chat/tools/test_v260_onboarding_notice_compact_ui.js": "8e632548ebe54a1336366416f2501f84e101a438"
+    "chat/tools/test_v260_onboarding_notice_compact_ui.js": "8e632548ebe54a1336366416f2501f84e101a438",
+    "chat/server/assets/chat-image-review.js": "e1ab057c622c1e78e92eecc3af7cd99633399a67"
   }
 }
