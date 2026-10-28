@@ -54,3 +54,4 @@ jobs:
           node tools/test_chat_s24.js
           node tools/test_chat_sms.js
           NODE_PATH="$RUNNER_TEMP/wxml-compiler/node_modules" node tools/check-wxml.js --compile
+# Shared route resolver fixture included
