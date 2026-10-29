@@ -1,5 +1,5 @@
 {
-  "source_commit": "8ce7c4d568a0e141561f2718366c962ce0c493be",
+  "source_commit": "fa2eae3988e18883d708b7f7d5ad21d63db20d4c",
   "blobs": {
     "server/database/upgrades/1.0.0.sql": "f47983ecf015a807642bca020be61e93d8214f1f",
     "server/database/upgrades/1.0.1.sql": "8a0eb87eb55abb8b0d14633fdc6c33797290283b",
@@ -54,7 +54,7 @@
     "server/VERSION": "24ba9a38de68d00674ec97b283a967699716b9f4",
     "server/tests/chat_schema_contract.php": "ed514ea18aa251766fb29246e771923bf533c3f0",
     "server/tests/upgrade_manifest_checksums_contract.php": "66a43091d20cd86bde16bfee4444913ea49d366d",
-    "server/tests/upgrade_historical_checksum_alias_contract.php": "5649cdcefeb0f1390a03a451e5bbdb6abf2bb12a",
+    "server/tests/upgrade_historical_checksum_alias_contract.php": "7422293530fd53c58c6c28ad5819054b020476bd",
     "server/tests/fixtures/schema-2.6.0.json": "706964d877514bed16b745a52af57b45e0c1dd59",
     "server/adminapi/upgrade/index.php": "2307e41503ad76ad939426ec4a592cbbb8663977",
     "server/tests/fixtures/schema-2.6.0.sql.gz": "2ccc350617da97eaa0e1b653f1d00cbd59c5a798"

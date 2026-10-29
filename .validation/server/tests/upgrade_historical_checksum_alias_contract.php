@@ -63,10 +63,7 @@ legacyChecksumAssert(
     strpos($source,"\$recordStatus === 'success' && \$this->acceptedAppliedChecksum")!==false,
     'checksum aliases are only considered for successful applied migrations'
 );
-legacyChecksumAssert(
-    strpos($source,"!\$canRetryFailed && !\$canRecoverV229 && !\$checksumAccepted")!==false,
-    'unknown checksum still feeds the existing integrity error path'
-);
+// Unknown checksums and failed/running history are exercised through public status below.
 
 // Exercise the public status path with the real manifest and a read-only ledger double.
 final class HistoricalChecksumStatement extends PDOStatement
