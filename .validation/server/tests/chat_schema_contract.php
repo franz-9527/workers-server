@@ -39,7 +39,7 @@ function chatUpgradePermissionRecovery(PDO $rootPdo,string $database,int $port,a
             public array $executed=[];
             public function exec(string $statement): int|false{$this->executed[]=$statement;return parent::exec($statement);}
         };
-        $insert=$app->prepare("INSERT INTO schema_migrations(version,migration_name,checksum_sha256,execution_ms,status,applied_at) VALUES(?,?,?,0,'success',UTC_TIMESTAMP())");
+        $insert=$app->prepare("INSERT IGNORE INTO schema_migrations(version,migration_name,checksum_sha256,execution_ms,status,applied_at) VALUES(?,?,?,0,'success',UTC_TIMESTAMP())");
         foreach($manifest['upgrades'] as $row)if(version_compare($row['version'],'2.6.0','<='))$insert->execute([$row['version'],$row['name'],$row['checksum']]);
         $prior=$app->query("SELECT * FROM schema_migrations ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
         $service=new \WorkerAdmin\Services\UpgradeService($app,$fixture);
@@ -86,7 +86,7 @@ function chatUpgradePermissionRecovery(PDO $rootPdo,string $database,int $port,a
         $rootPdo->exec('REVOKE TRIGGER ON `'.$database."`.* FROM '".$user."'@'%'");
         $ensure(!$service->preflight()['ok'],'missing database-scoped TRIGGER privilege was ignored');
         $rootPdo->exec('GRANT TRIGGER ON `'.$database."`.* TO '".$user."'@'%'");
-        $ensure($service->preflight()['ok'],'corrected permissions did not pass preflight');
+        $ready=$service->preflight();$ensure($ready['ok'],'corrected permissions did not pass preflight: '.json_encode($ready['checks'],JSON_UNESCAPED_UNICODE));
         $createCount=static function(array $sql):int{return count(array_filter($sql,static fn(string $s):bool=>strpos($s,'CREATE TABLE IF NOT EXISTS `chat_admin_sessions`')!==false));};
         $before=$createCount($app->executed);
         $result=$service->applyPending('fixture-backup-recovery');
