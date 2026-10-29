@@ -1,0 +1,11 @@
+{
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "消息",
+  "navigationBarBackgroundColor": "#00b9cb",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f5f7f8",
+  "usingComponents": {
+    "fullscreen-nav": "/components/fullscreen-nav/index"
+  },
+  "navigationStyle": "custom"
+}

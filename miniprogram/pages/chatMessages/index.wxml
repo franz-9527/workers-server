@@ -1,0 +1,71 @@
+<view class="chat-inbox">
+  <fullscreen-nav title="消息" show-title="{{false}}" hide-back="{{true}}"></fullscreen-nav>
+  <view class="conversation-header">
+    <view class="conversation-heading">消息</view>
+    <button class="chat-icon-button inbox-more" bindtap="inboxMenu" aria-label="消息设置与筛选"><text class="chat-icon chat-icon-more" aria-hidden="true"></text></button>
+  </view>
+  <view wx:if="{{isLoggedIn && !checkingLogin}}" class="conversation-row important-notification {{businessTone}}" bindtap="openNotifications" role="button" aria-label="重要通知，{{importantCount}}项需要关注">
+    <view class="conversation-avatar important-avatar"><text class="cuIcon-noticefill"></text><view wx:if="{{importantCount > 0}}" class="conversation-unread">{{importantCount > 99 ? '99+' : importantCount}}</view></view>
+    <view class="conversation-body">
+      <view class="conversation-main"><text class="conversation-title">重要通知</text></view>
+      <view class="conversation-preview">{{summaryError ? '通知状态暂未更新，点击重试' : (!summaryReady ? '正在同步待处理事项' : (topTodoText ? ((topTodoRole ? topTodoRole + ' · ' : '') + topTodoText) : (importantCount > 0 ? '有订单新动态，点击查看' : '暂无待处理事项')))}}</view>
+      <view wx:if="{{subscriptionAlert}}" class="important-subscription" catchtap="openNotificationSettings" role="button">{{subscriptionAlert.title}} <text class="cuIcon-right"></text></view>
+    </view>
+    <text class="cuIcon-right important-arrow"></text>
+  </view>
+  <view wx:if="{{checkingLogin}}" class="inbox-placeholder">
+    <text class="cuIcon-loading2 cuIconfont-spin placeholder-icon"></text>
+    <view class="placeholder-title">正在确认登录状态</view>
+  </view>
+  <view wx:elif="{{!isLoggedIn}}" class="inbox-placeholder">
+    <view class="placeholder-circle"><text class="cuIcon-people"></text></view>
+    <view class="placeholder-title">登录后查看消息</view>
+    <view class="placeholder-desc">可从“我的”页进入通知与待办</view>
+  </view>
+  <block wx:else>
+    <view wx:if="{{summaryError}}" class="chat-connection-warning" bindtap="openOrdinaryNotifications" role="button">{{summaryReady ? '通知摘要暂未更新，点击查看通知' : '通知摘要暂不可用，点击查看通知'}}</view>
+    <view wx:if="{{chatEnabled && chatStatus === 'unavailable'}}" class="chat-connection-warning">
+      <text class="cuIcon-warn"></text> 沟通连接暂不可用，请下拉重试
+    </view>
+    <view class="chat-filter">
+      <view class="filter-option {{chatFilter === 'all' ? 'selected' : ''}}" data-filter="all" bindtap="selectChatFilter">全部</view>
+      <view class="filter-option {{chatFilter === 'unread' ? 'selected' : ''}}" data-filter="unread" bindtap="selectChatFilter">未读</view>
+      <view wx:if="{{chatEnabled}}" class="filter-option {{chatFilter === 'later' ? 'selected' : ''}}" data-filter="later" bindtap="selectChatFilter">稍后处理</view>
+      <view wx:if="{{chatEnabled}}" class="filter-option {{chatFilter === 'ended' ? 'selected' : ''}}" data-filter="ended" bindtap="selectChatFilter">已结束</view>
+    </view>
+    <view class="chat-role-filter" wx:if="{{chatEnabled && (showRoleFilters || chatRole !== 'all')}}">
+      <button data-role="all" bindtap="selectChatRole" class="{{chatRole==='all'?'selected':''}}">全部身份</button>
+      <button data-role="customer" bindtap="selectChatRole" class="{{chatRole==='customer'?'selected':''}}">我的下单</button>
+      <button data-role="worker" bindtap="selectChatRole" class="{{chatRole==='worker'?'selected':''}}">我的接单</button>
+    </view>
+    <view wx:if="{{preferenceError}}" class="chat-connection-warning" role="alert">{{preferenceError}}</view>
+    <!-- 普通通知与订单会话共用一份列表，按真实消息时间混排。 -->
+    <view wx:for="{{visibleChatRows}}" wx:key="conversationId" class="conversation-row {{item.kind === 'notification' ? 'ordinary-notification' : ''}} {{item.preferences.pinned?'is-pinned':''}}" data-id="{{item.conversationId}}" bindtap="openConversation" bindlongpress="conversationActions" aria-role="button" aria-label="{{item.displayTitle || item.title}}，{{item.lastText}}，长按管理会话">
+      <view class="conversation-avatar {{item.kind === 'notification' ? 'notification-avatar' : ''}}">
+        <view wx:if="{{item.kind==='chat' && item.groupAvatars && item.groupAvatars.length}}" class="conversation-group-avatar"><image wx:for="{{item.groupAvatars}}" wx:for-item="avatar" wx:key="index" src="{{avatar}}" mode="aspectFill"/></view>
+        <image wx:elif="{{item.kind==='chat' && item.avatarPath}}" class="conversation-fixed-avatar" src="{{item.avatarPath}}" mode="aspectFill"/>
+        <text wx:else class="{{item.kind === 'notification' ? 'chat-icon chat-icon-notice' : 'cuIcon-commentfill'}}"></text>
+        <view wx:if="{{item.kind === 'notification' && item.unreadCount > 0}}" class="ordinary-unread-dot"></view>
+        <view wx:elif="{{item.unreadCount > 0}}" class="conversation-unread">{{item.unreadLabel}}</view>
+      </view>
+      <view class="conversation-body">
+        <view class="conversation-main">
+          <text class="conversation-title">{{item.displayTitle || item.title}}</text>
+          
+        </view>
+        <view class="conversation-tags"><text wx:if="{{item.subtitle}}" class="conversation-id">{{item.subtitle}}</text><text wx:if="{{item.preferences.pinned}}">已置顶</text><text wx:if="{{item.preferences.later}}">稍后处理</text><text wx:if="{{item.conversationState==='readonly'}}">已结束沟通</text></view>
+        <view class="conversation-preview">{{item.lastText}}</view>
+      </view>
+      <view class="conversation-meta"><text class="conversation-clock">{{item.activityLabel}}</text><text wx:if="{{item.preferences.later}}" class="conversation-later">稍后处理</text></view>
+    </view>
+    <view wx:if="{{chatEnabled && chatLoading && !chatRows.length}}" class="sync-hint">正在同步订单会话</view>
+    <view wx:elif="{{!chatLoading && !visibleChatRows.length && summaryReady}}" class="inbox-placeholder slim">
+      <view class="placeholder-circle"><text class="cuIcon-comment"></text></view>
+      <view class="placeholder-title">{{chatFilter === 'unread' ? '暂无未读消息' : '暂无消息'}}</view>
+    </view>
+    <view class="list-pagination"><button wx:if="{{listBefore}}" bindtap="firstList">回到最新会话</button><button wx:if="{{listMore}}" bindtap="nextList" disabled="{{chatHasMore}}">下一批会话</button></view>
+    <view wx:if="{{!chatEnabled}}" class="sync-hint">订单聊天即将开放</view>
+    <view wx:if="{{chatHasMore}}" class="sync-hint">正在分批核对更多会话</view>
+  </block>
+  <view class="bottom-clearance"></view>
+</view>
