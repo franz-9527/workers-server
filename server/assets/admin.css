@@ -2350,3 +2350,12 @@ details.admin-subscribe-editor__section>summary small{margin-left:8px;color:var(
 .chat-admin-compact .admin-card__body>p{margin:8px 0 14px}
 @media(max-width:1100px){.chat-admin-compact form,.chat-admin-compact fieldset,.chat-admin-compact details>form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.chat-admin-compact form,.chat-admin-compact fieldset,.chat-admin-compact details>form{grid-template-columns:minmax(0,1fr)}}
+
+.chat-admin-compact .chat-admin-checks,.chat-admin-compact .chat-admin-actions{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:10px 20px}
+.chat-admin-compact .chat-admin-checks label{display:flex;align-items:center;gap:6px;margin:0}
+.chat-admin-compact .chat-admin-actions{align-items:end}
+.chat-admin-compact .chat-admin-actions>label{display:flex;flex-direction:column;gap:5px;width:min(360px,100%);margin:0}
+.chat-admin-compact .chat-admin-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px;margin-top:12px}
+.chat-admin-compact .chat-admin-fields>label{margin:0}
+@media(max-width:1100px){.chat-admin-compact .chat-admin-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.chat-admin-compact .chat-admin-fields{grid-template-columns:minmax(0,1fr)}}

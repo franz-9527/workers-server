@@ -20,13 +20,13 @@ foreach($current['pools'] as $existing){if($existing['provider']==='shengwang'){
 <h2>功能与路由</h2><p>微信通道未取得服务端媒体类型约束证明时，语音也按音视频两种费率的较高值预占与估算；这是安全上界，最终按官方完整报表对账。声网须核验已启用发布权限鉴权，语音凭证仅授权音频。视频折算须覆盖可发布的最高计费档位。</p><p>当前版本 <?= e($revision) ?>。通道权益、计量和免费停用能力须有真实核验证据；尚未完成现场验收时保持关闭。</p>
 <?php if($canManage): ?><form method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>">
 <?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="_action" value="settings">
-<?php foreach(['enabled'=>'开放音视频通话','audio_enabled'=>'语音通话','video_enabled'=>'视频通话','allow_fallback'=>'建立媒体前允许使用备选通道'] as $key=>$label): ?>
+<div class="chat-admin-checks"><?php foreach(['enabled'=>'开放音视频通话','audio_enabled'=>'语音通话','video_enabled'=>'视频通话','allow_fallback'=>'建立媒体前允许使用备选通道'] as $key=>$label): ?>
 <label><input type="hidden" name="<?= e($key) ?>" value="0"><input type="checkbox" name="<?= e($key) ?>" value="1" <?= $config[$key]?'checked':'' ?>><?= e($label) ?></label>
-<?php endforeach; ?>
+<?php endforeach; ?></div>
 <?php foreach(['audio'=>'语音优先通道','video'=>'视频优先通道'] as $media=>$label): ?><label class="admin-field"><?= e($label) ?><select class="admin-control" name="<?= e($media) ?>_first"><?php foreach($providers as $key=>$title): ?><option value="<?= e($key) ?>" <?= $config[$media.'_priority'][0]===$key?'selected':'' ?>><?= e($title) ?></option><?php endforeach; ?></select></label><?php endforeach; ?>
-<details><summary>运行设置</summary>
+<details><summary>运行设置</summary><div class="chat-admin-fields">
 <?php foreach(['window_seconds'=>'资源续约窗口（秒）','stop_margin_seconds'=>'停流安全余量（秒）','heartbeat_seconds'=>'心跳间隔（秒）','max_active_calls'=>'平台同时活动通话数'] as $key=>$label): ?><label class="admin-field"><?= e($label) ?><input class="admin-control" type="number" name="<?= e($key) ?>" value="<?= e((string)$config[$key]) ?>" required></label><?php endforeach; ?>
-<p>资源窗口会持续续约，属于内部结算周期，不是每通时长限制。</p></details>
+</div><p>资源窗口会持续续约，属于内部结算周期，不是每通时长限制。</p></details>
 <?php $reason(false); ?><button class="admin-btn" type="submit">保存功能设置</button></form><?php else: ?><p><?= $config['enabled']?'功能已开放':'功能关闭' ?></p><?php endif; ?>
 </div></section>
 <?php elseif($section==='credentials'): ?>
@@ -35,8 +35,8 @@ foreach($current['pools'] as $existing){if($existing['provider']==='shengwang'){
 <form method="post" autocomplete="off" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="credentials"><input type="hidden" name="revision" value="<?= e($revision) ?>">
 <label class="admin-field">App ID<input class="admin-control" name="shengwang_app_id" value="<?= e($credentials['app_id']??'') ?>" maxlength="32" pattern="[a-f0-9]{32}"></label>
 <?php foreach(['certificate'=>'App Certificate（应用证书）','customer_id'=>'REST 客户 ID','customer_secret'=>'REST 客户密钥'] as $key=>$label): ?><label class="admin-field"><?= e($label) ?><input type="password" autocomplete="new-password" class="admin-control" name="<?= e($key) ?>" maxlength="256" placeholder="<?= !empty($credentials['saved'][$key])?'已保存，留空保留':'尚未配置，请填写' ?>"></label><?php endforeach; ?>
-<label><input type="checkbox" name="publish_privileges_verified" value="1" <?= !empty($credentials['publish_privileges_verified'])?'checked':'' ?>> 已在声网控制台开启并实测发布权限鉴权</label>
-<label><input type="checkbox" name="clear_credentials" value="1"> 清除后台凭据并停用声网通道</label>
+<div class="chat-admin-checks"><label><input type="checkbox" name="publish_privileges_verified" value="1" <?= !empty($credentials['publish_privileges_verified'])?'checked':'' ?>> 已在声网控制台开启并实测发布权限鉴权</label>
+<label><input type="checkbox" name="clear_credentials" value="1"> 清除后台凭据并停用声网通道</label></div>
 <p class="admin-help">仅超级管理员可保存。活动通话或未完成对账时禁止更换；保存后服务通过签名内部接口读取。原环境变量配置在首次后台保存前继续兼容，清除后不会恢复旧密钥。</p>
 <button class="admin-btn admin-btn--primary">保存通道密钥</button></form></div></section><?php endif; ?>
 <?php elseif($section==='resources'): ?>
@@ -70,26 +70,26 @@ $decision=$current['decisions'][(string)$pool['id']]??(new \WorkerAdmin\Domain\C
 <p>只有报表完整覆盖该资源范围及水位，才能清除对应估算。未知／不完整报表不能用于提高可用量。</p>
 <?php $reason(); ?><button class="admin-btn" type="submit">导入并对账</button></form></details>
 <details><summary>复核／停用资源池</summary><form method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="pool_id" value="<?= e((string)$pool['id']) ?>"><input type="hidden" name="pool_revision" value="<?= e((string)$pool['revision']) ?>"><input type="hidden" name="_action" value="reverify">
-<?php foreach(['pool_enabled'=>'允许使用本池','verified'=>'已复核真实免费权益与共享范围','hard_stop_verified'=>'已实测免费边界与可靠停用能力'] as $key=>$label): ?><label><input type="hidden" name="<?= e($key) ?>" value="0"><input type="checkbox" name="<?= e($key) ?>" value="1"><?= e($label) ?></label><?php endforeach; ?>
+<div class="chat-admin-checks"><?php foreach(['pool_enabled'=>'允许使用本池','verified'=>'已复核真实免费权益与共享范围','hard_stop_verified'=>'已实测免费边界与可靠停用能力'] as $key=>$label): ?><label><input type="hidden" name="<?= e($key) ?>" value="0"><input type="checkbox" name="<?= e($key) ?>" value="1"><?= e($label) ?></label><?php endforeach; ?>
 <label>当前核验证明摘要<input class="admin-control" name="evidence_hash" pattern="[a-f0-9]{64}" required></label><?php $reason(); ?><button type="submit">保存复核</button></form></details>
-<?php endif; ?></div></section><?php endforeach; ?>
+<?php endif; ?></div></section><?php endforeach; ?></div>
 <?php elseif($section==='register'): ?>
 <?php if($canManage): ?><section class="admin-card"><div class="admin-card__body"><h2>登记新周期免费权益</h2>
-<p>已预设声网小程序 SDK 的标准时长系数及当前自然月，App ID 来自「通道密钥」。日期按 <?= e(date_default_timezone_get()) ?> 输入，可按实际权益周期调整。官方免费额度、已用量请按本账号账单填写；声网免费额度由账号共享，购买套餐后可能不再享有赠送额度。<a href="https://doc.shengwang.cn/doc/rtc/ios/billing/billing-strategy" target="_blank" rel="noopener noreferrer">查看官方计费说明</a>。</p>
+<p>已按声网小程序预设本月周期与计量规则；App ID 来自「通道密钥」，额度按实际账单填写。</p><details><summary>登记说明与官方依据</summary><p>日期按 <?= e(date_default_timezone_get()) ?> 输入，可按真实合同调整。声网免费额度由账号共享，购买套餐后可能不再享有赠送额度。请核对完整共享范围、官方已用量和停用能力后再勾选核验。<a href="https://doc.shengwang.cn/doc/rtc/ios/billing/billing-strategy" target="_blank" rel="noopener noreferrer">官方计费说明</a>。</p></details>
 <form id="chat-call-registration" method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="_action" value="pool">
 <label>通道<select class="admin-control" name="provider"><?php foreach($providers as $key=>$label): ?><option value="<?= e($key) ?>" <?= $key==='shengwang'?'selected':'' ?>><?= e($label) ?></option><?php endforeach; ?></select></label>
 <?php foreach(['scope_key'=>'供应商真实计费范围标识','cycle_key'=>'真实周期唯一标识','app_id'=>'供应商应用 AppID'] as $field=>$label): ?><label class="admin-field"><?= e($label) ?><input class="admin-control" name="<?= e($field) ?>" value="<?= e($defaults[$field]) ?>" required></label><?php endforeach; ?>
 <?php foreach(['valid_from'=>'权益生效时间','expires_at'=>'权益到期时间'] as $field=>$label): ?><label class="admin-field"><?= e($label) ?><input class="admin-control" name="<?= e($field) ?>" type="datetime-local" step="1" value="<?= e($defaults[$field]) ?>" required></label><?php endforeach; ?>
 <?php foreach(['free_total'=>'官方免费总额','budget_limit'=>'平台使用上限','official_used'=>'官方已经消耗','safety_margin'=>'安全余量','external_uncertainty'=>'其他共享系统消耗余量'] as $field=>$label): ?><label class="admin-field"><?= e($label) ?>（折算分钟）<input class="admin-control" name="<?= e($field) ?>" inputmode="decimal" value="<?= e($defaults[$field]) ?>" required></label><?php endforeach; ?>
 <label class="admin-field">官方用量允许陈旧时间（秒）<input class="admin-control" name="max_age_seconds" type="number" min="30" max="86400" value="300" required></label>
-<fieldset><legend>已核验的计量规则</legend><p>声网小程序：语音 143/100、视频 429/100；以秒登记。仅适用于当前官方标准时长方案，其他端或历史合约须按实际规则修改。切换微信会清空声网预设，避免跨通道误用。</p>
+<fieldset><legend>计量规则（可调整）</legend><p>声网小程序：语音 143/100、视频 429/100；以秒登记。仅适用于当前官方标准时长方案，其他端或历史合约须按实际规则修改。切换微信会清空声网预设，避免跨通道误用。</p>
 <?php foreach(['audio'=>'语音','video'=>'视频'] as $media=>$label): ?><?php foreach(['numerator'=>'系数分子','denominator'=>'系数分母','quantum'=>'进位秒数'] as $field=>$title): ?><label class="admin-field"><?= e($label.$title) ?><input class="admin-control" type="number" min="1" name="<?= e($media.'_'.$field) ?>" value="<?= e($defaults[$media.'_'.$field]) ?>" required></label><?php endforeach; ?><?php endforeach; ?></fieldset>
 <label>权益和免费停用实测证明摘要（SHA-256）<input class="admin-control" name="evidence_hash" pattern="[a-f0-9]{64}" required></label>
-<?php foreach(['pool_enabled'=>'允许使用本池','verified'=>'已核验实际权益及完整共享范围','hard_stop_verified'=>'已核验免费边界与可靠停用能力'] as $key=>$label): ?><label><input type="hidden" name="<?= e($key) ?>" value="0"><input type="checkbox" name="<?= e($key) ?>" value="1"><?= e($label) ?></label><?php endforeach; ?>
-<?php $reason(false); ?><button class="admin-btn" type="submit">登记权益</button></form></div></section><?php endif; ?>
+<div class="chat-admin-checks"><?php foreach(['pool_enabled'=>'允许使用本池','verified'=>'已核验实际权益及完整共享范围','hard_stop_verified'=>'已核验免费边界与可靠停用能力'] as $key=>$label): ?><label><input type="hidden" name="<?= e($key) ?>" value="0"><input type="checkbox" name="<?= e($key) ?>" value="1"><?= e($label) ?></label><?php endforeach; ?>
+<div class="chat-admin-actions"><?php $reason(false); ?><button class="admin-btn admin-btn--primary" type="submit">登记权益</button></div></form></div></section><?php endif; ?>
 <?php elseif($section==='active'): ?>
 <section class="admin-card"><div class="admin-card__body"><h2>活动与待确认通话</h2>
-<?php foreach($current['active'] as $call): ?><p>通话 <?= e($call['id']) ?> · 会话 <?= e($call['conversation_id']) ?> · <?= e($callStates[$call['state']]??'状态待核对') ?> · <?= e(date('Y-m-d H:i:s',(int)$call['created_at'])) ?></p><?php if($canManage&&$call['state']==='stopping'): ?><details><summary>凭供应商证明确认媒体已经停止</summary><p>必须先核验真实供应商退房或免费硬停证据。客户端提示、倒计时和网络断开均不足以确认。</p><form method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="confirmed_stop"><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="call_id" value="<?= e($call['id']) ?>"><input type="hidden" name="attempt_epoch" value="<?= e((string)$call['attempt_epoch']) ?>"><label>供应商停止证明摘要<input class="admin-control" name="evidence_hash" pattern="[a-f0-9]{64}" required></label><?php $reason(); ?><button type="submit">记录核验并确认结束</button></form></details><?php endif; ?><?php endforeach; ?>
+<?php foreach($current['active'] as $call): ?><p>通话 <?= e($call['id']) ?> · 会话 <?= e($call['conversation_id']) ?> · <?= e($callStates[$call['state']]??'状态待核对') ?> · <?= e(date('Y-m-d H:i:s',(int)$call['created_at'])) ?></p><?php if($canManage&&$call['state']==='stopping'): ?><details><summary>凭供应商证明确认媒体已经停止</summary><p>必须先核验真实供应商退房或免费硬停证据。客户端提示、倒计时和网络断开均不足以确认。</p><form method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="confirmed_stop"><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="call_id" value="<?= e($call['id']) ?>"><input type="hidden" name="attempt_epoch" value="<?= e((string)$call['attempt_epoch']) ?>"><label>供应商停止证明摘要<input class="admin-control" name="evidence_hash" pattern="[a-f0-9]{64}" required></label><?php $reason(); ?><button type="submit">记录核验并确认结束</button></form></details><?php endif; ?><?php endforeach; ?></div>
 <p>“正在确认结束”的通话继续占用资源。客户端报告、断网或令牌到期不作为已停止媒体的证明。</p>
 </div></section>
 <?php elseif($section==='audit'): ?><section class="admin-card"><div class="admin-card__body"><h2>最近管理记录</h2><?php foreach($current['audit'] as $audit): ?><p><?= e($audit['created_at']) ?> · <?= e(['settings'=>'保存功能设置','credentials'=>'更新通道密钥','ack_alert'=>'确认提醒','pool'=>'登记权益','budget'=>'调整预算','import'=>'导入用量','reverify'=>'复核权益','disable_pool'=>'停用资源池','confirmed_stop'=>'确认媒体已停止'][$audit['action']]??'管理操作') ?> · <?= e($audit['reason']) ?></p><?php endforeach; ?>

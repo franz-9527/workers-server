@@ -7,7 +7,7 @@
 <?php if($section==='policy'): ?>
 <section class="admin-card"><div class="admin-card__body">
 <p>当前设置版本 <?= e($current['revision']) ?>，更新时间 <?= e((string)$current['updated_at']) ?>。</p>
-<?php if($current['apply_through_id']!=='0'): ?><p>历史处理：<?= e((string)($current['application']['state']??'等待处理')) ?>，已检查至 <?= e((string)($current['application']['last_message_id']??'0')) ?> / <?= e($current['apply_through_id']) ?>。</p><?php endif; ?>
+<?php if($current['apply_through_id']!=='0'): ?><p>历史处理：<?= e($taskStates[$current['application']['state']??'pending']??'等待处理') ?>，已检查至 <?= e((string)($current['application']['last_message_id']??'0')) ?> / <?= e($current['apply_through_id']) ?>。</p><?php endif; ?>
 
 <form method="post" action="<?= e(admin_url('chat.storage',['section'=>$section])) ?>">
 <?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($current['revision']) ?>">
