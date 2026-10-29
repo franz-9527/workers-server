@@ -1,0 +1,52 @@
+name: Compact message settings regression
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,dom
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+      - name: Frontend model regression
+        run: |
+          find miniprogram tools -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/test_notification_inbox_ui.js
+      - name: WXML compiler
+        run: |
+          npm install --no-save --ignore-scripts miniprogram-compiler@0.2.3 playwright@1.56.1
+          node tools/check-wxml.js miniprogram --compile
+      - name: MySQL subscription and admin regression
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: |
+          php tools/test_notification_admin_regression.php
+          php tools/inbox-probe.php
+      - name: Render real settings templates
+        run: php tools/test_message_settings_render.php
+      - name: Browser visibility and layout
+        run: |
+          npx playwright install --with-deps chromium
+          node tools/test_message_settings_browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: message-settings-review
+          path: test-artifacts/
