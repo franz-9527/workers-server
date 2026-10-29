@@ -1,0 +1,35 @@
+const { chromium }=require('playwright');
+const path=require('node:path');
+(async()=>{
+ const browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({viewport:{width:1400,height:1000}});
+ await page.route(/^https?:/,r=>r.abort());
+ await page.goto('file://'+path.resolve('test-artifacts/chat-register.html'));
+ const field=name=>page.locator('#chat-call-registration [name="'+name+'"]').last();
+ if(await field('app_id').inputValue()!=='a'.repeat(32))throw Error('App ID not preset');
+ for(const [key,value] of Object.entries({audio_numerator:'143',audio_denominator:'100',video_numerator:'429',video_denominator:'100',audio_quantum:'1',video_quantum:'1'})){
+  if(await field(key).inputValue()!==value)throw Error('wrong documented preset '+key);
+ }
+ if(await field('free_total').inputValue()!=='')throw Error('account entitlement guessed');
+ if(await page.locator('input[type=checkbox]:checked').count())throw Error('verification auto-enabled');
+ if(await page.locator('input[name=reason][required]').count())throw Error('routine reason still mandatory');
+ const one=await field('provider').boundingBox(),two=await field('scope_key').boundingBox();
+ if(Math.abs(one.y-two.y)>4||one.x===two.x)throw Error('desktop fields not in multiple columns');
+ await field('scope_key').fill('fixture-account');
+ await field('provider').selectOption('wechat');
+ if(await field('app_id').inputValue()!==''||await field('audio_numerator').inputValue()!=='')throw Error('cross-provider defaults leaked');
+ await field('provider').selectOption('shengwang');
+ if(await field('scope_key').inputValue()!=='fixture-account'||await field('audio_numerator').inputValue()!=='143')throw Error('typed supplier values lost');
+ await page.screenshot({path:'test-artifacts/chat-register.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});
+ if(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+1))throw Error('mobile overflow');
+ await page.screenshot({path:'test-artifacts/chat-register-mobile.png',fullPage:true});
+ await page.setViewportSize({width:1400,height:1000});
+ await page.goto('file://'+path.resolve('test-artifacts/chat-credentials.html'));
+ if(await page.locator('input[type=password]').count()!==3)throw Error('credential inputs missing');
+ if((await page.locator('input[type=password]').evaluateAll(inputs=>inputs.some(i=>i.value!==''))))throw Error('secret echoed');
+ await page.screenshot({path:'test-artifacts/chat-credentials.png',fullPage:true});
+ await page.goto('file://'+path.resolve('test-artifacts/chat-settings.html'));
+ if(await page.locator('input[name=reason][required]').count())throw Error('routine reason required');
+ await browser.close();console.log('聊天登记预设、多列与手机布局、跨通道切换及密钥不回显通过');
+})().catch(e=>{console.error(e);process.exitCode=1;});
