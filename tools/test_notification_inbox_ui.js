@@ -89,6 +89,15 @@ async function subscriptionTests() {
   assert.equal(saved.length,3,'同模板只保存一次授权')
   const health = await utils.getSubscriptionHealth(false)
   assert.equal(health.count,3,'健康度按模板计数')
+  status.items.find(item=>item.key==='worker_order_update').template_id='user-progress'
+  const shared = await utils.getSubscriptionSettings(true)
+  assert.equal(shared.items.length,2)
+  assert.equal(shared.items[0].title,'订单与服务进度通知')
+  let healthHelpers
+  const healthContext = {require:()=>({}),Component(){},module:{exports:{}}}
+  vm.runInNewContext(read('miniprogram/components/subscription-health-banner/index.js')+'\nmodule.exports={relevantItems}',healthContext)
+  healthHelpers=healthContext.module.exports
+  assert.equal(healthHelpers.relevantItems(shared.items,'worker').length,1,'共用模板仍在师傅端健康度检查中')
   console.log('订阅显示合并、三模板去重、同步授权和共享缓存通过')
 }
 function inboxSummaryTests() {

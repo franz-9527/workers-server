@@ -190,7 +190,12 @@ function groupSubscriptionItems(items) {
     if (primary[item.key] && !primary[previous.key]) groups[index] = Object.assign({}, item, { scene_keys: keys })
     else previous.scene_keys = keys
   })
-  return groups
+  return groups.map(item => {
+    if (item.scene_keys.indexOf('user_order_update') >= 0 && item.scene_keys.indexOf('worker_order_update') >= 0) {
+      return Object.assign({}, item, { title: '订单与服务进度通知', description: '覆盖我的下单和接单，具体事项显示在通知备注中；两种身份共用提醒次数' })
+    }
+    return item
+  })
 }
 
 function getSubscriptionSettings(force, options) {
