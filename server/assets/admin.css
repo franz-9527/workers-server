@@ -2325,3 +2325,9 @@ details.admin-subscribe-editor__section>summary small{margin-left:8px;color:var(
 .admin-subscribe-compact .admin-subscribe-editor__header p{margin:4px 0 0}
 .admin-subscribe-compact .admin-subscribe-field-row{padding:8px 0;min-height:40px}
 #admin-notification-test .admin-help{margin-bottom:0}
+
+.admin-subscribe-compact .admin-subscribe-item{display:flex;align-items:center;gap:12px}
+.admin-subscribe-compact .admin-subscribe-item__text{flex:1;min-width:0;width:auto}
+.admin-subscribe-compact .admin-subscribe-item__text strong{max-width:none;white-space:normal;overflow:visible;text-overflow:clip}
+.admin-subscribe-compact .admin-subscribe-item__status{flex:none}
+#wecom-test-form .admin-inline-actions select{width:auto;min-width:220px;max-width:100%}
