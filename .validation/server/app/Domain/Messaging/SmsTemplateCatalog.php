@@ -18,10 +18,6 @@ final class SmsTemplateCatalog
                 'name'=>'报价提醒','template_code'=>'','variables'=>['order_no','amount','time'],
                 'content'=>'您的订单${order_no}收到报价，金额${amount}元，时间${time}，请进入壁选小程序查看。','flow'=>'quote',
             ],
-            'payment_success'=>[
-                'name'=>'支付结果（普通，可选）','template_code'=>'','variables'=>['order_no','amount','time'],
-                'content'=>'您的订单${order_no}支付成功，金额${amount}元，时间${time}。','flow'=>'other',
-            ],
             'chat_unread_nudge'=>[
                 'name'=>'聊天未读催促（独立付费）','template_code'=>'','variables'=>['type'],
                 'content'=>'您有未读的${type}消息，请进入壁选小程序查看。','flow'=>'chat_nudge',
@@ -38,7 +34,6 @@ final class SmsTemplateCatalog
         $examples = [
             'order_status'=>['order_no'=>'BXCS12345678','status'=>'待确认','time'=>$timeText],
             'quote_received'=>['order_no'=>'BXCS12345678','amount'=>'100.00','time'=>$timeText],
-            'payment_success'=>['order_no'=>'BXCS12345678','amount'=>'50.00','time'=>$timeText],
             'chat_unread_nudge'=>['type'=>'订单沟通'],
             'nearby_worker_invite'=>['category'=>'墙布施工','district'=>'西湖区','distance'=>'3.2公里'],
         ];

@@ -171,6 +171,7 @@ foreach($wecomCases as [$content,$actionPath,$expected]) configAssert($targetMet
     configAssert($events['assignment_rejected']['source_label']==='师傅操作' && $events['order_submitted']['source_label']==='用户操作','source differs from recipient');
     $scenes=\WorkerAdmin\Infrastructure\Messaging\SubscriptionCatalog::subscriptionSceneDefinitions();
     configAssert(!isset($scenes['payment_success']) && isset($scenes['refund_result']),'duplicate payment template removed, refund review retained');
+    configAssert(!isset(\WorkerAdmin\Domain\Messaging\SmsTemplateCatalog::all()['payment_success']),'obsolete payment SMS template is not offered for configuration or tests');
     configAssert($scenes['chat_unread']['important'] && $scenes['chat_unread']['recipient_label']==='用户、师傅','chat reminder is important and covers both roles');
     configAssert($samples->subscriptionTestSampleValues('chat_unread')['status']==='您有未读的订单聊天消息','chat test uses production reminder wording');
 
