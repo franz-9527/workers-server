@@ -1,4 +1,4 @@
-name: Unified chat review regression final
+name: Unified chat review regression layout
 on: [push, workflow_dispatch]
 permissions:
   contents: read
