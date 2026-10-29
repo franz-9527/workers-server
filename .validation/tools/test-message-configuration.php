@@ -204,7 +204,7 @@ foreach($wecomCases as [$content,$actionPath,$expected]) configAssert($targetMet
     $auth=new class($db) extends \WorkerAdmin\Core\Auth{public bool $allowed=true;public function requireLogin(){}public function user(){return ['id'=>9];}public function requirePermission($p){if(!$this->allowed)throw new RuntimeException('denied');}};
     $csrf=new class extends \WorkerAdmin\Core\Csrf{public function verifyRequest(){throw new RuntimeException('CSRF');}};
     $module=new \WorkerAdmin\Http\Admin\Modules\ConfigurationSettingsAdminModule($db,$auth,$csrf,['test'=>$tester]);
-    $_SERVER['REQUEST_METHOD']='GET';$before=count($alerts->sent);$module->dispatch('settings.wecom.test');
+    $_SERVER['REQUEST_METHOD']='GET';$before=count($alerts->sent);configReject(static function()use($module){$module->dispatch('settings.wecom.test');},'POST');
     configAssert(http_response_code()===405 && count($alerts->sent)===$before,'GET cannot send admin test');
     $_SERVER['REQUEST_METHOD']='POST';$_POST=$input;$module->dispatch('settings.wecom.test');
     configAssert(count($alerts->sent)===$before && strpos(end($GLOBALS['redirects']),'channel=wecom')!==false,'invalid CSRF cannot send and stays on administrator page');
