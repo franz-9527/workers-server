@@ -27,7 +27,11 @@ jobs:
         with:
           go-version-file: chat/go.mod
       - name: Go call providers and runtime
-        run: cd chat && go test ./internal/calls ./internal/dependencies
+        run: |
+          mkdir -p test-artifacts/tested-go
+          gofmt -w chat/internal/calls/providers.go chat/internal/dependencies/calls.go chat/internal/calls/provider_settings_test.go
+          cp --parents chat/internal/calls/providers.go chat/internal/dependencies/calls.go chat/internal/calls/provider_settings_test.go test-artifacts/tested-go/
+          cd chat && go test ./internal/calls ./internal/dependencies
       - name: PHP syntax
         run: find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
       - name: Frontend model regression
