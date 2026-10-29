@@ -13,8 +13,6 @@ jobs:
           MYSQL_ROOT_HOST: '%'
         ports: ['3306/tcp']
         options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
-    env:
-      MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -22,4 +20,7 @@ jobs:
           php-version: '8.3'
           extensions: pdo_mysql,mbstring
           coverage: none
-      - run: php tools/inbox-probe.php
+      - name: Run inbox probe
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: php tools/inbox-probe.php
