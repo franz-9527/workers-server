@@ -50,3 +50,5 @@ jobs:
         with:
           name: message-settings-review
           path: test-artifacts/
+
+# Verify full template labels and compact notification test toolbar.
