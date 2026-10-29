@@ -22,7 +22,7 @@
   if(el('case'))el('case').hidden=true
  }
  function invalidate(){
-  life++;token='';expires=0;clearSensitive()
+  life++;token='';expires=0;snapshot='';cursor='';clearSensitive()
   for(const name of ['list','review-list','case-list','reminder-list'])el(name)?.replaceChildren()
   status('管理员登录或权限已变化，请重新登录后查询')
  }

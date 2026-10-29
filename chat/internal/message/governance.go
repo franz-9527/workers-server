@@ -54,20 +54,20 @@ func (g *GovernanceService) commit(tx *sql.Tx, p ports.Principal) error {
 }
 
 type AuditConversation struct {
- OrderNo string `json:"order_no,omitempty"`
- MatchMessage ports.ID `json:"match_message_id,omitempty"`
-	ID       ports.ID  `json:"conversation_id"`
-	OrderID  ports.ID  `json:"order_id"`
-	Activity time.Time `json:"activity_at"`
+	OrderNo      string    `json:"order_no,omitempty"`
+	MatchMessage ports.ID  `json:"match_message_id,omitempty"`
+	ID           ports.ID  `json:"conversation_id"`
+	OrderID      ports.ID  `json:"order_id"`
+	Activity     time.Time `json:"activity_at"`
 }
 type AuditList struct {
- Snapshot string `json:"snapshot_cursor,omitempty"`
-	Items  []AuditConversation `json:"items"`
-	Cursor string              `json:"next_cursor,omitempty"`
-	More   bool                `json:"has_more"`
+	Snapshot string              `json:"snapshot_cursor,omitempty"`
+	Items    []AuditConversation `json:"items"`
+	Cursor   string              `json:"next_cursor,omitempty"`
+	More     bool                `json:"has_more"`
 }
 type auditCursor struct {
- Filter string `json:"filter,omitempty"`
+	Filter   string    `json:"filter,omitempty"`
 	Snapshot string    `json:"snapshot"`
 	At       time.Time `json:"at"`
 	After    ports.ID  `json:"after"`
@@ -76,7 +76,7 @@ type auditCursor struct {
 // Materialize only IDs/activity in one DB statement, never message history.
 // Subsequent message activity cannot move a row across snapshot pages.
 func (g *GovernanceService) AuditList(ctx context.Context, p ports.Principal, token string, limit int) (AuditList, error) {
- return g.AuditSearch(ctx,p,AuditFilter{},token,"",limit)
+	return g.AuditSearch(ctx, p, AuditFilter{}, token, "", limit)
 }
 
 type ReminderSummary struct {

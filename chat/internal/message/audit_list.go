@@ -6,8 +6,8 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
- "time"
 	"github.com/franz-9527/workers/chat/internal/ports"
+	"time"
 )
 
 func (g *GovernanceService) encodeAuditCursor(p ports.Principal, c auditCursor) (string, error) {
@@ -85,13 +85,17 @@ func (g *GovernanceService) auditListPage(ctx context.Context, tx *sql.Tx, p por
 			return AuditList{}, err
 		}
 	}
-	for i := range out.Items { out.Items[i].MatchMessage = g.auditMatch(ctx,tx,filter,out.Items[i].ID) }
- release := c
- release.At = time.Now().UTC()
- release.After = "1"
- out.Snapshot, err = g.encodeAuditCursor(p,release)
- if err != nil { return AuditList{},err }
- if err = governanceLog(ctx, tx, p, "audit.list", "", "", "", "", ""); err != nil {
+	for i := range out.Items {
+		out.Items[i].MatchMessage = g.auditMatch(ctx, tx, filter, out.Items[i].ID)
+	}
+	release := c
+	release.At = time.Now().UTC()
+	release.After = "1"
+	out.Snapshot, err = g.encodeAuditCursor(p, release)
+	if err != nil {
+		return AuditList{}, err
+	}
+	if err = governanceLog(ctx, tx, p, "audit.list", "", "", "", "", ""); err != nil {
 		return AuditList{}, err
 	}
 	if err = g.commit(tx, p); err != nil {

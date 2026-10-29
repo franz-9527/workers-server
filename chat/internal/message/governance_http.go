@@ -14,13 +14,13 @@ import (
 )
 
 type governanceAction struct {
- OrderNo string `json:"order_no,omitempty"`
- Order ports.ID `json:"order_id,omitempty"`
- Query string `json:"query,omitempty"`
- Kind string `json:"kind,omitempty"`
- From string `json:"from,omitempty"`
- To string `json:"to,omitempty"`
- Replace string `json:"replace_cursor,omitempty"`
+	OrderNo      string   `json:"order_no,omitempty"`
+	Order        ports.ID `json:"order_id,omitempty"`
+	Query        string   `json:"query,omitempty"`
+	Kind         string   `json:"kind,omitempty"`
+	From         string   `json:"from,omitempty"`
+	To           string   `json:"to,omitempty"`
+	Replace      string   `json:"replace_cursor,omitempty"`
 	Conversation ports.ID `json:"conversation_id,omitempty"`
 	Message      ports.ID `json:"message_id,omitempty"`
 	Item         ports.ID `json:"item_id,omitempty"`
@@ -59,8 +59,8 @@ func (h *GovernanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	routes := map[string]string{
 		"audit/search": "conversation_id order_id order_no actor_id query kind from to cursor replace_cursor limit",
-  "audit/av":   "conversation_id message_id",
-		"audit/list": "cursor limit", "audit/history": "conversation_id cursor message_id limit", "audit/url": "conversation_id message_id item_id thumbnail",
+		"audit/av":     "conversation_id message_id",
+		"audit/list":   "cursor limit", "audit/history": "conversation_id cursor message_id limit", "audit/url": "conversation_id message_id item_id thumbnail",
 		"governance/reminders": "after", "governance/status": "actor_id", "governance/restrict": "actor_id expected_version action seconds reason", "governance/report": "conversation_id message_id item_id reason",
 		"governance/appeal": "target_type target_id expected_version reason", "governance/cases": "after", "governance/queue": "after",
 		"governance/evidence": "case_id expected_version item_id reason", "governance/decide": "case_id expected_version action reason",
@@ -122,8 +122,8 @@ func (h *GovernanceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var data any
 	switch route {
 	case "audit/search":
-  data, err = h.service.AuditSearch(r.Context(),p,AuditFilter{Conversation:q.Conversation,Order:q.Order,OrderNo:q.OrderNo,Actor:q.Actor,Query:q.Query,Kind:q.Kind,From:q.From,To:q.To},q.Cursor,q.Replace,q.Limit)
- case "audit/list":
+		data, err = h.service.AuditSearch(r.Context(), p, AuditFilter{Conversation: q.Conversation, Order: q.Order, OrderNo: q.OrderNo, Actor: q.Actor, Query: q.Query, Kind: q.Kind, From: q.From, To: q.To}, q.Cursor, q.Replace, q.Limit)
+	case "audit/list":
 		data, err = h.service.AuditList(r.Context(), p, q.Cursor, q.Limit)
 	case "audit/history":
 		data, err = h.service.AuditHistory(r.Context(), p, HistoryRequest{ConversationID: q.Conversation, Cursor: q.Cursor, TargetID: q.Message, Limit: q.Limit})

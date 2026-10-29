@@ -119,6 +119,10 @@ let reviewBrowser
  assert.equal(await page.locator('#cg-messages').innerText(),'')
  assert.equal(await page.locator('#cg-list').innerText(),'')
  assert.match(await visibleText(),/权限已变化/)
+ unauthorized=false
+ await page.locator('#cg-search button').first().click();await idle()
+ assert.equal(await page.locator('#cg-list button').count(),1,'new authenticated query did not recover')
+ assert.equal(calls.filter(c=>c.endpoint.endsWith('/audit/search')).at(-1).body.replace_cursor,undefined,'old identity snapshot survived reauthentication')
  assert.equal(calls.some(c=>/mark.*read|ack|presence/.test(c.endpoint)),false,'administrative inspection changed member state')
  assert.deepEqual(errors,[])
  await browser.close()

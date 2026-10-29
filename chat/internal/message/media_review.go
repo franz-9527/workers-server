@@ -12,15 +12,15 @@ import (
 )
 
 type ImageReview struct {
- ConversationID ports.ID `json:"conversation_id"`
- SenderID ports.ID `json:"sender_id"`
-	IntentID     ports.ID          `json:"intent_id"`
-	Version      ports.ID          `json:"expected_version"`
-	ManifestHash string            `json:"manifest_hash"`
-	SubmittedAt  time.Time         `json:"submitted_at"`
-	ExpiresAt    time.Time         `json:"expires_at"`
-	State        string            `json:"review_state"`
-	Items        []MediaItemStatus `json:"items"`
+	ConversationID ports.ID          `json:"conversation_id"`
+	SenderID       ports.ID          `json:"sender_id"`
+	IntentID       ports.ID          `json:"intent_id"`
+	Version        ports.ID          `json:"expected_version"`
+	ManifestHash   string            `json:"manifest_hash"`
+	SubmittedAt    time.Time         `json:"submitted_at"`
+	ExpiresAt      time.Time         `json:"expires_at"`
+	State          string            `json:"review_state"`
+	Items          []MediaItemStatus `json:"items"`
 }
 
 func (m *MediaService) admin(ctx context.Context, tx *sql.Tx, p ports.Principal) error {
