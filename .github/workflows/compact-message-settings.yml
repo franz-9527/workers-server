@@ -50,3 +50,5 @@ jobs:
         with:
           name: message-settings-review
           path: test-artifacts/
+
+# Verify actual queued order payloads and final compact layout.
