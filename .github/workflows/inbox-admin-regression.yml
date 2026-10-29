@@ -41,3 +41,5 @@ jobs:
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
         run: php tools/inbox-probe.php
+
+# Include cross-role shared progress-template health checks.
