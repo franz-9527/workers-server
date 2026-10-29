@@ -70,6 +70,32 @@ $repair=$samples->buildSubscriptionTestData('order_progress',$scene,['test_event
 check($fee['thing4']['value']==='费用调整待确认'&&$fee['thing4']['value']!==$repair['thing4']['value'],'one template renders event-specific remarks');
 $stopped=false;try{(new WorkerAdmin\Infrastructure\External\WeChatSubscribeGateway())->send(['openid'=>'fixture','template_id'=>'retired-template','scene_key'=>'fee_adjustment','data'=>['thing1'=>['value'=>'test']]]);}catch(RuntimeException $error){$stopped=$error->getCode()===40037;check(WorkerAdmin\Domain\Messaging\MessageDeliveryFailurePolicy::decide('wechat_subscribe',1,$error->getMessage())['terminal'],'obsolete template is terminal');}
 check($stopped,'obsolete queued template stopped before outbound IO');
+
+$db->execute('INSERT INTO users VALUES(2)');
+$db->execute("CREATE TABLE orders(id INT PRIMARY KEY,public_no VARCHAR(40),order_source_type VARCHAR(20),merchant_profile_id INT NULL,category_name_snapshot VARCHAR(80),category_names_snapshot VARCHAR(80),title VARCHAR(80),description TEXT,audit_note TEXT,expected_visit_at DATETIME NULL,city VARCHAR(40),district VARCHAR(40),address_summary TEXT,assigned_worker_id INT)");
+$db->execute("INSERT INTO orders VALUES(77,'ORDER77','consumer',NULL,'墙布','墙布','施工订单','需求','',NULL,'杭州','西湖','示例地址',10)");
+$db->execute('CREATE TABLE merchant_profiles(id INT PRIMARY KEY,business_name VARCHAR(80))');
+$db->execute('CREATE TABLE order_addresses(order_id INT,address_summary TEXT,contact_name_masked VARCHAR(20))');
+$db->execute('CREATE TABLE worker_profiles(id INT PRIMARY KEY,user_id INT,display_name VARCHAR(40))');
+$db->execute("INSERT INTO worker_profiles VALUES(10,2,'测试师傅')");
+$db->execute('CREATE TABLE appointment_records(id INT,order_id INT,context_type VARCHAR(20),appointment_at DATETIME,note TEXT,wait_customer_notice TINYINT)');
+$db->execute('CREATE TABLE wechat_identities(id INT,user_id INT,openid VARCHAR(80),status VARCHAR(20))');
+$db->execute("INSERT INTO wechat_identities VALUES(1,1,'fixture-customer','active'),(2,2,'fixture-worker','active')");
+$db->execute('CREATE TABLE message_outbox(id INT AUTO_INCREMENT PRIMARY KEY,topic VARCHAR(40),business_key VARCHAR(128) UNIQUE,payload_json LONGTEXT,status VARCHAR(20),attempt_count INT,next_attempt_at DATETIME,created_at DATETIME)');
+Quota::saveSubscriptionPreference($db,2,'worker_order_update',true,'accept');
+$order=['user_id'=>1,'assigned_worker_id'=>10,'public_no'=>'ORDER77','final_amount_cents'=>12800];
+foreach(['change_requested','repair_worker_accepted','change_accepted','completion_submitted'] as $event){
+ $definition=WorkerAdmin\Domain\Messaging\OrderMessageDefinition::definition($event,['assisted'=>$event==='completion_submitted']);
+ $queued=WorkerAdmin\Infrastructure\Messaging\OrderSubscriptionQueue::queueOrderSubscription($db,77,'fixture-'.$event,$event,$definition,$order,['order_no'=>'ORDER77','time'=>'2026-10-30 12:00']);
+ check($queued['queued'],'real order queue: '.$event);
+}
+$payloads=array_map(static fn($row)=>json_decode($row['payload_json'],true),$db->fetchAll('SELECT payload_json FROM message_outbox ORDER BY id'));
+check(count(array_unique(array_column($payloads,'template_id')))===1,'fee, repair and both roles queue the same template');
+check($payloads[0]['data']['thing4']['value']==='费用调整待确认'&&$payloads[1]['data']['thing4']['value']==='师傅已接受维修','real queued remarks reflect each event');
+check($payloads[0]['user_id']===1&&$payloads[2]['user_id']===2,'common template keeps recipient ownership');
+check(strpos($payloads[3]['data']['thing4']['value'],'管理员')!==false,'assisted completion remark uses actual event status');
+echo "真实订单发件箱：费用、维修、师傅事项共用模板，备注与接收身份正确\n";
+
 echo "共享模板授权、扣减、恢复、失效与旧额度兼容通过\n";
 
 $db->execute("CREATE TABLE chat_call_settings(id INT PRIMARY KEY,revision INT,config_json LONGTEXT)");

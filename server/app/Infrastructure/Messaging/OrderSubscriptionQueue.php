@@ -49,7 +49,7 @@ final class OrderSubscriptionQueue
             'service_address'=>$address,
             'requirement_note'=>$requirement,
             'audit_note'=>$auditNote,
-            'notice_text'=>trim((string)($parameters['notice_text']??$parameters['message']??$parameters['remark']??'')) ?: (string)(MessageEventCatalog::get($eventType)['label']??$definition['status']??'订单进度更新'),
+            'notice_text'=>trim((string)($parameters['notice_text']??$parameters['message']??$parameters['remark']??'')) ?: (string)($definition['status']??MessageEventCatalog::get($eventType)['label']??'订单进度更新'),
             'expected_visit_time'=>$expectedVisit,
             'contact_name'=>trim((string)($row['contact_name_masked']??''))?:'订单联系人',
             'appointment_time'=>$appointmentTime,
