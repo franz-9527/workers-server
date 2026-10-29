@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+set_error_handler(function(int $level,string $message,string $file,int $line):bool{throw new ErrorException($message,0,$level,$file,$line);});
 // Run only against an explicitly provided isolated MySQL fixture.
 spl_autoload_register(function(string $class):void{
     if(strpos($class,'WorkerAdmin\\')!==0)return;
@@ -41,6 +42,14 @@ Quota::saveSubscriptionPreference($db,1,'repair_progress',true,'accept');Quota::
 check(Quota::subscriptionPreferences($db,1)['user_order_update']['remaining_count']===5,'serial authorizations preserve increments');
 $GLOBALS['fixture_settings']['wechat.subscribe_template_ids']['user_order_update']=$binding('changed-progress-template');
 check(Quota::subscriptionPreferences($db,1)['fee_adjustment']['remaining_count']===0,'new template does not inherit obsolete grants');
+$original=['user_order_update'=>$binding('changed-progress-template'),'order_audit'=>$binding('legacy-audit-template')];
+$posted=['user_order_update'=>$binding('changed-progress-template'),'order_audit'=>$binding('changed-progress-template')];
+$known=['wechat.subscribe_template_ids'=>['value_type'=>'json','setting_value'=>json_encode($original)]];
+$updates=WorkerAdmin\Domain\Messaging\SettingsValuePolicy::validate(['wechat.subscribe_template_ids'=>json_encode($posted)],$known,'message_subscribe','',SubscriptionCatalog::subscriptionSceneDefinitions(),SubscriptionCatalog::subscriptionSemanticLabels(),SubscriptionCatalog::reviewResultFixedTemplateFields());
+check(json_decode($updates['wechat.subscribe_template_ids'],true)['order_audit']['template_id']==='legacy-audit-template','shared settings save retains original fallback binding');
+$GLOBALS['fixture_settings']['wechat.subscribe_template_ids']['worker_order_update']['subscription_type']='long_term';
+Quota::saveSubscriptionPreference($db,1,'worker_repair',true,'accept');Quota::markSubscriptionConsumed($db,1,'worker_rework');
+$p=Quota::subscriptionPreferences($db,1);check($p['worker_order_update']['remaining_count']===null&&$p['worker_repair']['authorization_status']==='accept','long-term pool remains authorized without decrement');
 echo "共享模板授权、扣减、恢复、失效与旧额度兼容通过\n";
 
 $db->execute("CREATE TABLE chat_call_settings(id INT PRIMARY KEY,revision INT,config_json LONGTEXT)");

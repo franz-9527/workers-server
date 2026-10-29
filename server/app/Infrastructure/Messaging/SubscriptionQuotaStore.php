@@ -51,12 +51,13 @@ final class SubscriptionQuotaStore
             foreach($keys as $key){
                 $candidate=$decoded[$key]??null;
                 if(!is_array($candidate))continue;
+                if((string)($candidate['subscription_type']??'one_time')!==(string)$scenes[$key]['subscription_type'])continue;
                 if(isset($candidate['template_id'])&&(string)$candidate['template_id']!==(string)$scenes[$key]['template_id'])continue;
                 if($pool===null||(int)($candidate['remaining_count']??0)>(int)($pool['remaining_count']??0)
                     ||((int)($candidate['remaining_count']??0)===(int)($pool['remaining_count']??0)&&strcmp((string)($candidate['updated_at']??''),(string)($pool['updated_at']??''))>0))$pool=$candidate;
             }
             $pool=$pool??['enabled'=>false,'authorization_status'=>'','remaining_count'=>0,'total_authorized_count'=>0];
-            foreach($keys as $key)$decoded[$key]=array_merge($pool,['template_id'=>(string)$scenes[$key]['template_id'],'subscription_type'=>(string)$scenes[$key]['subscription_type']]);
+            foreach($keys as $key)$decoded[$key]=array_merge($pool,['template_id'=>(string)$scenes[$key]['template_id'],'subscription_type'=>(string)$scenes[$key]['subscription_type'],'remaining_count'=>$scenes[$key]['subscription_type']==='long_term'?null:(int)($pool['remaining_count']??0)]);
         }
         return $decoded;
     }

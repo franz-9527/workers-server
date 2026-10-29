@@ -72,6 +72,12 @@ foreach($allScenes as $sceneKey=>$scene){
  </aside>
  <div class="admin-subscribe-manager__content">
  <?php foreach($allScenes as $sceneKey=>$scene):$map=(array)$scene['field_map'];$testEventOptions=\WorkerAdmin\Services\OrderNotificationService::subscriptionTestEventOptions($sceneKey);$testSamples=\WorkerAdmin\Services\OrderNotificationService::subscriptionTestSampleValues($sceneKey); ?>
+  <?php if(!empty($definitions[$sceneKey]['inherited_from'])): $owner=$definitions[$sceneKey]['inherited_from']; ?>
+  <section id="subscribe-scene-<?= e($sceneKey) ?>" class="admin-subscribe-editor" data-subscribe-scene-panel="<?= e($sceneKey) ?>" <?= $sceneKey===$firstScene?'':'hidden' ?>>
+    <h4><?= e($scene['name']) ?></h4><p>此业务事件共用“<?= e($definitions[$owner]['title']) ?>”的模板和提醒次数，通过备注说明具体事项。旧的独立模板配置已保留，统一模板不可用时继续回退。</p>
+    <a class="admin-btn admin-btn--primary" href="<?= e(admin_url('settings.messages',['channel'=>'subscribe','scene'=>$owner])) ?>#subscribe-scene-<?= e($owner) ?>">管理统一进度模板</a>
+  </section>
+  <?php continue; endif; ?>
   <section id="subscribe-scene-<?= e($sceneKey) ?>" class="admin-subscribe-editor" data-subscribe-scene-panel="<?= e($sceneKey) ?>" <?= $sceneKey===$firstScene?'':'hidden' ?>>
    <header class="admin-subscribe-editor__header"><div><span class="admin-subscribe-editor__eyebrow"><?= $scene['important']?'重要通知':'其他通知' ?> · <?= $scene['subscription_type']==='long_term'?'长期订阅':'一次性订阅' ?> · <?= e($scene['recipient']) ?></span><h4><?= e($scene['name']) ?></h4><p><?= e($scene['description']) ?></p></div><div class="admin-subscribe-editor__header-actions"><span class="admin-subscribe-scene-dirty" data-subscribe-scene-dirty hidden><i class="ri-edit-circle-line"></i> 未保存</span><span class="admin-badge admin-badge--muted"><?= $scene['ready']?'已配置':'待配置' ?></span><button class="admin-btn admin-btn--primary admin-btn--sm" type="submit" name="_notification_scene" value="<?= e($sceneKey) ?>" formaction="<?= e(admin_url('settings.save')) ?>" formmethod="post" data-subscribe-scene-save="<?= e($sceneKey) ?>" data-loading-text="正在保存…"><i class="ri-save-3-line"></i> 保存当前通知</button></div></header>
    <div class="admin-subscribe-editor__section">

@@ -84,7 +84,7 @@ $decision=$current['decisions'][(string)$pool['id']]??(new \WorkerAdmin\Domain\C
 <section class="admin-card"><div class="admin-card__body"><h2>近30天估算用量</h2><p>按供应商分别显示本地累计计量分录；与官方完整报表分别核对。</p>
 <table class="admin-table"><thead><tr><th>日期</th><th>通道</th><th>估算折算分钟</th></tr></thead><tbody><?php foreach($current['trend'] as $row): ?><tr><td><?= e($row['day']) ?></td><td><?= e($providers[$row['provider']]) ?></td><td><?= e($minutes($row['estimated_units'])) ?></td></tr><?php endforeach; ?></tbody></table>
 <h2>最近通话记录</h2><table class="admin-table"><thead><tr><th>通话</th><th>会话</th><th>通道／类型</th><th>状态</th><th>时间</th></tr></thead><tbody>
-<?php foreach($current['recent'] as $row): $model=json_decode($row['model_json'],true,32,JSON_THROW_ON_ERROR); ?><tr><td><?= e($row['id']) ?></td><td><?= e($row['conversation_id']) ?></td><td><?= e($providers[$model['Provider']]??'待确认') ?>／<?= ($model['Media']??'')==='video'?'视频':'语音' ?></td><td><?= e($callStates[$row['state']]??'状态待核对') ?></td><td><?= e(date('Y-m-d H:i:s',(int)$row['created_at'])) ?></td></tr><?php endforeach; ?></tbody></table>
+<?php foreach($current['recent'] as $row): $model=json_decode($row['model_json'],true,32,JSON_THROW_ON_ERROR); ?><tr><td><?= e($row['id']) ?></td><td><?= e($row['conversation_id']) ?></td><td><?= e($providers[$model['Provider']??'']??'待确认') ?>／<?= ($model['Media']??'')==='video'?'视频':'语音' ?></td><td><?= e($callStates[$row['state']]??'状态待核对') ?></td><td><?= e(date('Y-m-d H:i:s',(int)$row['created_at'])) ?></td></tr><?php endforeach; ?></tbody></table>
 </div></section>
 <?php endif; ?>
 <?php

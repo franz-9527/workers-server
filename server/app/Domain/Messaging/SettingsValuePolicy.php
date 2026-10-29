@@ -107,6 +107,15 @@ final class SettingsValuePolicy
                     $persisted[$notificationScene]=$decoded[$notificationScene];
                     $decoded=$persisted;
                 }
+                // 共用中的旧场景只读，保留持久化的原模板供统一模板停用时回退。
+                $original=json_decode((string)($known[$key]['setting_value']??'{}'),true);
+                if(!is_array($original))$original=[];
+                foreach($sceneDefinitions as $sceneKey=>$sceneDefinition){
+                    if(empty($sceneDefinition['inherited_from']))continue;
+                    if($notificationScene===$sceneKey)throw new RuntimeException('此通知正在共用进度模板，请前往对应的统一进度通知修改。');
+                    if(array_key_exists($sceneKey,$original))$decoded[$sceneKey]=$original[$sceneKey];
+                    else unset($decoded[$sceneKey]);
+                }
                 // withdrawal_result 从未接入发送链路，V2.2.9 起停止展示并在下次保存时清理旧占位。
                 unset($decoded['withdrawal_result']);
                 $definitions = $sceneDefinitions;
