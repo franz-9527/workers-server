@@ -20,6 +20,23 @@ jobs:
           php-version: '8.3'
           extensions: pdo_mysql,mbstring
           coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: PHP syntax
+        run: find server tools -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Frontend regression
+        run: |
+          find miniprogram tools -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/test_notification_inbox_ui.js
+      - name: WXML compiler
+        run: |
+          npm install --no-save --ignore-scripts miniprogram-compiler@0.2.3
+          node tools/check-wxml.js miniprogram --compile
+      - name: Admin and template regression
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: php -d error_reporting=E_ALL tools/test_notification_admin_regression.php
       - name: Run inbox probe
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
