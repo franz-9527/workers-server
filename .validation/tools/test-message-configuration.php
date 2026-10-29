@@ -142,6 +142,7 @@ foreach($wecomCases as [$content,$actionPath,$expected]) configAssert($targetMet
 // 通知精简、渠道接收人、聊天配置与管理员真实测试入口。
 (static function():void{
     extract(configFixture());
+    $samples=new \WorkerAdmin\Application\Messaging\SubscriptionTestData($settings);
     $events=\WorkerAdmin\Domain\Messaging\MessageEventCatalog::all();
     $retired=['booking_fee_paid','booking_fee_paid_upfront','refund_succeeded','measurement_change_refunded','measurement_late_balance_refunded','commission_estimate_created','auto_reviewed_5d','measurement_construction_linked'];
     foreach($retired as $event){
@@ -150,6 +151,20 @@ foreach($wecomCases as [$content,$actionPath,$expected]) configAssert($targetMet
         foreach(['inapp','sms','wecom'] as $channel)configAssert(!\WorkerAdmin\Domain\Messaging\MessageEventCatalog::enabled($channel,$event,[$event=>['enabled'=>true]]),'stale switch cannot restore '.$event.' '.$channel);
     }
     foreach(['measurement_service_paid','measurement_change_paid'] as $event)configAssert($events[$event]['recipients']===['worker'],'payment still informs worker, no duplicate payer notice');
+
+    if(!function_exists('public_id')){function public_id(){static $id=0;return 'TEST-NOTICE-'.++$id;}}
+    $projection=new class extends \WorkerAdmin\Core\Database{
+        public array $notices=[];public int $reads=0;
+        public function __construct(){}
+        public function fetch($sql,array $params=[]){++$this->reads;return ['public_no'=>'TEST-ORDER','user_id'=>42,'assigned_worker_id'=>7,'final_amount_cents'=>12000,'booking_fee_cents'=>2000,'is_demo'=>1,'user_mobile'=>''];}
+        public function fetchValue($sql,array $params=[]){return null;}
+        public function insert($sql,array $params=[]){$this->notices[]=$params;return count($this->notices);}
+    };
+    foreach($retired as $event)\WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::queue($projection,1,'retired:'.$event,$event);
+    configAssert($projection->reads===0 && !$projection->notices,'retired facts exit before any notification projection');
+    foreach(['measurement_service_paid','measurement_change_paid'] as $event)\WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::queue($projection,1,'payment:'.$event,$event);
+    configAssert(count($projection->notices)===2 && array_column($projection->notices,'recipient_type')===['worker','worker'] && array_column($projection->notices,'recipient_id')===[7,7],'actual payment projections only address the assigned worker');
+
     foreach(['completion_submitted','cancel_approved','cancel_rejected','dispute_opened','warranty_repair_requested'] as $event)configAssert(!empty($events[$event]['inapp_visible']),'actionable event retained '.$event);
     configAssert(\WorkerAdmin\Domain\Messaging\MessageEventCatalog::audienceForChannel('wecom','assignment_rejected')==='管理员','WeCom recipient is admin even for worker-origin events');
     configAssert(\WorkerAdmin\Domain\Messaging\MessageEventCatalog::audienceForChannel('sms','assignment_rejected')==='用户','SMS audience excludes administrators');
