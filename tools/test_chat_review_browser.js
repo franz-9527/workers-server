@@ -11,7 +11,7 @@ let reviewBrowser
  const message=(id,sender,type,extra={})=>({message_id:id,sender_id:sender,message_type:type,state:'published',created_at:'2026-10-30T09:00:00Z',...extra})
  const history={messages:[
   message('101','11','text',{text:'明天下午施工，请确认墙面尺寸。<script>window.fixtureXSS=true</script>',sender:{display_role:'merchant'}}),
-  message('102','12','text',{text:'收到，材料已经准备。',sender:{display_role:'team_worker'},reply:{message_id:'101',text:'明天下午施工'}}),
+  message('102','12','text',{text:'收到，材料已经准备。',sender:{display_role:'team_worker'},reply:{message_id:'90',text:'此前的施工安排'}}),
   message('103','11','image',{images:[{item_id:'301',ordinal:0}]}),
   message('104','12','audio',{av:{duration_ms:9000,transcript:'到达之前会先联系您。'}}),
   message('105','12','video',{av:{duration_ms:12000}}),
@@ -28,7 +28,7 @@ let reviewBrowser
   if(endpoint==='/admin/')return json({access_token:'fixture',expires_at:new Date(Date.now()+300000).toISOString()})
   if(unauthorized&&endpoint.startsWith('/chat/'))return json({code:'CHAT_UNAUTHORIZED'},401)
   if(endpoint.endsWith('/audit/search'))return json({items:[{conversation_id:'81',order_id:'401',activity_at:'2026-10-30T09:00:00Z'}],has_more:!body.cursor,next_cursor:body.cursor?'':'next-page',snapshot_cursor:'snapshot-'+(++generation)})
-  if(endpoint.endsWith('/audit/history'))return json(body.message_id==='101'?{...history,messages:history.messages.slice(0,2)}:history)
+  if(endpoint.endsWith('/audit/history'))return json(body.message_id==='90'?{...history,messages:[message('90','11','text',{text:'此前的施工安排'}),message('91','12','text',{text:'已记录'})]}:history)
   if(endpoint.endsWith('/audit/url')||endpoint.endsWith('/media/review/url'))return json({url:'https://media.fixture/image.png',expires_at:Math.floor(Date.now()/1000)+60})
   if(endpoint.endsWith('/audit/av')||endpoint.endsWith('/av/review/url'))return json({url:'https://media.fixture/media.bin',expires_at:Math.floor(Date.now()/1000)+60})
   if(endpoint.endsWith('/media/review/list'))return json(imageRows.filter(r=>BigInt(r.intent_id)>BigInt(body.after)))
@@ -47,8 +47,8 @@ let reviewBrowser
  await page.goto('http://admin.fixture/admin/?route=chat.governance');await idle()
  assert.equal(await page.locator('[data-audit-tab]').count(),3)
  await page.locator('#cg-list button').first().click();await idle()
- assert.equal(await page.locator('.chat-audit-message').count(),6)
- assert.equal(await page.locator('.chat-audit-message.is-right').count(),3)
+ assert.equal(await page.locator('#cg-messages .chat-audit-message').count(),6)
+ assert.equal(await page.locator('#cg-messages .chat-audit-message.is-right').count(),3)
  assert.equal(await page.locator('#cg-messages').innerText().then(t=>t.includes('此原文绝不能显示')),false)
  assert.equal(await page.evaluate(()=>window.fixtureXSS),undefined)
  assert.equal(calls.filter(c=>c.endpoint.endsWith('/audit/url')||c.endpoint.endsWith('/audit/av')).length,0,'private media requested before click')
@@ -65,7 +65,7 @@ let reviewBrowser
  assert.equal(calls.filter(c=>c.endpoint.endsWith('/audit/search')).at(-1).body.cursor,'next-page')
  await page.locator('#cg-list button').first().click();await idle()
  await page.locator('.chat-audit-reference').click();await idle()
- assert.equal(calls.filter(c=>c.endpoint.endsWith('/audit/history')).at(-1).body.message_id,'101')
+ assert.equal(calls.filter(c=>c.endpoint.endsWith('/audit/history')).at(-1).body.message_id,'90')
  await page.locator('#cg-return').click();await idle()
  assert.equal(await page.locator('#cg-messages .chat-audit-message').count(),6)
  await page.setViewportSize({width:390,height:844})
@@ -113,6 +113,7 @@ let reviewBrowser
  assert.match(await page.locator('#cg-evidence-text').innerText(),/受控原始证据/)
  await page.screenshot({path:'test-artifacts/chat-audit-cases.png',fullPage:true})
  await tab('records')
+ await page.locator('#cg-list button').first().click();await idle()
  unauthorized=true
  await page.locator('#cg-search button').first().click();await idle()
  assert.equal(await page.locator('#cg-messages').innerText(),'')
