@@ -11,7 +11,7 @@
 <section data-audit-panel="records">
 <form id="cg-search" class="chat-audit-search" role="search">
 <label>会话编号<input class="admin-control" name="conversation_id" inputmode="numeric" placeholder="精确查询"></label>
-<label>订单编号<input class="admin-control" name="order_id" inputmode="numeric" placeholder="订单内部编号"></label>
+<label>订单号<input class="admin-control" name="order_no" placeholder="输入订单号"></label>
 <label>用户编号<input class="admin-control" name="actor_id" inputmode="numeric" placeholder="会话参与用户"></label>
 <label>消息内容<input class="admin-control" name="query" maxlength="80" placeholder="搜索已发布文字"></label>
 <label>消息类型<select class="admin-control" name="kind"><option value="">全部</option><option value="text">文字</option><option value="image">图片</option><option value="audio">语音</option><option value="video">视频</option></select></label>

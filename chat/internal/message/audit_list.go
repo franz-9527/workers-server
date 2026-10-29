@@ -48,7 +48,7 @@ func (g *GovernanceService) auditListPage(ctx context.Context, tx *sql.Tx, p por
 	if tx.QueryRowContext(ctx, `SELECT expires_at>UTC_TIMESTAMP(6) FROM chat_audit_snapshots WHERE id=? AND binding=? LOCK IN SHARE MODE`, c.Snapshot, bindingFor(g.environment, p)).Scan(&live) != nil || !live {
 		return AuditList{}, ErrResync
 	}
-	query := `SELECT CAST(conversation_id AS CHAR),CAST(order_id AS CHAR),activity_at FROM chat_audit_snapshot_items WHERE snapshot_id=?`
+	query := `SELECT CAST(conversation_id AS CHAR),CAST(order_id AS CHAR),activity_at,COALESCE((SELECT JSON_UNQUOTE(JSON_EXTRACT(g.snapshot_json,'$.order_context.public_no')) FROM chat_conversations c JOIN chat_policy_guards g ON g.scope_key=c.scope_key WHERE c.id=chat_audit_snapshot_items.conversation_id LIMIT 1),'') FROM chat_audit_snapshot_items WHERE snapshot_id=?`
 	args := []any{c.Snapshot}
 	if token != "" {
 		query += ` AND (activity_at<? OR (activity_at=? AND conversation_id<?))`
@@ -63,7 +63,7 @@ func (g *GovernanceService) auditListPage(ctx context.Context, tx *sql.Tx, p por
 	out := AuditList{Items: []AuditConversation{}}
 	for rows.Next() {
 		var item AuditConversation
-		if rows.Scan(&item.ID, &item.OrderID, &item.Activity) != nil {
+		if rows.Scan(&item.ID, &item.OrderID, &item.Activity, &item.OrderNo) != nil {
 			rows.Close()
 			return AuditList{}, ports.ErrUnavailable
 		}

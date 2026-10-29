@@ -15,6 +15,7 @@ import (
 )
 
 type AuditFilter struct {
+ OrderNo string `json:"order_no,omitempty"`
  Conversation ports.ID `json:"conversation_id,omitempty"`
  Order ports.ID `json:"order_id,omitempty"`
  Actor ports.ID `json:"actor_id,omitempty"`
@@ -25,6 +26,8 @@ type AuditFilter struct {
 }
 func (f AuditFilter) validated() (AuditFilter,error) {
  f.Query=strings.TrimSpace(f.Query)
+ f.OrderNo=strings.TrimSpace(f.OrderNo)
+ if !utf8.ValidString(f.OrderNo)||utf8.RuneCountInString(f.OrderNo)>80||strings.ContainsAny(f.OrderNo,"\r\n\t\x00"){return f,ports.ErrInvalid}
  for _,id:=range []ports.ID{f.Conversation,f.Order,f.Actor}{if id!=""&&!validID(id){return f,ports.ErrInvalid}}
  if !utf8.ValidString(f.Query)||utf8.RuneCountInString(f.Query)>80||strings.ContainsRune(f.Query,0){return f,ports.ErrInvalid}
  if f.Kind!=""&&f.Kind!="text"&&f.Kind!="image"&&f.Kind!="audio"&&f.Kind!="video"{return f,ports.ErrInvalid}
@@ -77,6 +80,7 @@ func (g *GovernanceService) AuditSearch(ctx context.Context,p ports.Principal,f 
   query:="INSERT INTO chat_audit_snapshot_items(snapshot_id,conversation_id,order_id,activity_at) SELECT ?,c.id,c.order_id,COALESCE(c.last_message_at,c.created_at) FROM chat_conversations c WHERE c.conversation_type='order'"
   args:=[]any{c.Snapshot}
   if f.Conversation!=""{query+=" AND c.id=?";args=append(args,string(f.Conversation))}
+  if f.OrderNo!=""{query+=" AND (CAST(c.order_id AS CHAR)=? OR EXISTS(SELECT 1 FROM chat_policy_guards g WHERE g.scope_key=c.scope_key AND JSON_UNQUOTE(JSON_EXTRACT(g.snapshot_json,'$.order_context.public_no'))=?))";args=append(args,f.OrderNo,f.OrderNo)}
   if f.Order!=""{query+=" AND c.order_id=?";args=append(args,string(f.Order))}
   if f.Actor!=""{query+=" AND EXISTS(SELECT 1 FROM chat_members a WHERE a.conversation_id=c.id AND a.actor_id=?)";args=append(args,string(f.Actor))}
   if f.messageFilter(){where,values:=f.messageSQL("c");query+=" AND EXISTS(SELECT 1 FROM chat_messages m WHERE "+where+")";args=append(args,values...)}

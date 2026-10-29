@@ -54,6 +54,7 @@ func (g *GovernanceService) commit(tx *sql.Tx, p ports.Principal) error {
 }
 
 type AuditConversation struct {
+ OrderNo string `json:"order_no,omitempty"`
  MatchMessage ports.ID `json:"match_message_id,omitempty"`
 	ID       ports.ID  `json:"conversation_id"`
 	OrderID  ports.ID  `json:"order_id"`

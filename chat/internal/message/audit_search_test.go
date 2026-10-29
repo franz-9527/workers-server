@@ -46,8 +46,11 @@ func TestMySQLUnifiedAuditSearchAndSnapshotReplacement(t *testing.T){
  result,err=g.AuditSearch(f.ctx,admin,AuditFilter{Order:"401",Actor:"10202",Query:"统一审核"},"",snapshot,20)
  if err!=nil||len(result.Items)!=1||result.Items[0].MatchMessage!=message.MessageID{t.Fatal("combined filters / anchor",result,err)}
  snapshot=result.Snapshot
+ result,err=g.AuditSearch(f.ctx,admin,AuditFilter{OrderNo:"CHAT-PLATFORM-401"},"",snapshot,20)
+ if err!=nil||len(result.Items)!=1||result.Items[0].OrderNo!="CHAT-PLATFORM-401"{t.Fatal("human readable order number search",result,err)}
+ snapshot=result.Snapshot
  if _,err=g.AuditSearch(context.Background(),principal("10203"),AuditFilter{},"","",20);err==nil{t.Fatal("ordinary user received administrative search")}
- if err=s.Recall(f.ctx,principal("10202"),q.ConversationID,message.MessageID);err!=nil{t.Fatal(err)}
+ if _,err=s.Recall(f.ctx,principal("10202"),q.ConversationID,message.MessageID);err!=nil{t.Fatal(err)}
  result,err=g.AuditSearch(f.ctx,admin,AuditFilter{Conversation:q.ConversationID,Query:"统一审核"},"",snapshot,20)
  if err!=nil||len(result.Items)!=0{t.Fatal("recalled content searchable",result,err)}
  detail,err:=g.AuditHistory(f.ctx,admin,HistoryRequest{ConversationID:q.ConversationID})
