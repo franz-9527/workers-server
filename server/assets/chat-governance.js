@@ -95,7 +95,7 @@
  }
  function readFilters(){
   const values=Object.fromEntries(new FormData(el('search'))),result={}
-  for(const key of ['conversation_id','order_id','actor_id'])if(values[key].trim()){if(!id(values[key].trim()))throw new Error('请填写有效的数字编号');result[key]=values[key].trim()}
+  for(const key of ['conversation_id','actor_id'])if(values[key].trim()){if(!id(values[key].trim()))throw new Error('请填写有效的数字编号');result[key]=values[key].trim()}
   if(values.order_no.trim())result.order_no=values.order_no.trim()
   if(values.query.trim())result.query=values.query.trim()
   if(values.kind)result.kind=values.kind
