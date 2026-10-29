@@ -1,0 +1,33 @@
+name: Temporary chat notification regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-chat-notifications.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-notifications-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  notification-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_sqlite,mbstring,curl,openssl,ctype,sodium
+          coverage: none
+      - name: Verify PHP runtime
+        run: php -r 'if (PHP_VERSION !== "8.3.36") { exit(1); } echo "PHP ".PHP_VERSION." verified\n";'
+      - name: PHP syntax and notification regressions with fake providers
+        working-directory: .validation
+        run: |
+          set -euo pipefail
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php tools/test-message-configuration.php
+          php tools/test-message-delivery.php
