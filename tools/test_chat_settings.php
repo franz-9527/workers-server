@@ -69,6 +69,39 @@ foreach(['register','credentials','settings'] as $section){
  $html='<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'.$css.'</style></head><body class="admin-body"><main style="max-width:1200px;margin:24px auto;padding:16px">'.$body.'</main><script>'.$js.'</script></body></html>';
  file_put_contents(dirname(__DIR__).'/test-artifacts/chat-'.$section.'.html',$html);
 }
+// Verify existing signed internal transport rejects replay and cross-environment requests.
+$db->execute('CREATE TABLE chat_internal_nonces(nonce_hash CHAR(64) PRIMARY KEY,expires_at DATETIME)');
+$auth=new WorkerAdmin\Infrastructure\Messaging\ChatInternalAuth($db,'test','fixture',str_repeat('k',32));
+$body='{"action":"provider_credentials"}';$headers=[];
+foreach($auth->sign('/chat-calls.php',$body) as $line){[$key,$value]=explode(': ',$line,2);$headers[strtolower(substr($key,7))]=$value;}
+denied(fn()=>$auth->verify('/chat-calls.php',$body,[]),'unsigned credential request accepted');
+$auth->verify('/chat-calls.php',$body,$headers);
+denied(fn()=>$auth->verify('/chat-calls.php',$body,$headers),'internal credential request replay accepted');
+$foreign=$headers;$foreign['environment']='production';denied(fn()=>$auth->verify('/chat-calls.php',$body,$foreign),'cross-environment secret request accepted');
+
+// Storage routine notes are optional; applying history still requires a cleaning basis.
+$db->execute('CREATE TABLE chat_storage_policy(id INT PRIMARY KEY,revision INT,policy_json LONGTEXT,apply_through_id BIGINT,updated_by INT,updated_at DATETIME)');
+$db->execute('CREATE TABLE chat_storage_policy_audit(revision INT,admin_id INT,policy_json LONGTEXT,apply_through_id BIGINT,reason TEXT,created_at DATETIME)');
+$db->execute('CREATE TABLE chat_storage_applications(revision INT,state VARCHAR(20),last_message_id INT,errors INT,diagnostic TEXT)');
+$db->execute('CREATE TABLE chat_collaboration_settings(id INT PRIMARY KEY,member_limit INT,revision INT,updated_by INT,updated_at DATETIME)');
+$db->execute('INSERT INTO chat_collaboration_settings VALUES(1,10,1,NULL,UTC_TIMESTAMP())');
+$db->execute('CREATE TABLE chat_collaboration_events(order_id BIGINT NULL,actor_id INT,event_type VARCHAR(40),display_role_version INT,reason TEXT,created_at DATETIME)');
+$db->execute('CREATE TABLE chat_messages(id BIGINT PRIMARY KEY)');
+$form=['revision'=>'1','apply_existing'=>'0','tier_enabled'=>'0','tier_images'=>'1','tier_audio'=>'1','tier_videos'=>'1','tier_age_days'=>'30','tier_idle_days'=>'1','tier_remaining_days'=>'32','tier_batch'=>'20','tier_min_kb'=>'64','video_count'=>'10','video_mb'=>'20'];
+foreach(['text','image','audio','video'] as $kind){$form[$kind.'_mode']='permanent';$form[$kind.'_days']='60';}
+$policy=WorkerAdmin\Application\Chat\ChatStorageSettings::fromForm($form);
+$db->execute('INSERT INTO chat_storage_policy VALUES(1,1,:json,0,NULL,UTC_TIMESTAMP())',['json'=>json_encode($policy)]);
+$storage=new WorkerAdmin\Application\Chat\ChatStorageSettings($db,str_repeat('fixture',8));
+$preview=$storage->preview($form,1);$storage->save($form+['preview_token'=>$preview['preview_token']],1,'super_admin');
+check($db->fetchValue('SELECT reason FROM chat_storage_policy_audit')==='更新新消息的保存与上传设置','new message setting still requires manual reason');
+$history=$form;$history['revision']='2';$history['apply_existing']='1';$preview=$storage->preview($history,1);
+denied(fn()=>$storage->save($history+['preview_token'=>$preview['preview_token']],1,'super_admin'),'history applied without cleaning basis');
+$storage->saveGroupLimit(['group_revision'=>'1','member_limit'=>'15'],1,'super_admin');
+check((int)$db->fetchValue('SELECT member_limit FROM chat_collaboration_settings WHERE id=1')===15,'optional group note blocked normal update');
+$current=$storage->current();$preview=null;$section='policy';$canManageGroups=true;$groupOrderNo='';$groupMembers=[];
+ob_start();require dirname(__DIR__).'/server/views/admin/chat-storage.php';$body=ob_get_clean();
+file_put_contents(dirname(__DIR__).'/test-artifacts/chat-storage.html','<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'.$css.'</style></head><body><main style="max-width:1200px;margin:24px auto;padding:16px">'.$body.'</main></body></html>');
+echo "签名内部接口鉴权与防重放、新消息保存及历史清理说明、群人数上限通过\n";
 $service->change(['_action'=>'credentials','revision'=>'3','clear_credentials'=>'1'],1,'super_admin');
 check($creds->runtime()['managed']&&$creds->runtime()['app_id']==='','clear must disable legacy fallback');
 check((int)$db->fetchValue('SELECT COUNT(*) FROM chat_call_admin_audit')===4,'rejected actions committed audit');
