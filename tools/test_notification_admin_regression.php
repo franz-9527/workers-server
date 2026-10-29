@@ -12,6 +12,7 @@ function app_config($key,$default=null){return ['app.key'=>str_repeat('fixture-o
 function setting($key,$default=null){return $GLOBALS['fixture_settings'][$key]??$default;}
 function e($value):string{return htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8');}
 function admin_url($route,$params=[]):string{return '/admin/?'.http_build_query(['route'=>$route]+$params);}
+function asset_url($p):string{return '/assets/'.$p;}
 function csrf(){return new class{function input(){return '<input name="csrf" value="fixture">';}};}
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Infrastructure\Messaging\SubscriptionCatalog;

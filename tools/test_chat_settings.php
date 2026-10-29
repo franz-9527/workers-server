@@ -6,6 +6,7 @@ function check(bool $ok,string $why):void{if(!$ok)throw new RuntimeException($wh
 function denied(callable $fn,string $why):void{try{$fn();}catch(RuntimeException $e){return;}throw new LogicException($why);}
 function e($v):string{return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
 function admin_url($r,$p=[]):string{return '/admin/?'.http_build_query(['route'=>$r]+$p);}
+function asset_url($p):string{return '/assets/'.$p;}
 function csrf(){return new class{function input(){return '<input type="hidden" name="csrf" value="fixture">';}};}
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Application\Chat\ChatCallCredentials;
@@ -60,7 +61,7 @@ $service->change(['_action'=>'ack_alert','revision'=>'3','alert_id'=>'1'],1,'sup
 check($db->fetchValue("SELECT reason FROM chat_call_admin_audit WHERE action='ack_alert'")==='确认已查看资源提醒','routine reason automatic');
 denied(fn()=>$service->change(['_action'=>'budget','revision'=>'3'],1,'super_admin'),'sensitive operation lost explanation');
 $credentials=$creds->current();$current=['settings'=>['config'=>$settings,'revision'=>'3'],'pools'=>[],'alerts'=>[],'trend'=>[],'recent'=>[],'audit'=>[],'active'=>[]];$notice='';$canManage=true;
-@mkdir(dirname(__DIR__).'/test-artifacts',0777,true);
+if(!is_dir(dirname(__DIR__).'/test-artifacts'))mkdir(dirname(__DIR__).'/test-artifacts',0777,true);
 foreach(['register','credentials','settings'] as $section){
  ob_start();require dirname(__DIR__).'/server/views/admin/chat-calls.php';$body=ob_get_clean();
  check(!str_contains($body,$input['certificate'])&&!str_contains($body,$input['customer_secret']),'secret rendered');

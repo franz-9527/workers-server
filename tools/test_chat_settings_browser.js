@@ -11,6 +11,8 @@ const path=require('node:path');
   if(await field(key).inputValue()!==value)throw Error('wrong documented preset '+key);
  }
  if(await field('free_total').inputValue()!=='')throw Error('account entitlement guessed');
+ if(await page.locator('#chat-call-registration>.chat-admin-checks input[type=checkbox]').count()!==3)throw Error('registration checkbox group is outside form');
+ if(await page.locator('#chat-call-registration>.chat-admin-actions button').count()!==1)throw Error('registration submit outside form');
  if(await page.locator('input[type=checkbox]:checked').count())throw Error('verification auto-enabled');
  if(await page.locator('input[name=reason][required]').count())throw Error('routine reason still mandatory');
  const one=await field('provider').boundingBox(),two=await field('scope_key').boundingBox();

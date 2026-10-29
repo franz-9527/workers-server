@@ -106,9 +106,9 @@ func (b *callBroker) Identities(ctx context.Context, q calls.ResourceRequest) (m
 	return r, e
 }
 func (b *callBroker) ProviderCredentials(ctx context.Context) (calls.ProviderCredentials, error) {
- var result calls.ProviderCredentials
- err := b.request(ctx, map[string]string{"action":"provider_credentials"}, &result)
- return result, err
+	var result calls.ProviderCredentials
+	err := b.request(ctx, map[string]string{"action": "provider_credentials"}, &result)
+	return result, err
 }
 func (r *Runtime) EnableCalls(c CallsConfig) error {
 	if !c.Enabled {
@@ -136,7 +136,7 @@ func (r *Runtime) EnableCalls(c CallsConfig) error {
 	}
 	r.callTransport = transport
 	broker := &callBroker{transport, signer, c.PHPEndpoint, c.KeyID}
-	provider := &calls.Providers{Resolve: broker.ProviderCredentials,PublishPrivilegesVerified: c.PublishPrivilegesVerified, Broker: broker, Environment: r.environment, AppID: c.ShengwangAppID, Certificate: os.Getenv(c.CertificateEnv), CustomerID: os.Getenv(c.CustomerIDEnv), CustomerSecret: os.Getenv(c.CustomerSecretEnv)}
+	provider := &calls.Providers{Resolve: broker.ProviderCredentials, PublishPrivilegesVerified: c.PublishPrivilegesVerified, Broker: broker, Environment: r.environment, AppID: c.ShengwangAppID, Certificate: os.Getenv(c.CertificateEnv), CustomerID: os.Getenv(c.CustomerIDEnv), CustomerSecret: os.Getenv(c.CustomerSecretEnv)}
 	authority, e := calls.NewOrderAuthority(r.sql, r.Conversations, r.environment)
 	if e != nil {
 		return e

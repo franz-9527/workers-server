@@ -10,22 +10,22 @@ import (
 	"io"
 	"net/http"
 	"net/url"
- "regexp"
+	"regexp"
 	"strconv"
 	"time"
 )
 
 type ProviderCredentials struct {
- Schema int `json:"schema"`
- Managed bool `json:"managed"`
- AppID string `json:"app_id"`
- Certificate string `json:"certificate"`
- CustomerID string `json:"customer_id"`
- CustomerSecret string `json:"customer_secret"`
- PublishPrivilegesVerified bool `json:"publish_privileges_verified"`
+	Schema                    int    `json:"schema"`
+	Managed                   bool   `json:"managed"`
+	AppID                     string `json:"app_id"`
+	Certificate               string `json:"certificate"`
+	CustomerID                string `json:"customer_id"`
+	CustomerSecret            string `json:"customer_secret"`
+	PublishPrivilegesVerified bool   `json:"publish_privileges_verified"`
 }
 type Providers struct {
- Resolve func(context.Context) (ProviderCredentials, error)
+	Resolve                                                     func(context.Context) (ProviderCredentials, error)
 	PublishPrivilegesVerified                                   bool
 	Broker                                                      Broker
 	Environment, AppID, Certificate, CustomerID, CustomerSecret string
@@ -33,27 +33,38 @@ type Providers struct {
 }
 
 func (p *Providers) Ready(provider Provider) bool {
-	if provider == Wechat { return true }
- if provider != Shengwang { return false }
- ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
- defer cancel()
- configured, err := p.configured(ctx)
- return err == nil && configured.PublishPrivilegesVerified && configured.SupplierControlReady()
+	if provider == Wechat {
+		return true
+	}
+	if provider != Shengwang {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	configured, err := p.configured(ctx)
+	return err == nil && configured.PublishPrivilegesVerified && configured.SupplierControlReady()
 }
 
 // Resolve per operation so saved administrator credentials take effect without a restart.
 func (p *Providers) configured(ctx context.Context) (*Providers, error) {
- copy := *p
- copy.Resolve = nil
- if p.Resolve == nil { return &copy, nil }
- value, err := p.Resolve(ctx)
- if err != nil || value.Schema != 1 { return nil, ErrUnavailable }
- if !value.Managed { return &copy, nil }
- copy.AppID, copy.Certificate = value.AppID, value.Certificate
- copy.CustomerID, copy.CustomerSecret = value.CustomerID, value.CustomerSecret
- copy.PublishPrivilegesVerified = value.PublishPrivilegesVerified
- return &copy, nil
+	copy := *p
+	copy.Resolve = nil
+	if p.Resolve == nil {
+		return &copy, nil
+	}
+	value, err := p.Resolve(ctx)
+	if err != nil || value.Schema != 1 {
+		return nil, ErrUnavailable
+	}
+	if !value.Managed {
+		return &copy, nil
+	}
+	copy.AppID, copy.Certificate = value.AppID, value.Certificate
+	copy.CustomerID, copy.CustomerSecret = value.CustomerID, value.CustomerSecret
+	copy.PublishPrivilegesVerified = value.PublishPrivilegesVerified
+	return &copy, nil
 }
+
 // Closing admission must not disable remedial stop/query for existing exposure.
 func (p *Providers) SupplierControlReady() bool {
 	return regexp.MustCompile("^[a-f0-9]{32}$").MatchString(p.AppID) && regexp.MustCompile("^[a-f0-9]{32}$").MatchString(p.Certificate) && p.CustomerID != "" && p.CustomerSecret != ""
@@ -81,11 +92,13 @@ func (p *Providers) Credentials(ctx context.Context, s Session, permit Permit, a
 		return map[string]any{"provider": Wechat, "caller": people["caller_id"], "listener": people["callee_id"], "initiator": actor == s.CallerID, "expires_at": permit.Until}, nil
 	}
 	if p.Resolve != nil {
-  configured, err := p.configured(ctx)
-  if err != nil { return nil, ErrUnavailable }
-  return configured.Credentials(ctx, s, permit, actor)
- }
- if !p.Ready(Shengwang) || permit.AppID != p.AppID {
+		configured, err := p.configured(ctx)
+		if err != nil {
+			return nil, ErrUnavailable
+		}
+		return configured.Credentials(ctx, s, permit, actor)
+	}
+	if !p.Ready(Shengwang) || permit.AppID != p.AppID {
 		return nil, ErrUnavailable
 	}
 	uid := uint32(1)
@@ -151,11 +164,13 @@ func (p *Providers) Stop(ctx context.Context, s Session, permit Permit) (bool, e
 		return false, nil
 	} // Native 1v1 has no verified server close/query API. Evidence review is explicit.
 	if p.Resolve != nil {
-  configured, err := p.configured(ctx)
-  if err != nil { return false, ErrUnavailable }
-  return configured.Stop(ctx, s, permit)
- }
- if permit.AppID != p.AppID || !p.SupplierControlReady() {
+		configured, err := p.configured(ctx)
+		if err != nil {
+			return false, ErrUnavailable
+		}
+		return configured.Stop(ctx, s, permit)
+	}
+	if permit.AppID != p.AppID || !p.SupplierControlReady() {
 		return false, ErrUnavailable
 	}
 	channel := p.channel(s, permit.AppID)

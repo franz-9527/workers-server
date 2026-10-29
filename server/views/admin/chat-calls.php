@@ -13,7 +13,7 @@ foreach($current['pools'] as $existing){if($existing['provider']==='shengwang'){
 <div class="chat-admin-compact">
 <div class="admin-page-head"><div><h1>音视频通话</h1><p>微信与声网分别使用平台共享免费资源。语音、视频共用各通道总池；没有个人额度、充值或付费续通。</p></div></div>
 <?php if($notice!==''): ?><p role="alert"><?= e($notice) ?></p><?php endif; ?>
-<?php $tabs=['resources'=>'额度与提醒','active'=>'活动通话','history'=>'通话记录','audit'=>'管理记录','settings'=>'功能设置','credentials'=>'通道密钥'];if($canManage)$tabs['register']='登记资源'; ?>
+<?php $tabs=['resources'=>'额度与提醒','active'=>'活动通话','history'=>'通话记录','audit'=>'管理记录','settings'=>'功能设置'];if($canManage){$tabs['credentials']='通道密钥';$tabs['register']='登记资源';} ?>
 <nav class="admin-inline-actions admin-mb-2" aria-label="通话管理分页"><?php foreach($tabs as $tab=>$label): ?><a class="admin-btn <?= $section===$tab?'admin-btn--primary':'admin-btn--ghost' ?>" href="<?= e(admin_url('chat.calls',['section'=>$tab])) ?>" <?= $section===$tab?'aria-current="page"':'' ?>><?= e($label) ?></a><?php endforeach; ?></nav>
 <?php if($section==='settings'): ?>
 <section class="admin-card"><div class="admin-card__body">
@@ -108,4 +108,4 @@ if($pagingKeys){$pagination=['page'=>$current['pagination'][$pagingKeys[0]]['pag
 ?>
 
 </div>
-<script src="assets/chat-call-settings.js" defer></script>
+<script src="<?= e(asset_url('chat-call-settings.js')) ?>" defer></script>
