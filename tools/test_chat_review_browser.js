@@ -1,8 +1,9 @@
 const {chromium}=require('playwright')
 const fs=require('node:fs')
 const assert=require('node:assert/strict')
+let reviewBrowser
 ;(async()=>{
- const browser=await chromium.launch({headless:true})
+ const browser=await chromium.launch({headless:true});reviewBrowser=browser
  const page=await browser.newPage({viewport:{width:1440,height:1050},locale:'zh-CN'})
  const html=fs.readFileSync('test-artifacts/chat-review.html','utf8')
  const calls=[],errors=[];let generation=0,unauthorized=false,partial=false
@@ -121,4 +122,4 @@ const assert=require('node:assert/strict')
  assert.deepEqual(errors,[])
  await browser.close()
  console.log('统一会话气泡、混合分页、图片与音视频审核门槛、角色变化清理和桌面手机布局通过（全部模拟网关）')
-})().catch(e=>{console.error(e);process.exitCode=1})
+})().catch(async e=>{console.error(e);await reviewBrowser?.close();process.exitCode=1})
