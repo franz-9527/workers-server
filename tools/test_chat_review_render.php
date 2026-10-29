@@ -17,7 +17,7 @@ class FixtureAuth extends WorkerAdmin\Core\Auth{
 $db=new WorkerAdmin\Core\Database([]);$csrf=new WorkerAdmin\Core\Csrf();
 $operations=new FixtureAuth('operations');$finance=new FixtureAuth('finance');
 check($operations->can('audit.view')&&$operations->can('chat.images.review')&&$operations->can('chat.media.review'),'existing administrator roles must work without a mini grant');
-$module=new WorkerAdmin\Http\Admin\Modules\ChatGovernanceAdminModule($db,$operations,$csrf);
+$module=new WorkerAdmin\Http\Admin\Modules\ChatGovernanceAdminModule($db,new FixtureAuth('super_admin'),$csrf);
 $_SERVER['REQUEST_METHOD']='GET';$_GET=[];
 ob_start();$module->dispatch('chat.governance');$html=ob_get_clean();
 check(substr_count($html,'data-audit-tab=')===3&&str_contains($html,'无需另行申请抽检授权'),'three unified sections');
@@ -29,6 +29,9 @@ check($xp->query('//*[@id="cg-review-type"]/option')->length===3,'unified type f
 $css=file_get_contents(dirname(__DIR__).'/server/assets/admin.css');$js=file_get_contents(dirname(__DIR__).'/server/assets/chat-governance.js');
 if(!is_dir('test-artifacts'))mkdir('test-artifacts',0775,true);
 file_put_contents('test-artifacts/chat-review.html','<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'.$css.'</style></head><body class="admin-body"><main style="max-width:1280px;margin:auto;padding:20px">'.$html.'</main><script>'.$js.'</script></body></html>');
+$operationsModule=new WorkerAdmin\Http\Admin\Modules\ChatGovernanceAdminModule($db,$operations,$csrf);
+ob_start();$operationsModule->dispatch('chat.governance');$operationsHTML=ob_get_clean();
+check(!str_contains($operationsHTML,'id="cg-evidence"'),'ordinary operations role must not inherit original-evidence access');
 $financeModule=new WorkerAdmin\Http\Admin\Modules\ChatGovernanceAdminModule($db,$finance,$csrf);
 ob_start();$financeModule->dispatch('chat.governance');$financeHTML=ob_get_clean();
 check(substr_count($financeHTML,'data-audit-tab=')===1,'read-only finance has records without review actions');
