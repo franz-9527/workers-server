@@ -1,4 +1,4 @@
-name: Chat administration settings regression v2
+name: Chat administration settings regression final
 on: [push, workflow_dispatch]
 permissions:
   contents: read
