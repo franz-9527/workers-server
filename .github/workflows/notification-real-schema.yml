@@ -1,4 +1,4 @@
-name: Notification real schema regression
+name: Notification real schema verified fix
 on: [push, workflow_dispatch]
 permissions:
   contents: read
@@ -23,6 +23,7 @@ jobs:
           coverage: none
       - name: Actual schema inbox regression
         env:
+          NOTIFICATION_INBOX_REAL_SCHEMA_TEST: '1'
           MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
         run: |
           php -l server/app/Infrastructure/Persistence/DatabaseNotificationInboxRepository.php
