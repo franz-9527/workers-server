@@ -14,7 +14,7 @@ function fixture(fulfillment='scheduled') {
     actions:{can_work:true,can_worker_cancel:true,can_cancel:true,can_request_repair:true},
     assignment:{id:'a1',status:'accepted',amount_cents:80000,commission_cents:8000,net_income_cents:72000},
     assigned_worker:{id:'w1',name:'张师傅',rating:'4.9',review_count:12,mobile:'13800000000',contact_revealed:true,can_call:true,status:'accepted'},
-    appointment:{appointment_at:'2026-11-01 09:00',appointment_at_text:'2026-11-01 09:00',note:'请提前电话联系',status:'confirmed'},
+    appointment:{appointment_at:'2026-11-01 09:00',at:'2026-11-01 09:00',note:'请提前电话联系',status:'confirmed'},
     media:[],answers:[],changes:[],after_sales:[],negotiations:[],events:[{time:'2026-10-30 09:00',title:'师傅已接单'}],quotes:[],
     commission_receivable:{unpaid_cents:0},commission:{rate_percent:10,minimum_cents:0}
   }
