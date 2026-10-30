@@ -83,7 +83,7 @@
 
     <view class="workbench-search">
       <text class="cuIcon-search"></text>
-      <input placeholder-class="admin-placeholder" value="{{searchText}}" placeholder="{{searchPlaceholder}}" confirm-type="search" bindinput="inputSearch" bindconfirm="submitSearch"/>
+      <input placeholder-class="order-modal-placeholder admin-placeholder" value="{{searchText}}" placeholder="{{searchPlaceholder}}" confirm-type="search" bindinput="inputSearch" bindconfirm="submitSearch"/>
       <text wx:if="{{searchText}}" class="search-clear" bindtap="clearSearch">清除</text>
     </view>
 

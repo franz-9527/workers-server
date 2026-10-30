@@ -211,7 +211,7 @@
 
       <view class="field">
         <text class="field-label">{{actionKey === 'dispute_resolve' ? '处理结果' : '处理说明'}}</text>
-        <textarea cursor-spacing="24" placeholder-class="admin-placeholder" maxlength="1000" value="{{actionReason}}" placeholder="{{actionKey === 'audit_approve' || actionKey === 'contact_reveal_approve' || actionKey === 'measurement_hold_approve' ? '可选；服务端仍会重新校验当前事实' : '请填写处理原因/说明'}}" bindinput="actionReasonInput"></textarea>
+        <textarea cursor-spacing="24" placeholder-class="order-modal-placeholder admin-placeholder" maxlength="1000" value="{{actionReason}}" placeholder="{{actionKey === 'audit_approve' || actionKey === 'contact_reveal_approve' || actionKey === 'measurement_hold_approve' ? '可选；服务端仍会重新校验当前事实' : '请填写处理原因/说明'}}" bindinput="actionReasonInput"></textarea>
       </view></scroll-view>
 
       <view class="order-modal-footer modal-actions">

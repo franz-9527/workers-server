@@ -91,7 +91,9 @@
   display:flex;align-items:flex-start;gap:8rpx;color:var(--om-text);line-height:1.65;
 }
 .order-modal .ack checkbox,.order-modal .appointment-wait-option checkbox {flex:none}
-.order-modal .admin-two,.order-modal .assignment-fields {grid-template-columns:repeat(2,minmax(0,1fr))}
+.order-modal .admin-two,.order-modal .assignment-fields,.order-modal .share-fields {grid-template-columns:repeat(2,minmax(0,1fr))}
+.order-modal .supplement-upload-actions {grid-template-columns:repeat(2,minmax(0,1fr))}
+.order-modal .supplement-upload-actions button {height:auto!important;min-height:88rpx;line-height:1.45!important;padding:16rpx 12rpx!important}
 .order-modal .admin-field,.order-modal .assignment-field,.order-modal .share-fields>view {min-width:0}
 .order-modal .amount-input {min-width:0}
 .order-modal .amount-input input {flex:1;min-width:0;width:0}
@@ -116,6 +118,12 @@
   .order-modal .admin-field>text,.order-modal .quote-field>text,
   .order-modal .review-rating-label,.order-modal .review-template-title {color:var(--om-text)!important}
   .order-modal .bg-cyan {background:#00aebd!important;color:#061d20!important}
+  .order-modal .share-tip {background:#17383d;color:#bedde1}
+  .order-modal .share-fields>view {border-color:var(--om-border)}
+  .order-modal .share-fields text {color:var(--om-muted)}
+  .order-modal .supplement-requirement {background:var(--om-warning);color:var(--om-warning-text)}
+  .order-modal .supplement-upload-actions button {background:#17383d!important;color:#80e7ee!important}
+  .order-modal .supplement-uploaded {color:#8ce3b7}
   .order-modal .line-orange {color:#f0bd76;border-color:#a98049}
   .order-modal .order-modal-placeholder {color:var(--om-muted)!important}
   .order-modal input,.order-modal textarea {background:var(--om-field)!important;color:var(--om-text)!important;border-color:var(--om-border)!important}

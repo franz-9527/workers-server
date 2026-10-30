@@ -33,7 +33,7 @@ function structure(){
    assert.match(attributes(src,dialog).class,/order-modal-dialog/)
    assert.ok(children.some(n=>n.tag==='scroll-view'&&attributes(src,n).class?.includes('order-modal-body')),p+' needs native scrolling')
    for(const input of nodes.filter(n=>n.start>m.start&&n.end<m.end&&['input','textarea'].includes(n.tag))){
-    assert.ok(attributes(src,input)['placeholder-class']?.split(' ').includes('order-modal-placeholder'))
+    assert.ok(attributes(src,input)['placeholder-class']?.split(' ').includes('order-modal-placeholder'),p+' '+src.slice(input.start,input.openEnd))
     assert.equal(attributes(src,input)['cursor-spacing'],'24')
    }
   }
@@ -82,10 +82,10 @@ function cases(){
  return output
 }
 async function browserTests(){
- const {chromium}=require('playwright');let browser
+ const {chromium}=require('playwright');let browser,page
  try{
   browser=await chromium.launch({headless:true})
-  const page=await browser.newPage({viewport:{width:320,height:568},deviceScaleFactor:1})
+  page=await browser.newPage({viewport:{width:320,height:568},deviceScaleFactor:1})
   fs.mkdirSync(path.join(root,'artifacts/modals'),{recursive:true})
   const rows=cases(),report=[]
   async function show(row,theme,viewport,large=false){
@@ -144,7 +144,7 @@ async function browserTests(){
   for(const row of rows.filter(r=>/user-showRepair|user-showSupplement|worker-quote|component-appointment|component-invite$|admin-adminRefund/.test(r.name)))await show(row,'dark',{width:390,height:360},true)
   fs.writeFileSync(path.join(root,'artifacts/modals/layout-report.json'),JSON.stringify(report,null,2))
   console.log(report.length+' 组布局通过：28 个表单场景，明暗模式、窄屏、短屏及放大文字；仅检查布局，不提交业务请求')
- }finally{if(browser)await browser.close()}
+ }catch(error){if(page)await page.screenshot({path:path.join(root,'artifacts/modals/failure.png')}).catch(()=>{});throw error}finally{if(browser)await browser.close()}
 }
 structure()
 if(process.argv.includes('--visual'))browserTests().catch(e=>{console.error(e);process.exitCode=1})
