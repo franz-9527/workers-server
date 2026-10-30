@@ -14,7 +14,7 @@ function fixture(fulfillment='scheduled') {
     actions:{can_work:true,can_worker_cancel:true,can_cancel:true,can_request_repair:true},
     assignment:{id:'a1',status:'accepted',amount_cents:80000,commission_cents:8000,net_income_cents:72000},
     assigned_worker:{id:'w1',name:'张师傅',rating:'4.9',review_count:12,mobile:'13800000000',contact_revealed:true,can_call:true,status:'accepted'},
-    appointment:{appointment_at:'2026-11-01 09:00',note:'请提前电话联系',status:'confirmed'},
+    appointment:{appointment_at:'2026-11-01 09:00',appointment_at_text:'2026-11-01 09:00',note:'请提前电话联系',status:'confirmed'},
     media:[],answers:[],changes:[],after_sales:[],negotiations:[],events:[{time:'2026-10-30 09:00',title:'师傅已接单'}],quotes:[],
     commission_receivable:{unpaid_cents:0},commission:{rate_percent:10,minimum_cents:0}
   }
@@ -121,7 +121,7 @@ function attributes(src,n){
   for(const m of head.matchAll(/([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'))?/g))result[m[1]]=m[2]??m[3]??''
   return result
 }
-const esc = v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')
+const esc = v=>String(v??'').replace(/<!--[\s\S]*?-->/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')
 function evaluate(expression,data){try{return vm.runInNewContext(expression,data,{timeout:100})}catch(_){return undefined}}
 function binding(value,data){
   const exact=value.match(/^{{([\s\S]*?)}}$/)
@@ -145,7 +145,7 @@ function render(src,data){
         else if('wx:else'in a){if(chain)continue;chain=true}
         else chain=false
         let body='',position=n.openEnd
-        const innerEnd=src.slice(n.start,n.openEnd).endsWith('/>')?n.openEnd:src.lastIndexOf('</',n.end)
+        const innerEnd=src.slice(n.start,n.openEnd).endsWith('/>')?n.openEnd:src.lastIndexOf('</',n.end-1)
         if(n.children.length){
           // Child text gaps are ordinary whitespace in these production templates.
           body=esc(binding(src.slice(position,n.children[0].start),local))+siblings(n.children,local)
