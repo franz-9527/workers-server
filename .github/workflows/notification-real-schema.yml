@@ -1,0 +1,27 @@
+name: Notification real schema diagnosis
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  inbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring
+          coverage: none
+      - name: Actual schema inbox regression
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: php tools/test_notification_real_schema.php
