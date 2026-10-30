@@ -91,7 +91,7 @@ async function browserTests(){
   async function show(row,theme,viewport,large=false){
    await page.setViewportSize(viewport);await page.emulateMedia({colorScheme:theme})
    const styles=(row.file.includes('/components/')?'':css('miniprogram/app.wxss'))+css(row.file.replace('.wxml','.wxss'))
-   await page.setContent('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;font-family:Arial,"Noto Sans CJK SC",sans-serif;font-size:14px}view,scroll-view,navigator,checkbox-group{display:block}text{display:inline}button,input,textarea{font:inherit}page{display:block}.order-modal input::placeholder,.order-modal textarea::placeholder{color:var(--om-muted);opacity:1}'+styles+'</style><page><view class="'+(row.file.includes('/components/')?'component-scope':row.file.includes('adminWorkbench/index')?'workbench-page':'detail-page')+'">'+row.html+'</view></page>')
+   await page.setContent('<!doctype html><meta charset="utf-8"><style>html,body{margin:0;font-family:Arial,"Noto Sans CJK SC",sans-serif;font-size:14px}view,scroll-view,navigator,checkbox-group{display:block}text{display:inline}button,input,textarea{font:inherit}page{display:block}.order-modal input::placeholder,.order-modal textarea::placeholder{color:var(--om-muted);opacity:1}'+styles+'</style><page><view class="'+(row.file.includes('/components/')?'component-scope':row.file.includes('adminWorkbench/index')?'admin-page':'detail-page')+'">'+row.html+'</view></page>')
    await page.evaluate(large=>{
     document.querySelectorAll('textarea[value]').forEach(el=>el.value=el.getAttribute('value'))
     if(large){
