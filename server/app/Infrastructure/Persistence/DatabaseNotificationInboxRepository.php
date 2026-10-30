@@ -195,10 +195,14 @@ final class DatabaseNotificationInboxRepository implements NotificationInboxRepo
         $json="IF(JSON_VALID(n.data_json),n.data_json,'{}')";
         $id="JSON_UNQUOTE(JSON_EXTRACT({$json},'$.order_id'))";
         $type="JSON_TYPE(JSON_EXTRACT({$json},'$.order_id'))";
+        // Real recipient/public-ID columns are ascii_bin; JSON extraction is utf8mb4_bin.
+        // Normalize every CONCAT operand explicitly, without changing persisted columns.
+        // Binary keys also keep differently cased standalone public IDs distinct.
         // Identity remains part of the key. An association is never an order access grant.
         return "CASE WHEN {$type} IN ('INTEGER','STRING') AND {$id} REGEXP '^[1-9][0-9]{0,19}$'
             AND BINARY CAST(CAST({$id} AS UNSIGNED) AS CHAR)=BINARY {$id}
-            THEN CONCAT(n.recipient_type,':',{$id}) ELSE CONCAT('single:',n.public_id) END";
+            THEN CONCAT(CONVERT(n.recipient_type USING utf8mb4) COLLATE utf8mb4_bin,_utf8mb4':' COLLATE utf8mb4_bin,CONVERT({$id} USING utf8mb4) COLLATE utf8mb4_bin)
+            ELSE CONCAT(_utf8mb4'single:' COLLATE utf8mb4_bin,CONVERT(n.public_id USING utf8mb4) COLLATE utf8mb4_bin) END";
     }
     private function notificationScope(array $actor): array
     {
