@@ -6,6 +6,7 @@ function app_config($key,$default=null){return ['app.key'=>str_repeat('fixture-o
 function check(bool $ok,string $label):void{if(!$ok)throw new RuntimeException($label);}
 function rejected(callable $fn,string $label):void{try{$fn();}catch(WorkerAdmin\Domain\Messaging\MessageOperationException $e){check($e->apiCode()==='NOTIFICATION_RESYNC_REQUIRED'||$e->getCode()===409,$label.' code');return;}throw new LogicException($label);}
 use WorkerAdmin\Core\Database;
+if(getenv('NOTIFICATION_INBOX_REAL_SCHEMA_TEST')!=='1')throw new RuntimeException('Explicit isolated notification regression required');
 $port=(string)getenv('MYSQL_PORT');check(ctype_digit($port)&&(int)$port>0,'isolated database endpoint required');
 $config=['host'=>'127.0.0.1','port'=>(int)$port,'database'=>'mysql','username'=>'root','password'=>'fixture-only','charset'=>'utf8mb4'];
 $root=new Database($config);$name='test_inbox_schema_'.bin2hex(random_bytes(4));$root->execute('CREATE DATABASE '.$name.' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');$config['database']=$name;$db=new Database($config);
@@ -46,6 +47,13 @@ try{
  $single=$repo->threadMessages($actor,$items['single:'.str_repeat('C',25).'a']['thread_cursor']);
  check(count($single['items'])===1,'standalone detail opens with binary key');
  $summary=$repo->summary($actor);check($summary['unread_count']===37,'real-schema summary loads');
+ foreach(['utf8mb4_general_ci','utf8mb4_unicode_ci','utf8mb4_bin'] as $connectionCollation){
+  $db->execute('SET NAMES utf8mb4 COLLATE '.$connectionCollation);
+  $probe=$repo->threads($actor);
+  check(count($probe['items'])===20&&$probe['has_more'],'connection collation affected list');
+  $detail=$repo->threadMessages($actor,$items['user:401']['thread_cursor']);
+  check(count($detail['items'])===2,'connection collation affected detail');
+ }
  $insert(str_repeat('L',26),'user',10201,'{}');
  $repo->readRange($actor,$range);
  check((int)$db->fetchValue("SELECT COUNT(*) FROM notifications WHERE recipient_id=10201 AND read_at IS NULL")===1,'new arrival incorrectly marked read');
