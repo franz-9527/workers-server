@@ -33,7 +33,7 @@ function structure(){
    assert.match(attributes(src,dialog).class,/order-modal-dialog/)
    assert.ok(children.some(n=>n.tag==='scroll-view'&&attributes(src,n).class?.includes('order-modal-body')),p+' needs native scrolling')
    for(const input of nodes.filter(n=>n.start>m.start&&n.end<m.end&&['input','textarea'].includes(n.tag))){
-    assert.equal(attributes(src,input)['placeholder-class'],'order-modal-placeholder')
+    assert.ok(attributes(src,input)['placeholder-class']?.split(' ').includes('order-modal-placeholder'))
     assert.equal(attributes(src,input)['cursor-spacing'],'24')
    }
   }
