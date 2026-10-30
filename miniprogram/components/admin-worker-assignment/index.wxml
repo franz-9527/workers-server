@@ -1,0 +1,36 @@
+<block>
+  <button wx:if="{{showTrigger && actions.can_admin_invite_worker}}" class="assignment-trigger {{variant === 'footer' ? 'footer' : 'button'}}" bindtap="open">
+    <text class="cuIcon-friendaddfill"></text><text>{{label}}</text>
+  </button>
+
+  <view wx:if="{{visible}}" class="order-modal assignment-mask" catchtouchmove="true">
+    <view class="order-modal-dialog assignment-modal">
+      <view class="order-modal-heading assignment-head">
+        <view><view class="assignment-title">安排 / 邀请师傅</view><view class="assignment-sub">订单 {{orderId}}</view></view>
+        <text class="cuIcon-close assignment-close" bindtap="close"></text>
+      </view>
+
+      <scroll-view scroll-y enhanced class="order-modal-body"><view class="assignment-tip"><text class="cuIcon-infofill"></text><view>当前复用平台既有邀请流程。被邀请者未入驻时先完成正常师傅入驻；只有满足本单领取条件后才能接单。生成新邀请会按服务端规则使本单旧邀请失效。</view></view>
+
+      <block wx:if="{{!result}}">
+        <view class="assignment-fields">
+          <view class="assignment-field"><text>平台服务费（%）</text><input cursor-spacing="24" placeholder-class="order-modal-placeholder" type="digit" value="{{rate}}" bindinput="rateInput"/></view>
+          <view class="assignment-field"><text>邀请有效天数（1-30）</text><input cursor-spacing="24" placeholder-class="order-modal-placeholder" type="number" value="{{days}}" bindinput="daysInput"/></view>
+        </view>
+        <view class="assignment-note">服务费和订单状态最终由服务器再次校验；组件不直接修改订单、师傅指派或结算数据。</view>
+      </block>
+
+      <view wx:else class="assignment-result">
+        <image wx:if="{{result.code_data_uri}}" class="assignment-code" src="{{result.code_data_uri}}" mode="aspectFit" show-menu-by-longpress="true"></image>
+        <view wx:else class="assignment-code-error">小程序码暂未生成。可关闭后重新生成；已有邀请令牌仍以服务端返回状态为准。</view>
+        <view class="assignment-expire">有效期至 {{result.expires_at || '—'}}</view>
+        <view class="assignment-hint">可长按小程序码转发或保存给师傅。</view>
+      </view></scroll-view>
+
+      <view class="order-modal-footer assignment-actions">
+        <button class="assignment-secondary" bindtap="close">{{result ? '完成' : '取消'}}</button>
+        <button wx:if="{{!result}}" class="assignment-primary" loading="{{saving}}" disabled="{{saving}}" bindtap="createInvite">生成邀请</button>
+      </view>
+    </view>
+  </view>
+</block>
