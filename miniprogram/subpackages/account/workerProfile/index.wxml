@@ -1,0 +1,208 @@
+<subscription-health-banner audience="worker_application"></subscription-health-banner>
+<view wx:if="{{primaryRecordId}}" class="padding-sm bg-orange light text-orange"><text class="cuIcon-infofill"></text> 正在修改原入驻资料，保存后需重新审核</view>
+<view wx:if="{{profileEditPolicy}}" class="padding-sm {{profileEditPolicy.can_edit === false ? 'bg-red light text-red' : (profileEditPolicy.ever_approved ? 'bg-orange light text-orange' : 'bg-cyan light text-cyan')}}">
+  <text class="cuIcon-infofill"></text>
+  {{profileEditPolicy.message}}
+  <text wx:if="{{profileEditPolicy.ever_approved && profileEditPolicy.can_edit !== false}}"> · 非必要请勿频繁修改</text>
+</view>
+<!-- 2026-09-09：按现有发布表单直接进入资料填写，不再重复展示顶部“师傅入驻”介绍模块。 -->
+<!-- 2026-08-24：已有入驻资料时直接编辑唯一主记录，提交后重新审核。 -->
+<!-- 2026-09-09：审核提示是页面状态信息，置于 form 外以避免原生表单容器的顶部占位影响提示条位置。 -->
+
+  <view class="cu-form-group">
+    <view class="title">师傅昵称</view>
+    <input value="{{workerName}}" bindinput="bindKeyInput" data-key="workerName" placeholder="请输入 您的姓名"></input>
+  </view>
+  <view class="cu-form-group">
+    <view class="title">安装类型</view>
+    <input value="{{workerType}}" bindinput="bindKeyInput" data-key="workerType" placeholder="请输入 墙布墙纸、特殊墙纸布等"></input>
+  </view>
+  <view class="cu-form-group">
+    <view class="title" bindtap="showToast">更多技能</view>
+    <!-- 技能提示 -->
+    <view class="cuIcon-info flex-twice margin-xs" bindtap="showToast"></view>
+    <view class="page-section page-section-gap">
+      <checkbox-group bindchange="doMore_Change">
+        <view class="flex justify-end">
+          <label>
+            <checkbox class="round green margin-sm" value="doEVA" checked="{{doEVA}}"></checkbox>会热胶
+          </label>
+          <label>
+            <checkbox class="round green margin-sm" value="doPaint" checked="{{doPaint}}"></checkbox>油漆
+          </label>
+          <label>
+            <checkbox class="round green margin-sm" value="doFilm" checked="{{doFilm}}"></checkbox>玻璃膜
+          </label>
+        </view>
+        <view class="flex justify-end">
+          <label>
+            <checkbox class="round green margin-sm" value="dotArtpaint" checked="{{dotArtpaint}}"></checkbox>艺术漆
+          </label>
+          <label>
+            <checkbox class="round green margin-sm" value="doCurtain" checked="{{doCurtain}}"></checkbox>窗帘
+          </label>
+          <label>
+            <checkbox class="round green margin-sm" value="doWallPaneling" checked="{{doWallPaneling}}"></checkbox>软硬包
+          </label>
+        </view>
+        <!-- 2025-4-11未来可以在此处添加更多技能选项 -->
+        <view class="text-grey text-xs text-right padding-xs">
+          * 勾选表示您会提供此项服务，用户可按技能搜索
+        </view>
+
+      </checkbox-group>
+    </view>
+  </view>
+  <view class="cu-form-group">
+    <view class="title">小单起步</view>
+    <input value="{{baseFeeAmount}}" bindinput="bindKeyInput" data-key="baseFeeAmount" type="number" placeholder="请输入起步价（例如：100元）"></input>
+  </view>
+  <view class="cu-form-group">
+    <view class="title">测量收费</view>
+    <switch checked="{{paid}}" bindchange="paidChange"></switch>
+  </view>
+  <view wx:if="{{paid}}" class="cu-form-group">
+    <view class="title">报价</view>
+    <input value="{{money}}" bindinput="bindKeyInput" data-key="money" type="number" placeholder="请输入报价（不勾选免费）"></input>
+  </view>
+  <view class="cu-form-group">
+    <view class="title">安装工费</view>
+    <input value="{{workerPaid}}" bindinput="bindKeyInput" data-key="workerPaid" placeholder="请输入安装工费（可带单位）"></input>
+  </view>
+<!-- 翻新收费 -->
+<view class="cu-form-group">
+  <view class="title">旧墙处理</view>
+  <switch checked="{{pay_oldwall}}" bindchange="pay_oldwall_Change"></switch>
+</view>
+<view wx:if="{{pay_oldwall}}" class="cu-form-group">
+  <view class="title">报价</view>
+  <input value="{{pay_oldwall_money}}" bindinput="bindKeyInput" data-key="pay_oldwall_money" placeholder="撕纸/布、腻子大白等（不勾选不做）"></input>
+</view>
+<!-- 2026-08-31：门店经营、自卖主材和营业执照已移至“我的-商家认证”，师傅入驻只保留施工能力。 -->
+
+<!-- 日期 -->
+<view class="cu-form-group  margin-top">
+  <view class="title">入行日期</view>
+  <picker mode="date" value="{{workerTime}}" bindchange="workerTimeChange">
+    <view class="picker" wx:if="{{workerTime}}">{{workerTime}}</view>
+    <view class="picker" wx:else>
+      请选择
+    </view>
+  </picker>
+</view>
+<!-- <view class="cu-form-group">
+		<view class="title">结束日期</view>
+		<picker mode="date" value="{{endDate}}" bindchange="endDateChange">
+			<view class="picker">
+				{{endDate}}
+			</view>
+		</picker>
+	</view> -->
+<view class="cu-form-group">
+  <view class="title">发布日期</view>
+  <!-- 禁止选择 -->
+  <!-- <picker mode="date" value="{{startDate}}" bindchange="startDateChange"> -->
+  <view class="picker">
+    {{startDate}}
+  </view>
+  <!-- </picker> -->
+</view>
+
+<view class="cu-form-group" bindtap="chooseLocation">
+  <view class="title">所在地址</view>
+  <text class="text-orange "><text class="cuIcon-locationfill"></text>{{location.name || '点击选择地址'}}</text>
+</view>
+
+<view class="cu-form-group align-start">
+  <view class="title">发布内容</view>
+  <textarea value="{{content}}" maxlength="-1" bindinput="bindKeyInput" data-key="content" placeholder="请输入 其他介绍（禁止微信和手机号）"></textarea>
+</view>
+<view class="cu-bar bg-white solid-top">
+  <view class="action text-black">头像/施工照/证书等</view>
+  <view class="action">
+    {{imgList.length}}/3
+  </view>
+</view>
+<view class="cu-form-group">
+  <view class="grid col-3 grid-square flex-sub">
+    <view class="bg-img" wx:for="{{imgList}}" wx:key="index" bindtap="ViewImage" data-url="{{imgList[index]}}">
+      <image src='{{imgList[index]}}' mode='aspectFill'></image>
+      <view class="cu-tag bg-red" catchtap="DelImg" data-index="{{index}}">
+        <text class="cuIcon-close"></text>
+      </view>
+    </view>
+    <view class="solids" bindtap="ChooseImage" wx:if="{{imgList.length<3}}">
+      <text class="cuIcon-cameraadd"></text>
+    </view>
+  </view>
+</view>
+<!-- 底部提示 -->
+<view class="padding-xs bg-white">
+  <view wx:for="{{PlusPrompt}}" wx:key="index">
+    <view class="cuIcon-infofill padding-xs text-grey"> {{item.text}}
+    </view>
+  </view>
+</view>
+
+<!-- 2026-10-10：师傅正式提交/重新提交入驻资料时记录实际同意的协议版本；审核中的资料修订不重复要求。 -->
+<view wx:if="{{currentReviewStatus !== 'pending'}}" class="bg-white margin-top padding">
+  <view class="text-bold text-black margin-bottom-sm">入驻协议确认</view>
+  <view wx:if="{{agreementsLoading}}" class="text-grey text-sm padding-tb-sm"><text class="cuIcon-loading2 spin"></text> 正在读取当前协议版本…</view>
+  <view wx:elif="{{agreementsError}}" class="padding-tb-sm">
+    <view class="text-red text-sm">{{agreementsError}}</view>
+    <view class="text-cyan text-sm margin-top-xs" bindtap="loadOnboardingAgreements">重新加载协议</view>
+  </view>
+  <checkbox-group wx:else bindchange="onAgreementCheckChange">
+    <view class="flex align-start padding-tb-xs">
+      <checkbox class="round cyan margin-right-sm" value="worker_agreements" checked="{{workerAgreementsAccepted}}"></checkbox>
+      <view class="flex-sub text-sm text-grey">
+        我已阅读并同意
+        <text class="text-cyan" catchtap="openAgreement" data-key="worker_cooperation_agreement">《师傅服务协议》</text>
+        和
+        <text class="text-cyan" catchtap="openAgreement" data-key="worker_safety_agreement">《师傅安全协议》</text>
+      </view>
+    </view>
+    <view class="flex align-start padding-tb-xs">
+      <checkbox class="round cyan margin-right-sm" value="safety_commitment" checked="{{safetyCommitmentAccepted}}"></checkbox>
+      <view class="flex-sub text-sm text-grey">
+        我已阅读并单独确认
+        <text class="text-cyan text-bold" catchtap="openAgreement" data-key="worker_safety_commitment">《师傅安全承诺书》</text>
+      </view>
+    </view>
+  </checkbox-group>
+  <view class="text-xs text-grey margin-top-xs">提交时会记录当前协议版本；协议发生重大更新后，按适用业务节点重新确认。</view>
+</view>
+
+<button class='margin cu-btn bg-green shadow lg block' disabled="{{isPublishChecking || isSavingPublish || publishLimitBlocked}}" bindtap="tapPublish">{{publishLimitBlocked ? '本周期暂不可修改' : (primaryRecordId ? '保存提交审核' : '提交入驻审核')}}</button>
+
+
+
+<view class="weui-footer">
+  <view class="text-gray padding-bottom">Powered By 壁选 © 2013-现在</view>
+</view>
+<!-- 自定义tab遮挡解决 -->
+<view style="width: 100%;height: calc(150rpx + env(safe-area-inset-bottom) / 2);"></view>
+
+<!-- 登录弹窗 -->
+<auth is-show="{{isShowAuth}}" bind:onAuthEvent="onAuthEvent" bind:onAuthClose="onAuthClose"></auth>
+
+<!-- 2026-08-08：发布成功后已改为直接跳转发布记录页，以下成功模态框代码注释保留备用。
+<view class="cu-modal {{showSuccessModal?'show':''}}">
+  <view class="cu-dialog">
+    <view class="cu-bar bg-white justify-end">
+      <view class="content">提交成功</view>
+      <view class="action" bindtap="hideSuccessModal">
+        <text class="cuIcon-close text-red"></text>
+      </view>
+    </view>
+    <view class="padding-xl">
+      <image show-menu-by-longpress="{{true}}" src="cloud://worker-real.776f-worker-real-1301382302/public/qr/wxQRCode.png"
+        mode="widthFix" style="width:100%;"></image>
+    </view>
+    <view class="cu-bar bg-white">
+      <view class="action margin-0 flex-sub text-green solid-left" bindtap="hideSuccessModal">我知道了</view>
+    </view>
+  </view>
+</view>
+-->
+<inapp-notice custom-nav="{{false}}"></inapp-notice>

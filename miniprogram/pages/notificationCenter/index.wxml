@@ -1,0 +1,47 @@
+<view class="notice-page">
+ <fullscreen-nav title="通知与待办" show-title="{{true}}"></fullscreen-nav>
+ <view class="notice-content-wrap">
+  <view class="notice-tools">
+   <view class="notice-tabs"><view class="notice-tab {{viewMode === 'todo' ? 'active' : ''}}" data-mode="todo" bindtap="selectMode">待我处理<text wx:if="{{todoCount > 0}}" class="count">{{todoCount > 99 ? '99+' : todoCount}}</text></view><view class="notice-tab {{viewMode === 'all' ? 'active' : ''}}" data-mode="all" bindtap="selectMode">通知<text wx:if="{{unreadCount > 0}}" class="count">{{unreadCount > 99 ? '99+' : unreadCount}}</text></view></view>
+   <button class="settings-button" bindtap="openSubscribeSettings" aria-label="微信通知设置"><text class="cuIcon-settings"></text></button>
+  </view>
+  <view wx:if="{{resumeHint}}" class="notice-refresh" bindtap="refreshCurrent">已保留浏览位置 · 点击刷新最新内容</view>
+  <block wx:if="{{viewMode === 'todo'}}">
+   <view wx:if="{{todoErrorText && !todos.length}}" class="notice-empty"><text class="empty-title">待办暂未加载</text><text>{{todoErrorText}}</text><button class="notice-button" bindtap="retry">重新加载</button></view>
+   <view wx:elif="{{!todoLoading && !todos.length}}" class="notice-empty"><text class="empty-title">暂无待处理事项</text><text>新的订单待办会显示在这里</text></view>
+   <view wx:for="{{todos}}" wx:key="todo_key" class="todo-card" data-index="{{index}}" bindtap="openTodo" role="button">
+    <view class="message-icon {{item.tone_class}}"><text class="{{item.icon_class}}"></text></view>
+    <view class="message-body"><view class="message-heading"><text class="message-title">{{item.action_text}}</text><text class="role-label">{{item.role_text}}</text></view><view class="message-copy">{{item.title}}</view><view wx:if="{{item.address_text}}" class="message-detail">{{item.address_text}}</view><view wx:if="{{item.visit_text}}" class="message-detail">{{item.visit_text}}</view><view class="todo-action">{{item.hint_text}} <text class="cuIcon-right"></text></view></view>
+   </view>
+   <view wx:if="{{todoLoading || todoLoadingMore}}" class="notice-footer">正在加载待办…</view>
+   <button wx:elif="{{todoHasMore}}" class="notice-button" bindtap="loadMoreTodos">加载更多待办</button>
+   <view wx:if="{{todoErrorText && todos.length}}" class="notice-refresh" bindtap="loadMoreTodos">{{todoErrorText}} · 重试</view>
+  </block>
+  <block wx:else>
+   <view wx:if="{{unreadCount > 0}}" class="notice-actions"><button bindtap="markAllRead" loading="{{readAllLoading}}" disabled="{{readAllLoading}}">{{notificationSchema === 1 ? '已加载通知已读' : '全部已读'}}</button></view>
+   <view wx:if="{{errorText && !items.length}}" class="notice-empty"><text class="empty-title">通知暂未加载</text><text>{{errorText}}</text><button class="notice-button" bindtap="retry">重新加载</button></view>
+   <view wx:elif="{{!loading && !items.length}}" class="notice-empty"><text class="empty-title">暂无通知</text><text>订单进度与服务消息会显示在这里</text></view>
+   <block wx:for="{{items}}" wx:key="id">
+    <view wx:if="{{item.show_group}}" class="date-group">{{item.group_text}}</view>
+    <view class="notice-card {{item.read ? 'is-read' : 'is-unread'}}">
+     <view class="message-icon {{item.tone_class}}"><text class="{{item.icon_class}}"></text><view wx:if="{{!item.read}}" class="unread-dot"></view></view>
+     <view class="message-body">
+      <view class="message-heading" data-index="{{index}}" bindtap="openMessage"><text class="message-title">{{item.title}}</text><text class="notice-time">{{item.time_text}}</text></view>
+      <view class="message-copy" data-index="{{index}}" bindtap="openMessage">{{item.content}}</view>
+      <view class="notice-meta"><text class="role-label">{{item.role_text}}</text><text wx:if="{{item.current_todo}}" class="pending-label">待处理</text><view wx:if="{{item.is_thread}}" class="thread-toggle" data-index="{{index}}" catchtap="toggleThread">{{item.expanded ? '收起记录' : '展开记录'}} · {{item.thread_count}}条<text wx:if="{{item.unread_count > 0}}"> · {{item.unread_count}}未读</text></view></view>
+      <view wx:if="{{item.is_thread && item.expanded}}" class="thread-timeline">
+       <view wx:for="{{item.messages}}" wx:for-item="message" wx:key="id" class="timeline-item"><view class="timeline-heading"><text>{{message.title}}</text><text class="notice-time">{{message.time_text}}</text></view><view class="message-copy">{{message.content}}</view></view>
+       <view wx:if="{{item.threadLoading}}" class="notice-footer">正在加载记录…</view>
+       <view wx:elif="{{item.threadError}}" class="notice-refresh" data-index="{{index}}" catchtap="loadMoreThread">{{item.threadError}} · 重试</view>
+       <button wx:elif="{{item.threadHasMore}}" class="notice-button" data-index="{{index}}" catchtap="loadMoreThread">更早的记录</button>
+      </view>
+      <view wx:if="{{item.order_no}}" class="order-link" data-index="{{index}}" catchtap="openThreadOrder"><text class="order-no">{{item.order_no}}</text><text>{{item.action_text || '查看订单'}} <text class="cuIcon-right"></text></text></view>
+     </view>
+    </view>
+   </block>
+   <view wx:if="{{errorText && items.length}}" class="notice-refresh" bindtap="retry">{{errorText}} · 点击刷新</view>
+   <view wx:if="{{loading || loadingMore}}" class="notice-footer">正在加载通知…</view><view wx:elif="{{items.length && !hasMore}}" class="notice-footer">没有更多通知了</view>
+  </block>
+ </view>
+</view>
+<inapp-notice custom-nav="{{true}}"></inapp-notice>
