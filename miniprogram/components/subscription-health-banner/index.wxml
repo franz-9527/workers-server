@@ -1,0 +1,4 @@
+<view wx:if="{{active && reviewPending}}" class="review-waiting-card">
+ <view class="review-waiting-icon"><text class="cuIcon-timefill"></text></view>
+ <view class="review-waiting-copy"><text class="review-waiting-title">已进入审核，请耐心等待</text><text class="review-waiting-desc">审核期间仍可修改资料，保存会更新本次审核资料。</text></view>
+</view>

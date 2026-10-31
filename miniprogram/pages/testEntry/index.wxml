@@ -1,0 +1,26 @@
+<view class="entry-page">
+  <view class="entry-card">
+    <view class="entry-icon cuIcon-radioboxfill"></view>
+    <view class="entry-title">测试中心短期入口</view>
+    <view wx:if="{{loading}}" class="entry-status">
+      <text class="cuIcon-loading2 entry-spin"></text>
+      <text>{{status}}</text>
+    </view>
+    <view wx:elif="{{error}}" class="entry-error">
+      <text class="cuIcon-infofill"></text>
+      <view>{{error}}</view>
+    </view>
+    <view wx:else class="entry-status entry-status--ok">
+      <text class="cuIcon-roundcheckfill"></text>
+      <text>{{status}}</text>
+    </view>
+    <view class="entry-note">
+      该入口仅供管理员在测试站验证指定测试实例。入口不会绕过微信登录，也不会在正式站启用测试身份。
+    </view>
+    <view wx:if="{{error}}" class="entry-actions">
+      <button class="entry-btn entry-btn--primary" bindtap="retry">重新尝试</button>
+      <button class="entry-btn" bindtap="backToMine">返回“我的”</button>
+    </view>
+  </view>
+</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>
