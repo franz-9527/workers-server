@@ -75,7 +75,7 @@ final class DatabaseTestCenterRepository implements TestCenterRepository
         $scenario = trim((string) ($filters['scenario'] ?? ''));
         if ($scenario !== '') { $where[] = 'ti.scenario_key=:scenario'; $params['scenario'] = $scenario; }
         $query = trim((string) ($filters['q'] ?? ''));
-        if ($query !== '') { $where[] = '(ti.public_id LIKE :q OR ti.order_no_snapshot LIKE :q OR o.public_no LIKE :q)'; $params['q'] = '%'.$query.'%'; }
+        if ($query !== '') { $where[] = '(ti.public_id LIKE :instance_q OR ti.order_no_snapshot LIKE :snapshot_q OR o.public_no LIKE :order_q)'; foreach(['instance_q','snapshot_q','order_q'] as $key)$params[$key]='%'.$query.'%'; }
         return $this->db->fetchAll(
             "SELECT ti.id,ti.public_id,ti.scenario_key,ti.scenario_version,ti.build_mode,ti.build_status,ti.verification_status,
                     ti.order_id,COALESCE(o.public_no,ti.order_no_snapshot) order_no,o.order_source_type,o.workflow_profile,o.dispatch_mode,

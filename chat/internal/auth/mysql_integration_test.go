@@ -72,7 +72,7 @@ func TestMySQLAuthorityAndPHPIssuer(t *testing.T) {
 	execute("CREATE USER '" + user + "'@'" + fixtureHost + "' IDENTIFIED BY '" + pw + "'")
 	defer root.Exec("DROP USER IF EXISTS '" + user + "'@'" + fixtureHost + "'")
 	execute("CREATE TABLE `" + database + "`.system_settings(setting_key VARCHAR(100) PRIMARY KEY,setting_value VARCHAR(20)) ENGINE=InnoDB")
-	execute("INSERT INTO `" + database + "`.system_settings VALUES(\'chat.enabled\',\'1\')")
+	execute("INSERT INTO `" + database + "`.system_settings VALUES('chat.enabled','1')")
 	execute("CREATE TABLE `" + database + "`.users(id BIGINT UNSIGNED PRIMARY KEY,status VARCHAR(24)) ENGINE=InnoDB")
 	execute("CREATE TABLE `" + database + "`.login_sessions(id BIGINT UNSIGNED PRIMARY KEY,user_id BIGINT UNSIGNED,token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin UNIQUE,status VARCHAR(24),expires_at DATETIME,last_seen_at DATETIME NULL,demo_actor_user_id BIGINT UNSIGNED NULL,test_actor_user_id BIGINT UNSIGNED NULL,test_instance_id BIGINT UNSIGNED NULL,test_actor_expires_at DATETIME NULL) ENGINE=InnoDB")
 	execute("INSERT INTO `" + database + "`.users VALUES(18446744073709551615,'active')")
@@ -130,7 +130,7 @@ func TestMySQLAuthorityAndPHPIssuer(t *testing.T) {
 		t.Fatal("authentication wrote last_seen")
 	}
 	for _, tc := range []struct{ change, undo string }{
-		{"UPDATE system_settings SET setting_value=\'0\' WHERE setting_key=\'chat.enabled\'", "UPDATE system_settings SET setting_value=\'1\' WHERE setting_key=\'chat.enabled\'"},
+		{"UPDATE system_settings SET setting_value='0' WHERE setting_key='chat.enabled'", "UPDATE system_settings SET setting_value='1' WHERE setting_key='chat.enabled'"},
 		{"UPDATE login_sessions SET status='revoked' WHERE id=7", "UPDATE login_sessions SET status='active' WHERE id=7"},
 		{"UPDATE users SET status='disabled'", "UPDATE users SET status='active'"},
 		{"UPDATE login_sessions SET demo_actor_user_id=2", "UPDATE login_sessions SET demo_actor_user_id=NULL"},

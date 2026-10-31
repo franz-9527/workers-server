@@ -65,7 +65,7 @@ final class ChatIdentityFixtureDatabase extends Database
         if (strpos($sql, 'SELECT ') !== 0 || array_keys($params) !== ['token_hash']) throw new RuntimeException('unexpected source access');
         return $this->row;
     }
-    public function fetchValue($sql,array $params=[]){if(strpos($sql,\"SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled'\")===0)return '1';throw new RuntimeException('unexpected setting read');}
+    public function fetchValue($sql,array $params=[]){if(strpos($sql,"SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled'")===0)return '1';throw new RuntimeException('unexpected setting read');}
     public function execute($sql, array $params = []) { throw new RuntimeException('identity must never write'); }
 }
 

@@ -20,9 +20,11 @@ func NewMySQLSource(db *sql.DB) (*MySQLSource, error) {
 	return &MySQLSource{db}, nil
 }
 func (s *MySQLSource) Validate(ctx context.Context, c Claims) error {
- if c.Kind == "mini" || c.Kind == "mini_audit" {
-  if err := s.checkRelease(ctx, s.db); err != nil { return err }
- }
+	if c.Kind == "mini" || c.Kind == "mini_audit" {
+		if err := s.checkRelease(ctx, s.db); err != nil {
+			return err
+		}
+	}
 	if c.Kind == "mini_audit" {
 		tx, err := s.db.BeginTx(ctx, nil)
 		if err != nil {
@@ -66,7 +68,11 @@ func (s *MySQLSource) Validate(ctx context.Context, c Claims) error {
 // authorization/message transaction. PHP logout/disable cannot commit past it.
 // The Principal must already come from verification of a signed access token.
 func (s *MySQLSource) ValidatePrincipalLocked(ctx context.Context, tx *sql.Tx, p ports.Principal) error {
- if tx != nil { if err := s.checkRelease(ctx, tx); err != nil { return err } }
+	if tx != nil {
+		if err := s.checkRelease(ctx, tx); err != nil {
+			return err
+		}
+	}
 	if tx == nil || p.Kind != "mini" || !p.ActorID.Valid() || p.ActorID == "0" || !p.SourceID.Valid() || p.SourceID == "0" ||
 		!hex64.MatchString(p.SessionID) || !hex64.MatchString(p.SessionVersion) || !validScopes(p.Kind, p.Scopes) || !time.Now().Before(p.ExpiresAt) {
 		return ErrUnauthorized
@@ -92,13 +98,21 @@ func (s *MySQLSource) ValidatePrincipalLocked(ctx context.Context, tx *sql.Tx, p
 }
 
 // Every request and final send transaction sees the shared operator switch.
-func (s *MySQLSource) checkRelease(ctx context.Context, q interface { QueryRowContext(context.Context, string, ...any) *sql.Row }) error {
- var value string
- err := q.QueryRowContext(ctx, `SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled' LIMIT 1`).Scan(&value)
- if err == sql.ErrNoRows { return nil }
- if err != nil { return ports.ErrUnavailable }
- if value != "1" { return ErrUnauthorized }
- return nil
+func (s *MySQLSource) checkRelease(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}) error {
+	var value string
+	err := q.QueryRowContext(ctx, `SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled' LIMIT 1`).Scan(&value)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return ports.ErrUnavailable
+	}
+	if value != "1" {
+		return ErrUnauthorized
+	}
+	return nil
 }
 
 func (s *MySQLSource) validateAdmin(ctx context.Context, c Claims) error {

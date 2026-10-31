@@ -409,7 +409,7 @@ Page({
   if(!this.visible || !row || this.data.status==='denied')return
   const version=row.stateVersion,life=this.life,epoch=this.manager.epoch
   const actions=[]
-  if(row.canCopy)actions.push(['复制文字',()=>wx.setClipboardData({data:this.views[row.messageId].body})])
+    if(row.canCopy)actions.push(['复制文字',()=>wx.setClipboardData({data:this.views[row.messageId].body})])
   actions.push(['查看准确时间',()=>wx.showModal({title:'消息时间',content:row.createdAt||'时间暂不可用',showCancel:false})])
     if(!this.manager.simulation)actions.push(['举报此消息',()=>this.openReport(row.messageId,'')])
     if(!this.manager.simulation&&(row.canCopy||row.isImage||row.isAV)&&this.data.canSend)actions.push(['回复',()=>this.replyTo(row.messageId)])
