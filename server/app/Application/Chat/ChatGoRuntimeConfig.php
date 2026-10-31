@@ -390,14 +390,27 @@ final class ChatGoRuntimeConfig
                 if(!$configured)continue;
                 $decision=$resources->decision($row,$settings);
                 if($decision['status']!=='available')continue;
-                $audio=!empty($settings['audio_enabled'])&&!empty($profile['audio']);
-                $video=!empty($settings['video_enabled'])&&!empty($profile['video']);
-                if(!empty($settings['enabled'])&&($audio||$video)){
-                    $providers[$provider]=['configured'=>true,'pool_ready'=>true];$valid=true;
-                }
+                try{
+                    $seconds=(int)($settings['window_seconds']??60)+(int)($settings['stop_margin_seconds']??30);
+                    if($seconds<1||$seconds>86400)continue;
+                    $legs=array_fill(0,2,['previous_seconds'=>0,'current_seconds'=>$seconds]);
+                    $policy=new \WorkerAdmin\Domain\Chat\CallResourcePolicy();
+                    $costs=['audio'=>$policy->incrementalCost($profile['audio'],$legs),'video'=>$policy->incrementalCost($profile['video'],$legs)];
+                    if($provider==='wechat')$costs=['audio'=>max($costs),'video'=>max($costs)];
+                    $mediaReady=[];
+                    foreach(['audio','video'] as $media){
+                        $priority=(array)($settings[$media.'_priority']??[]);
+                        if(empty($settings['allow_fallback']))$priority=array_slice($priority,0,1);
+                        $mediaReady[$media]=!empty($settings[$media.'_enabled'])&&in_array($provider,$priority,true)
+                            &&$costs[$media]>0&&(int)$decision['available_units']>=$costs[$media];
+                    }
+                    if(!empty($settings['enabled'])&&($mediaReady['audio']||$mediaReady['video'])){
+                        $providers[$provider]=['configured'=>true,'pool_ready'=>true]+$mediaReady;$valid=true;
+                    }
+                }catch(\Throwable $e){$missing[]='通话资源池的音视频计量参数不完整或无效';}
             }
             if($valid)$missing=[];
-            else $missing[]='没有与当前供应商应用匹配且通过核验、用量有效、有余额的音视频资源池';
+            else $missing[]='没有匹配当前应用和路由、通过核验且额度足够覆盖双端安全通话窗口的资源池';
         }catch(\Throwable $e){$missing[]='通话凭据或资源池配置不可读取、解密或校验失败';}
         return ['ready'=>$valid,'missing'=>$missing,'providers'=>$providers];
     }
