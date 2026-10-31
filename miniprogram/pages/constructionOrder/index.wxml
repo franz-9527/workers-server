@@ -11,9 +11,6 @@
     <view><view class="hero-title">我的接单</view><view class="hero-subtitle">施工、测量、平台单和受邀订单统一在这里处理</view></view>
     <text class="cuIcon-repair hero-icon"></text>
   </view>
-
-  <subscription-health-banner audience="worker"></subscription-health-banner>
-
   <view class="legacy-entry" bindtap="openLegacyOrders">
     <view class="legacy-icon"><text class="cuIcon-link"></text></view>
     <view class="legacy-content"><view>旧版工单</view><text>查看原小程序中的历史安装工单</text></view>

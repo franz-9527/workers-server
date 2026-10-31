@@ -1,4 +1,3 @@
-<subscription-health-banner audience="worker_application"></subscription-health-banner>
 <view wx:if="{{primaryRecordId}}" class="padding-sm bg-orange light text-orange"><text class="cuIcon-infofill"></text> 正在修改原入驻资料，保存后需重新审核</view>
 <view wx:if="{{profileEditPolicy}}" class="padding-sm {{profileEditPolicy.can_edit === false ? 'bg-red light text-red' : (profileEditPolicy.ever_approved ? 'bg-orange light text-orange' : 'bg-cyan light text-cyan')}}">
   <text class="cuIcon-infofill"></text>

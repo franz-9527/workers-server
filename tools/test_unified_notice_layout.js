@@ -20,7 +20,7 @@ async function run(){
  for(const width of [360,1280])for(const colorScheme of ['light','dark']){
   const page=await browser.newPage({viewport:{width,height:1000},colorScheme})
   for(const entry of cases){
-   const css=read(entry.path+'.wxss').replace(/@import[^;]+;/g,'').replace(/(-?[\d.]+)rpx/g,(_,n)=>Number(n)*width/750+'px').replace(/:host/g,'.host')
+   const globals=['miniprogram/style/colorui/main.wxss','miniprogram/style/colorui/icon.wxss','miniprogram/style/colorui/dark.wxss','miniprogram/style/weui.wxss','miniprogram/app.wxss'].map(read).join('\n');const css=((entry.name.startsWith('float')?'':globals)+'\n'+read(entry.path+'.wxss')).replace(/@import[^;]+;/g,'').replace(/(-?[\d.]+)rpx/g,(_,n)=>Number(n)*width/750+'px').replace(/:host/g,'.host').replace(/\bpage\b/g,'body')
    await page.setContent('<!doctype html><html><meta charset="utf-8"><style>body{margin:0;background:#f4f6f6;color:#203a38;font:14px Arial;--darkTitle:#e8f2ed;--darkSecondaryText:#9eafa7;--darkDisable:#35473f;--darkBg:#151d19}view,block,scroll-view{display:block;box-sizing:border-box}text{box-sizing:border-box}button{box-sizing:border-box;font-family:inherit;cursor:pointer} @media(prefers-color-scheme:dark){body{background:#131d18;color:#edf4ef}}'+css+'</style><body><main class="host"></main></body></html>')
    await page.evaluate(({wxml,data})=>{
     const root=document.querySelector('main');root.innerHTML=wxml
