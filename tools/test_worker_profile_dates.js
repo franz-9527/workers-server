@@ -23,7 +23,7 @@ function fixture(worker=[legacy]){
   async add({data:row}){if(!data[this.name])data[this.name]=[];const id='fixture-'+data[this.name].length;data[this.name].push({...row,_id:id});writes.push({name:this.name,patch:row});return{_id:id}}
  }
  const db={command,Geo:{Point:(longitude,latitude)=>({longitude,latitude})},RegExp:({regexp,options})=>new RegExp(regexp,options),collection:name=>new Query(name),createCollection:async name=>{collections.push(name);data[name]=data[name]||[]}}
- const cloud={DYNAMIC_CURRENT_ENV:'fixture',init(){},database:()=>db,getWXContext:()=>({OPENID:caller}),openapi:{}}
+ const cloud={DYNAMIC_CURRENT_ENV:'fixture',init(){},database:()=>db,getWXContext:()=>({OPENID:caller}),openapi:{security:{msgSecCheck:async()=>({errCode:0,result:{suggest:'pass'}})}}}
  const module={exports:{}},FakeDate=class extends Date{static now(){return clock}}
  const context={module,exports:module.exports,require:p=>p==='wx-server-sdk'?cloud:p==='crypto'?crypto:p==='./profile-time'?Profile:(()=>{throw Error('unexpected require '+p)})(),console,Date:FakeDate,Map,Set,Promise,Buffer,process:{env:{}}}
  vm.runInNewContext(fs.readFileSync('cloudfunctions/worker/index.js','utf8')+'\nmodule.exports.fixture={workerTimestamp,miniAdminReviewList,phoneSearchReviewItem,miniAdminPhoneReveal,currentPhonePolicy,memberPhoneReveal,serverRuntimeConfigSync,updateActiveLocation,saveUniqueRecord,getRecord,serverPhoneReveal};',context)
@@ -56,7 +56,7 @@ test('review pagination ignores more than 100 contaminated updates and merges ac
  assert.equal(first.items[0]._id,'resubmitted');assert.equal(first.items.length,20);assert.equal(first.has_more,true)
  assert.ok(first.items.every(x=>!x._id.startsWith('old-')));assert.ok(second.items.every(x=>!x._id.startsWith('old-')))
  assert.equal(new Set([...first.items,...second.items].map(x=>x._id)).size,40)
- const search=f.fn.phoneSearchReviewItem(legacy);assert.equal(search.profileTime,created);assert.equal(search.startDate,'2020-05-17')
+ const search=f.fn.phoneSearchReviewItem(legacy);assert.equal(search.profileTime,created);assert.equal(search.startDate,'2020-05-17');assert.equal(search.updatedTime,0,'old clients also ignore unrelated timestamp')
  assert.equal(f.writes.length,0)
 })
 test('owner records return correct time even when old updatedTime already exists',async()=>{
@@ -94,8 +94,8 @@ test('front-end review and owner pages do not show the unrelated update as a new
 })
 
 test('actual owner resubmission still refreshes its date and becomes pending review',async()=>{
- const f=fixture();await f.fn.saveUniqueRecord({userInfo:{openId:'owner'},data:{workerName:'Fixture worker',workerType:'墙布',location:{latitude:23.1,longitude:113.3}}})
- const row=f.data.worker[0];assert.equal(row.startDate,day);assert.equal(row.updatedTime,now);assert.equal(row.reviewStatus,'pending');assert.equal(row.published,false);assert.equal(f.fn.workerTimestamp(row),now);assert.equal(row.createTime,created)
+ const f=fixture();f.caller('owner');const saved=await f.fn.saveUniqueRecord({userInfo:{openId:'owner'},data:{workerName:'Fixture worker',workerType:'墙布',location:{latitude:23.1,longitude:113.3}}})
+ assert.equal(saved.code,1);const row=f.data.worker[0];assert.equal(row.startDate,day);assert.equal(row.updatedTime,now);assert.equal(row.reviewStatus,'pending');assert.equal(row.published,false);assert.equal(f.fn.workerTimestamp(row),now);assert.equal(row.createTime,created)
 })
 test('removing administrator logs does not grant administrator phone access to a member',async()=>{
  const f=fixture();f.caller('member');await assert.rejects(f.fn.miniAdminPhoneReveal({id:'legacy-worker'}),/仅后台配置/);assert.equal(f.writes.length,0)

@@ -1265,7 +1265,7 @@ async function adminWorkerList(payload) {
       .map(value => String(value || '').toLowerCase()).join('\n');
     return haystack.indexOf(keyword) >= 0;
   });
-  // 审核页和后台师傅列表都按资料最新时间排序：updatedTime（师傅本人修改）优先，否则 createTime。
+  // 审核页和后台师傅列表统一按正式资料提交时间排序，排除孤立的通用更新时间。
   filtered.sort((left, right) => {
     const timeDiff = workerTimestamp(right.primary) - workerTimestamp(left.primary);
     return timeDiff || String(right.primary._id || '').localeCompare(String(left.primary._id || ''));
@@ -1655,7 +1655,7 @@ function phoneSearchReviewItem(record) {
     startDate: phoneSearchSafeText(record.startDate, 10),
     // 搜索结果只返回可稳定 JSON 化的数字时间戳，不透传旧 Date/GeoPoint/复杂字段。
     publishTime: workerPublishTimestamp(record) || 0,
-    updatedTime: workerTimeValue(record.updatedTime) || 0,
+    updatedTime: WorkerProfileTime.submissionUpdate(record) || 0,
     createTime: workerTimeValue(record.createTime) || 0,
     reviewNotice: {
       status: phoneSearchSafeText(notice.status, 24),
