@@ -1,0 +1,4 @@
+<!-- 2026-09-02：下单、接单、商家认证和报价订单按场景独立显示公告。 -->
+<view wx:if="{{visible}}" class="notice" bindtap="openLink">
+  <text class="notice__icon">公告</text><text class="notice__text">{{text}}</text><text wx:if="{{link}}" class="notice__arrow">›</text>
+</view>
