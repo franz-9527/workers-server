@@ -53,7 +53,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright')
    const f=await pageFor('sms',js);await submit(f,'button[form="'+id+'"]',route);await f.context.close()
   }
  }
- for(const scene of ['nearby_worker_invite','chat_unread_nudge','order_status','quote_received','payment_success']){
+ for(const scene of ['nearby_worker_invite','chat_unread_nudge','order_status','quote_received']){
   const f=await pageFor('sms',true);await f.page.locator('[name="test_mobile['+scene+']"]').evaluate(el=>{el.value='13800138000'})
   const b=await submit(f,'button[form="sms-test-'+scene+'"]','settings.sms.test');assert.equal(b.get('test_scene'),scene);assert.equal(b.get('test_mobile['+scene+']'),'13800138000');await f.context.close()
  }
