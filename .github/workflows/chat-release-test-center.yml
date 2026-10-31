@@ -40,6 +40,9 @@ jobs:
           bash -n chat/deploy/bt-run.sh chat/deploy/bt-deploy.sh
           python -m py_compile chat/helpers/preflight.py
       - name: Go build and regression
+        env:
+          CHAT_IMAGE_HELPER_TEST: '1'
+          CHAT_AV_HELPER_TEST: '1'
         working-directory: chat
         run: |
           go build -o /tmp/chatd ./cmd/chatd

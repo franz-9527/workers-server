@@ -29,7 +29,7 @@ try{
  $config['database']=$database;$config['chat']=['recovery_gate_file'=>$root.'/chat/bin/state/fixture-gate.json','recovery_epoch'=>str_repeat('a',64),'internal_key_env'=>'CHAT_INTERNAL_KEY','internal_key_id'=>'chat-internal-v1'];
  $db=new Database($database);
  $db->execute("CREATE TABLE system_settings(setting_key VARCHAR(100) PRIMARY KEY,setting_value TEXT,value_type VARCHAR(20),group_name VARCHAR(32),is_public INT,description TEXT,updated_by BIGINT NULL,created_at DATETIME,updated_at DATETIME) ENGINE=InnoDB");
- $db->execute("CREATE TABLE admin_users(id BIGINT PRIMARY KEY,role VARCHAR(32),status VARCHAR(12),must_change_password INT) ENGINE=InnoDB");
+ $db->execute("CREATE TABLE admin_users(id BIGINT UNSIGNED PRIMARY KEY,role VARCHAR(32),status VARCHAR(12),must_change_password INT) ENGINE=InnoDB");
  $db->execute("INSERT INTO admin_users VALUES(1,'super_admin','active',0)");
  // Exercise real shipping DDL, without importing unrelated business data/triggers.
  $db->execute('SET FOREIGN_KEY_CHECKS=0');
