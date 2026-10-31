@@ -42,9 +42,10 @@ jobs:
       - name: Go build and regression
         working-directory: chat
         run: |
-          go test ./...
           go build -o /tmp/chatd ./cmd/chatd
+          go test ./...
       - name: Real MySQL and real Go configuration matrix
+        if: always()
         env:
           CHAT_RUNTIME_TEST: '1'
           CHATD_TEST_BINARY: /tmp/chatd

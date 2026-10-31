@@ -7,10 +7,10 @@ final class ChatMediaPreflight
 {
     public static function phpBinary():string
     {
-        if(PHP_SAPI==='cli')return PHP_BINARY;
+        if(PHP_SAPI==='cli')return realpath(PHP_BINARY)?:PHP_BINARY;
         // PHP_BINARY points at php-fpm under FPM; its sibling is the CLI for the same version.
-        foreach([PHP_BINDIR.'/php',dirname(PHP_BINARY).'/php'] as $path){
-            if(is_file($path)&&is_executable($path)&&basename($path)==='php')return $path;
+        foreach([PHP_BINDIR.'/php'.PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION,PHP_BINDIR.'/php',dirname(PHP_BINARY).'/php'] as $path){
+            if(is_file($path)&&is_executable($path))return realpath($path)?:$path;
         }
         return '';
     }

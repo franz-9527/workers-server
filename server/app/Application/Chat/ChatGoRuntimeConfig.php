@@ -439,7 +439,7 @@ final class ChatGoRuntimeConfig
         $upload=$this->httpsOrigin($upload);
         foreach(['下载'=>$download,'上传'=>$upload] as $label=>$origin){
             $url=parse_url($origin);$host=(string)($url['host']??'');
-            if($origin===''||filter_var($host,FILTER_VALIDATE_IP)!==false||isset($url['port'])&&(int)$url['port']!==443)$missing[]='七牛'.$label.'域名需为 HTTPS 公网域名（默认443端口）';
+            if($origin===''||!str_contains($host,'.')||filter_var($host,FILTER_VALIDATE_DOMAIN,FILTER_FLAG_HOSTNAME)===false||filter_var($host,FILTER_VALIDATE_IP)!==false||isset($url['port'])&&(int)$url['port']!==443)$missing[]='七牛'.$label.'域名需为 HTTPS 公网域名（默认443端口）';
         }
         $uploadHost=(string)(parse_url($upload,PHP_URL_HOST)??'');
         if(!str_ends_with($uploadHost,'.qiniup.com')&&!str_ends_with($uploadHost,'.qiniu.com'))$missing[]='七牛上传域名必须使用当前存储区域的官方 qiniup.com/qiniu.com 端点';
@@ -465,12 +465,6 @@ final class ChatGoRuntimeConfig
         return $raw;
     }
 
-    private function smsTemplate():string
-    {
-        $codes=(array)\setting('sms.template_codes',[]);$v=$codes['chat_unread_nudge']??'';
-        return trim(is_array($v)?(string)(($v['template_code']??'')?:($v['template_id']??'')?:($v['code']??'')):(string)$v);
-    }
-
     private function goSettings():array
     {
         $keys=[self::PYTHON_KEY,self::FFMPEG_KEY,self::FFPROBE_KEY,self::ASR_API_KEY,self::ASR_ENCODING_KEY,self::CALLS_ENDPOINT_KEY];
@@ -480,7 +474,6 @@ final class ChatGoRuntimeConfig
         return $out;
     }
 
-    private function executable(string $path):bool{return $path!==''&&$path[0]==='/'&&is_file($path)&&is_executable($path);}
     private function ensurePrivateDirectory(string $path):bool
     {
         if(is_link($path))return false;

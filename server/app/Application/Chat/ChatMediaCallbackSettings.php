@@ -51,6 +51,7 @@ final class ChatMediaCallbackSettings
     /** Caller holds the super-administrator transaction/lock. Blank secret inputs preserve saved values. */
     public function saveLocked(array $input,int $admin,string $appId,string $siteUrl):void
     {
+        if(!array_intersect(['wechat_callback_token','wechat_callback_aes_key','wechat_callback_confirmed'],array_keys($input)))return;
         $values=$this->read();
         $token=$input['wechat_callback_token']??'';$aes=$input['wechat_callback_aes_key']??'';
         if(!is_string($token)||!is_string($aes)||strlen($token)>128||strlen($aes)>128)throw new RuntimeException('微信消息推送密钥格式不正确。');
