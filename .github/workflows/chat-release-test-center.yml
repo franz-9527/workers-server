@@ -34,9 +34,7 @@ jobs:
       - name: Existing chat and notice identity isolation
         if: always()
         run: |
-          node --test tools/test_chat_s11.js
-          node --test tools/test_unified_notices.js
-          node --test tools/test_identity_navigation.js
+          node --test tools/test_chat_s11.js tools/test_unified_notices.js tools/test_identity_navigation.js
       - name: Real MySQL availability and simulation isolation
         if: always()
         env:

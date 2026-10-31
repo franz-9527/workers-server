@@ -90,7 +90,7 @@ test('coalescing visible chat replaces it once rather than replaying it from que
 
 test('message inbox pull-to-refresh keeps business and chat refresh without removed health method',async()=>{
  let definition,summary=0,chats=0,stops=0
- vm.runInNewContext(read('miniprogram/pages/chatMessages/index.js'),{Page:x=>{definition=x},require:()=>({}),wx:{stopPullDownRefresh:()=>stops++},console,Map,Set,Date,Promise,setTimeout,clearTimeout})
- const p={...definition,data:{isLoggedIn:true,chatEnabled:true},_showSerial:1,refreshSummary:()=>{summary++;return Promise.resolve()},chatManager:{refreshAccount:()=>chats++}}
+ vm.runInNewContext(read('miniprogram/pages/chatMessages/index.js'),{Page:x=>{definition=x},require:p=>p.includes('ChatRuntime')?{refreshAvailability:()=>Promise.resolve()}:{},wx:{stopPullDownRefresh:()=>stops++},console,Map,Set,Date,Promise,setTimeout,clearTimeout})
+ const p={...definition,data:{isLoggedIn:true,chatEnabled:true},_visible:true,_showSerial:1,refreshSummary:()=>{summary++;return Promise.resolve()},chatManager:{enabled:true,refreshAccount:()=>chats++}}
  p.onPullDownRefresh();await flush();assert.equal(summary,1);assert.equal(chats,1);assert.equal(stops,1)
 })

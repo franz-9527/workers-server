@@ -18,7 +18,7 @@
 
 
 <!-- 滚动条：平台协议作为固定公告并入原公告轮播，不再额外占用首页卡片空间。 -->
-<swiper class="tips-swiperitem" autoplay="true" vertical="true" circular="true" interval="2000" duration="1000">
+<swiper class="tips-swiperitem" autoplay="{{Headtips.length > 0}}" vertical="true" circular="{{Headtips.length > 0}}" interval="2000" duration="1000">
   <swiper-item catchtouchmove="false">
     <navigator url="/subpackages/support/agreements/index" hover-class="none">
       <view class="radius-lg bg-orange light">
@@ -29,7 +29,7 @@
       </view>
     </navigator>
   </swiper-item>
-  <block wx:for="{{Headtips}}" wx:key="index">
+  <block wx:for="{{Headtips}}" wx:key="id">
     <swiper-item catchtouchmove='false' bindtap="tipsClick" data-index="{{index}}">
       <view class="radius-lg bg-orange light" src="{{item.url}}">
         <view class='padding-xs text-xl'>

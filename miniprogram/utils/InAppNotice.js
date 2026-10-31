@@ -95,6 +95,7 @@ function hide(owner){if(currentPage!==owner)return;currentPage=null;clearTimer()
 function setForeground(value){start();checkContext();foreground=value===true;if(!foreground){clearTimer();queue=[];current=null;notify()}else if(currentPage){NotificationState.refresh({maxAge:10000}).catch(()=>{});refreshHealth()}}
 function dismiss(){checkContext();advance()}
 function activate(){
+ if(healthPending)return Promise.resolve()
  checkContext();const item=current;if(!item||suppress(item))return
  if(item.kind==='health'&&item.healthAction==='top_up'){
   if(healthPending)return Promise.resolve()

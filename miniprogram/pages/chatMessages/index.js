@@ -338,7 +338,6 @@ Page({
     const serial = this._showSerial
     if (this.data.isLoggedIn) {
       this.refreshSummary(serial).finally(() => wx.stopPullDownRefresh())
-      if (this.data.chatEnabled) this.chatManager.refreshAccount()
     } else {
       wx.stopPullDownRefresh()
     }
