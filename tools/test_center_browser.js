@@ -1,6 +1,7 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs')
 async function main(){const browser=await chromium.launch();try{
  const names=fs.readdirSync('test-artifacts/render').filter(n=>n.endsWith('.html')),errors=[];let checks=0
+ assert.equal(names.length,20,'all test center sections and panels must render')
  for(const width of [390,1280])for(const colorScheme of ['light','dark']){
   const context=await browser.newContext({viewport:{width,height:850},colorScheme});const page=await context.newPage()
   page.on('pageerror',e=>errors.push(e.message))

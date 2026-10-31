@@ -34,8 +34,6 @@ Page({
         return OrderApi.request('admin.test-entry.redeem', 'POST', { token: this.entryToken })
       })
       .then(result => {
-        require('../../utils/ChatRuntime.js').reset()
-        require('../../utils/NotificationState.js').reset()
         const entry = result && result.data || {}
         const pageUrl = String(entry.page_url || '')
         if (!/^pages\/(userOrder|workerOrder)\/detail\?id=/.test(pageUrl)) {

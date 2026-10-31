@@ -112,7 +112,7 @@ var goOwned = map[string]bool{
 	"chat_reminder_events": true, "chat_reminder_clusters": true, "chat_reminder_budgets": true, "chat_reminder_intents": true,
 }
 var appendOwned = map[string]bool{"chat_governance_audit": true, "chat_image_audit": true}
-var phpReadable = map[string]bool{"chat_storage_policy": true, "chat_storage_policy_audit": true, "wechat_identities": true, "users": true, "login_sessions": true, "chat_admin_sessions": true, "chat_mini_auditors": true, "orders": true, "assignments": true, "after_sales": true, "chat_policy_guards": true, "chat_business_events": true, "chat_staff_authority_versions": true}
+var phpReadable = map[string]bool{"system_settings": true, "chat_storage_policy": true, "chat_storage_policy_audit": true, "wechat_identities": true, "users": true, "login_sessions": true, "chat_admin_sessions": true, "chat_mini_auditors": true, "orders": true, "assignments": true, "after_sales": true, "chat_policy_guards": true, "chat_business_events": true, "chat_staff_authority_versions": true}
 
 func safeGrant(grant, database, environment string) bool {
 	if !strings.HasPrefix(grant, "GRANT ") || strings.Contains(grant, " WITH GRANT OPTION") {
