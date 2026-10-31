@@ -29,12 +29,33 @@ type MediaCallback struct {
 	Receiver     AudioReceiver
 }
 
+// NewMediaCallbackVerifier supports initial WeChat URL ownership checks only.
+// It never accepts or acknowledges media events while the AV pipeline is disabled.
+func NewMediaCallbackVerifier(appID, token, key string) (http.Handler, error) {
+    callback, err := callbackConfig(appID, token, key)
+    if err != nil { return nil, err }
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodGet {
+            w.Header().Set("Cache-Control", "no-store")
+            http.Error(w, "media pipeline unavailable", http.StatusServiceUnavailable)
+            return
+        }
+        callback.ServeHTTP(w, r)
+    }), nil
+}
 func NewMediaCallback(appID, token, key string, r AudioReceiver) (*MediaCallback, error) {
+    if r == nil { return nil, ports.ErrInvalid }
+    callback, err := callbackConfig(appID, token, key)
+    if err != nil { return nil, err }
+    callback.Receiver = r
+    return callback, nil
+}
+func callbackConfig(appID, token, key string) (*MediaCallback, error) {
 	raw, e := base64.StdEncoding.DecodeString(key + "=")
-	if !appPattern.MatchString(appID) || len(token) < 16 || len(token) > 128 || len(key) != 43 || e != nil || len(raw) != 32 || base64.RawStdEncoding.EncodeToString(raw) != key || r == nil {
+	if !appPattern.MatchString(appID) || len(token) < 16 || len(token) > 128 || len(key) != 43 || e != nil || len(raw) != 32 || base64.RawStdEncoding.EncodeToString(raw) != key {
 		return nil, ports.ErrInvalid
 	}
-	return &MediaCallback{appID, token, raw, r}, nil
+	return &MediaCallback{appID, token, raw, nil}, nil
 }
 func (h *MediaCallback) decrypt(signature, timestamp, nonce, encoded string, now time.Time) ([]byte, error) {
 	stamp, e := strconv.ParseInt(timestamp, 10, 64)

@@ -46,7 +46,7 @@ final class ChatMediaCallbackSettings
             if(!$verified)$missing[]='尚未确认微信后台消息推送 URL、Token 和 EncodingAESKey 与本站一致';
         }catch(\Throwable $e){$missing[]='微信消息推送加密配置不可读取';}
         return ['ready'=>!$missing,'configured'=>$this->valid($token,$aes),'verified'=>$verified,'url'=>$url,
-            'missing'=>$missing,'token'=>!$missing?$token:'','aes_key'=>!$missing?$aes:''];
+            'missing'=>$missing,'token'=>$this->valid($token,$aes)?$token:'','aes_key'=>$this->valid($token,$aes)?$aes:''];
     }
     /** Caller holds the super-administrator transaction/lock. Blank secret inputs preserve saved values. */
     public function saveLocked(array $input,int $admin,string $appId,string $siteUrl):void

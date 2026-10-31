@@ -39,6 +39,14 @@ jobs:
           php -l server/tests/chat_runtime_config_mysql.php
           bash -n chat/deploy/bt-run.sh chat/deploy/bt-deploy.sh
           python -m py_compile chat/helpers/preflight.py
+      - name: Format and record exact Go sources used by acceptance
+        run: |
+          gofmt -w chat/internal/moderation/media_callback.go chat/internal/moderation/service.go chat/internal/avpipeline/config.go chat/internal/dependencies/messaging.go chat/internal/bootstrap/config.go chat/internal/moderation/callback_verifier_test.go chat/internal/bootstrap/callback_verifier_test.go
+          python - <<'PY'
+          import json, pathlib
+          for name in ["chat/internal/moderation/media_callback.go","chat/internal/moderation/service.go","chat/internal/avpipeline/config.go","chat/internal/dependencies/messaging.go","chat/internal/bootstrap/config.go","chat/internal/moderation/callback_verifier_test.go","chat/internal/bootstrap/callback_verifier_test.go"]:
+              print("FORMATTED_GO_SOURCE " + json.dumps({"path": name, "content": pathlib.Path(name).read_text()}))
+          PY
       - name: Go build and regression
         env:
           CHAT_IMAGE_HELPER_TEST: '1'

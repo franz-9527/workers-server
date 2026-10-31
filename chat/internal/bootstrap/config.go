@@ -199,7 +199,10 @@ func (c Config) validate() *Fault {
 	if c.Calls.Enabled && !(c.Environment == "test" && c.Release.Staging) && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "calls") {
 		return configFault("CHAT_CALLS_NOT_READY", "通话联合验收未完成")
 	}
-	if c.AV.Validate() != nil || c.AV.Enabled && (!c.Messages.Enabled || !c.Retention.Enabled) {
+	if c.AV.CallbackVerification && (c.Environment != "test" || !c.Messages.Enabled) {
+        return configFault("CHAT_AV_NOT_READY", "回调URL验证入口仅允许测试环境的真实消息组合")
+    }
+    if c.AV.Validate() != nil || c.AV.Enabled && (!c.Messages.Enabled || !c.Retention.Enabled) {
 		return configFault("CHAT_AV_NOT_READY", "音视频配置或组合依赖不完整")
 	}
 	if c.AV.Enabled && !(c.Environment == "test" && c.Release.Staging) && (c.AV.Audio && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "audio") || c.AV.Video && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "video")) {

@@ -15,6 +15,7 @@ import (
 )
 
 type Config struct {
+    CallbackVerification bool `json:"callback_verification"`
 	Enabled          bool                `json:"enabled"`
 	Audio            bool                `json:"audio"`
 	Video            bool                `json:"video"`
@@ -37,7 +38,8 @@ type Config struct {
 
 func (c Config) Validate() error {
 	if !c.Enabled {
-		if c.Audio || c.Video {
+        if c.CallbackVerification && (!regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackTokenEnv) || !regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackKeyEnv)) { return ports.ErrInvalid }
+        if c.Audio || c.Video {
 			return ports.ErrInvalid
 		}
 		return nil

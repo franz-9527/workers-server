@@ -180,6 +180,7 @@ final class ChatGoRuntimeConfig
             'enabled'=>!empty($caps['av_enabled']),'body_days'=>365,'evidence_days'=>30,'change_days'=>90,'batch'=>20,
         ]);
         $base['av']=[
+            'callback_verification'=>!empty($caps['callback_verification_enabled']),
             'enabled'=>!empty($caps['av_enabled']),'audio'=>!empty($caps['av_enabled']),'video'=>!empty($caps['av_enabled']),
             'python_binary'=>(string)($caps['python_binary']??''),'python_script'=>$root.'/chat/helpers/media/inspect.py',
             'ffmpeg_binary'=>(string)($caps['ffmpeg_binary']??''),'ffprobe_binary'=>(string)($caps['ffprobe_binary']??''),
@@ -222,7 +223,7 @@ final class ChatGoRuntimeConfig
             $env['CHAT_QINIU_ACCESS_KEY']=(string)($q['access_key']??'');
             $env['CHAT_QINIU_SECRET_KEY']=(string)($q['secret_key']??'');
         }
-        if(!empty($caps['av_enabled'])){
+        if(!empty($caps['av_enabled'])||!empty($caps['callback_verification_enabled'])){
             $env['CHAT_WECHAT_CALLBACK_TOKEN']=$caps['callback_token'];
             $env['CHAT_WECHAT_CALLBACK_AES_KEY']=$caps['callback_aes_key'];
         }
@@ -338,8 +339,9 @@ final class ChatGoRuntimeConfig
             'asr_configured'=>$asrReady,'wechat_secret_configured'=>$secret!=='','av_prerequisites_ready'=>!$avMissing,
             'wechat_credential_ready'=>$credentialFile!=='','av_enabled'=>$states['audio']['enabled'],'av_temp_root'=>$states['audio']['enabled']?$avTemp:'',
             'wechat_credential_file'=>$states['audio']['enabled']?$credentialFile:'','wechat_rejection_directory'=>$states['audio']['enabled']?$rejectionDirectory:'',
+            'callback_verification_enabled'=>$requested&&$messages&&$callback['configured'],
             'callback_configured'=>$callback['configured'],'callback_verified'=>$callback['verified'],'callback_url'=>$callback['url'],
-            'callback_token'=>$states['audio']['enabled']?$callback['token']:'','callback_aes_key'=>$states['audio']['enabled']?$callback['aes_key']:'',
+            'callback_token'=>$requested&&$messages?$callback['token']:'','callback_aes_key'=>$requested&&$messages?$callback['aes_key']:'',
             'internal_key'=>$internal,
             'sms_bridge_enabled'=>$states['paid_sms']['enabled'],'sms_provider_ready'=>$smsProvider['ready'],'sms_schema_ready'=>$smsSchema,
             'calls_enabled'=>$states['calls']['enabled'],'calls_bridge_enabled'=>$callsBridge,'calls_recovery_only'=>$callsBridge&&!$states['calls']['enabled'],

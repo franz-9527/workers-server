@@ -39,6 +39,7 @@
     "enabled": false
   },
   "av": {
+    "callback_verification": false,
     "enabled": false,
     "audio": false,
     "video": false,

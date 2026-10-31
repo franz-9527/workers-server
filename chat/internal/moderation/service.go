@@ -366,6 +366,8 @@ func (s *Service) Maintain(ctx context.Context) {
 
 var _ ports.Safety = (*Service)(nil)
 
+func (s *Service) MediaAppID() string { return s.appID }
+
 func (s *Service) Close() {
 	if c, ok := s.client.(interface{ CloseIdleConnections() }); ok {
 		c.CloseIdleConnections()

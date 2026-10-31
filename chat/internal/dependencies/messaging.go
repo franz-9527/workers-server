@@ -7,6 +7,7 @@ import (
 	"github.com/franz-9527/workers/chat/internal/avpipeline"
 	"github.com/franz-9527/workers/chat/internal/imagepipeline"
 	"github.com/franz-9527/workers/chat/internal/message"
+    "github.com/franz-9527/workers/chat/internal/moderation"
 	"github.com/franz-9527/workers/chat/internal/ports"
 	"log/slog"
 	"net/http"
@@ -156,8 +157,15 @@ var _ http.Handler = (*message.GovernanceHandler)(nil)
 
 func (r *Runtime) EnableAV(c avpipeline.Config) error {
 	if !c.Enabled {
-		return c.Validate()
-	}
+        if c.Validate() != nil { return ports.ErrInvalid }
+        if c.CallbackVerification {
+            if r.environment != "test" || r.Moderation == nil || r.Messages == nil { return ports.ErrInvalid }
+            handler, err := moderation.NewMediaCallbackVerifier(r.Moderation.MediaAppID(), os.Getenv(c.CallbackTokenEnv), os.Getenv(c.CallbackKeyEnv))
+            if err != nil { return err }
+            r.AVCallback = handler
+        }
+        return nil
+    }
 	if r.Messages == nil || r.Moderation == nil || r.History == nil {
 		return ports.ErrInvalid
 	}

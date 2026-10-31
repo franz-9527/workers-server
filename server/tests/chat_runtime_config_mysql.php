@@ -86,6 +86,7 @@ try{
  $put('chat.go_ffmpeg_binary','/missing/ffmpeg');$bad=$runtime->render($signing);$validate($bad,'missing FFmpeg');check($bad['config']['images']['enabled']&&!$bad['config']['av']['enabled'],'FFmpeg missing preserves image capability');$put('chat.go_ffmpeg_binary','/usr/bin/ffmpeg');
  $put('chat.go_python_binary','/missing/python3');$bad=$runtime->render($signing);$validate($bad,'missing Python');check(!$bad['config']['images']['enabled']&&!$bad['config']['av']['enabled'],'Python missing closes media only');$put('chat.go_python_binary',(string)getenv('CHAT_TEST_PYTHON'));
  $callback->saveLocked(['wechat_callback_confirmed'=>'0'],1,$settings['wechat.miniapp_appid'],$config['app.url']);$bad=$runtime->render($signing);$validate($bad,'unconfirmed callback');check(!$bad['config']['av']['enabled']&&$bad['config']['images']['enabled']&&$bad['config']['safety']['credential_file']==='','unconfirmed callback does not inject AV credentials into text safety');
+ check($bad['config']['av']['callback_verification']&&$bad['environment']['CHAT_WECHAT_CALLBACK_TOKEN']===$callbackInput['wechat_callback_token'],'configured callback enables ownership verification before AV admission');
  $callback->saveLocked(['wechat_callback_confirmed'=>'1'],1,$settings['wechat.miniapp_appid'],$config['app.url']);
  check(!$callback->runtime('wx0000000000000002',$config['app.url'])['ready']&&!$callback->runtime($settings['wechat.miniapp_appid'],'https://changed.invalid')['ready'],'AppID or site changes invalidate callback confirmation');
  $provider->rejectGeneration($provider->metadata()['generation']);$bad=$runtime->render($signing);$validate($bad,'expired/revoked WeChat export');check(!$bad['config']['av']['enabled']&&$bad['config']['images']['enabled'],'missing real WeChat credential closes AV only');$provider->get();
@@ -106,6 +107,7 @@ try{
  \WorkerAdmin\Infrastructure\Messaging\ChatInternalAuth::configured($db)->verify('/chat-calls.php','{}',$map);check(true,'existing PHP verifier accepts runtime internal signing identity');putenv('CHAT_INTERNAL_KEY');
  $db->execute('RENAME TABLE chat_image_items TO missing_image_items');$bad=$runtime->render($signing);check(!$bad['config']['images']['enabled']&&$bad['config']['av']['enabled'],'missing image table disables only images');$db->execute('RENAME TABLE missing_image_items TO chat_image_items');
  $config['app.env']='production';$prod=$runtime->render($signing);
+ check(!$prod['config']['av']['callback_verification'],'production cannot expose verification-only callback automatically');
  check(!$prod['config']['release']['staging']&&!$prod['config']['messages']['enabled']&&!$prod['config']['images']['enabled']&&!$prod['config']['av']['enabled']&&!$prod['config']['calls']['enabled']&&!$prod['config']['reminders']['paid_sms_enabled'],'production never inherits automatic staging enablement');
  check(!isset($prod['environment']['CHAT_QINIU_SECRET_KEY'],$prod['environment']['CHAT_WECHAT_CALLBACK_TOKEN']),'production closed capabilities export no optional secrets');
  // Render the real administrator view and verify callback controls belong to the save form.
