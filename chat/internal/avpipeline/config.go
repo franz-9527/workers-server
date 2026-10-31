@@ -15,31 +15,33 @@ import (
 )
 
 type Config struct {
-    CallbackVerification bool `json:"callback_verification"`
-	Enabled          bool                `json:"enabled"`
-	Audio            bool                `json:"audio"`
-	Video            bool                `json:"video"`
-	Python           string              `json:"python_binary"`
-	Script           string              `json:"python_script"`
-	FFmpeg           string              `json:"ffmpeg_binary"`
-	FFprobe          string              `json:"ffprobe_binary"`
-	TempRoot         string              `json:"temp_root"`
-	Bucket           string              `json:"bucket"`
-	Private          bool                `json:"private_bucket"`
-	DownloadOrigin   string              `json:"download_origin"`
-	UploadOrigin     string              `json:"upload_origin"`
-	AccessKeyEnv     string              `json:"access_key_env"`
-	SecretKeyEnv     string              `json:"secret_key_env"`
-	ASR              moderation.AVConfig `json:"asr"`
-	DailyASR         int                 `json:"daily_asr_budget"`
-	CallbackTokenEnv string              `json:"callback_token_env"`
-	CallbackKeyEnv   string              `json:"callback_key_env"`
+	CallbackVerification bool                `json:"callback_verification"`
+	Enabled              bool                `json:"enabled"`
+	Audio                bool                `json:"audio"`
+	Video                bool                `json:"video"`
+	Python               string              `json:"python_binary"`
+	Script               string              `json:"python_script"`
+	FFmpeg               string              `json:"ffmpeg_binary"`
+	FFprobe              string              `json:"ffprobe_binary"`
+	TempRoot             string              `json:"temp_root"`
+	Bucket               string              `json:"bucket"`
+	Private              bool                `json:"private_bucket"`
+	DownloadOrigin       string              `json:"download_origin"`
+	UploadOrigin         string              `json:"upload_origin"`
+	AccessKeyEnv         string              `json:"access_key_env"`
+	SecretKeyEnv         string              `json:"secret_key_env"`
+	ASR                  moderation.AVConfig `json:"asr"`
+	DailyASR             int                 `json:"daily_asr_budget"`
+	CallbackTokenEnv     string              `json:"callback_token_env"`
+	CallbackKeyEnv       string              `json:"callback_key_env"`
 }
 
 func (c Config) Validate() error {
 	if !c.Enabled {
-        if c.CallbackVerification && (!regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackTokenEnv) || !regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackKeyEnv)) { return ports.ErrInvalid }
-        if c.Audio || c.Video {
+		if c.CallbackVerification && (!regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackTokenEnv) || !regexp.MustCompile("^CHAT_[A-Z0-9_]{1,60}$").MatchString(c.CallbackKeyEnv)) {
+			return ports.ErrInvalid
+		}
+		if c.Audio || c.Video {
 			return ports.ErrInvalid
 		}
 		return nil

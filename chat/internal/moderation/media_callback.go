@@ -32,23 +32,29 @@ type MediaCallback struct {
 // NewMediaCallbackVerifier supports initial WeChat URL ownership checks only.
 // It never accepts or acknowledges media events while the AV pipeline is disabled.
 func NewMediaCallbackVerifier(appID, token, key string) (http.Handler, error) {
-    callback, err := callbackConfig(appID, token, key)
-    if err != nil { return nil, err }
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != http.MethodGet {
-            w.Header().Set("Cache-Control", "no-store")
-            http.Error(w, "media pipeline unavailable", http.StatusServiceUnavailable)
-            return
-        }
-        callback.ServeHTTP(w, r)
-    }), nil
+	callback, err := callbackConfig(appID, token, key)
+	if err != nil {
+		return nil, err
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.Header().Set("Cache-Control", "no-store")
+			http.Error(w, "media pipeline unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		callback.ServeHTTP(w, r)
+	}), nil
 }
 func NewMediaCallback(appID, token, key string, r AudioReceiver) (*MediaCallback, error) {
-    if r == nil { return nil, ports.ErrInvalid }
-    callback, err := callbackConfig(appID, token, key)
-    if err != nil { return nil, err }
-    callback.Receiver = r
-    return callback, nil
+	if r == nil {
+		return nil, ports.ErrInvalid
+	}
+	callback, err := callbackConfig(appID, token, key)
+	if err != nil {
+		return nil, err
+	}
+	callback.Receiver = r
+	return callback, nil
 }
 func callbackConfig(appID, token, key string) (*MediaCallback, error) {
 	raw, e := base64.StdEncoding.DecodeString(key + "=")
