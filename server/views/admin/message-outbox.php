@@ -28,7 +28,7 @@ $suppressionResult = isset($suppressionResult) && is_array($suppressionResult) ?
 ?>
 <div class="admin-page-head">
     <div><h1>消息发送记录</h1><p>查看短信、企业微信、微信订阅等异步消息状态。企业微信“接口已受理”不代表管理员已收到提醒或已读。</p></div>
-    <div class="admin-page-actions"><span class="admin-badge admin-badge--<?= $failedCount > 0 ? 'danger' : 'success' ?>">重试耗尽 <?= number_format($failedCount) ?> 条</span></div>
+    <?php if($activeTab==='records'&&($channel??'')!=='in_app'): ?><div class="admin-page-actions"><span class="admin-badge admin-badge--<?= $failedCount > 0 ? 'danger' : 'success' ?>">重试耗尽 <?= number_format($failedCount) ?> 条</span></div><?php endif; ?>
 </div>
 
 <nav class="admin-tabs admin-mb-3" aria-label="消息发送管理分页">

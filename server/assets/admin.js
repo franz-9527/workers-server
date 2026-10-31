@@ -689,6 +689,7 @@
         });
         each(panels, function (panel) { panel.hidden = panel.getAttribute('data-subscribe-scene-panel') !== scene; });
         if (activeInput) activeInput.value = scene;
+        each(document.querySelectorAll('[data-small-active-notification-scene]'),function(input){input.value=scene;});
         if (updateUrl !== false && window.history && window.history.replaceState && window.URL) {
           try {
             var url = new URL(window.location.href);

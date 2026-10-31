@@ -141,6 +141,7 @@ $eventEnabledFor=static function($saved){return filter_var(is_array($saved)?($sa
 <?php foreach($messageActionForms as $actionFormId=>$actionForm): ?>
 <form id="<?= e($actionFormId) ?>" method="post" action="<?= e(admin_url($actionForm['route'])) ?>" data-loading hidden>
 <?= csrf()->input() ?><input type="hidden" name="_settings_scope" value="messages"><input type="hidden" name="_message_channel" value="<?= strpos($actionForm['route'],'settings.sms.')===0?'sms':'subscribe' ?>">
+<?php if(in_array($actionForm['route'],['settings.notifications.bootstrap','settings.notifications.sync'],true)): ?><input type="hidden" name="_active_notification_scene" data-small-active-notification-scene value="<?= e($activeNotificationScene?:'user_order_update') ?>"><?php endif; ?>
 <?php foreach($actionForm['fields'] as $field=>$fieldValue): ?><input type="hidden" name="<?= e($field) ?>" value="<?= e($fieldValue) ?>"><?php endforeach; ?>
 </form>
 <?php endforeach; ?>
