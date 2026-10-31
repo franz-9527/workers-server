@@ -1,0 +1,54 @@
+name: Managed full-capability configuration
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,sodium,dom,curl,gd
+          coverage: none
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: chat/go.mod
+          cache-dependency-path: chat/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline media dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python -m pip install -r chat/helpers/images/requirements.lock
+      - name: Syntax
+        run: |
+          find server/app/Application/Chat server/bin server/views/admin -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          php -l server/tests/chat_runtime_config_mysql.php
+          bash -n chat/deploy/bt-run.sh chat/deploy/bt-deploy.sh
+          python -m py_compile chat/helpers/preflight.py
+      - name: Go build and regression
+        working-directory: chat
+        run: |
+          go test ./...
+          go build -o /tmp/chatd ./cmd/chatd
+      - name: Real MySQL and real Go configuration matrix
+        env:
+          CHAT_RUNTIME_TEST: '1'
+          CHATD_TEST_BINARY: /tmp/chatd
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: |
+          export CHAT_TEST_PYTHON="$(command -v python)"
+          php server/tests/chat_runtime_config_mysql.php
