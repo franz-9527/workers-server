@@ -5,6 +5,7 @@ function apiFixture(){
  const environment={capture:()=>({key:'testing',revision:1,baseURL:'https://fixture.invalid/api/'}),ready:()=>Promise.resolve(),assertCurrent(){},storageKey:k=>k,onChange(){},current:()=>({key:'testing'})}
  const module={exports:{}},wx={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),login:o=>{resets.login++;o.success({code:'fixture-code'})},request:o=>{const route=new URL(o.url).searchParams.get('route');const row={route,options:o,abort:0};pending.push(row);calls.push(route);return {abort(){row.abort++;o.fail({errMsg:'aborted'});o.complete()}}}}
  vm.runInNewContext(read('miniprogram/utils/OrderApi.js'),{module,require:p=>p.includes('ApiEnvironment')?environment:p.includes('config.js')?{APICONFIG:{VERSION:'2.7.1'}}:p.includes('ChatRuntime')?{reset:()=>resets.chat++}:p.includes('NotificationState')?{reset:()=>resets.notification++}:{},wx,Promise,Date,Map,Set,console,setTimeout,clearTimeout})
+ wx.uploadFile=o=>{const row={route:'upload',options:o,abort:0};pending.push(row);return {abort(){row.abort++;o.fail({errMsg:'aborted'});o.complete()},onProgressUpdate(fn){row.progress=fn}}}
  const finish=(row,status,data)=>{row.options.success({statusCode:status,data});row.options.complete()}
  return{api:module.exports,storage,pending,calls,resets,finish}
 }
@@ -60,4 +61,11 @@ test('runtime closes old chat before checking availability and rejects late iden
  const runtime=module.exports,m=runtime.get(),old=runtime.refreshAvailability();revision++;runtime.reset();assert.equal(m.enabled,false)
  pending[0]({data:{enabled:true}});await old;assert.equal(m.enabled,false)
  pending[1]({data:{enabled:true,transport:'simulation'}});await flush();assert.equal(m.enabled,true);assert.deepEqual(states,[false,true])
+})
+
+test('identity switch aborts an in-progress upload and suppresses its old progress callback',async()=>{
+ const f=apiFixture(),progress=[],job=f.api.upload('images.upload','/fixture.png',{},value=>progress.push(value)).then(()=>{throw Error('stale upload accepted')},e=>e)
+ await flush();const upload=f.pending.find(x=>x.route==='upload')
+ const switchJob=f.api.request('admin.demo.switch','POST',{role:'user'});await flush();f.finish(f.pending.find(x=>x.route==='admin.demo.switch'),200,{ok:true,data:{role:'user'}});await switchJob
+ assert.equal(upload.abort,1);assert.equal((await job).code,'API_IDENTITY_CHANGED');upload.progress({progress:80});assert.equal(progress.length,0)
 })
