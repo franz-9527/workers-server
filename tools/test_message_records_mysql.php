@@ -18,12 +18,15 @@ $root->exec('CREATE DATABASE IF NOT EXISTS message_r14 CHARACTER SET utf8mb4 COL
 $db=new WorkerAdmin\Core\Database(['host'=>'127.0.0.1','port'=>$port,'database'=>'message_r14','username'=>'root','password'=>'fixture-only']);
 $db->execute("CREATE TABLE message_outbox(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,topic VARCHAR(80),business_key VARCHAR(128) UNIQUE,payload_json JSON,status VARCHAR(24),attempt_count INT DEFAULT 0,next_attempt_at DATETIME NULL,last_error TEXT NULL,created_at DATETIME,processed_at DATETIME NULL)");
 $db->execute("CREATE TABLE notifications(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,public_id VARCHAR(64),recipient_type VARCHAR(24),recipient_id BIGINT,channel VARCHAR(24),template_key VARCHAR(80),title VARCHAR(160),content TEXT NULL,data_json TEXT NULL,status VARCHAR(24),created_at DATETIME)");
-$db->execute("CREATE TABLE worker_profiles(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,cloud_worker_id VARCHAR(128))");
+$db->execute("CREATE TABLE worker_profiles(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,cloud_worker_id VARCHAR(128),display_name VARCHAR(80))");
 function add($topic,$key,$payload=[],$status='processed'){
  global $db;
  return $db->insert("INSERT INTO message_outbox(topic,business_key,payload_json,status,attempt_count,created_at,processed_at) VALUES(:topic,:key,:payload,:status,1,UTC_TIMESTAMP(),UTC_TIMESTAMP())",['topic'=>$topic,'key'=>$key,'payload'=>json_encode($payload),'status'=>$status]);
 }
 $GLOBALS['settings']=['wecom.webhook_enabled'=>true,'wecom.webhook_url'=>'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=FIXTURE-NOT-REAL','wecom.event_switches'=>['worker_profile_submitted'=>true]];
+$db->execute("CREATE TABLE users(id BIGINT PRIMARY KEY,nickname VARCHAR(80))");
+$db->execute("INSERT INTO users VALUES(1,'测试客户')");
+$db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,display_name) VALUES(9,'worker-nine','测试师傅九')");
 for($i=1;$i<=45;$i++)add('wecom_webhook','admin-'.$i,['event_type'=>'worker_profile_submitted','delivery_receipt'=>['provider'=>'wecom','errcode'=>0,'message_type'=>'template_card','target_fingerprint'=>'89b5fb7c7905']]);
 for($i=1;$i<=22;$i++)add('wechat_subscribe','review-'.$i,['user_id'=>$i,'scene_key'=>'reviewResult']);
 for($i=1;$i<=7;$i++)add('wechat_subscribe','order-'.$i,['user_id'=>$i,'scene_key'=>'user_order_update']);
@@ -53,6 +56,31 @@ $id=add('wecom_webhook','interrupted-test',['is_test'=>true],'processing');$db->
 $queue=new WorkerAdmin\Infrastructure\Messaging\DatabaseMessageDeliveryQueue($db);$queue->recoverExpiredClaims();
 $r=$db->fetch('SELECT status,next_attempt_at FROM message_outbox WHERE id=:id',['id'=>$id]);
 check($r['status']==='failed'&&$r['next_attempt_at']===null&&!$queue->claim($id),'interrupted test remains uncertain and is never claimed by business dispatcher');
+$db->execute("CREATE TABLE system_settings(setting_key VARCHAR(160) PRIMARY KEY,setting_value TEXT,updated_at DATETIME NULL)");
+$sms=new class implements WorkerAdmin\Contracts\SmsGateway {
+ public function enabled():bool{return true;}
+ public function send(string $m,string $c,array $p,string $o='',bool $a=false):array{return ['Code'=>'OK','BizId'=>'business-fixture'];}
+ public function sendWithOutcome(string $m,string $c,array $p,string $o='',bool $a=false):array{return [];}
+ public function querySendDetails(string $m,string $d,?string $b=null):array{return [];}
+};
+$subscribe=new class implements WorkerAdmin\Contracts\SubscribeMessageGateway {
+ public function categoryList():array{return [];}
+ public function publicTemplateTitles(array $c,int $s=0,int $l=30):array{return [];}
+ public function publicTemplateKeywords(string $t):array{return [];}
+ public function addTemplate(string $t,array $k,string $d=''):string{return '';}
+ public function templateList():array{return [];}
+ public function send(array $p):array{return ['errcode'=>0];}
+};
+$wecom=new class implements WorkerAdmin\Contracts\AdminAlertGateway {
+ public function send(string $c,?string $a=null):array{return $c==='reject'?[]:['errcode'=>0,'delivery_receipt'=>['message_type'=>'text','target_fingerprint'=>'123456789abc']];}
+};
+add('wecom_webhook','dispatch-wecom',['content'=>'fixture'],'pending');
+add('wechat_subscribe','dispatch-subscribe',['user_id'=>1,'scene_key'=>'fixture'],'pending');
+add('aliyun_sms','dispatch-sms',['mobile'=>'13800138000','template_code'=>'SMS_123456789'],'pending');
+add('wecom_webhook','dispatch-reject',['content'=>'reject'],'pending');
+$stats=(new WorkerAdmin\Application\Messaging\MessageOutboxDispatch($queue,$sms,$subscribe,$wecom))->dispatch(100);
+check($stats['success']===3&&$stats['failure']===1,'business dispatcher records three valid channels and rejects missing provider success');
+check((int)$db->fetchValue("SELECT COUNT(*) FROM message_outbox WHERE business_key IN ('dispatch-wecom','dispatch-subscribe','dispatch-sms') AND status='processed' AND JSON_UNQUOTE(JSON_EXTRACT(payload_json,'$.delivery_receipt.delivery_status'))='unconfirmed'")===3,'all three business channels retain safe provider receipts');
 // Exact review page IDs + real SQL selects latest server receipt.
 $cloud=new class implements WorkerAdmin\Contracts\WorkerCloudGateway{
  public array $item=['_id'=>'cloud-worker-fixture','workerName'=>'测试师傅','status'=>'approved','reviewTime'=>0];

@@ -136,7 +136,24 @@ final class DatabaseMessageOutboxRepository implements MessageOutboxRepository, 
                     $params, $tab === 'records' ? $page : 1
                 );
 
+                $userIds=[];$workerIds=[];
+                foreach($result['rows'] as $row){
+                    $payload=json_decode((string)($row['_payload_json']??''),true);$payload=is_array($payload)?$payload:[];
+                    if(!empty($payload['user_id']))$userIds[]=(int)$payload['user_id'];
+                    elseif(($row['recipient_type']??'')==='worker' && !empty($payload['recipient_id']))$workerIds[]=(int)$payload['recipient_id'];
+                    elseif(in_array($row['recipient_type']??'',['user','account'],true)&&!empty($payload['recipient_id']))$userIds[]=(int)$payload['recipient_id'];
+                }
+                $userNames=[];$workerNames=[];
+                if($userIds && $this->db->tableExists('users')){
+                    foreach($this->db->fetchAll('SELECT id,nickname FROM users WHERE id IN ('.implode(',',array_unique($userIds)).')') as $user)$userNames[(int)$user['id']]=(string)$user['nickname'];
+                }
+                if($workerIds && $this->db->tableExists('worker_profiles')){
+                    foreach($this->db->fetchAll('SELECT id,display_name FROM worker_profiles WHERE id IN ('.implode(',',array_unique($workerIds)).')') as $worker)$workerNames[(int)$worker['id']]=(string)$worker['display_name'];
+                }
                 foreach ($result['rows'] as &$messageRow) {
+                    $payload=json_decode((string)($messageRow['_payload_json']??''),true);$payload=is_array($payload)?$payload:[];
+                    $id=(int)($payload['user_id']??$payload['recipient_id']??0);
+                    $messageRow['recipient_name']=!empty($payload['user_id'])?($userNames[$id]??''):(($messageRow['recipient_type']??'')==='worker'?($workerNames[$id]??''):($userNames[$id]??''));
                     $safeError = (string) ($messageRow['last_error'] ?? '');
                     $safeError = preg_replace('/(?<!\\d)1[3-9]\\d{9}(?!\\d)/', '1**********', $safeError);
                     $safeError = preg_replace('#https?://qyapi\\.weixin\\.qq\\.com/cgi-bin/webhook/send\\?key=[A-Za-z0-9_-]+#i', '企业微信 Webhook 地址已隐藏', $safeError);

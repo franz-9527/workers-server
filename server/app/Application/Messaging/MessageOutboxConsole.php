@@ -36,6 +36,7 @@ final class MessageOutboxConsole
             $row['recipient_type']=(string)($row['recipient_type']??$payload['recipient_type']??(($row['topic']??'')==='wecom_webhook'?'admin':'user'));
             $row['recipient_label']=['admin'=>'管理员','user'=>'客户','worker'=>'师傅','account'=>'聊天账号（客户或师傅）'][$row['recipient_type']]??'接收对象未记录';
             $recipientId=(int)($payload['recipient_id']??$payload['user_id']??$row['recipient_id']??0);
+            if(!empty($row['recipient_name']))$row['recipient_label'].=' · '.mb_substr((string)$row['recipient_name'],0,30);
             if($recipientId>0)$row['recipient_label'].=' #'.$recipientId;
             $row['is_test']=!empty($payload['is_test']);
             $row['delivery_receipt_display']='';
@@ -45,6 +46,8 @@ final class MessageOutboxConsole
             } elseif(($row['status']??'')==='processed'){
                 $row['status_label']='接口受理 · 送达未确认';
                 $parts=[];
+                $types=['text'=>'文字消息','markdown'=>'链接消息','template_card'=>'小程序卡片'];
+                if(isset($types[$receipt['message_type']??'']))$parts[]=$types[$receipt['message_type']];
                 if(isset($receipt['errcode']))$parts[]='返回码 '.$receipt['errcode'];
                 elseif(isset($receipt['provider_code']))$parts[]='返回码 '.$receipt['provider_code'];
                 else $parts[]='历史记录未保存渠道回执';

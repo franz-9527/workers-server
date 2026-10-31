@@ -276,8 +276,8 @@ final class DatabaseMiniAdminWorkerStoreRepository implements MiniAdminWorkerSto
                  WHERE n.recipient_type='worker' AND n.channel='in_app'
                    AND n.template_key='worker_profile_review_result'
                    AND BINARY w.cloud_worker_id=BINARY :cloud_id
-                   AND JSON_UNQUOTE(JSON_EXTRACT(n.data_json,'$.cloud_id'))=:notice_cloud_id
-                   AND JSON_UNQUOTE(JSON_EXTRACT(n.data_json,'$.review_status'))=:notice_decision
+                   AND JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(n.data_json),n.data_json,'{}'),'$.cloud_id'))=:notice_cloud_id
+                   AND JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(n.data_json),n.data_json,'{}'),'$.review_status'))=:notice_decision
                    AND n.created_at>=:review_after
                  ORDER BY n.id DESC LIMIT 1",
                 ['cloud_id'=>$cloudId,'notice_cloud_id'=>$cloudId,'notice_decision'=>$decision,'review_after'=>$reviewAfter]
