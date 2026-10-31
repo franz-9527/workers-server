@@ -1,0 +1,48 @@
+name: temporary chat signing validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-chat-signing.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-chat-signing-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chat-signing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-only"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: sodium, pdo_mysql
+          coverage: none
+      - name: Runtime versions
+        run: |
+          php -v
+          mysql --version || true
+      - name: Validate chat signing configuration
+        env:
+          CHAT_SIGNING_TEST: '1'
+          MYSQL_PORT: '3306'
+        run: php .validation/tools/test_chat_signing_keys.php
