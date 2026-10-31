@@ -41,7 +41,13 @@ jobs:
         run: |
           php -v
           mysql --version || true
-      - name: Validate chat signing configuration
+      - name: Lint final PHP integration files
+        run: |
+          php -l .validation/server/app/Application/Chat/ChatSigningKeyManager.php
+          php -l .validation/server/app/Application/Chat/ChatCredentialIssuer.php
+          php -l .validation/server/app/Http/Admin/Modules/ChatSettingsAdminModule.php
+          php -l .validation/server/views/admin/chat-settings.php
+      - name: Validate chat signing configuration and JWT integration
         env:
           CHAT_SIGNING_TEST: '1'
           MYSQL_PORT: '3306'
