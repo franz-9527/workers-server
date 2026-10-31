@@ -7,6 +7,9 @@ namespace WorkerAdmin\Contracts {
         public function encrypt(string $plainText,string $context):?string;
         public function decrypt(string $cipherText,string $context):string;
     }
+    interface ChatRecoveryReadiness {
+        public function ensureReady(array $config,string $environment):void;
+    }
 }
 
 namespace WorkerAdmin\Core {
@@ -35,7 +38,9 @@ namespace WorkerAdmin\Core {
 namespace {
     use PDO;
     use RuntimeException;
+    use WorkerAdmin\Application\Chat\ChatCredentialIssuer;
     use WorkerAdmin\Application\Chat\ChatSigningKeyManager;
+    use WorkerAdmin\Contracts\ChatRecoveryReadiness;
     use WorkerAdmin\Contracts\PrivateValueCipher;
     use WorkerAdmin\Core\Database;
 
@@ -43,6 +48,7 @@ namespace {
     if(!extension_loaded('sodium')||!extension_loaded('pdo_mysql')) throw new RuntimeException('sodium and pdo_mysql required');
 
     require dirname(__DIR__).'/server/app/Application/Chat/ChatSigningKeyManager.php';
+    require dirname(__DIR__).'/server/app/Application/Chat/ChatCredentialIssuer.php';
 
     function check(bool $ok,string $why):void{if(!$ok)throw new RuntimeException($why);}
     function rejected(callable $fn,string $contains=''):void{
@@ -89,6 +95,34 @@ namespace {
         check(is_string($public)&&strlen($public)===32&&base64_encode($public)===$first['public_key'],'public key canonical base64');
         check(str_contains($first['go_config'],'"enabled": true')&&str_contains($first['go_config'],'"chat-v1"'),'Go auth config emitted');
         check(!str_contains(json_encode($first,JSON_THROW_ON_ERROR),'signing_seed_ciphertext'),'status does not expose private setting name');
+
+        $recovery=new class implements ChatRecoveryReadiness {
+            public function ensureReady(array $config,string $environment):void {
+                if($environment!=='test')throw new RuntimeException('wrong environment');
+            }
+        };
+        $issuer=new ChatCredentialIssuer($db,$config,'testing',$cipher,$recovery);
+        check($issuer->readiness()===['ready'=>true,'reason'=>'ready'],'issuer accepts backend-managed signing key');
+        $issue=new ReflectionMethod(ChatCredentialIssuer::class,'issue');
+        $credential=$issue->invoke($issuer,[
+            'sub'=>'1','kind'=>'mini','source_id'=>'1',
+            'session_id'=>hash('sha256','fixture-session'),
+            'session_version'=>hash('sha256','fixture-version'),
+            'scopes'=>['chat:use'],
+        ],time()+600);
+        $parts=explode('.',(string)$credential['access_token']);
+        check(count($parts)===3,'issuer creates JWT');
+        $decodeUrl=static function(string $value):string {
+            $value=strtr($value,'-_','+/');
+            $value.=str_repeat('=',(4-strlen($value)%4)%4);
+            $decoded=base64_decode($value,true);
+            if(!is_string($decoded))throw new RuntimeException('invalid base64url');
+            return $decoded;
+        };
+        $header=json_decode($decodeUrl($parts[0]),true,512,JSON_THROW_ON_ERROR);
+        $claims=json_decode($decodeUrl($parts[1]),true,512,JSON_THROW_ON_ERROR);
+        check(($header['kid']??'')==='chat-v1'&&($claims['env']??'')==='test','issuer uses backend kid and mapped environment');
+        check(sodium_crypto_sign_verify_detached($decodeUrl($parts[2]),$parts[0].'.'.$parts[1],$public),'Go public key verifies PHP JWT');
 
         $material=$manager->material($config);
         check($material['source']==='database'&&strlen($material['seed'])===32,'PHP can recover encrypted seed');
