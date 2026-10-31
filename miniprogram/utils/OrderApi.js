@@ -123,7 +123,7 @@ function rawRequest(route, method, data, token, query, context = ApiEnvironment.
         error.statusCode = res.statusCode; error.code = body && body.code; error.requestId = body && body.request_id; error.data = body && body.data
         reject(error)
       },
-      fail(err) { try { ApiEnvironment.assertCurrent(context) } catch (error) { return reject(error) }; const error = new Error(err.errMsg || '网络连接失败，请检查网络'); error.code = 'NETWORK_ERROR'; reject(error) },
+      fail(err) { try { ApiEnvironment.assertCurrent(context); assertIdentity(identityRevision) } catch (error) { return reject(error) }; const error = new Error(err.errMsg || '网络连接失败，请检查网络'); error.code = 'NETWORK_ERROR'; reject(error) },
       complete() { networkTasks.delete(task) }
     })
     if (task) networkTasks.add(task)
@@ -322,7 +322,7 @@ function upload(route, filePath, formData, onProgress, retried, context = ApiEnv
       complete() { networkTasks.delete(task) }
     })
     if (task) networkTasks.add(task)
-    if (progressHandler && task && typeof task.onProgressUpdate === 'function') task.onProgressUpdate(event => { try { ApiEnvironment.assertCurrent(context); progressHandler(event || {}) } catch (error) { console.warn('[订单图片上传] 进度回调失败', error) } })
+    if (progressHandler && task && typeof task.onProgressUpdate === 'function') task.onProgressUpdate(event => { try { ApiEnvironment.assertCurrent(context); assertIdentity(identityRevision); progressHandler(event || {}) } catch (error) { console.warn('[订单图片上传] 进度回调失败', error) } })
   })).catch(error => {
     ApiEnvironment.assertCurrent(context)
     assertIdentity(identityRevision)

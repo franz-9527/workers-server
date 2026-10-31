@@ -184,9 +184,13 @@ Page({
   },
 
   refreshWorkbench(options) {
+    const identity = OrderApi.contextRevision()
+    const serial = this.refreshSerial = (this.refreshSerial || 0) + 1
+    const current = () => !this.disposed && serial === this.refreshSerial && identity === OrderApi.contextRevision()
     const loadOptions = options || {}
     this.setData({ loading: true, workbenchError: '' })
     return OrderApi.request('admin.demo.status', 'GET').then(res => {
+      if (!current()) return
       const demoStatus = res.data || { enabled: false, active_role: 'real', active_label: '真实管理员', options: [] }
       this.workbenchLoaded = true
       this.setData({ demoStatus })
@@ -200,6 +204,7 @@ Page({
       }
       return this.load(loadOptions)
     }).catch(error => {
+      if (!current()) return
       this.setData({ loading: false, loadingMore: false, workbenchError: error.message || '工作台暂时无法加载', items: [], counts: {} })
       // 云端真实管理员可在 PHP 测试站离线或权限未配置时恢复正式站。
       if (this.data.apiEnvironmentVisible) return
@@ -248,6 +253,7 @@ Page({
       this.setData({ demoPickerVisible: false })
       wx.switchTab({ url: '/pages/mine/mine', success: () => wx.showToast({ title: res.message || '已切换', icon: 'none' }) })
     }).catch(error => {
+      if (this.disposed) return
       wx.showModal({ title: '切换失败', content: error.message || '请稍后重试', showCancel: false })
     }).finally(() => {
       wx.hideLoading()
