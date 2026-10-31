@@ -11,7 +11,7 @@ function fixture(){
  vm.runInNewContext(read('miniprogram/utils/InAppNotice.js'),{module,require:p=>deps[p.replace('./','').replace('.js','')],console,Map,Set,Promise,Date:{now:()=>clock},setTimeout:fn=>{timers.set(++timerID,fn);return timerID},clearTimeout:id=>timers.delete(id),wx:{navigateTo:o=>navigations.push(o.url),showToast:o=>toasts.push(o.title)}})
  const service=module.exports;service.subscribe(x=>{current=x});service.setForeground(true)
  const owner={};service.show(owner,'pages/index/index');const digest=(count,id='100',sender='20',conversation='1')=>({items:[{conversation_id:conversation,unread:{unread_count:count,last_message:{message_id:id,sender_id:sender}}}],has_more:false})
- return{service,owner,digest,chat:(...a)=>chat(...a),business:x=>business(x),current:()=>current,navigations,requests,toasts,context:()=>revision++,health:x=>{health=x},delayHealth:()=>{healthResolve=true;return value=>healthResolve(value)},tick:()=>{clock+=10000;const fn=[...timers.values()][0];timers.clear();if(fn)fn()}}
+ return{service,owner,digest,chat:(...a)=>chat(...a),business:x=>business(x),current:()=>current,navigations,requests,toasts,context:()=>revision++,health:x=>{health=x},delayHealth:()=>{let resolve;subscribe.getSubscriptionHealth=()=>new Promise(r=>{if(!resolve)resolve=r;else r(null)});return value=>resolve(value)},tick:()=>{clock+=10000;const fn=[...timers.values()][0];timers.clear();if(fn)fn()}}
 }
 test('real nested chat digests: baseline, incoming, no automatic receipt, duplicate and own-message suppression',async()=>{
  const f=fixture();await flush()
@@ -81,4 +81,9 @@ test('same actual template is requested and counted once, switching accounts dur
 test('late backend status cannot cross identity boundary',async()=>{
  const f=subscriptionFixture(),resolve=f.delay();const job=f.service.prefetchSubscriptionStatus({includeApplication:false});f.context();resolve({items:f.rows});await assert.rejects(job,/身份已变化/)
  assert.equal((await f.service.requestImportantTopUp({audience:'worker'})).status,'not_prepared')
+})
+
+test('coalescing visible chat replaces it once rather than replaying it from queue',async()=>{
+ const f=fixture();await flush();f.chat('digests',f.digest(0));f.chat('digests',f.digest(1));f.chat('digests',f.digest(2,'101'))
+ assert.match(f.current().description,/2/);f.tick();assert.equal(f.current(),null)
 })

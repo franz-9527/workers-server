@@ -31,7 +31,7 @@ function push(item){
  const entry={...item,created:now(),expires:now()+30000}
  queue=queue.filter(x=>x.kind!==entry.kind||entry.kind==='chat'&&x.conversationId!==entry.conversationId);queue.push(entry)
  if(queue.length>5)queue.shift()
- if(current&&current.kind===entry.kind&&(entry.kind!=='chat'||current.conversationId===entry.conversationId)){current=entry;notify();return}
+ if(current&&current.kind===entry.kind&&(entry.kind!=='chat'||current.conversationId===entry.conversationId)){queue=queue.filter(x=>x!==entry);current=entry;notify();return}
  if(!current||entry.priority>current.priority){if(current&&current.expires>now())queue.push(current);advance()}
 }
 function business(summary){
