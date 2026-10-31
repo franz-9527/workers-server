@@ -41,6 +41,7 @@ jobs:
           node tools/test_chat_release_frontend.js
           node --test tools/test_chat_s11.js
       - name: PHP credential and Go authority integration
+        if: always()
         env:
           CHAT_AUTH_TEST_INTEGRATION: '1'
           CHAT_INTEGRATION_MYSQL_ADDR: 127.0.0.1:${{ job.services.mysql.ports['3306'] }}
@@ -51,14 +52,17 @@ jobs:
           php server/tests/chat_identity_contract.php
           cd chat && go test -count=1 ./internal/auth
       - name: Compile WXML
+        if: always()
         run: |
           npm install --no-save --ignore-scripts miniprogram-compiler@0.2.3 playwright@1.56.1
           node tools/check-wxml.js miniprogram --compile
       - name: Actual test center templates
+        if: always()
         env:
           CHAT_RELEASE_TEST: '1'
         run: php tools/test_center_render.php
       - name: Desktop and mobile browser layout
+        if: always()
         timeout-minutes: 5
         run: |
           npx playwright install --with-deps chromium
