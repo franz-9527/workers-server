@@ -53,3 +53,5 @@ page{background:#f6f7f4!important}
 
 /* Choice dialogs use their content height; only the identity list needs scrolling. */
 .admin-page .demo-picker-mask .order-modal-body{height:auto!important;max-height:60vh!important}
+
+.admin-page .demo-picker-mask{z-index:2100}
