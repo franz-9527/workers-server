@@ -65,12 +65,12 @@ $db->execute("UPDATE message_outbox SET status='processed' WHERE id=:id",['id'=>
 $rows=$review->reviewRecords('worker',1,20,'',['cloud-worker-fixture']);check($rows['items'][0]['reviewNotice']['status']==='sent','review status refresh sees the subsequently completed delivery');
 $cloud->item['reviewTime']=(time()+3600)*1000;
 $rows=$review->reviewRecords('worker',1,20,'',['cloud-worker-fixture']);check($rows['items'][0]['reviewNotice']['status']==='unrecorded','an old approval receipt cannot satisfy a later review round');
-$settings=new class implements WorkerAdmin\Contracts\SettingsProvider{
+$settingsProvider=new class implements WorkerAdmin\Contracts\SettingsProvider{
  public function get(string $k,$default=null){return $GLOBALS['settings'][$k]??$default;}
  public function bool(string $k,bool $default=false):bool{return (bool)$this->get($k,$default);}
  public function int(string $k,int $default=0):int{return (int)$this->get($k,$default);}
 };
-$ann=new WorkerAdmin\Application\Messaging\AnnouncementQuery($settings);
+$ann=new WorkerAdmin\Application\Messaging\AnnouncementQuery($settingsProvider);
 $GLOBALS['settings']['announcement.home.enabled']=true;$GLOBALS['settings']['announcement.home.text']='正式首页';
 check($ann->current('home')['environment']==='production'&&$ann->current('home')['text']==='正式首页','home announcement is supplied by current site configuration');
 $GLOBALS['environment']='testing';$GLOBALS['settings']['announcement.home.text']='测试首页';

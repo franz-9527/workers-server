@@ -176,7 +176,8 @@ final class OrderNotificationProjector
         if (!$row) return;
         $labels=['approved'=>'审核通过','rejected'=>'审核未通过','suspended'=>'接单已暂停','pending'=>'等待审核'];
         $status=$labels[$decision]??'审核状态已更新';
-        $dataJson=json_encode(['cloud_id'=>$cloudId,'review_status'=>$decision],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+        $reviewId=(int)$db->fetchValue('SELECT id FROM worker_verifications WHERE worker_id=:id ORDER BY id DESC LIMIT 1',['id'=>$workerId]);
+        $dataJson=json_encode(['cloud_id'=>$cloudId,'review_status'=>$decision,'review_id'=>$reviewId],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
         $duplicate=$db->fetchValue("SELECT id FROM notifications WHERE recipient_type='worker' AND recipient_id=:id AND channel='in_app' AND template_key='worker_profile_review_result' AND BINARY data_json=BINARY :data LIMIT 1",['id'=>$workerId,'data'=>$dataJson]);
         if(!$duplicate)$db->insert("INSERT INTO notifications(public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(:public_id,'worker',:recipient_id,'in_app','worker_profile_review_result',:title,:content,:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['public_id'=>\public_id(),'recipient_id'=>$workerId,'title'=>'师傅入驻'.$status,'content'=>$reason!==''?$status.'：'.mb_substr($reason,0,80):$status,'data'=>$dataJson]);
         if(!in_array($decision,['approved','rejected','suspended'],true))return;
@@ -194,7 +195,7 @@ final class OrderNotificationProjector
         $name=mb_substr(trim($workerName)!==''?trim($workerName):(string)$row['display_name'],0,10);
         $thing=$decision==='approved'?'入驻审核已通过，请进入小程序查看。':($decision==='rejected'?'入驻审核未通过，请按处理说明修改。':'师傅接单状态已暂停，请查看处理说明。');
         if($reason!=='')$thing=mb_substr($thing.' '.trim($reason),0,20);
-        OrderSubscriptionQueue::enqueueWechatSubscribe($db,'worker-review:'.$cloudId.':'.$decision.':'.gmdate('YmdHi'),$userId,'reviewResult',$openid,(string)$scene['template_id'],'pages/record/detail?id='.rawurlencode($cloudId),[
+        OrderSubscriptionQueue::enqueueWechatSubscribe($db,'worker-review:'.$cloudId.':'.$decision.':'.($reviewId>0?'review-'.$reviewId:gmdate('YmdHis')),$userId,'reviewResult',$openid,(string)$scene['template_id'],'pages/record/detail?id='.rawurlencode($cloudId),[
             'name1'=>['value'=>$name?:'入驻师傅'],
             'phone_number2'=>['value'=>$mobile],
             'phrase3'=>['value'=>$status],

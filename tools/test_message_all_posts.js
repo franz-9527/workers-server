@@ -28,7 +28,8 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright')
   }
   for(const scene of scenes){
    const f=await pageFor('subscribe',js)
-   await f.page.locator('[name="import_template_id['+scene+']"]').fill('fixture-import-template')
+   if(js)await f.page.locator('[data-subscribe-scene-tab="'+scene+'"]').click()
+   await f.page.locator('[name="import_template_id['+scene+']"]').evaluate(el=>{el.value='fixture-import-template'})
    const b=await submit(f,'button[form="subscribe-import-'+scene+'"]','settings.notifications.import')
    assert.equal(b.get('import_scene'),scene);assert.equal(b.get('import_template_id['+scene+']'),'fixture-import-template');await f.context.close()
   }
@@ -36,6 +37,8 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright')
  for(const scene of scenes){
   const f=await pageFor('subscribe',true)
   await f.page.evaluate(()=>{const t=document.querySelector('[data-notification-json]'),v=JSON.parse(t.value);v.legacy={unused:'中文'.repeat(300000)};t.value=JSON.stringify(v)})
+  await f.page.locator('[data-subscribe-scene-tab="'+scene+'"]').click()
+  await f.page.locator('[data-subscribe-scene-panel="'+scene+'"] summary').filter({hasText:'更多设置'}).click()
   const input=f.page.locator('[data-notification-template="'+scene+'"]').first();await input.fill('fixture-edited-template')
   const b=await submit(f,'button[form="subscribe-save-'+scene+'"]','settings.save',8192)
   const saved=JSON.parse(b.get('settings[wechat.subscribe_template_ids]'))
@@ -51,7 +54,7 @@ const assert=require('node:assert/strict'),{chromium}=require('playwright')
   }
  }
  for(const scene of ['nearby_worker_invite','chat_unread_nudge','order_status','quote_received','payment_success']){
-  const f=await pageFor('sms',true);await f.page.locator('[name="test_mobile['+scene+']"]').fill('13800138000')
+  const f=await pageFor('sms',true);await f.page.locator('[name="test_mobile['+scene+']"]').evaluate(el=>{el.value='13800138000'})
   const b=await submit(f,'button[form="sms-test-'+scene+'"]','settings.sms.test');assert.equal(b.get('test_scene'),scene);assert.equal(b.get('test_mobile['+scene+']'),'13800138000');await f.context.close()
  }
  for(const channel of ['sms','internal','wecom']){

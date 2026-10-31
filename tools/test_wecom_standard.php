@@ -14,7 +14,7 @@ namespace WorkerAdmin\Infrastructure\Messaging {
     function curl_close($handle) {}
 }
 namespace {
-    $root=dirname(__DIR__,2);
+    $root=dirname(__DIR__);
     spl_autoload_register(static function($class)use($root){if(strpos($class,'WorkerAdmin\\')===0){$p=$root.'/server/app/'.str_replace('\\','/',substr($class,12)).'.php';if(is_file($p))require_once $p;}});
     function setting($key,$default=null){return $GLOBALS['settings'][$key]??$default;}
     function app_config($key,$default=null){return $key==='app.env'?'production':($key==='app.url'?'https://example.test':$default);}
