@@ -1,3 +1,4 @@
+.test-center{min-width:0;overflow-wrap:anywhere}.test-center .admin-grid>*{min-width:0}
 .test-nav{display:flex;gap:6px;overflow-x:auto;padding:4px 0 14px;margin-bottom:16px;border-bottom:1px solid var(--admin-border,#dfe4eb)}
 .test-nav__item{flex:0 0 auto;padding:9px 14px;border-radius:8px;text-decoration:none;color:inherit;white-space:nowrap;font-size:14px}
 .test-nav__item:hover,.test-nav__item.is-active{background:var(--admin-primary,#2563eb);color:#fff}

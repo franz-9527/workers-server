@@ -11,6 +11,7 @@ $coverageScenarios = is_array($coverage['scenarios'] ?? null) ? $coverage['scena
 $section=\WorkerAdmin\Infrastructure\Testing\TestCenterNavigation::section($section??'instances',false);
 $writable = !empty($diag['writable']);
 ?>
+<div class="test-center">
 <div class="admin-page-head">
   <div>
     <h1>测试中心</h1>
@@ -133,3 +134,4 @@ $writable = !empty($diag['writable']);
   <?= \view('admin/test-center-pagination',['paginationPage'=>(int)($filters['page']??1),'paginationMore'=>count($instances)>20,'paginationRoute'=>'test-center','paginationParams'=>array_merge($filters,['section'=>'instances'])],null) ?>
 </section>
 <?php endif; ?>
+</div>

@@ -5,6 +5,7 @@ $actionItems=(array)($detail['actions']['items']??[]);
 $section=\WorkerAdmin\Infrastructure\Testing\TestCenterNavigation::section($section??'overview',true);
 $panel=\WorkerAdmin\Infrastructure\Testing\TestCenterNavigation::panel($section,$panel??null);
 $viewData=get_defined_vars();
+echo '<div class="test-center">';
 echo \view('admin/test-center-detail',$viewData,null);
 $modules=[
  'workflow'=>['single-grab'],
@@ -20,3 +21,4 @@ foreach($modules[$section]??[] as $name){
 }
 
 if(isset($detail['record_pagination']))echo \view('admin/test-center-pagination',['paginationPage'=>$detail['record_pagination']['page'],'paginationMore'=>$detail['record_pagination']['has_more'],'paginationRoute'=>'test-center.detail','paginationParams'=>['id'=>$instance['public_id'],'section'=>$section,'panel'=>$panel]],null);
+echo '</div>';
