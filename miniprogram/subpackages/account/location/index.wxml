@@ -1,0 +1,18 @@
+<!-- 2026-08-04 17:22:23 -->
+<view class="page bg-greyLight address-page">
+  <view class="address-card bg-white">
+    <view class="text-xl text-bold text-black">{{copy.title}}</view>
+    <view wx:for="{{Note}}" wx:key="index">
+      <text class="text-lg text-grey">{{item.text}}</text>
+    </view>
+    <view class="address-row solid-top" bindtap="chooseLocation">
+      <view class="address-label"><text class="text-red">*</text><text class="text-black margin-left-xs">{{copy.label}}</text></view>
+      <view class="address-value"><text class="text-black">{{addressText || copy.emptyAddress}}</text></view>
+      <text class="cuIcon-right text-grey"></text>
+    </view>
+  </view>
+  <view class="padding bg-white location-bottom">
+    <button class="cu-btn bg-gradual-green shadow lg block" loading="{{saving}}" disabled="{{saving || !location.latitude}}" bindtap="saveLocation">{{copy.submit}}</button>
+  </view>
+</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>

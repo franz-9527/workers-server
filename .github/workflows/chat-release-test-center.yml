@@ -1,0 +1,60 @@
+name: Chat readiness popup and home stability
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,sodium,dom,curl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          find miniprogram cloudfunctions tools -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Shared credential outage popup authorization and home stability
+        if: always()
+        run: node --test tools/test_chat_notice_recovery.js
+      - name: Existing chat and notice identity isolation
+        if: always()
+        run: |
+          node --test tools/test_chat_s11.js
+          node --test tools/test_unified_notices.js
+          node --test tools/test_identity_navigation.js
+      - name: Real MySQL availability and simulation isolation
+        if: always()
+        env:
+          CHAT_RELEASE_TEST: '1'
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: php tools/test_chat_release_simulation.php
+      - name: Actual WXML compile
+        if: always()
+        run: |
+          npm install --no-save --ignore-scripts miniprogram-compiler@0.2.3 playwright@1.56.1
+          node tools/check-wxml.js miniprogram --compile
+      - name: Actual notification layouts
+        if: always()
+        run: |
+          npx playwright install --with-deps chromium
+          node tools/test_unified_notice_layout.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chat-readiness-home-notices
+          path: test-artifacts/

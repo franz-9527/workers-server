@@ -1,0 +1,15 @@
+/* 承接单表单和工作台开单入口共用的页面作用域令牌，取自项目明暗色规范。 */
+.admin-page,.create-page{
+  --app-page-bg:#f4f7f8;--app-surface:#fff;--app-surface-muted:#f5f8f9;--app-text:#26373a;--app-text-secondary:#536368;
+  --app-border:#e6edef;--app-border-strong:#738084;--app-primary:#00b9cb;--app-primary-soft:#d1edf1;--app-primary-border:#64c3d0;--app-primary-text:#007381;--app-primary-on-solid:#003e45;
+  --app-success-soft:#e9f6ee;--app-success-text:#193b2d;--app-info-soft:#edf6ff;--app-info-border:#b7d9f8;--app-info-text:#004074;
+  --app-danger-soft:#fff0ee;--app-danger-border:#f2aba7;--app-danger-text:#b4232b;
+}
+@media (prefers-color-scheme:dark){
+  .admin-page,.create-page{
+    --app-page-bg:#101718;--app-surface:#192629;--app-surface-muted:#162225;--app-text:#e7f0f1;--app-text-secondary:#acb5b8;
+    --app-border:#2d4145;--app-border-strong:#627075;--app-primary-soft:#032d32;--app-primary-border:#006a75;--app-primary-text:#38cfe1;
+    --app-success-soft:#132d21;--app-success-text:#b1f1cb;--app-info-soft:#0d2847;--app-info-border:#205d9e;--app-info-text:#c2e6ff;
+    --app-danger-soft:#3b1219;--app-danger-border:#8c333a;--app-danger-text:#ff9592;
+  }
+}
