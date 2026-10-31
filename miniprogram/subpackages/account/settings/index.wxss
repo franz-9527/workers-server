@@ -78,7 +78,7 @@
 .settings-state-row { min-height: 88rpx !important; }
 
 /* 订阅通知：按用户/师傅身份分组，操作按钮只占文字所需空间。 */
-.subscription-settings-card { overflow: hidden; }
+.subscription-settings-card { overflow: hidden; margin: 0 30rpx; border-radius: 24rpx; }
 .subscribe-group { border-top: 1rpx solid #edf1f2; }
 .subscribe-group-first { border-top: 0; }
 
