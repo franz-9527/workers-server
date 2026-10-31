@@ -1,0 +1,69 @@
+<!-- 搜索 -->
+<view class="cu-bar bg-white search fixed">
+  <view class="search-form round">
+    <text class="cuIcon-search"></text>
+    <input placeholder="搜索城市、地址、昵称" type="text" confirm-type="search" bindconfirm="searchRecord" value="{{keyword}}"></input>
+  </view>
+  <view class="action">
+    <picker mode="selector" range="{{skillOptions}}" bindchange="skillChange" value="{{currentSkillIndex}}">
+      <view class="picker">
+        <text>{{skillOptions[currentSkillIndex]}}</text>
+        <text class="cuIcon-triangledownfill"></text>
+      </view>
+    </picker>
+  </view>
+</view>
+<view class="record-list cu-list menu">
+  <view bindtap="goDetail" data-id="{{item._id}}" class="cu-item arrow" wx:for="{{dataList}}" wx:key="index">
+    <view class="content">
+      <text class="cuIcon-wenzi text-green"></text>
+      <!-- 地址判断 -->
+      <text class="text-black" wx:if="{{item.location.address != undefined}}">{{item.workerName}}--{{item.location.address}}</text>
+      <text class="text-black" wx:else="">{{item.workerName}}--{{item.location.name}}</text>
+    </view>
+    <view class="action">
+      <!-- 平台定价 -->
+      <text class="{{item.pay_fixed?'text-orange':'text-grey'}} text-sm">{{item.pay_fixed?'✔平台定价 ':''}}</text>
+      
+      <!-- 全部或未选择技能 -->
+      <block wx:if="{{!selectedSkill || selectedSkill == '全部'}}">
+        <!-- 默认显示热胶技能 -->
+        <text wx:if="{{item.skills && item.skills.doEVA}}" class="text-green text-sm">✔热胶 </text>
+        <text wx:elif="{{item.doEVA}}" class="text-green text-sm">✔热胶 </text>
+      </block>
+      
+      <!-- 选择了特定技能 -->
+      <block wx:else>
+        <!-- 新数据格式 -->
+        <block wx:if="{{item.skills}}">
+          <text wx:if="{{selectedSkill == '热胶' && item.skills.doEVA}}" class="text-green text-sm">✔热胶 </text>
+          <text wx:elif="{{selectedSkill == '窗帘' && item.skills.doCurtain}}" class="text-green text-sm">✔窗帘 </text>
+          <text wx:elif="{{selectedSkill == '玻璃膜' && item.skills.doFilm}}" class="text-green text-sm">✔玻璃膜 </text>
+          <text wx:elif="{{selectedSkill == '油漆' && item.skills.doPaint}}" class="text-green text-sm">✔油漆 </text>
+          <text wx:elif="{{selectedSkill == '艺术漆' && item.skills.dotArtpaint}}" class="text-green text-sm">✔艺术漆 </text>
+          <text wx:elif="{{selectedSkill == '软硬包' && item.skills.doWallPaneling}}" class="text-green text-sm">✔软硬包 </text>
+        </block>
+        
+        <!-- 旧数据格式 -->
+        <block wx:else>
+          <text wx:if="{{selectedSkill == '热胶' && item.doEVA}}" class="text-green text-sm">✔热胶 </text>
+          <text wx:elif="{{selectedSkill == '窗帘' && item.doCurtain}}" class="text-green text-sm">✔窗帘 </text>
+          <text wx:elif="{{selectedSkill == '玻璃膜' && item.doFilm}}" class="text-green text-sm">✔玻璃膜 </text>
+          <text wx:elif="{{selectedSkill == '油漆' && item.doPaint}}" class="text-green text-sm">✔油漆 </text>
+          <text wx:elif="{{selectedSkill == '艺术漆' && item.dotArtpaint}}" class="text-green text-sm">✔艺术漆 </text>
+          <text wx:elif="{{selectedSkill == '软硬包' && item.doWallPaneling}}" class="text-green text-sm">✔软硬包 </text>
+        </block>
+      </block>
+      
+      <text class="text-grey text-sm">{{item.time}}</text>
+    </view>
+  </view>
+</view>
+
+
+<view class="weui-footer footer">
+	<text class="text-gray padding-bottom">Powered By 壁选 © 2013-现在</text>
+</view>
+<!-- 自定义tab遮挡解决 -->
+<view style="width: 100%;height: calc(150rpx + env(safe-area-inset-bottom) / 2);"></view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>

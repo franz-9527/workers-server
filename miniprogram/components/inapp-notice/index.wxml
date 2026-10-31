@@ -1,0 +1,6 @@
+<view wx:if="{{notice}}" class="inapp-notice kind-{{notice.kind}}" style="top:{{top}}px;" role="alert" aria-live="polite">
+ <view class="notice-mark">{{notice.kind === 'chat' ? '聊' : (notice.kind === 'health' ? '微' : '讯')}}</view>
+ <view class="notice-copy" bindtap="open" role="button" aria-label="{{notice.title}}"><text class="notice-title">{{notice.title}}</text><text class="notice-description">{{notice.description}}</text></view>
+ <button class="notice-action" bindtap="open">{{notice.actionText}}</button>
+ <button class="notice-close" catchtap="dismiss" aria-label="关闭本次提醒">×</button>
+</view>
