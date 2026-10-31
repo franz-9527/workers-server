@@ -67,12 +67,8 @@ final class ChatReminderDispatch
         $this->db->transaction(function()use($op,$id,$state,$diagnostic):void{
             $this->db->execute("UPDATE chat_reminder_receipts SET state=:state,diagnostic=:diagnostic,updated_at=UTC_TIMESTAMP(6) WHERE operation_id=:op AND state IN ('accepted','sending')",['state'=>$state,'diagnostic'=>$diagnostic,'op'=>$op]);
             $receipt=json_encode(['provider'=>'wechat','errcode'=>$state==='sent'?0:null,'delivery_status'=>$state,'accepted_at'=>$state==='sent'?gmdate('c'):null]);
-            $this->db->execute("UPDATE message_outbox SET status='processed',processed_at=UTC_TIMESTAMP(),next_attempt_at=NULL,last_error=:diagnostic,payload_json=JSON_SET(payload_json,'$.delivery_receipt',JSON_EXTRACT(:receipt,'",['diagnostic'=>$diagnostic,'id'=>$id,'receipt'=>$receipt]);
+            $this->db->execute("UPDATE message_outbox SET status='processed',processed_at=UTC_TIMESTAMP(),next_attempt_at=NULL,last_error=:diagnostic,payload_json=JSON_SET(payload_json,'$.delivery_receipt',JSON_EXTRACT(:receipt,'$')) WHERE id=:id AND topic='chat_reminder'",['diagnostic'=>$diagnostic,'id'=>$id,'receipt'=>$receipt]);
         });
     }
 }
 
-)) WHERE id=:id AND topic='chat_reminder'",['diagnostic'=>$diagnostic,'id'=>$id]);
-        });
-    }
-}
