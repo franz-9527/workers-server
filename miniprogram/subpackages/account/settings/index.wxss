@@ -1,0 +1,302 @@
+/* V2.4.1 设置页：统一文字层级、权限状态与操作区布局。 */
+.settings-page {
+  min-height: 100vh;
+  padding-top: 24rpx;
+  background: #f1f1f1;
+}
+
+.settings-section + .settings-section {
+  margin-top: 34rpx;
+}
+
+.settings-section-title {
+  margin: 0 32rpx 14rpx;
+  color: #5f6c6f;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.settings-card {
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.settings-card .settings-item {
+  min-height: 104rpx;
+  padding-top: 14rpx;
+  padding-bottom: 14rpx;
+}
+
+.settings-item-copy {
+  min-width: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-right: 20rpx;
+}
+
+.settings-item-title {
+  color: #2f3e42;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.settings-item-desc {
+  margin-top: 6rpx;
+  color: #8b989b;
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.membership-state.active { color: #1aa06d; }
+.membership-state.legacy { color: #c67a37; }
+
+.phone-mobile {
+  color: #7c898c;
+  font-size: 23rpx;
+  white-space: nowrap;
+}
+
+/* 系统权限：通知与定位并列展示，只有异常状态使用强调色。 */
+.permission-status-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 6rpx;
+  line-height: 1.4;
+}
+
+.permission-status-text {
+  color: #829094;
+  font-size: 22rpx;
+}
+
+.permission-status-text.is-warning { color: #cf7435; }
+.permission-status-divider { color: #c5ccce; font-size: 20rpx; }
+.settings-state-row { min-height: 88rpx !important; }
+
+/* 订阅通知：按用户/师傅身份分组，操作按钮只占文字所需空间。 */
+.subscription-settings-card { overflow: hidden; }
+.subscribe-group { border-top: 1rpx solid #edf1f2; }
+.subscribe-group-first { border-top: 0; }
+
+.subscribe-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10rpx;
+  padding: 16rpx 16rpx 11rpx 28rpx;
+}
+
+.subscribe-group-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.subscribe-group-title {
+  color: #2f4044;
+  font-size: 26rpx;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.subscribe-group-desc {
+  margin-top: 4rpx;
+  color: #8d999c;
+  font-size: 20rpx;
+  line-height: 1.45;
+}
+
+.subscribe-batch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  height: 48rpx;
+  margin: 0;
+  padding: 0 16rpx;
+  border: 1rpx solid #006a7a;
+  border-radius: 10rpx;
+  background: #007889;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* 内容宽度由文字决定；不用原生 button 的默认最小宽度和伪边框。 */
+
+.subscribe-batch-btn.is-disabled {
+  border-color: #cedfe2;
+  background: #e3ebed;
+  color: #758b90;
+}
+
+.subscribe-credit-row {
+  display: flex;
+  align-items: center;
+  min-height: 102rpx;
+  margin: 0 16rpx 0 28rpx;
+  padding: 11rpx 0;
+  border-top: 1rpx solid #f0f2f3;
+}
+
+.subscribe-group-head + .subscribe-credit-row { border-top: 0; }
+
+.subscribe-copy {
+  min-width: 0;
+  flex: 1;
+  padding-right: 8rpx;
+  line-height: 1.4;
+}
+
+.subscribe-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.subscribe-title {
+  color: #2f4044;
+  font-size: 25rpx;
+  font-weight: 600;
+}
+
+.subscribe-priority-tag {
+  flex: none;
+  padding: 1rpx 7rpx;
+  border-radius: 8rpx;
+  background: #fff1e7;
+  color: #c96b2d;
+  font-size: 17rpx;
+  line-height: 28rpx;
+}
+
+.subscribe-desc {
+  margin-top: 4rpx;
+  color: #929fa2;
+  font-size: 20rpx;
+  line-height: 1.45;
+}
+
+.subscribe-credit-side {
+  display: flex;
+  flex: 0 0 auto;
+  width: auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5rpx;
+}
+
+.subscribe-credit {
+  color: #00a5b5;
+  font-size: 20rpx;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.subscribe-credit.warning { color: #d8702f; }
+
+.subscribe-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  height: 48rpx;
+  margin: 0;
+  padding: 0 14rpx;
+  border: 1rpx solid #b6dce2;
+  border-radius: 10rpx;
+  background: #eff9fa;
+  color: #087588;
+  font-size: 24rpx;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.subscribe-empty {
+  padding: 26rpx 28rpx;
+  color: #89979a;
+  font-size: 21rpx;
+  line-height: 1.6;
+}
+
+.settings-tip {
+  margin: 26rpx 32rpx 0;
+  line-height: 1.65;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-page { background-color: var(--darkBlack); }
+  .settings-section-title { color: var(--darkSecondaryText); }
+  .settings-card,
+  .settings-card .cu-item { background-color: var(--lightGray); }
+  .settings-card .cu-item:after { border-color: var(--darkDisable); }
+
+  .settings-item-title,
+  .subscribe-group-title,
+  .subscribe-title { color: var(--darkTitle); }
+
+  .settings-item-desc,
+  .phone-mobile,
+  .permission-status-text,
+  .subscribe-group-desc,
+  .subscribe-desc,
+  .subscribe-empty,
+  .settings-tip { color: var(--darkSecondaryText) !important; }
+
+  .membership-state.active { color: #53c994 !important; }
+  .membership-state.legacy,
+  .permission-status-text.is-warning { color: #e49a5d !important; }
+  .permission-status-divider { color: var(--darkDisable); }
+
+  .subscribe-group,
+  .subscribe-credit-row { border-color: var(--darkDisable); }
+
+  .subscribe-priority-tag {
+    background: rgba(228, 154, 93, .13);
+    color: #e7a16e;
+  }
+
+  .subscribe-batch-btn {
+    background: #087b8b;
+    border-color: #2399a9;
+    color: #fff;
+  }
+  .subscribe-batch-btn.is-disabled {
+    background: #2b4145;
+    border-color: #415a60;
+    color: #bdd0d4;
+    opacity: .7;
+  }
+  .subscribe-mini-btn {
+    background: #19363c;
+    border-color: #376a75;
+    color: #a0e4ed;
+  }
+  .subscribe-mini-btn.is-disabled {
+    background: #26363a;
+    border-color: #34494e;
+    color: #9db2b7;
+    opacity: .7;
+  }
+}
+
+/* view 按钮保留清晰禁用态，点击亦在 JS 中再次拦截。 */
+.subscribe-mini-btn.is-disabled{background:#f1f3f4;border-color:#dfe6e7;color:#84999e;opacity:.7}
+.subscribe-batch-btn.is-disabled{background:#e3ebed;border-color:#cedfe2;color:#758b90;opacity:.7}
+@media (prefers-color-scheme:dark){
+  .subscribe-mini-btn.is-disabled{background:#26363a;border-color:#34494e;color:#9db2b7}
+  .subscribe-batch-btn.is-disabled{background:#2b4145;border-color:#415a60;color:#bdd0d4}
+}
