@@ -1,7 +1,0 @@
-.review-waiting-card{display:flex;align-items:flex-start;gap:18rpx;margin-top:22rpx;padding:22rpx 24rpx;border:1rpx solid #cde9dc;border-radius:22rpx;background:#eef9f3;color:#285844}
-.review-waiting-icon{display:flex;flex:none;align-items:center;justify-content:center;width:58rpx;height:58rpx;border-radius:18rpx;background:#d8f1e4;color:#16845e;font-size:30rpx}
-.review-waiting-copy{min-width:0;flex:1}
-.review-waiting-title,.review-waiting-desc{display:block}
-.review-waiting-title{font-size:26rpx;font-weight:700;color:#1b6749}
-.review-waiting-desc{margin-top:6rpx;color:#668579;font-size:21rpx;line-height:1.55}
-@media(prefers-color-scheme:dark){.review-waiting-card{border-color:#2e5a47;background:#173126;color:#d9eee5}.review-waiting-icon{background:#214735;color:#74d5a9}.review-waiting-title{color:#a7e7ca}.review-waiting-desc{color:#91aa9f}}
