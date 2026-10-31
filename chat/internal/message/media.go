@@ -87,13 +87,16 @@ func NewMediaService(base *Service, storage ImageStorage, processor ImageProcess
 	return &MediaService{base, storage, processor, env}, nil
 }
 func (s *Service) WithMedia(m *MediaService) *Service { copy := *s; copy.media = m; return &copy }
+
 // A configured namespace is persisted in every object key. Old keys are never remapped.
 func mediaKeyPrefix(storage any, environment, kind string) string {
-    if namespaced, ok := storage.(interface{ Namespace() string }); ok && namespaced.Namespace() != "" {
-        return namespaced.Namespace()+"/"+kind+"/"+environment+"/"
-    }
-    if kind == "images" { return "chat/"+environment+"/" }
-    return "chatav/"+environment+"/"
+	if namespaced, ok := storage.(interface{ Namespace() string }); ok && namespaced.Namespace() != "" {
+		return namespaced.Namespace() + "/" + kind + "/" + environment + "/"
+	}
+	if kind == "images" {
+		return "chat/" + environment + "/"
+	}
+	return "chatav/" + environment + "/"
 }
 func randomMedia() string {
 	var b [32]byte

@@ -22,12 +22,12 @@ import (
 type QiniuConfig struct {
 	Bucket, AccessKey, SecretKey, DownloadOrigin, UploadOrigin, Environment string
 	Private                                                                 bool
-    Namespace, ProxyOrigin, ProxyKey string
+	Namespace, ProxyOrigin, ProxyKey                                        string
 }
 type Qiniu struct {
-	config QiniuConfig
-	client *http.Client
-    proxyGate chan struct{}
+	config    QiniuConfig
+	client    *http.Client
+	proxyGate chan struct{}
 }
 
 var objectKey = regexp.MustCompile(`^(?:chat|(?:[A-Za-z0-9_-]{1,40}/){1,4}images)/(test|development|production)/[1-9][0-9]{0,19}/[0-9a-f]{64}/(source|[0-9a-f]{64}/(main|thumb))$`)
@@ -39,25 +39,29 @@ func publicImageOrigin(raw string) bool {
 func NewQiniu(c QiniuConfig) (*Qiniu, error) {
 	upload, e := url.Parse(c.UploadOrigin)
 	downloadOK := publicImageOrigin(c.DownloadOrigin)
-    if !c.Private && c.Environment == "test" {
-        u, err := url.Parse(c.DownloadOrigin)
-        downloadOK = false
-        if err == nil && (u.Scheme == "http" || u.Scheme == "https") && (u.Port() == "" || u.Scheme == "http" && u.Port() == "80" || u.Scheme == "https" && u.Port() == "443") {
-            copy := *u
-            copy.Scheme = "https"
-            copy.Host = u.Hostname()
-            downloadOK = publicImageOrigin(copy.String())
-        }
-    }
-    if (!c.Private && (c.Environment != "test" || c.Namespace == "" || c.ProxyOrigin == "")) || !downloadOK || !publicImageOrigin(c.UploadOrigin) || e != nil ||
+	if !c.Private && c.Environment == "test" {
+		u, err := url.Parse(c.DownloadOrigin)
+		downloadOK = false
+		if err == nil && (u.Scheme == "http" || u.Scheme == "https") && (u.Port() == "" || u.Scheme == "http" && u.Port() == "80" || u.Scheme == "https" && u.Port() == "443") {
+			copy := *u
+			copy.Scheme = "https"
+			copy.Host = u.Hostname()
+			downloadOK = publicImageOrigin(copy.String())
+		}
+	}
+	if (!c.Private && (c.Environment != "test" || c.Namespace == "" || c.ProxyOrigin == "")) || !downloadOK || !publicImageOrigin(c.UploadOrigin) || e != nil ||
 		!(strings.HasSuffix(upload.Hostname(), ".qiniup.com") || strings.HasSuffix(upload.Hostname(), ".qiniu.com")) ||
 		!regexp.MustCompile(`^[A-Za-z0-9_-]{1,63}$`).MatchString(c.Bucket) || c.AccessKey == "" || c.SecretKey == "" ||
 		(c.Environment != "production" && c.Environment != "development" && c.Environment != "test") {
 		return nil, message.ErrMedia
 	}
-	if c.Namespace != "" && !validNamespace(c.Namespace) { return nil, message.ErrMedia }
-    if c.ProxyOrigin != "" && (!publicImageOrigin(c.ProxyOrigin) || len(c.ProxyKey) < 32) { return nil, message.ErrMedia }
-    dialer := &net.Dialer{Timeout: 5 * time.Second}
+	if c.Namespace != "" && !validNamespace(c.Namespace) {
+		return nil, message.ErrMedia
+	}
+	if c.ProxyOrigin != "" && (!publicImageOrigin(c.ProxyOrigin) || len(c.ProxyKey) < 32) {
+		return nil, message.ErrMedia
+	}
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
 	transport := &http.Transport{Proxy: nil, MaxIdleConns: 2, MaxConnsPerHost: 2, IdleConnTimeout: 30 * time.Second, TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 10 * time.Second}
 	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
 		host, port, e := net.SplitHostPort(address)
@@ -75,7 +79,7 @@ func NewQiniu(c QiniuConfig) (*Qiniu, error) {
 		}
 		return dialer.DialContext(ctx, network, net.JoinHostPort(addresses[0].IP.String(), port))
 	}
-	return &Qiniu{config:c, client:&http.Client{Timeout:20*time.Second, Transport:transport, CheckRedirect:func(*http.Request, []*http.Request)error{return message.ErrMedia}}, proxyGate:make(chan struct{},2)}, nil
+	return &Qiniu{config: c, client: &http.Client{Timeout: 20 * time.Second, Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return message.ErrMedia }}, proxyGate: make(chan struct{}, 2)}, nil
 }
 func b64(b []byte) string { return base64.URLEncoding.EncodeToString(b) }
 func (q *Qiniu) signature(s string) string {
@@ -85,10 +89,12 @@ func (q *Qiniu) signature(s string) string {
 }
 func (q *Qiniu) valid(key string) bool {
 	for _, pattern := range []*regexp.Regexp{objectKey, avObjectKey} {
-        match := pattern.FindStringSubmatch(key)
-        if len(match) == 2 && match[1] == q.config.Environment && len(key) <= 255 { return true }
-    }
-    return false
+		match := pattern.FindStringSubmatch(key)
+		if len(match) > 1 && match[1] == q.config.Environment && len(key) <= 255 {
+			return true
+		}
+	}
+	return false
 }
 func (q *Qiniu) Grant(ctx context.Context, key string, size int64) (string, string, error) {
 	if !objectKey.MatchString(key) || !q.valid(key) || size < 1 || size > message.MaxImageBytes {
@@ -102,15 +108,19 @@ func (q *Qiniu) Sign(ctx context.Context, key string, ttl time.Duration) (string
 	if !q.valid(key) || ttl <= 0 || ttl > 60*time.Second {
 		return "", message.ErrMedia
 	}
-	if q.config.ProxyOrigin != "" { return q.proxyURL(key, ttl), nil }
-    return q.remoteURL(key, ttl), nil
+	if q.config.ProxyOrigin != "" {
+		return q.proxyURL(key, ttl), nil
+	}
+	return q.remoteURL(key, ttl), nil
 }
 func (q *Qiniu) Read(ctx context.Context, key string, limit int64) ([]byte, error) {
 	if limit < 1 || limit > message.MaxVideoBytes {
 		return nil, message.ErrMedia
 	}
-	if !q.valid(key) { return nil, message.ErrMedia }
-    u := q.remoteURL(key, 60*time.Second)
+	if !q.valid(key) {
+		return nil, message.ErrMedia
+	}
+	u := q.remoteURL(key, 60*time.Second)
 	req, _ := http.NewRequestWithContext(ctx, "GET", u, nil)
 	res, e := q.client.Do(req)
 	if e != nil {

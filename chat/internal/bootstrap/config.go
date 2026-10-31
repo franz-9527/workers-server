@@ -200,9 +200,9 @@ func (c Config) validate() *Fault {
 		return configFault("CHAT_CALLS_NOT_READY", "通话联合验收未完成")
 	}
 	if c.Environment == "production" && (c.Images.Enabled && !c.Images.Private || c.AV.Enabled && !c.AV.Private) {
-        return configFault("CHAT_AV_NOT_READY", "正式站公开媒体须单独发布审核")
-    }
-    if c.AV.CallbackVerification && (c.Environment != "test" || !c.Messages.Enabled) {
+		return configFault("CHAT_AV_NOT_READY", "正式站公开媒体须单独发布审核")
+	}
+	if c.AV.CallbackVerification && (c.Environment != "test" || !c.Messages.Enabled) {
 		return configFault("CHAT_AV_NOT_READY", "回调URL验证入口仅允许测试环境的真实消息组合")
 	}
 	if c.AV.Validate() != nil || c.AV.Enabled && (!c.Messages.Enabled || !c.Retention.Enabled) {

@@ -67,6 +67,7 @@ jobs:
           export CHAT_TEST_PYTHON="$(command -v python)"
           php server/tests/chat_runtime_config_mysql.php
       - name: Real open_basedir web request and launcher reload
+        if: always()
         env:
           CHAT_RUNTIME_TEST: '1'
           CHATD_TEST_BINARY: /tmp/chatd

@@ -112,11 +112,11 @@ func healthHandler(internal bool, runtimes ...*dependencies.Runtime) http.Handle
 			return
 		}
 		if deps != nil {
-            if !internal && deps.MediaGateway != nil && r.URL.Path == "/chat/api/v1/media/object" {
-                deps.MediaGateway.ServeHTTP(w,r)
-                return
-            }
-            if internal && deps.PaidSMSHTTP != nil && r.URL.Path == "/chat/internal/v1/sms/eligible" {
+			if !internal && deps.MediaGateway != nil && r.URL.Path == "/chat/api/v1/media/object" {
+				deps.MediaGateway.ServeHTTP(w, r)
+				return
+			}
+			if internal && deps.PaidSMSHTTP != nil && r.URL.Path == "/chat/internal/v1/sms/eligible" {
 				if !deps.OperationsReady() {
 					writeError(w, r, 503, "CHAT_RECOVERY_BLOCKED", "安全恢复尚未核验", true)
 					return

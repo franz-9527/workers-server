@@ -58,10 +58,13 @@ func (r *Runtime) EnableMessaging(c message.Config, images imagepipeline.Config,
 		return err
 	}
 	if images.Enabled && images.ProxyOrigin != "" {
-        storage,e:=imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket:images.Bucket,Private:images.Private,AccessKey:os.Getenv(images.AccessKeyEnv),SecretKey:os.Getenv(images.SecretKeyEnv),DownloadOrigin:images.DownloadOrigin,UploadOrigin:images.UploadOrigin,Environment:r.environment,Namespace:images.Namespace,ProxyOrigin:images.ProxyOrigin,ProxyKey:os.Getenv(images.ProxyKeyEnv)})
-        if e!=nil{return e};r.MediaGateway=storage.Gateway()
-    }
-    base = base.WithMedia(media)
+		storage, e := imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket: images.Bucket, Private: images.Private, AccessKey: os.Getenv(images.AccessKeyEnv), SecretKey: os.Getenv(images.SecretKeyEnv), DownloadOrigin: images.DownloadOrigin, UploadOrigin: images.UploadOrigin, Environment: r.environment, Namespace: images.Namespace, ProxyOrigin: images.ProxyOrigin, ProxyKey: os.Getenv(images.ProxyKeyEnv)})
+		if e != nil {
+			return e
+		}
+		r.MediaGateway = storage.Gateway()
+	}
+	base = base.WithMedia(media)
 	r.Messages = base
 	r.Media = media
 	r.History.ConfigureMedia(media != nil, false, false)
@@ -190,11 +193,14 @@ func (r *Runtime) EnableAV(c avpipeline.Config) error {
 	if e != nil {
 		return e
 	}
-	if r.MediaGateway==nil && c.ProxyOrigin!="" {
-        storage,e:=imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket:c.Bucket,Private:c.Private,AccessKey:os.Getenv(c.AccessKeyEnv),SecretKey:os.Getenv(c.SecretKeyEnv),DownloadOrigin:c.DownloadOrigin,UploadOrigin:c.UploadOrigin,Environment:r.environment,Namespace:c.Namespace,ProxyOrigin:c.ProxyOrigin,ProxyKey:os.Getenv(c.ProxyKeyEnv)})
-        if e!=nil{return e};r.MediaGateway=storage.Gateway()
-    }
-    r.AV = service
+	if r.MediaGateway == nil && c.ProxyOrigin != "" {
+		storage, e := imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket: c.Bucket, Private: c.Private, AccessKey: os.Getenv(c.AccessKeyEnv), SecretKey: os.Getenv(c.SecretKeyEnv), DownloadOrigin: c.DownloadOrigin, UploadOrigin: c.UploadOrigin, Environment: r.environment, Namespace: c.Namespace, ProxyOrigin: c.ProxyOrigin, ProxyKey: os.Getenv(c.ProxyKeyEnv)})
+		if e != nil {
+			return e
+		}
+		r.MediaGateway = storage.Gateway()
+	}
+	r.AV = service
 	r.AVHTTP = handler
 	r.AVCallback = callback
 	r.History.ConfigureMedia(r.Media != nil, c.Audio, c.Video)

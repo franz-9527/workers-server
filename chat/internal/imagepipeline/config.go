@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-    Namespace string `json:"namespace"`
-    ProxyOrigin string `json:"proxy_origin"`
-    ProxyKeyEnv string `json:"proxy_key_env"`
+	Namespace      string `json:"namespace"`
+	ProxyOrigin    string `json:"proxy_origin"`
+	ProxyKeyEnv    string `json:"proxy_key_env"`
 	Enabled        bool   `json:"enabled"`
 	Mode           string `json:"mode"`
 	Bucket         string `json:"bucket"`
@@ -49,7 +49,7 @@ func Build(c Config, env string, base *message.Service) (*message.MediaService, 
 	if e != nil || !info.IsDir() {
 		return nil, message.ErrMedia
 	}
-	storage, e := NewQiniu(QiniuConfig{Bucket: c.Bucket, AccessKey: os.Getenv(c.AccessKeyEnv), SecretKey: os.Getenv(c.SecretKeyEnv), Private: c.Private, DownloadOrigin: c.DownloadOrigin, UploadOrigin: c.UploadOrigin, Environment: env, Namespace:c.Namespace, ProxyOrigin:c.ProxyOrigin, ProxyKey:os.Getenv(c.ProxyKeyEnv)})
+	storage, e := NewQiniu(QiniuConfig{Bucket: c.Bucket, AccessKey: os.Getenv(c.AccessKeyEnv), SecretKey: os.Getenv(c.SecretKeyEnv), Private: c.Private, DownloadOrigin: c.DownloadOrigin, UploadOrigin: c.UploadOrigin, Environment: env, Namespace: c.Namespace, ProxyOrigin: c.ProxyOrigin, ProxyKey: os.Getenv(c.ProxyKeyEnv)})
 	if e != nil {
 		return nil, e
 	}

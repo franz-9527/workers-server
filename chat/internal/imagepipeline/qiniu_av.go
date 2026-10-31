@@ -89,7 +89,9 @@ func (q *Qiniu) InspectionURL(ctx context.Context, key string) (string, error) {
 	if !q.avKey(key) || strings.Contains(key, "/part-") || strings.HasSuffix(key, "/poster") {
 		return "", message.ErrMedia
 	}
-	if q.config.ProxyOrigin != "" { return q.proxyURL(key, 20*time.Minute), nil }
-    u := strings.TrimRight(q.config.DownloadOrigin, "/") + "/" + key + "?e=" + itoa(int(time.Now().Add(5*time.Minute).Unix()))
+	if q.config.ProxyOrigin != "" {
+		return q.proxyURL(key, 20*time.Minute), nil
+	}
+	u := strings.TrimRight(q.config.DownloadOrigin, "/") + "/" + key + "?e=" + itoa(int(time.Now().Add(5*time.Minute).Unix()))
 	return u + "&token=" + q.config.AccessKey + ":" + q.signature(u), nil
 }

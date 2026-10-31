@@ -15,9 +15,9 @@ import (
 )
 
 type Config struct {
-    Namespace string `json:"namespace"`
-    ProxyOrigin string `json:"proxy_origin"`
-    ProxyKeyEnv string `json:"proxy_key_env"`
+	Namespace            string              `json:"namespace"`
+	ProxyOrigin          string              `json:"proxy_origin"`
+	ProxyKeyEnv          string              `json:"proxy_key_env"`
 	CallbackVerification bool                `json:"callback_verification"`
 	Enabled              bool                `json:"enabled"`
 	Audio                bool                `json:"audio"`
@@ -77,7 +77,7 @@ func Build(c Config, env string, base *message.Service, safety *moderation.Servi
 	if !c.Enabled {
 		return nil, nil, nil
 	}
-	storage, e := imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket: c.Bucket, Private: c.Private, AccessKey: os.Getenv(c.AccessKeyEnv), SecretKey: os.Getenv(c.SecretKeyEnv), DownloadOrigin: c.DownloadOrigin, UploadOrigin: c.UploadOrigin, Environment: env, Namespace:c.Namespace, ProxyOrigin:c.ProxyOrigin, ProxyKey:os.Getenv(c.ProxyKeyEnv)})
+	storage, e := imagepipeline.NewQiniu(imagepipeline.QiniuConfig{Bucket: c.Bucket, Private: c.Private, AccessKey: os.Getenv(c.AccessKeyEnv), SecretKey: os.Getenv(c.SecretKeyEnv), DownloadOrigin: c.DownloadOrigin, UploadOrigin: c.UploadOrigin, Environment: env, Namespace: c.Namespace, ProxyOrigin: c.ProxyOrigin, ProxyKey: os.Getenv(c.ProxyKeyEnv)})
 	if e != nil {
 		return nil, nil, e
 	}
