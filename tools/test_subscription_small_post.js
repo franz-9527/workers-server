@@ -25,7 +25,7 @@ async function run(){
    assert.ok(!info.outerKeys.some(x=>/^test_(openid|event_type)/.test(x)),'test controls not in save payload')
    const send=panel.locator('button[form]')
    await send.click();assert.equal(f.sent.length,0,'confirmation required')
-   await p.locator('#admin-confirm-modal button[data-modal-close]').click();assert.equal(f.sent.length,0,'cancel sends nothing')
+   await p.locator('#admin-confirm-modal button[data-modal-close]').last().click();assert.equal(f.sent.length,0,'cancel sends nothing')
    await send.click();await p.locator('[data-confirm-submit]').click()
    await p.waitForFunction(()=>document.querySelector('button[form]:disabled'))
    await p.waitForTimeout(50);assert.equal(f.sent.length,1);const req=f.sent[0],params=new URLSearchParams(req.body)
