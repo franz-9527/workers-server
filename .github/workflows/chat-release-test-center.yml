@@ -50,7 +50,7 @@ jobs:
           CHAT_AUTH_TEST_PHP: /usr/bin/php
         run: |
           php server/tests/chat_identity_contract.php
-          cd chat && go test -count=1 ./internal/auth
+          cd chat && go test -count=1 ./internal/auth ./internal/dependencies
       - name: Compile WXML
         if: always()
         run: |

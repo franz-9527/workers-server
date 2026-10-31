@@ -102,7 +102,7 @@ func (s *MySQLSource) checkRelease(ctx context.Context, q interface {
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 }) error {
 	var value string
-	err := q.QueryRowContext(ctx, `SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled' LIMIT 1`).Scan(&value)
+	err := q.QueryRowContext(ctx, `SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled' LIMIT 1 LOCK IN SHARE MODE`).Scan(&value)
 	if err == sql.ErrNoRows {
 		return nil
 	}

@@ -57,7 +57,23 @@ try{
  $release->save(['enabled'=>'0'],1,'super_admin');denied(fn()=>$service->execute($worker,'messages/send',['conversation_id'=>$cid]),503);$release->save(['enabled'=>'1'],1,'super_admin');
  $env='production';denied(fn()=>$service->identity(str_repeat('a',64)));denied(fn()=>$service->adminSend(1,'worker_a','customer','blocked','blocked'));$env='testing';
  $db->execute('UPDATE login_sessions SET test_actor_expires_at=UTC_TIMESTAMP()-INTERVAL 1 SECOND WHERE id=2');denied(fn()=>$service->identity(str_repeat('b',64)));
- $db->execute("UPDATE test_instances SET deleted_at=UTC_TIMESTAMP(),build_status='deleted' WHERE id=1");denied(fn()=>$service->execute($customer,'conversations/digests',[]));
+ $service->adminSend(2,'worker_a','customer','另一个实例保留','other:1');
+ $db->execute('ALTER TABLE test_instances ADD version INT NOT NULL DEFAULT 1');
+ $inner=new class($db) implements \WorkerAdmin\Contracts\TestCenterRepository{
+  public function __construct(private Database $db){}
+  public function environmentDiagnostics():array{return [];}
+  public function listInstances(array $filters=[]):array{return [];}
+  public function instanceDetail(string $publicId):array{return [];}
+  public function build(array $scenario,array $params,int $adminId,string $requestKey,?int $sourceInstanceId=null,?int $rebuiltFromInstanceId=null):array{return [];}
+  public function verify(string $publicId,int $adminId):array{return [];}
+  public function cleanupPreview(string $publicId):array{return ['allowed'=>true,'plan_digest'=>'base-fixture','blocking_relations'=>[]];}
+  public function cleanup(string $publicId,int $adminId,string $expectedPlanDigest):array{$this->db->execute("UPDATE test_instances SET order_id=NULL,deleted_at=UTC_TIMESTAMP(),build_status='deleted' WHERE public_id=:id",['id'=>$publicId]);return ['public_id'=>$publicId];}
+  public function rebuildSource(string $publicId):array{return [];}
+ };
+ $cleanup=new \WorkerAdmin\Infrastructure\Testing\DatabaseTestCenterCleanupSafetyRepository($db,$inner);$preview=$cleanup->cleanupPreview('INSTANCE1');$cleanup->cleanup('INSTANCE1',1,$preview['plan_digest']);
+ check((int)$db->fetchValue('SELECT COUNT(*) FROM chat_test_conversations WHERE instance_id=1')===0,'cleanup removed current conversations');
+ check((int)$db->fetchValue('SELECT COUNT(*) FROM chat_test_messages')===1&&(int)$db->fetchValue('SELECT COUNT(*) FROM chat_test_conversations WHERE instance_id=2')===1,'cleanup removed current messages and preserved other instance');
+ denied(fn()=>$service->execute($customer,'conversations/digests',[]));
  check(!$db->tableExists('chat_messages')&&!$db->tableExists('message_outbox'),'no real message channel or chat tables used');
  echo "PASS release, real MySQL simulation, native payloads, identity and instance isolation, idempotency, unread/read, recall, preference CAS, history and admin pagination, production/expiry/cleanup denial\n";
 }finally{$root->exec('DROP DATABASE `'.$name.'`');}
