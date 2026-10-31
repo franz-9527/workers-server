@@ -17,7 +17,6 @@ Page({
     noticeUnreadCount: 0,
     todoCount: 0,
     importantCount: 0,
-    subscriptionAlert: null,
     topTodoText: '',
     topTodoRole: '',
     businessTone: 'normal',
@@ -126,7 +125,7 @@ Page({
     this.pendingDigests = {};this.listBoundary=null;this.candidateCount=0
     this.setData({
       auditAllowed:false,isLoggedIn: false, summaryReady: false, noticeUnreadCount: 0,
-      subscriptionAlert: null, importantCount: 0, todoCount: 0, topTodoText: '', topTodoRole: '', summaryError: false,
+      importantCount: 0, todoCount: 0, topTodoText: '', topTodoRole: '', summaryError: false,
       businessTone: 'normal',
       latestNotification: null,
       chatRows: [], visibleChatRows: [], chatLoading: false,
@@ -332,7 +331,6 @@ Page({
   onPullDownRefresh() {
     const serial = this._showSerial
     if (this.data.isLoggedIn) {
-      this.refreshSubscriptionHealth(serial)
       this.refreshSummary(serial).finally(() => wx.stopPullDownRefresh())
       if (this.data.chatEnabled) this.chatManager.refreshAccount()
     } else {
