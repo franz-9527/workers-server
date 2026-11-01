@@ -72,7 +72,7 @@ $subscribe=new class implements WorkerAdmin\Contracts\SubscribeMessageGateway {
  public function send(array $p):array{return ['errcode'=>0];}
 };
 $wecom=new class implements WorkerAdmin\Contracts\AdminAlertGateway {
- public function send(string $c,?string $a=null):array{return $c==='reject'?[]:['errcode'=>0,'delivery_receipt'=>['message_type'=>'text','target_fingerprint'=>'123456789abc']];}
+ public function send(string $c,?string $a=null):array{return $c==='reject'?[]:['errcode'=>0,'delivery_receipt'=>['message_type'=>'template_card','card_type'=>'text_notice','target_fingerprint'=>'123456789abc']];}
 };
 add('wecom_webhook','dispatch-wecom',['content'=>'fixture'],'pending');
 add('wechat_subscribe','dispatch-subscribe',['user_id'=>1,'scene_key'=>'fixture'],'pending');
