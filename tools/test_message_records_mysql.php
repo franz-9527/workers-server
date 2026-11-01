@@ -111,7 +111,8 @@ check($ann->current('home')['environment']==='production'&&$ann->current('home')
 $GLOBALS['environment']='testing';$GLOBALS['settings']['announcement.home.text']='测试首页';
 check($ann->current('home')['environment']==='testing'&&$ann->current('home')['text']==='测试首页','testing site response is explicitly scoped');
 $GLOBALS['environment']='production';
-// Actual read model => actual backend page, desktop/mobile screenshots exercised by browser test.
+// Actual read model => actual backend page for optional visual inspection.
+$artifactDir=dirname(__DIR__).'/test-artifacts';if(!is_dir($artifactDir))mkdir($artifactDir,0775,true);
 $d=$console->dashboard('','',1,'records','wecom_webhook','admin');extract($d,EXTR_OVERWRITE);$activeTab='records';
 $_GET=['route'=>'message-outbox','channel'=>'wecom_webhook','recipient'=>'admin'];
 ob_start();require dirname(__DIR__).'/server/views/admin/message-outbox.php';$html=ob_get_clean();
