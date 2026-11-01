@@ -1,0 +1,42 @@
+name: Subscription field limits and 47003 diagnostics
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,sodium,dom,curl
+          coverage: none
+      - name: PHP syntax
+        run: find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+      - name: Five field construction templates and safe provider diagnostics
+        run: php tools/test_subscription_fields.php
+      - name: Existing permanent error and fallback rules
+        if: always()
+        run: |
+          php server/tests/v260_message_delivery_failure_policy.php
+          php server/tests/v260_message_outbox_dispatch_policy.php
+      - name: Isolated MySQL quota, roles and journal receipts
+        if: always()
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: |
+          php tools/test_subscription_roles_mysql.php
+          php tools/test_message_records_mysql.php
+      - name: Actual admin form rendering
+        if: always()
+        run: php tools/test_message_settings_render.php
