@@ -73,7 +73,7 @@ final class ChatGoRuntimeConfig
             try{$password=$this->cipher->decrypt($redis['password_ciphertext'],self::REDIS_PASSWORD_CONTEXT);}
             catch(\Throwable $e){$errors[]='Redis 密码读取失败，请重新填写后保存。';}
         }
-        $callback=(new ChatMediaCallbackSettings($this->db,$this->cipher))->status(
+        $callback=(new ChatMediaCallbackSettings($this->db,$this->cipher))->runtime(
             trim((string)\setting('wechat.miniapp_appid','')),$this->siteUrl());
         return ['redis_password'=>$password,'wechat_callback_token'=>$callback['token'],
             'wechat_callback_aes_key'=>$callback['aes_key'],'errors'=>$errors];
