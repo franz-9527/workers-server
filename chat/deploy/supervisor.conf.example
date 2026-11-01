@@ -1,0 +1,59 @@
+[program:bixuan-chat]
+command=/www/server/bixuan-chat/current/chatd serve --config /www/server/bixuan-chat/shared/chat.json
+directory=/www/server/bixuan-chat/current
+user=bxchat
+numprocs=1
+autostart=true
+autorestart=true
+startsecs=5
+startretries=3
+stopsignal=TERM
+stopwaitsecs=45
+stopasgroup=true
+killasgroup=true
+umask=027
+redirect_stderr=true
+stdout_logfile=/www/wwwlogs/bixuan-chat/serve.log
+stdout_logfile_maxbytes=20MB
+stdout_logfile_backups=5
+
+[program:bixuan-chat-worker]
+command=/www/server/bixuan-chat/current/chatd worker --config /www/server/bixuan-chat/shared/chat.json
+directory=/www/server/bixuan-chat/current
+user=bxchat
+numprocs=1
+autostart=true
+autorestart=true
+startsecs=5
+startretries=3
+stopsignal=TERM
+stopwaitsecs=45
+stopasgroup=true
+killasgroup=true
+umask=027
+redirect_stderr=true
+stdout_logfile=/www/wwwlogs/bixuan-chat/worker.log
+stdout_logfile_maxbytes=20MB
+stdout_logfile_backups=5
+
+
+# Enable only after PHP chat.reminders_enabled and the release checks pass.
+# Replace the PHP binary and source path with the actual PHP 8.3.36 CLI/site.
+[program:bixuan-chat-reminders]
+command=/www/server/php/83/bin/php /www/wwwroot/worker/bin/chat-reminders.php --loop
+directory=/www/wwwroot/worker
+user=www
+numprocs=1
+autostart=false
+autorestart=true
+startsecs=5
+startretries=3
+stopsignal=TERM
+stopwaitsecs=45
+stopasgroup=true
+killasgroup=true
+umask=027
+redirect_stderr=true
+stdout_logfile=/www/wwwlogs/bixuan-chat/reminders.log
+stdout_logfile_maxbytes=10MB
+stdout_logfile_backups=3
