@@ -1,0 +1,25 @@
+name: Startup user recovery and stale session acceptance
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: find miniprogram cloudfunctions tools -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check
+      - name: Startup, first visitors, legacy cloud records and concurrent stale tokens
+        run: node --test tools/test_startup_session.js tools/test_session_renewal.js
+      - name: Existing identity, chat and notifications
+        if: always()
+        run: node --test tools/test_identity_navigation.js tools/test_chat_notice_recovery.js tools/test_chat_s11.js tools/test_unified_notices.js tools/test_subscription_top_hint.js
+      - name: Actual WXML compilation
+        if: always()
+        run: |
+          npm install --no-save --ignore-scripts miniprogram-compiler@0.2.3
+          node tools/check-wxml.js miniprogram --compile
