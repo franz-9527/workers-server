@@ -99,8 +99,27 @@ test('home public records begin before undecided location authorization and with
 })
 function cloudUserFixture(rows=[]){
  const data=structuredClone(rows),writes=[];let exported
- const db={collection(name){assert.equal(name,'user');return {where(query){return {limit(n){assert.ok(n<=100);return {get:async()=>({data:data.filter(x=>x.openid===query.openid).slice(0,n)})}}}},
- doc(id){return {update:async({data:patch})=>{writes.push(['update',id,patch]);Object.assign(data.find(x=>x._id===id),patch)},set:async({data:row})=>{writes.push(['set',id]);data.push({...row,_id:id})}}}}}
+ const db = {
+  collection(name) {
+   assert.equal(name,'user')
+   return {
+    where(query) {
+     return {
+      limit(n) {
+       assert.ok(n<=100)
+       return { get: async () => ({data:data.filter(x=>x.openid===query.openid).slice(0,n)}) }
+      }
+     }
+    },
+    doc(id) {
+     return {
+      update: async ({data:patch}) => { writes.push(['update',id,patch]); Object.assign(data.find(x=>x._id===id),patch) },
+      set: async ({data:row}) => { writes.push(['set',id]); data.push({...row,_id:id}) }
+     }
+    }
+   }
+  }
+ }
  const cloud={DYNAMIC_CURRENT_ENV:'fixture',init(){},database:()=>db,getWXContext:()=>({OPENID:'owner',APPID:'wx-fixture'}),
  openapi:{phonenumber:{getPhoneNumber:async()=>({phoneInfo:{purePhoneNumber:'13900139000'}})}}}
  const exports={};vm.runInNewContext(read('cloudfunctions/user/index.js'),{exports,require:()=>cloud,console:{log(){}},Date})
