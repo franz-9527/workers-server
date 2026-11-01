@@ -118,7 +118,7 @@ final class ChatGoRuntimeConfig
             $ciphertext=$this->cipher->encrypt($password,self::REDIS_PASSWORD_CONTEXT);
             if(!is_string($ciphertext)||$ciphertext==='')throw new RuntimeException('Redis 密码加密失败，未保存。');
         }
-        $this->db->transaction(function()use($enabled,$address,$password,$clear,$ciphertext,$python,$ffmpeg,$ffprobe,$asrApi,$asrEncoding,$callsEndpoint,$admin,$role):void{
+        $this->db->transaction(function()use($input,$enabled,$address,$password,$clear,$ciphertext,$python,$ffmpeg,$ffprobe,$asrApi,$asrEncoding,$callsEndpoint,$admin,$role):void{
             $actor=$this->db->fetch("SELECT role FROM admin_users WHERE id=:id AND status IN ('active','1') AND must_change_password=0 FOR UPDATE",['id'=>$admin]);
             if(!$actor||(string)$actor['role']!==$role||$role!=='super_admin')throw new RuntimeException('仅超级管理员可修改 Go 服务配置。');
             $this->upsert(self::REDIS_ENABLED_KEY,$enabled,'Go 聊天 Redis 开关',$admin);
