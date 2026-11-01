@@ -1,0 +1,38 @@
+name: WeCom text notice and dual destinations
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -pfixture-only" --health-interval=5s --health-timeout=3s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,mbstring,sodium,dom,curl
+          coverage: none
+      - name: PHP syntax
+        run: find server tools -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+      - name: Official card, dotted routes and dual destination regressions
+        run: php tools/test_wecom_standard.php
+      - name: Actual MySQL journal and dispatch receipts
+        env:
+          MYSQL_PORT: ${{ job.services.mysql.ports['3306'] }}
+        run: php tools/test_message_records_mysql.php
+      - name: Actual admin settings form rendering
+        run: php tools/test_message_settings_render.php
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wecom-admin-pages
+          path: test-artifacts/

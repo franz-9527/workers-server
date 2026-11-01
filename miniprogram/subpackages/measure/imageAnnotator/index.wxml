@@ -1,0 +1,709 @@
+<!-- 2026-09-22：量房标注工具轻量 UI。画布优先，输入/样式/图形/图层统一使用底部抽屉。 -->
+<view class="annotator-page">
+  <fullscreen-nav title="量房工具" testing-title-only="{{true}}" testing-badge-with-title="{{true}}"></fullscreen-nav>
+
+  <view wx:if="{{!sourceReady}}" class="project-home">
+    <view class="home-hero">
+      <view class="home-title-row">
+        <view>
+          <view class="empty-title">量房标注工具</view>
+          <view class="empty-desc">现场照片快速添加尺寸、方向和施工备注。{{returnMode ? '当前为测量单本地编辑模式。' : '项目仅保存在本机，不自动上传。'}}</view>
+        </view>
+        <view class="home-head-actions">
+          <view wx:if="{{!returnMode}}" class="home-settings" bindtap="openSettings"><text class="cuIcon-settings"></text></view>
+          <view class="tool-logo"><text class="cuIcon-rank"></text></view>
+        </view>
+      </view>
+
+      <view class="home-actions">
+        <view class="home-action primary" bindtap="chooseCamera">
+          <text class="cuIcon-camera"></text>
+          <view><view>拍照</view><text>现场直接拍</text></view>
+        </view>
+        <view class="home-action" bindtap="chooseAlbum">
+          <text class="cuIcon-pic"></text>
+          <view><view>相册</view><text>选择已有照片</text></view>
+        </view>
+        <view wx:if="{{!returnMode}}" class="home-action" bindtap="createBlankPaper">
+          <text class="cuIcon-form"></text>
+          <view><view>空白纸张</view><text>快速画量房草图</text></view>
+        </view>
+      </view>
+    </view>
+
+    <block wx:if="{{!returnMode}}">
+      <view class="home-section-head">
+        <view>
+          <view class="home-section-title">文件夹</view>
+          <view class="home-section-sub">整理不同客户、房间或工地</view>
+        </view>
+        <view class="home-add-folder" bindtap="openFolderSheet"><text class="cuIcon-add"></text>新建</view>
+      </view>
+
+      <scroll-view scroll-x class="folder-scroll" enhanced="true" show-scrollbar="{{false}}">
+        <view class="folder-row">
+          <view class="folder-chip {{homeFolderId === '' ? 'active' : ''}}" data-id="" bindtap="selectHomeFolder">全部</view>
+          <view
+            wx:for="{{homeFolders}}"
+            wx:key="id"
+            class="folder-chip {{homeFolderId === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="selectHomeFolder"
+            bindlongpress="openFolderManage"
+          >{{item.name}}</view>
+        </view>
+      </scroll-view>
+
+      <view class="home-section-head project-head">
+        <view>
+          <view class="home-section-title">本地项目</view>
+          <view class="home-section-sub">自动保存草稿，可继续编辑</view>
+        </view>
+        <view class="project-count">{{homeProjects.length}} 个</view>
+      </view>
+
+      <view wx:if="{{!homeProjects.length}}" class="project-empty">
+        <text class="cuIcon-file"></text>
+        <view>还没有项目</view>
+        <text>从拍照、相册或空白纸张开始</text>
+      </view>
+
+      <view class="project-grid">
+        <view wx:for="{{homeProjects}}" wx:key="id" class="project-card" data-id="{{item.id}}" bindtap="openLocalProject">
+          <view class="project-thumb">
+            <image wx:if="{{!item.blankPaper && item.sourcePath}}" src="{{item.sourcePath}}" mode="aspectFill"></image>
+            <view wx:else class="blank-thumb"><text class="cuIcon-form"></text></view>
+            <view class="project-more" data-id="{{item.id}}" catchtap="openProjectSheet"><text class="cuIcon-more"></text></view>
+          </view>
+          <view class="project-name">{{item.name}}</view>
+          <view class="project-time">{{item.updatedText}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <block wx:else>
+    <view class="editor-topbar">
+      <button class="topbar-item" bindtap="topLeftAction">
+        <text class="{{returnMode ? 'cuIcon-repeal' : 'cuIcon-file'}}"></text><view>{{returnMode ? '换图' : '项目'}}</view>
+      </button>
+      <button class="topbar-item" disabled="{{!canUndo}}" bindtap="undo">
+        <text class="cuIcon-back"></text><view>撤销</view>
+      </button>
+      <button class="topbar-item" disabled="{{!canRedo}}" bindtap="redo">
+        <text class="cuIcon-right"></text><view>重做</view>
+      </button>
+      <button class="topbar-item" bindtap="openLayers">
+        <text class="cuIcon-copy"></text><view>图层</view>
+      </button>
+      <button class="topbar-item" bindtap="openMore">
+        <text class="cuIcon-more"></text><view>更多</view>
+      </button>
+      <button class="topbar-save" loading="{{saving}}" disabled="{{!ready || saving}}" bindtap="save">保存</button>
+    </view>
+
+    <view class="mode-tip">{{returnMode ? '测量单模式 · 保存后只回传本地文件，不自动上传' : '本地模式 · 项目只在本机处理'}}</view>
+
+    <view class="canvas-shell" style="min-height:{{canvasHeight}}px">
+      <canvas
+        id="imageAnnotatorCanvas"
+        type="2d"
+        class="edit-canvas"
+        style="width:{{canvasWidth}}px;height:{{canvasHeight}}px;transform:translate3d({{viewTranslateX}}px,{{viewTranslateY}}px,0) scale({{viewScale}});transform-origin:0 0;"
+        disable-scroll="true"
+        bindtouchstart="touchStart"
+        bindtouchmove="touchMove"
+        bindtouchend="touchEnd"
+        bindtouchcancel="touchCancel"
+      ></canvas>
+      <canvas
+        id="magnifierCanvas"
+        type="2d"
+        class="magnifier-canvas {{magnifierVisible ? 'show' : ''}}"
+        style="width:90px;height:90px"
+      ></canvas>
+      <view wx:if="{{ready}}" class="view-controls">
+        <view class="view-control" bindtap="zoomOut">−</view>
+        <view class="view-scale">{{viewScaleText}}</view>
+        <view class="view-control" bindtap="zoomIn">＋</view>
+        <view class="view-control reset" bindtap="resetView"><text class="cuIcon-refresh"></text></view>
+      </view>
+      <view wx:if="{{multiMeasureActive}}" class="multi-measure-bar">
+        <text>{{multiMeasurePointCount}} 个点</text>
+        <view bindtap="undoMultiMeasurePoint">撤回一点</view>
+        <view class="finish" bindtap="finishMultiMeasure">完成</view>
+        <view class="cancel" bindtap="cancelMultiMeasure">取消</view>
+      </view>
+      <view wx:if="{{!ready}}" class="canvas-loading">正在准备图片…</view>
+    </view>
+
+    <view class="gesture-tip">
+      <block wx:if="{{tool === 'select'}}">
+        <block wx:if="{{selectedName}}">已选 {{selectedName}} · 拖动可移动</block>
+        <block wx:else>点选标注后可移动或编辑</block>
+      </block>
+      <block wx:elif="{{tool === 'text'}}">轻点图片位置添加文字</block>
+      <block wx:elif="{{tool === 'dimension'}}">拖出尺寸线，松手输入尺寸</block>
+      <block wx:elif="{{tool === 'leader'}}">从现场位置拖到标签位置，松手输入文字</block>
+      <block wx:elif="{{tool === 'multiDimension'}}">依次轻点转折点，完成后点“完成”输入各段尺寸</block>
+      <block wx:elif="{{tool === 'area'}}">先拖出区域，完成后可分别拖动四个角贴合实际墙面</block>
+      <block wx:elif="{{tool === 'localZoom'}}">从要放大的位置拖到放大圆位置</block>
+      <block wx:elif="{{tool === 'locationStamp'}}">已选腾讯地图地址，轻点图片位置添加时间与地址</block>
+      <block wx:else>在图片上按住并拖动绘制</block>
+    </view>
+
+    <view wx:if="{{selectedId}}" class="object-bar">
+      <view class="object-name">{{selectedName}}</view>
+      <button bindtap="duplicateLayer"><text class="cuIcon-copy"></text><view>复制</view></button>
+      <button wx:if="{{selectedCanEditText}}" bindtap="editSelectedText"><text class="cuIcon-edit"></text><view>文字</view></button>
+      <button bindtap="openStyleSheet"><text class="cuIcon-settings"></text><view>样式</view></button>
+      <button class="danger" bindtap="deleteLayer"><text class="cuIcon-delete"></text><view>删除</view></button>
+    </view>
+  </block>
+
+  <view wx:if="{{sourceReady}}" class="editor-dock">
+    <view class="dock-tools">
+      <view
+        wx:for="{{tools}}"
+        wx:key="key"
+        class="dock-tool {{toolGroup === item.key ? 'active' : ''}}"
+        data-tool="{{item.key}}"
+        bindtap="selectTool"
+      >
+        <view class="dock-icon-box">
+          <block wx:if="{{item.key === 'shape' && shapeDockTool}}">
+            <image wx:if="{{shapeDockTool.image}}" class="dock-public-icon {{shapeDockTool.rotate ? 'multi-icon' : ''}}" src="{{shapeDockTool.image}}" mode="aspectFit"></image>
+            <text wx:else class="{{shapeDockTool.icon}}"></text>
+          </block>
+          <block wx:elif="{{item.key === 'other' && otherDockTool}}">
+            <image wx:if="{{otherDockTool.image}}" class="dock-public-icon {{otherDockTool.rotate ? 'multi-icon' : ''}}" src="{{otherDockTool.image}}" mode="aspectFit"></image>
+            <text wx:else class="{{otherDockTool.icon}}"></text>
+          </block>
+          <block wx:else>
+            <image wx:if="{{item.image}}" class="dock-public-icon" src="{{item.image}}" mode="aspectFit"></image>
+            <text wx:else class="{{item.icon}}"></text>
+          </block>
+        </view>
+        <view class="dock-label">
+          <block wx:if="{{item.key === 'shape' && shapeDockTool}}">{{shapeDockTool.label}}</block>
+          <block wx:elif="{{item.key === 'other' && otherDockTool}}">{{otherDockTool.label}}</block>
+          <block wx:else>{{item.label}}</block>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 尺寸 / 文字输入 -->
+  <view wx:if="{{inputSheetVisible}}" class="sheet-mask show" catchtap="cancelInputSheet"></view>
+  <view class="bottom-sheet input-sheet {{inputSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">{{inputSheetTitle}}</view>
+        <view class="sheet-subtitle">
+          <block wx:if="{{inputSheetMode === 'dimension'}}">输入数字可直接选择单位，也支持自由文字</block>
+          <block wx:elif="{{inputSheetMode === 'multiDimension'}}">每段单独填写，标签会自动避开测量线</block>
+          <block wx:elif="{{inputSheetMode === 'area'}}">输入实际面积，可直接填写 12.6㎡</block>
+          <block wx:elif="{{inputSheetMode === 'leader'}}">拉线指向现场位置，并添加文字标签</block>
+          <block wx:else>输入简短、现场能看懂的量房备注</block>
+        </view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="cancelInputSheet"></text>
+    </view>
+
+    <view wx:if="{{inputSheetMode !== 'multiDimension'}}" class="input-wrap">
+      <input
+        class="sheet-input"
+        value="{{inputValue}}"
+        maxlength="80"
+        focus="{{false}}"
+        adjust-position="{{true}}"
+        cursor-spacing="28"
+        placeholder="{{inputPlaceholder}}"
+        bindinput="onInputValue"
+        confirm-type="done"
+        bindconfirm="confirmInputSheet"
+      />
+    </view>
+
+    <view wx:else class="multi-segment-inputs">
+      <view wx:for="{{multiDimensionInputs}}" wx:key="index" class="multi-segment-row {{multiDimensionActiveIndex === index ? 'active' : ''}}">
+        <text>第 {{index + 1}} 段</text>
+        <input
+          value="{{item}}"
+          data-index="{{index}}"
+          maxlength="40"
+          focus="{{false}}"
+          adjust-position="{{true}}"
+          cursor-spacing="28"
+          placeholder="例如 2.6m"
+          bindfocus="onMultiDimensionFocus"
+          bindinput="onMultiDimensionInput"
+        />
+      </view>
+    </view>
+
+    <block wx:if="{{inputSheetMode === 'dimension' || inputSheetMode === 'multiDimension'}}">
+      <view class="sheet-section-label">单位</view>
+      <view class="chip-row">
+        <view wx:for="{{inputUnits}}" wx:key="*this" class="chip {{inputUnit === item ? 'active' : ''}}" data-unit="{{item}}" bindtap="selectInputUnit">{{item}}</view>
+      </view>
+
+      <view class="sheet-section-label">常用尺寸</view>
+      <view class="chip-row wrap">
+        <view wx:for="{{quickDimensionValues}}" wx:key="*this" class="chip quick" data-value="{{item}}" bindtap="applyQuickDimension">{{item}}</view>
+      </view>
+
+      <view wx:if="{{inputSheetMode === 'dimension'}}" class="sheet-switch-row">
+        <view>
+          <view class="switch-title">连续添加尺寸</view>
+          <view class="switch-desc">确认后保持尺寸工具，现场连续量房更快</view>
+        </view>
+        <switch checked="{{continuousDimension}}" color="#119d62" bindchange="toggleContinuousDimension"></switch>
+      </view>
+    </block>
+
+    <block wx:elif="{{inputSheetMode === 'text' || inputSheetMode === 'leader'}}">
+      <view class="sheet-section-label">常用备注</view>
+      <view class="chip-row wrap">
+        <view wx:for="{{quickPhrases}}" wx:key="*this" class="chip quick" data-value="{{item}}" bindtap="applyQuickPhrase">{{item}}</view>
+      </view>
+    </block>
+
+    <view class="sheet-actions">
+      <button class="sheet-secondary" bindtap="cancelInputSheet">取消</button>
+      <button class="sheet-primary" bindtap="confirmInputSheet">确认</button>
+    </view>
+  </view>
+
+  <!-- 图形 / 其他：使用微信原生 page-container，避免 Canvas 层级吞掉点击 -->
+  <page-container
+    show="{{toolPickerVisible}}"
+    duration="{{180}}"
+    overlay="{{true}}"
+    position="bottom"
+    round="{{true}}"
+    close-on-slide-down="{{false}}"
+    z-index="{{90}}"
+    bindclickoverlay="closeToolPicker"
+  >
+    <view class="tool-picker-sheet">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <view>
+          <view class="sheet-title">{{toolPickerGroup === 'shape' ? '图形' : '其他'}}</view>
+          <view class="sheet-subtitle">
+            <block wx:if="{{toolPickerGroup === 'shape'}}">箭头、直线、矩形、圆和面积</block>
+            <block wx:else>多段测量、局部放大和时间位置</block>
+          </view>
+        </view>
+        <text class="cuIcon-close sheet-close" bindtap="closeToolPicker"></text>
+      </view>
+
+      <view wx:if="{{toolPickerGroup === 'shape'}}" class="shape-grid">
+        <view class="shape-choice" data-tool="arrow" catchtap="selectSubTool"><text class="picker-icon cuIcon-back_android"></text><view>箭头</view></view>
+        <view class="shape-choice" data-tool="line" catchtap="selectSubTool"><image class="picker-icon shape-public-icon" src="/images/measure-icons/minus.svg" mode="aspectFit"></image><view>直线</view></view>
+        <view class="shape-choice" data-tool="rect" catchtap="selectSubTool"><text class="picker-icon cuIcon-square"></text><view>矩形</view></view>
+        <view class="shape-choice" data-tool="ellipse" catchtap="selectSubTool"><text class="picker-icon cuIcon-round"></text><view>圆 / 椭圆</view></view>
+        <view class="shape-choice" data-tool="area" catchtap="selectSubTool"><image class="picker-icon shape-public-icon" src="/images/measure-icons/area.svg" mode="aspectFit"></image><view>面积</view></view>
+      </view>
+
+      <view wx:else class="shape-grid">
+        <view class="shape-choice" data-tool="multiDimension" catchtap="selectSubTool"><image class="picker-icon shape-public-icon multi-icon" src="/images/measure-icons/ruler.svg" mode="aspectFit"></image><view>多段测量线</view></view>
+        <view class="shape-choice" data-tool="localZoom" catchtap="selectSubTool"><text class="picker-icon cuIcon-search"></text><view>局部放大</view></view>
+        <view class="shape-choice" data-tool="locationStamp" catchtap="selectSubTool"><text class="picker-icon cuIcon-location"></text><view>时间与位置</view></view>
+      </view>
+    </view>
+  </page-container>
+
+  <!-- 对象样式 -->
+  <view wx:if="{{styleSheetVisible}}" class="sheet-mask show" catchtap="closeStyleSheet"></view>
+  <view class="bottom-sheet style-sheet {{styleSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">样式</view>
+        <view class="sheet-subtitle">只显示当前标注需要的属性</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeStyleSheet"></text>
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-title">颜色</text>
+      <view class="colors">
+        <view wx:for="{{colors}}" wx:key="*this" class="color-dot {{color === item ? 'active' : ''}}" style="background:{{item}}" data-color="{{item}}" bindtap="selectColor"></view>
+      </view>
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-title">粗细</text>
+      <view class="segmented">
+        <view wx:for="{{strokes}}" wx:key="key" class="segment stroke-segment {{stroke === item.key ? 'active' : ''}}" data-stroke="{{item.key}}" bindtap="selectStroke">
+          <view class="stroke-preview {{item.key}}"></view>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="setting-row" wx:if="{{styleType !== 'text'}}">
+      <text class="setting-title">线条</text>
+      <view class="segmented">
+        <view class="segment {{lineStyle === 'solid' ? 'active' : ''}}" data-style="solid" bindtap="selectLineStyle">实线</view>
+        <view class="segment {{lineStyle === 'dashed' ? 'active' : ''}}" data-style="dashed" bindtap="selectLineStyle">虚线</view>
+      </view>
+    </view>
+
+    <view class="setting-row" wx:if="{{styleType === 'dimension'}}">
+      <text class="setting-title">端点</text>
+      <view class="segmented">
+        <view class="segment {{dimensionEnd === 'arrow' ? 'active' : ''}}" data-end="arrow" bindtap="selectDimensionEnd">双箭头</view>
+        <view class="segment {{dimensionEnd === 'cap' ? 'active' : ''}}" data-end="cap" bindtap="selectDimensionEnd">短杠</view>
+      </view>
+    </view>
+
+    <view class="setting-row" wx:if="{{styleType === 'text'}}">
+      <view>
+        <view class="setting-title auto">文字底色</view>
+        <view class="setting-desc">复杂现场背景建议开启</view>
+      </view>
+      <switch checked="{{textBackground}}" color="#119d62" bindchange="textBackgroundChange"></switch>
+    </view>
+
+    <view class="setting-row">
+      <text class="setting-title">层级</text>
+      <view class="segmented">
+        <view class="segment" bindtap="bringSelectedToFront">置顶</view>
+        <view class="segment" bindtap="sendSelectedToBack">置底</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 更多 / 编辑辅助 -->
+  <view wx:if="{{moreSheetVisible}}" class="sheet-mask show" catchtap="closeMore"></view>
+  <view class="bottom-sheet more-sheet {{moreSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">编辑辅助</view>
+        <view class="sheet-subtitle">只保留量房现场真正高频的辅助设置</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeMore"></text>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">水平 / 垂直吸附</view>
+        <view class="setting-desc">接近水平或垂直时自动对齐</view>
+      </view>
+      <switch checked="{{axisSnap}}" color="#119d62" bindchange="axisSnapChange"></switch>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">端点吸附</view>
+        <view class="setting-desc">靠近其他标注端点时自动吸附</view>
+      </view>
+      <switch checked="{{endpointSnap}}" color="#119d62" bindchange="endpointSnapChange"></switch>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">显示辅助线</view>
+        <view class="setting-desc">吸附时短暂显示绿色辅助线</view>
+      </view>
+      <switch checked="{{showGuides}}" color="#119d62" bindchange="showGuidesChange"></switch>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">连续添加尺寸</view>
+        <view class="setting-desc">确认后继续保持尺寸工具</view>
+      </view>
+      <switch checked="{{continuousDimension}}" color="#119d62" bindchange="toggleContinuousDimension"></switch>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">连续添加工具</view>
+        <view class="setting-desc">完成后继续保持当前非尺寸工具；尺寸仍按“连续添加尺寸”设置</view>
+      </view>
+      <switch checked="{{continuousTool}}" color="#119d62" bindchange="toggleContinuousTool"></switch>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">画布视图</view>
+        <view class="setting-desc">双指缩放；放大后选择模式可拖动空白区域</view>
+      </view>
+      <view class="inline-view-actions">
+        <view bindtap="zoomOut">−</view>
+        <text>{{viewScaleText}}</text>
+        <view bindtap="zoomIn">＋</view>
+        <view class="reset-view" bindtap="resetView">复位</view>
+      </view>
+    </view>
+
+    <view class="setting-row settings-link" bindtap="openSettings">
+      <view>
+        <view class="setting-title auto">通用设置</view>
+        <view class="setting-desc">输出分辨率、保存到相册等</view>
+      </view>
+      <text class="cuIcon-right"></text>
+    </view>
+
+    <view class="more-danger" bindtap="clearFromMore">
+      <text class="cuIcon-delete"></text>
+      <view>
+        <view>清空全部标注</view>
+        <text>只清标注，不删除原图</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 通用设置 -->
+  <view wx:if="{{settingsSheetVisible}}" class="sheet-mask show" catchtap="closeSettings"></view>
+  <view class="bottom-sheet settings-sheet {{settingsSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">通用设置</view>
+        <view class="sheet-subtitle">控制输出质量和常用编辑辅助</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeSettings"></text>
+    </view>
+
+    <view class="settings-group-label">图片</view>
+    <view class="setting-block">
+      <view class="setting-block-title">输出分辨率</view>
+      <view class="resolution-grid">
+        <view
+          wx:for="{{resolutionOptions}}"
+          wx:key="value"
+          class="resolution-item {{imageMaxEdge === item.value ? 'active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="selectResolution"
+        >
+          <view>{{item.label}}</view>
+          <text>{{item.value}}px</text>
+        </view>
+      </view>
+      <view class="setting-help">限制新打开图片和最终标注图的最长边；标准 2048px 兼顾清晰度与本地空间。</view>
+    </view>
+
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">保存时写入系统相册</view>
+        <view class="setting-desc">关闭后仅保存可继续编辑的本地项目</view>
+      </view>
+      <switch checked="{{autoSaveAlbum}}" color="#119d62" bindchange="autoSaveAlbumChange"></switch>
+    </view>
+
+    <view class="settings-group-label">编辑辅助</view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">水平 / 垂直吸附</view>
+        <view class="setting-desc">接近水平或垂直时自动对齐</view>
+      </view>
+      <switch checked="{{axisSnap}}" color="#119d62" bindchange="axisSnapChange"></switch>
+    </view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">端点吸附</view>
+        <view class="setting-desc">靠近其他端点时自动对齐</view>
+      </view>
+      <switch checked="{{endpointSnap}}" color="#119d62" bindchange="endpointSnapChange"></switch>
+    </view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">显示辅助线</view>
+        <view class="setting-desc">吸附时显示绿色参考线</view>
+      </view>
+      <switch checked="{{showGuides}}" color="#119d62" bindchange="showGuidesChange"></switch>
+    </view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">连续添加尺寸</view>
+        <view class="setting-desc">确认一条尺寸后继续保持尺寸工具</view>
+      </view>
+      <switch checked="{{continuousDimension}}" color="#119d62" bindchange="toggleContinuousDimension"></switch>
+    </view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">连续添加工具</view>
+        <view class="setting-desc">完成后继续保持当前非尺寸工具；尺寸仍按“连续添加尺寸”设置</view>
+      </view>
+      <switch checked="{{continuousTool}}" color="#119d62" bindchange="toggleContinuousTool"></switch>
+    </view>
+    <view class="setting-row">
+      <view>
+        <view class="setting-title auto">拖动放大镜</view>
+        <view class="setting-desc">拖动控制点时放大落点附近，方便精细对齐</view>
+      </view>
+      <switch checked="{{showMagnifier}}" color="#119d62" bindchange="showMagnifierChange"></switch>
+    </view>
+
+    <view class="settings-group-label">帮助</view>
+    <view class="setting-row settings-link" bindtap="openHelp">
+      <view>
+        <view class="setting-title auto">使用帮助</view>
+        <view class="setting-desc">尺寸、编辑、缩放吸附和保存说明</view>
+      </view>
+      <text class="cuIcon-right"></text>
+    </view>
+
+    <view wx:if="{{!returnMode}}" class="settings-group-label">本地数据</view>
+    <view wx:if="{{!returnMode}}" class="storage-card">
+      <view class="storage-main">
+        <view>
+          <view class="storage-value">{{storageUsageText}}</view>
+          <view class="storage-label">量房项目保存文件占用</view>
+        </view>
+        <view class="storage-meta">
+          <text>{{storageProjectCount}} 个项目</text>
+          <text>{{storageFileCount}} 个本地文件</text>
+        </view>
+      </view>
+      <view class="storage-safe" bindtap="cleanBrokenProjects">
+        <text class="cuIcon-refresh"></text>
+        <view>
+          <view>检查失效项目</view>
+          <text>只清理原图已不存在的项目记录，不删除其他业务文件</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 使用帮助 -->
+  <view wx:if="{{helpSheetVisible}}" class="sheet-mask show" catchtap="closeHelp"></view>
+  <view class="bottom-sheet help-sheet {{helpSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">使用帮助</view>
+        <view class="sheet-subtitle">只保留现场量房真正会用到的说明</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeHelp"></text>
+    </view>
+
+    <scroll-view scroll-y class="help-list">
+      <view class="help-card">
+        <view class="help-card-title">尺寸标注</view>
+        <view class="help-card-text">选择“尺寸”后在照片上拖出起点和终点，松手后从底部输入尺寸。确认后默认继续保持尺寸工具，适合连续量房。</view>
+      </view>
+      <view class="help-card">
+        <view class="help-card-title">修改和移动</view>
+        <view class="help-card-text">切到“选择”，点中标注后可整体移动。绿色控制点可调整起点、终点或图形大小；尺寸文字的小方点可单独拖动。</view>
+      </view>
+      <view class="help-card">
+        <view class="help-card-title">缩放与吸附</view>
+        <view class="help-card-text">双指缩放画布；放大后在“选择”状态拖动空白区域可移动画布。接近水平、垂直或其他端点时会自动吸附并显示辅助线。</view>
+      </view>
+      <view class="help-card">
+        <view class="help-card-title">保存与上传</view>
+        <view class="help-card-text">独立工具保存的是本地项目，并可按设置写入系统相册。测量单模式只把最终标注图保存在本地并返回，必须回到测量成果页后由师傅明确上传。</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 图层 -->
+  <view class="sheet-mask {{layerPanel ? 'show' : ''}}" catchtap="closeLayers"></view>
+  <view class="bottom-sheet layer-sheet {{layerPanel ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">图层</view>
+        <view class="sheet-subtitle">{{layers.length}} 个标注 · 上方会覆盖下方</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeLayers"></text>
+    </view>
+    <scroll-view scroll-y class="layer-list">
+      <view wx:if="{{!layers.length}}" class="layer-empty">还没有标注</view>
+      <view wx:for="{{layers}}" wx:key="id" class="layer-item {{item.selected ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="selectLayer">
+        <view class="layer-main">
+          <text class="layer-eye {{item.visible ? 'cuIcon-attentionfill' : 'cuIcon-attentionforbidfill'}}" data-id="{{item.id}}" catchtap="toggleLayer"></text>
+          <view class="layer-copy">
+            <view class="layer-name">{{item.name}}</view>
+            <view class="layer-type">{{item.visible ? '显示' : '已隐藏'}}</view>
+          </view>
+        </view>
+        <view class="layer-actions">
+          <text class="cuIcon-top {{item.canUp ? '' : 'disabled'}}" data-id="{{item.id}}" data-direction="up" catchtap="moveLayer"></text>
+          <text class="cuIcon-down {{item.canDown ? '' : 'disabled'}}" data-id="{{item.id}}" data-direction="down" catchtap="moveLayer"></text>
+          <text class="cuIcon-copy" data-id="{{item.id}}" catchtap="duplicateLayer"></text>
+          <text class="cuIcon-delete danger-text" data-id="{{item.id}}" catchtap="deleteLayer"></text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 新建文件夹 -->
+  <view wx:if="{{folderSheetVisible}}" class="sheet-mask show" catchtap="closeFolderSheet"></view>
+  <view class="bottom-sheet compact-sheet {{folderSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">新建文件夹</view>
+        <view class="sheet-subtitle">建议按客户、小区或房间命名</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeFolderSheet"></text>
+    </view>
+    <view class="input-wrap">
+      <input class="sheet-input" value="{{folderInputValue}}" maxlength="24" focus="{{folderSheetVisible}}" placeholder="如 张先生-滨江花园" bindinput="onFolderInput" confirm-type="done" bindconfirm="confirmFolderCreate" />
+    </view>
+    <view class="sheet-actions">
+      <button class="sheet-secondary" bindtap="closeFolderSheet">取消</button>
+      <button class="sheet-primary" bindtap="confirmFolderCreate">创建</button>
+    </view>
+  </view>
+
+  <!-- 文件夹管理：长按文件夹打开 -->
+  <view wx:if="{{folderManageVisible}}" class="sheet-mask show" catchtap="closeFolderManage"></view>
+  <view class="bottom-sheet compact-sheet {{folderManageVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">文件夹设置</view>
+        <view class="sheet-subtitle">长按文件夹即可进入这里</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeFolderManage"></text>
+    </view>
+    <view class="input-wrap">
+      <input class="sheet-input" value="{{folderActionName}}" maxlength="24" bindinput="onFolderActionInput" confirm-type="done" bindconfirm="renameFolder" />
+    </view>
+    <view class="sheet-actions">
+      <button class="sheet-secondary danger-button" bindtap="deleteFolder">删除空文件夹</button>
+      <button class="sheet-primary" bindtap="renameFolder">保存名称</button>
+    </view>
+  </view>
+
+  <!-- 本地项目设置 -->
+  <view wx:if="{{projectSheetVisible}}" class="sheet-mask show" catchtap="closeProjectSheet"></view>
+  <view class="bottom-sheet project-sheet {{projectSheetVisible ? 'show' : ''}}">
+    <view class="sheet-handle"></view>
+    <view class="sheet-head">
+      <view>
+        <view class="sheet-title">项目设置</view>
+        <view class="sheet-subtitle">重命名、移动文件夹或删除本地项目</view>
+      </view>
+      <text class="cuIcon-close sheet-close" bindtap="closeProjectSheet"></text>
+    </view>
+    <view class="input-wrap">
+      <input class="sheet-input" value="{{projectActionName}}" maxlength="36" bindinput="onProjectNameInput" confirm-type="done" bindconfirm="saveProjectName" />
+    </view>
+    <view class="project-save-name" bindtap="saveProjectName">保存名称</view>
+
+    <view class="sheet-section-label">移动到文件夹</view>
+    <scroll-view scroll-x class="move-folder-scroll" enhanced="true" show-scrollbar="{{false}}">
+      <view class="folder-row">
+        <view class="folder-chip {{projectActionFolderId === '' ? 'active' : ''}}" data-id="" bindtap="moveProjectToFolder">未分类</view>
+        <view wx:for="{{homeFolders}}" wx:key="id" class="folder-chip {{projectActionFolderId === item.id ? 'active' : ''}}" data-id="{{item.id}}" bindtap="moveProjectToFolder">{{item.name}}</view>
+      </view>
+    </scroll-view>
+
+    <view class="project-delete" bindtap="deleteLocalProject">
+      <text class="cuIcon-delete"></text>
+      <view><view>删除本地项目</view><text>删除项目记录和本地保存原图</text></view>
+    </view>
+  </view>
+</view>
+<inapp-notice custom-nav="{{true}}"></inapp-notice>
