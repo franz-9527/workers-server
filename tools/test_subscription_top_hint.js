@@ -6,7 +6,7 @@ function banner(initial=insufficient,audience='user',active=true){
  let definition,revision=1,value=initial,resolver,auth,now=100000
  const fetches=[],requests=[],toasts=[],navigations=[]
  const subscribe={
-  getSubscriptionHealth(force,options){fetches.push(options);return resolver?new Promise(r=>resolver=r):Promise.resolve(value)},
+  getSubscriptionHealth(force,options){fetches.push({...options,force});return resolver?new Promise(r=>resolver=r):Promise.resolve(value)},
   requestImportantTopUp(options){requests.push({kind:'one_time',options});return auth||Promise.resolve({status:'completed',acceptedCount:1})},
   requestSubscriptionScenes(keys,options){requests.push({kind:'scenes',keys:Array.from(keys),options});return auth||Promise.resolve({status:'completed',acceptedCount:1})}
  }
@@ -53,4 +53,10 @@ test('subscription state is absent from floating queue and home has no top hint'
  for(const name of ['pages/index/index','pages/mine/mine','subpackages/support/help/index'])assert.doesNotMatch(read('miniprogram/'+name+'.wxml'),/subscription-health-banner/)
  const app=JSON.parse(read('miniprogram/app.json'));assert.equal(app.usingComponents['subscription-health-banner'],'/components/subscription-health-banner/index')
  for(const name of ['pages/chatMessages/index','pages/notificationCenter/index','pages/orderCenter/index','pages/constructionOrder/index','pages/orderHall/orderHall','pages/record/record'])assert.match(read('miniprogram/'+name+'.wxml'),/subscription-health-banner/)
+})
+
+test('returning after authorization or settings refreshes the hint instead of using stale quota',async()=>{
+ const f=banner();f.show();await flush();let resolve;f.auth(new Promise(r=>resolve=r))
+ const job=f.c.open();f.hide();f.value(null);resolve({status:'completed',acceptedCount:1});await job
+ f.show();await flush();assert.equal(f.c.data.health,null);assert.equal(f.fetches.at(-1).force,true);assert.equal(f.requests.length,1)
 })

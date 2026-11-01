@@ -15,8 +15,8 @@ Component({
   detached(){this._attached=false;this._visible=false;this._generation++;this._job=null}
  },
  pageLifetimes:{
-  show(){this._visible=true;this.refresh()},
-  hide(){this._visible=false;this._generation++;this._job=null;this._pending=false;this.setData({pending:false})}
+  show(){const force=this._resume===true;this._resume=false;this._visible=true;this.refresh(force)},
+  hide(){this._resume=true;this._visible=false;this._generation++;this._job=null;this._pending=false;this.setData({pending:false})}
  },
  methods:{
   current(stamp,revision,audience){return this._attached&&this._visible&&this.properties.active&&stamp===this._generation&&revision===context()&&audience===this.properties.audience},
