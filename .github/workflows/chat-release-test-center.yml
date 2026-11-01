@@ -1,0 +1,33 @@
+name: Subscription test controls and settings dirty state
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring,sodium,dom,curl
+          coverage: none
+      - name: Syntax and actual settings markup
+        run: |
+          node --check server/assets/admin.js
+          node --check tools/test_subscription_test_controls.js
+          php tools/test_message_settings_render.php
+      - name: Install browser
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Independent browser regressions
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/subscription-fixture-http.log 2>&1 &
+          node tools/test_subscription_test_controls.js
+          node tools/test_subscription_small_post.js
+          node tools/test_message_all_posts.js
