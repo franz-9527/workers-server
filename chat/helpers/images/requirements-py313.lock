@@ -1,5 +1,0 @@
-# CPython 3.13 (standard GIL build), Linux x86_64, glibc >= 2.27.
-# The cp312-abi3 zxing wheel is compatible with standard CPython 3.13.
-# Python 3.11 keeps using requirements.lock; do not install into the panel pyenv.
-Pillow==13.0.0 --hash=sha256:5f56499c1a74d2b862beb0c33b8016f99d095858455df9d21583bbbc1c15b582
-zxing-cpp==3.1.1 --hash=sha256:9cf67341949946307d086b302cefd453fb47bc6d6ddc7d088839e9481982757b
