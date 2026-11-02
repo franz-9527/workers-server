@@ -1,0 +1,203 @@
+<view class="admin-page">
+  <view class="hero">
+    <fullscreen-nav tone="dark" testing-badge-with-title="{{true}}"></fullscreen-nav>
+    <view class="hero-title">
+      <view class="hero-title-copy">
+        <view class="hero-title-line">
+          <view class="hero-name">
+            <text wx:if="{{apiEnvironment.key === 'testing'}}" class="hero-env-tag">测试站</text>
+            <text class="hero-heading">管理工作台</text>
+          </view>
+          <view class="hero-tool-group">
+            <view wx:if="{{apiEnvironmentVisible}}" class="hero-tool {{apiEnvironment.key === 'testing' ? 'is-active' : ''}}" role="button" aria-label="切换正式站或测试站" bindtap="openEnvironmentPicker">
+              <text class="cuIcon-refresh"></text>
+            </view>
+            <view class="hero-tool {{demoStatus.active_role !== 'real' ? 'is-active' : ''}}" role="button" aria-label="切换管理员或演示身份" bindtap="openDemoPicker">
+              <text class="cuIcon-peoplefill"></text><text wx:if="{{demoStatus.active_role !== 'real'}}" class="hero-tool-badge">演</text>
+            </view>
+          </view>
+        </view>
+        <view class="hero-subtitle">{{demoStatus.active_role !== 'real' ? ('当前演示身份：' + (demoStatus.active_label || '演示用户')) : '订单运营 · 自动化优先'}}</view>
+      </view>
+    </view>
+    <view wx:if="{{demoStatus.active_role === 'real'}}" class="stats">
+      <view class="stat" data-scope="todo" bindtap="selectStat"><text class="stat-value">{{counts.todo_orders || 0}}</text><text>待处理</text></view>
+      <view class="stat" data-scope="audit" bindtap="selectStat"><text class="stat-value">{{counts.audit_orders || 0}}</text><text>待审核</text></view>
+      <view class="stat" data-scope="assignment" bindtap="selectStat"><text class="stat-value">{{counts.assignment_orders || 0}}</text><text>待派单</text></view>
+      <view class="stat" data-scope="pricing" bindtap="selectStat"><text class="stat-value">{{counts.pricing_orders || 0}}</text><text>待核价</text></view>
+      <view class="stat" data-scope="refund_after_sale" bindtap="selectStat"><text class="stat-value">{{counts.refund_after_sale_orders || 0}}</text><text>退款/售后</text></view>
+      <view class="stat" data-scope="exception" bindtap="selectStat"><text class="stat-value">{{counts.exception_orders || 0}}</text><text>异常</text></view>
+    </view>
+  </view>
+
+  <view wx:if="{{workbenchError}}" class="workbench-error">
+    <text>{{workbenchError}}</text>
+    <button bindtap="retryWorkbench" disabled="{{loading || apiEnvironmentSwitching}}">重新加载</button>
+  </view>
+
+  <view wx:if="{{demoStatus.active_role !== 'real'}}" class="demo-workbench-hint" role="button" aria-label="切换回真实管理员身份" bindtap="openDemoPicker">
+    <text class="cuIcon-infofill"></text>
+    <view>当前使用{{demoStatus.active_label || '演示身份'}}，真实管理员订单已隐藏。点击切回真实管理员。</view>
+    <text class="cuIcon-right"></text>
+  </view>
+
+  <block wx:if="{{demoStatus.active_role === 'real'}}">
+    <button class="create-order-quick" disabled="{{loading || workbenchError}}" bindtap="openCreatePicker">
+      <text class="cuIcon-roundaddfill"></text>
+      <text class="create-order-main">新增订单</text>
+      <text class="create-order-desc">承接单 / 代下单</text>
+      <text class="cuIcon-right"></text>
+    </button>
+    <view class="workbench-nav">
+      <view class="tab-row">
+        <view class="tab tab-pending {{activeTab === 'todo' ? 'active' : ''}}">
+          <view class="tab-pending-label" data-scope="todo" bindtap="selectScope">待处理</view>
+          <view class="tab-pending-filter {{scope === 'operation' || scope === 'settlement' ? 'is-filtered' : ''}} {{taskFilterVisible ? 'is-open' : ''}}" role="button" aria-label="筛选待处理事项" bindtap="openTaskFilter">
+            <text class="cuIcon-filter"></text>
+            <view wx:if="{{scope === 'operation' || scope === 'settlement'}}" class="tab-filter-dot"></view>
+          </view>
+        </view>
+        <view class="tab {{activeTab === 'all' ? 'active' : ''}}" data-scope="all" bindtap="selectScope">全部订单</view>
+        <view class="tab {{activeTab === 'exception' ? 'active' : ''}}" data-scope="exception" bindtap="selectScope">异常</view>
+      </view>
+      <view wx:if="{{taskFilterVisible}}" class="task-filter-dismiss" bindtap="closeTaskFilter"></view>
+      <view wx:if="{{taskFilterVisible}}" class="task-filter-menu" catchtap="stopPropagation">
+        <view class="task-filter-option {{scope === 'todo' ? 'selected' : ''}}" data-scope="todo" bindtap="chooseTaskFilter">
+          <text>全部待处理</text><text class="task-filter-count">{{counts.todo_orders || 0}}</text>
+          <text class="cuIcon-{{scope === 'todo' ? 'roundcheckfill' : 'round'}}"></text>
+        </view>
+        <view class="task-filter-option {{scope === 'operation' ? 'selected' : ''}}" data-scope="operation" bindtap="chooseTaskFilter">
+          <text>正常待办</text><text class="task-filter-count">{{counts.operation_orders || 0}}</text>
+          <text class="cuIcon-{{scope === 'operation' ? 'roundcheckfill' : 'round'}}"></text>
+        </view>
+        <view class="task-filter-option {{scope === 'settlement' ? 'selected' : ''}}" data-scope="settlement" bindtap="chooseTaskFilter">
+          <text>结算/到账</text><text class="task-filter-count">{{counts.settlement_orders || 0}}</text>
+          <text class="cuIcon-{{scope === 'settlement' ? 'roundcheckfill' : 'round'}}"></text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{scope !== 'todo' && scope !== 'all' && scope !== 'exception' && scope !== 'operation' && scope !== 'settlement'}}" class="scope-chip-row">
+      <view class="scope-chip"><text>{{scopeTitle}}</text><text class="cuIcon-close" data-scope="{{activeTab}}" bindtap="selectScope"></text></view>
+    </view>
+
+    <view class="workbench-search">
+      <text class="cuIcon-search"></text>
+      <input placeholder-class="order-modal-placeholder admin-placeholder" value="{{searchText}}" placeholder="{{searchPlaceholder}}" confirm-type="search" bindinput="inputSearch" bindconfirm="submitSearch"/>
+      <text wx:if="{{searchText}}" class="search-clear" bindtap="clearSearch">清除</text>
+    </view>
+
+    <view wx:if="{{scope === 'settlement' || scope === 'exception' || scope === 'finance' || scope === 'refund_after_sale'}}" class="queue-note">
+      <text class="cuIcon-infofill"></text>
+      <view>{{queueHint}}</view>
+    </view>
+
+    <view wx:if="{{!loading && !workbenchError && !items.length}}" class="empty">
+      <text class="{{searchText ? 'cuIcon-search' : 'cuIcon-roundcheckfill'}}"></text>
+      <view wx:if="{{searchText}}">未找到匹配的订单，请更换关键词</view>
+      <view wx:elif="{{scope === 'all'}}">暂无订单</view>
+      <view wx:elif="{{scope === 'exception'}}">当前没有需要平台介入的异常</view>
+      <view wx:else>当前没有{{scopeTitle}}事项</view>
+    </view>
+
+    <view class="orders">
+      <view wx:for="{{items}}" wx:key="public_no" id="admin-order-{{item.public_no}}" class="order-card {{item.exception_count ? 'has-exception' : ''}}">
+        <view class="card-head">
+          <view class="order-title">{{item.title || item.category_name || '订单'}}</view>
+          <view class="weak-tag">{{item.workflow_label}}</view>
+        </view>
+        <view class="order-no">{{item.public_no}} · {{item.created_at}}</view>
+
+        <view class="card-meta">
+          <text wx:if="{{item.party_name}}">{{item.party_name}}</text>
+          <text wx:if="{{item.category_name}}">{{item.category_name}}</text>
+          <text>{{item.city}}{{item.district}}</text>
+          <text wx:if="{{item.assigned_worker_name}}">师傅：{{item.assigned_worker_name}}</text>
+        </view>
+
+        <view class="phase-box">
+          <view class="phase-copy">
+            <view class="phase-main">{{item.phase_text}}</view>
+            <view class="phase-sub">{{item.card_subtitle}}</view>
+            <view wx:if="{{item.task_count}}" class="card-task-summary">
+              <text wx:if="{{item.operation_count}}" class="summary-pill operation">正常 {{item.operation_count}}</text>
+              <text wx:if="{{item.exception_count}}" class="summary-pill exception">异常 {{item.exception_count}}</text>
+            </view>
+          </view>
+          <text wx:if="{{item.highest_priority}}" class="priority priority-{{item.highest_priority}}">{{item.highest_priority}}</text>
+        </view>
+
+        <view wx:if="{{item.tasks.length}}" class="task-list">
+          <view wx:for="{{item.tasks}}" wx:for-item="task" wx:key="task_id" class="task-chip tone-{{task.tone}}">
+            <text class="task-kind {{task.task_kind}}">{{task.kind_text}}</text>
+            <text>{{task.title}}</text>
+            <text wx:if="{{task.mode === 'attention'}}" class="task-mode">需关注</text>
+          </view>
+          <view wx:if="{{item.task_overflow_count}}" class="task-more">另有 {{item.task_overflow_count}} 项，进入详情查看</view>
+        </view>
+
+        <button class="primary-button" data-id="{{item.public_no}}" bindtap="openOrder">{{item.task_count ? '查看并处理' : '查看订单'}}</button>
+      </view>
+    </view>
+
+    <view wx:if="{{loading || loadingMore}}" class="loading"><text class="cuIcon-loading2 spin"></text>加载管理工作台</view>
+    <button wx:if="{{!loading && !loadingMore && pagination.has_more}}" class="load-more" bindtap="onReachBottom">加载更多</button>
+  </block>
+
+  <view wx:if="{{createPickerVisible}}" class="order-modal mask demo-picker-mask" catchtouchmove="true" bindtap="closeCreatePicker">
+    <view class="order-modal-dialog modal demo-picker-modal" catchtap="stopPropagation">
+      <view class="order-modal-heading modal-title">选择开单类型</view>
+      <scroll-view scroll-y enhanced class="order-modal-body"><view class="modal-subtitle">不同类型使用各自的付款与结算流程。</view>
+      <view class="demo-role-list">
+        <view class="demo-role-option {{createTarget === 'platform' ? 'selected' : ''}}" data-type="platform" bindtap="chooseCreateType">
+          <view class="demo-role-icon"><text class="cuIcon-formfill"></text></view>
+          <view class="demo-role-copy"><view class="demo-role-name">平台承接单</view><view class="demo-role-desc">平台已承接外部合同，默认使用此类型</view></view>
+          <text class="demo-role-check {{createTarget === 'platform' ? 'cuIcon-roundcheckfill' : 'cuIcon-round'}}"></text>
+        </view>
+        <view class="demo-role-option {{createTarget === 'ordinary' ? 'selected' : ''}}" data-type="ordinary" bindtap="chooseCreateType">
+          <view class="demo-role-icon"><text class="cuIcon-peoplefill"></text></view>
+          <view class="demo-role-copy"><view class="demo-role-name">普通代下单</view><view class="demo-role-desc">代真实客户录入，客户本人确认并支付预约费</view></view>
+          <text class="demo-role-check {{createTarget === 'ordinary' ? 'cuIcon-roundcheckfill' : 'cuIcon-round'}}"></text>
+        </view>
+      </view></scroll-view>
+      <view class="order-modal-footer modal-actions">
+        <button class="secondary-button" bindtap="closeCreatePicker">取消</button>
+        <button class="primary-button modal-primary" bindtap="confirmCreateOrder">下一步</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{demoPickerVisible}}" class="order-modal mask demo-picker-mask" catchtouchmove="true" bindtap="closeDemoPicker">
+    <view class="order-modal-dialog modal demo-picker-modal" catchtap="stopPropagation">
+      <view class="order-modal-heading modal-title">切换演示身份</view>
+      <scroll-view scroll-y enhanced class="order-modal-body"><view class="modal-subtitle">只影响当前小程序会话，不修改真实账号、微信 OpenID 或其他管理员会话。</view>
+
+      <view class="demo-role-list">
+        <view class="demo-role-option {{demoTargetRole === 'real' ? 'selected' : ''}}" data-role="real" bindtap="chooseDemoRole">
+          <view class="demo-role-icon real"><text class="cuIcon-commandfill"></text></view>
+          <view class="demo-role-copy">
+            <view class="demo-role-name">真实管理员</view>
+            <view class="demo-role-desc">恢复真实管理员工作台和业务数据</view>
+          </view>
+          <text class="demo-role-check {{demoTargetRole === 'real' ? 'cuIcon-roundcheckfill' : 'cuIcon-round'}}"></text>
+        </view>
+
+        <view wx:for="{{demoStatus.options}}" wx:key="role" class="demo-role-option {{demoTargetRole === item.role ? 'selected' : ''}} {{(!demoStatus.enabled || !item.available) ? 'disabled' : ''}}" data-role="{{item.role}}" bindtap="chooseDemoRole">
+          <view class="demo-role-icon"><text class="cuIcon-peoplefill"></text></view>
+          <view class="demo-role-copy">
+            <view class="demo-role-name">{{item.label}}</view>
+            <view class="demo-role-desc">{{!demoStatus.enabled ? '后台未开启演示数据' : (!item.available ? '该演示身份暂不可用' : '进入对应身份的独立演示数据')}}</view>
+          </view>
+          <text class="demo-role-check {{demoTargetRole === item.role ? 'cuIcon-roundcheckfill' : 'cuIcon-round'}}"></text>
+        </view>
+      </view>
+
+      <view wx:if="{{demoStatus.seed_version}}" class="demo-picker-version">演示数据版本：{{demoStatus.seed_version}}</view></scroll-view>
+      <view class="order-modal-footer modal-actions">
+        <button class="secondary-button" bindtap="closeDemoPicker" disabled="{{demoSwitching}}">取消</button>
+        <button class="primary-button modal-primary" bindtap="confirmDemoIdentity" loading="{{demoSwitching}}" disabled="{{demoSwitching || demoTargetRole === demoStatus.active_role}}">{{demoTargetRole === demoStatus.active_role ? '当前身份' : '确认切换'}}</button>
+      </view>
+    </view>
+  </view>
+</view>
+<inapp-notice custom-nav="{{true}}"></inapp-notice>
