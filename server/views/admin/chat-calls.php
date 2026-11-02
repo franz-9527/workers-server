@@ -79,9 +79,9 @@ $decision=$current['decisions'][(string)$pool['id']]??(new \WorkerAdmin\Domain\C
 <?php foreach(['total'=>'免费总额（登记值）','official_used'=>'官方已用（人工录入）','platform_used'=>'本站累计估算','remaining'=>'预算估算剩余'] as $key=>$title): ?><div><dt><?= e($title) ?></dt><dd><?= $quota[$key]===null?'尚未录入 / 读取':e($minutes($quota[$key])).' 分钟' ?></dd></div><?php endforeach; ?>
 </dl><p class="admin-text-muted"><?= !$quota['usage_known']?'官方已用量尚未录入，剩余量不能确认；可先保存，核对后在「更新官方用量」录入。':(!$quota['verified']?'以上是登记和估算值，权益尚待确认；当前是否可分配请看下方状态。':'官方用量为人工录入，本站估算与活动预占会持续影响余量。') ?></p>
 <p>周期：<?= e(date('Y-m-d H:i:s',$facts['valid_from'])) ?> 至 <?= e(date('Y-m-d H:i:s',$facts['expires_at'])) ?></p>
-<table class="admin-table"><tbody>
+<details><summary>预算与预占明细</summary><table class="admin-table"><tbody>
 <?php foreach(['free_total'=>'官方免费总额','budget_limit'=>'平台预算上限','official_used'=>'官方确认已用','local_uncovered'=>'估算待对账','reserved'=>'活动／未知预占','safety_margin'=>'安全余量','external_uncertainty'=>'外部共享消耗余量'] as $field=>$label): ?><tr><th><?= e($label) ?></th><td><?= $field==='official_used'&&!$quota['usage_known']?'尚未录入':e($minutes($facts[$field])).' 标准分钟' ?></td></tr><?php endforeach; ?>
-<tr><th>当前安全可准入量</th><td><?= e($minutes($decision['available_units'])) ?> 折算分钟</td></tr></tbody></table>
+<tr><th>当前安全可准入量</th><td><?= e($minutes($decision['available_units'])) ?> 折算分钟</td></tr></tbody></table></details>
 <p>官方统计截止：<?= e(date('Y-m-d H:i:s',(int)$pool['observation_at'])) ?> · 完整覆盖水位：<?= (int)$pool['covered_through']>0?e(date('Y-m-d H:i:s',(int)$pool['covered_through'])):'尚未导入' ?> · 人工核验</p>
 <?php if($canManage): ?>
 <details><summary>调整本池使用预算</summary><form method="post" action="<?= e(admin_url('chat.calls',['section'=>$section])) ?>"><?= csrf()->input() ?><input type="hidden" name="revision" value="<?= e($revision) ?>"><input type="hidden" name="_action" value="budget"><input type="hidden" name="pool_id" value="<?= e((string)$pool['id']) ?>"><input type="hidden" name="pool_revision" value="<?= e((string)$pool['revision']) ?>">

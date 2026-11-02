@@ -153,6 +153,7 @@ const file=(text,name='核验资料.txt')=>({name,mimeType:'text/plain',buffer:B
   const {context,page}=await open('returning')
   assert.equal(await page.locator('[name="free_total"]').inputValue(),'100.00')
   assert.equal(await page.locator('[name="official_used"]').inputValue(),'2.00')
+  assert.match(await page.locator('[data-quota-preview]').textContent(),/92.00/)
   assert.match(await page.locator('a[href*="#chat-pool-1"]').first().textContent(),/查看/)
   checks++;await context.close()
  }

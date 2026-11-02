@@ -97,8 +97,13 @@
   if (!raw('official_used')) {
    output.textContent = '登记总额 '+total+' 标准分钟；官方已用量未录入，预算剩余待确认。'; return;
   }
-  const remaining = Math.max(0,Math.min(total,budget)-used-Number(raw('safety_margin')||0)-Number(raw('external_uncertainty')||0));
-  output.textContent = '登记总额 '+total+' 标准分钟；按表单输入计算的预算参考剩余 '+remaining.toFixed(2)+' 分钟。保存后还会扣除本站待对账估算与活动预占。';
+  const saved = presets[select.value] || {};
+  const samePool = saved.pool_id && saved.app_id === raw('app_id') && saved.scope_type === scope.value
+   && (scope.value !== 'account' || saved.scope_account === account.value) && saved.cycle_key === raw('cycle_key');
+  const pending = samePool ? Number(saved.local_estimate_minutes || 0) + Number(saved.reserved_minutes || 0) : 0;
+  const remaining = Math.max(0,Math.min(total,budget)-used-Number(raw('safety_margin')||0)-Number(raw('external_uncertainty')||0)-pending);
+  output.textContent = '登记总额 '+total+' 标准分钟；预算估算剩余 '+remaining.toFixed(2)+' 分钟。'
+   + (samePool ? '已计入当前记录的本站待对账估算与活动预占。' : '新资源参考值；实际以保存后的记录和最新预占为准。');
  }
  ['free_total','budget_limit','official_used','safety_margin','external_uncertainty'].forEach(name => form.elements.namedItem(name).addEventListener('input', updateQuota));
  updateScope(); updateQuota();

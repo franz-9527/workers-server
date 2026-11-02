@@ -36,7 +36,8 @@ final class CallQuotaDisplay
             $seen[$provider]=true;$scope=CallQuotaScope::describe($provider,(string)$row['scope_key']);$summary=self::summary($row);
             $next=['app_id'=>(string)$profile['app_id'],'scope_type'=>$scope['type'],'scope_account'=>$scope['account'],
                 'cycle_key'=>(string)$row['cycle_key'],'valid_from'=>date('Y-m-d\TH:i:s',(int)$facts['valid_from']),
-                'expires_at'=>date('Y-m-d\TH:i:s',(int)$facts['expires_at']),'pool_id'=>(string)$row['id']];
+                'expires_at'=>date('Y-m-d\TH:i:s',(int)$facts['expires_at']),'pool_id'=>(string)$row['id'],
+                'local_estimate_minutes'=>self::input((int)$row['local_uncovered']),'reserved_minutes'=>self::input((int)$row['reserved_units'])];
             foreach(['free_total','budget_limit','safety_margin','external_uncertainty'] as $key)$next[$key]=self::input((int)$facts[$key]);
             $next['official_used']=$summary['usage_known']?self::input((int)$row['official_used']):'';
             foreach(['audio','video'] as $media)foreach(['numerator'=>'rate_numerator','denominator'=>'rate_denominator','quantum'=>'quantum_seconds'] as $input=>$key)

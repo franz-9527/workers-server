@@ -41,7 +41,7 @@ final class ChatCallsAdminModule implements AdminModule
                 }else{
                     $changed=$service->change($_POST,(int)$user['id'],(string)$user['role']);
                     unset($_SESSION['chat_call_connection_report']);
-                                        if(($_POST['_action']??'')==='pool'&&is_array($changed)&&!empty($changed['pool_id'])){
+                    if(($_POST['_action']??'')==='pool'&&is_array($changed)&&!empty($changed['pool_id'])){
                         \flash('success','资源已登记；下方显示刚保存的记录及用量，未确认事项会单独标注。');
                         \redirect(\admin_url('chat.calls',['section'=>'resources','page'=>1]).'#chat-pool-'.$changed['pool_id']);return;
                     }
