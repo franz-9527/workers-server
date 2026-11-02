@@ -90,7 +90,7 @@ foreach(['register','account','legacy','readonly','resources','active'] as $vari
  if($variant==='readonly')ck($xp->query('//*[@id="chat-call-registration"]')->length===0,'read-only view has no registration form');
  if($variant==='resources')ck($xp->query('//*[@data-chat-evidence]')->length===2,'import and reverify use separate evidence controls');
  if($variant==='active')ck($xp->query('//*[@data-chat-evidence]')->length===1,'stop confirmation uses evidence generator');
- file_put_contents($dir.'/call-scope-'.$variant.'.html','<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>'.$css.'</style><body class="admin-body"><main class="admin-content" style="max-width:1200px;margin:auto">'.$html.'</main><script src="/server/assets/admin.js"></script><script src="/server/assets/chat-call-settings.js"></script></body></html>');
+ file_put_contents($dir.'/call-scope-'.$variant.'.html','<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>'.$css.'</style><body class="admin-body"><main class="admin-content" style="max-width:1200px;margin:auto">'.$html.'</main><script src="/server/assets/admin.js"></script></body></html>');
 }
 foreach($passed as $label)echo 'PASS '.$label."\n";
 echo 'PASS TOTAL '.count($passed)."\n";
