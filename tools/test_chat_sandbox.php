@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+ob_start(); // Buffer test progress while exercising the real HTTP controller headers.
 if(getenv('CHAT_SANDBOX_TEST')!=='1'||basename(dirname(__DIR__))!=='workers-server')throw new RuntimeException('Independent test repository required');
 $root=dirname(__DIR__);
 spl_autoload_register(static function($class)use($root){if(str_starts_with($class,'WorkerAdmin\\')){$p=$root.'/server/app/'.str_replace('\\','/',substr($class,12)).'.php';if(is_file($p))require_once $p;}});
