@@ -55,8 +55,8 @@ try{
  check(!str_contains(json_encode($blocked),$encoded),'availability never leaks signing seed');
  $readyRecovery=new class implements \WorkerAdmin\Contracts\ChatRecoveryReadiness{public function ensureReady(array $config,string $environment):void{}};
  $readyIssuer=new \WorkerAdmin\Application\Chat\ChatCredentialIssuer($db,$config,'testing',$cipher,$readyRecovery);
- check($readyIssuer->availabilityMini(str_repeat('e',64))===['enabled'=>true,'transport'=>'go'],'complete configuration advertises real Go chat');
- check(isset($readyIssuer->exchangeMini(str_repeat('e',64))['access_token']),'advertised ready configuration can issue credentials');
+ check($readyIssuer->availabilityMini(str_repeat('e',64))['reason']==='CHAT_GO_NOT_READY','signing and recovery alone never advertise absent Go as ready');
+ denied(fn()=>$readyIssuer->exchangeMini(str_repeat('e',64)),503);
  putenv('CHAT_TEST_SIGNING_SEED');
  check($readyIssuer->readiness()['reason']==='CHAT_SIGNING_NOT_CONFIGURED','removing seed immediately revokes ready status');
  check($issuer->availabilityMini(str_repeat('a',64))['transport']==='simulation','simulation remains available without real signing config');
