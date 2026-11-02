@@ -7,7 +7,9 @@ $selectedKeys=is_array($values['members']??null)?$values['members']:[];
 <?php if(!$ready): ?><div class="admin-alert admin-alert--warning">请先在后台执行数据库升级至 2.7.2，创建会话测试所需的独立数据表。</div>
 <?php else: ?>
 <section class="admin-card admin-mb-3"><div class="admin-card__body">
-<div class="admin-inline-actions"><details class="chat-testing-create" <?= ($values['_action']??'')==='create'?'open':'' ?>><summary class="admin-btn admin-btn--primary">创建测试会话</summary>
+<div class="chat-testing-toolbar"><h2>会话管理</h2><form method="post" action="<?= e(admin_url('chat.testing')) ?>" onsubmit="return confirm('将删除全部新旧测试会话、成员和消息，确定清空？')">
+<?= csrf()->input() ?><input type="hidden" name="_action" value="clear_all"><button class="admin-btn admin-btn--danger" type="submit">一键清空全部会话测试</button></form></div>
+<details class="chat-testing-create" <?= ($values['_action']??'')==='create'?'open':'' ?>><summary class="admin-btn admin-btn--primary">创建测试会话</summary>
 <form method="post" action="<?= e(admin_url('chat.testing')) ?>" class="admin-mt-2">
 <?= csrf()->input() ?><input type="hidden" name="_action" value="create"><input type="hidden" name="request_key" value="<?= e($requestKey) ?>">
 <label class="admin-field">会话名称<input name="title" class="admin-control" maxlength="60" required value="<?= e(is_string($values['title']??null)?$values['title']:'') ?>" placeholder="例如：客户与师傅沟通测试"></label>
@@ -17,8 +19,6 @@ $selectedKeys=is_array($values['members']??null)?$values['members']:[];
 <?php $hasActor=false;foreach($actors as $actor): if($actor['group']!==$group)continue;$hasActor=true; ?><label><input type="checkbox" name="members[]" value="<?= e($actor['key']) ?>" <?= in_array($actor['key'],$selectedKeys,true)?'checked':'' ?>><?= e($actor['name']) ?></label><?php endforeach; ?>
 <?php if(!$hasActor): ?><small class="admin-text-muted">尚无可用身份</small><?php endif; ?></fieldset><?php endforeach; ?>
 </div><button class="admin-btn admin-btn--primary" type="submit">创建会话</button></form></details>
-<form method="post" action="<?= e(admin_url('chat.testing')) ?>" onsubmit="return confirm('将删除全部新旧测试会话、成员和消息，确定清空？')">
-<?= csrf()->input() ?><input type="hidden" name="_action" value="clear_all"><button class="admin-btn admin-btn--danger" type="submit">一键清空全部会话测试</button></form></div>
 <p class="admin-text-muted admin-mt-2">小程序在管理员工作台切换到对应演示身份后，进入消息页即可查看和回复，无需短期入口。当前仅测试文字、未读、已读、撤回和会话偏好。</p>
 </div></section>
 <div class="chat-testing-workspace">

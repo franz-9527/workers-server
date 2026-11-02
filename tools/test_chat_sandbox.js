@@ -15,6 +15,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),{chromium}=requ
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)
   assert.equal(await page.evaluate(()=>typeof window.unsafe),'undefined')
   await page.locator('.chat-testing-create > summary').click()
+  assert.ok((await page.locator('[name="title"]').boundingBox()).width>width*0.7,'create form keeps full available width')
+  assert.ok((await page.locator('.chat-testing-workspace>aside').boundingBox()).height<=(width<=760?321:721),'room list remains bounded')
   await page.locator('[name="title"]').fill('多人测试')
   for(const key of ['admin:1','admin:2','user:11','user:22'])await page.locator('[name="members[]"][value="'+key+'"]').check()
   await page.screenshot({path:'test-artifacts/sandbox-'+width+'-'+colorScheme+'.png',fullPage:true})
