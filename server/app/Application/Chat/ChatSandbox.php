@@ -236,7 +236,11 @@ final class ChatSandbox
             $after=0;$before=PHP_INT_MAX;$changes=$path==='messages/changes';$forward=in_array($path,['messages/sync','messages/changes'],true);
             if($forward)$after=$this->position($i,$room,$input['cursor']??null,$changes?'changes':'sync');
             if($path==='messages/history')$before=$this->position($i,$room,$input['cursor']??null,'history');
-            if($path==='messages/locate')$before=$this->id($input['message_id']??null)+26;
+            if($path==='messages/locate'){
+                $target=$this->id($input['message_id']??null);
+                if(!$this->db->fetchValue('SELECT id FROM chat_sandbox_messages WHERE room_id=:room AND id=:id',['room'=>$rid,'id'=>$target]))$this->fail('消息不属于当前测试会话或已清理',404);
+                $before=$target+26;
+            }
             $field=$changes?'change_seq':'id';$rows=$this->db->fetchAll('SELECT * FROM chat_sandbox_messages WHERE room_id=:room AND '.$field.'>:after AND id<:before ORDER BY '.$field.($forward?' ASC':' DESC').' LIMIT 51',['room'=>$rid,'after'=>$after,'before'=>$before]);
             $more=count($rows)>50;$rows=array_slice($rows,0,50);if(!$forward)$rows=array_reverse($rows);
             $max=(int)($this->db->fetchValue('SELECT MAX(id) FROM chat_sandbox_messages WHERE room_id=:id',['id'=>$rid])??0);

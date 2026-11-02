@@ -61,6 +61,7 @@ ck($sandbox->send($room,'admin:2','后台管理员测试','key-one',1)===$sent,'
 deny(fn()=>$sandbox->send($room,'admin:2','changed','key-one',1),409);
 deny(fn()=>$sandbox->send($room,'user:33','not a member','key-outside',1),403);
 ck((int)$db->fetchValue('SELECT operated_by FROM chat_sandbox_messages WHERE id=:id',['id'=>$sent['message_id']])===1,'actual operating administrator is recorded separately from chosen sender');
+$foreign=$sandbox->send($admins,'admin:1','另一会话的序号间隙','other-room',1);
 $sim=new ChatSimulation($db);
 foreach([['a',11],['b',22],['c',33]] as $index=>$case)$db->execute("INSERT INTO login_sessions VALUES(:id,99,:hash,'active',UTC_TIMESTAMP()+INTERVAL 1 HOUR,:actor,NULL,NULL,NULL)",['id'=>$index+1,'hash'=>hash('sha256',str_repeat($case[0],64)),'actor'=>$case[1]]);
 $customer=$sim->identity(str_repeat('a',64));$worker=$sim->identity(str_repeat('b',64));$outside=$sim->identity(str_repeat('c',64));
@@ -77,6 +78,7 @@ ck(count($digests['items'])===2,'demo sees only rooms where it is a member');
 $page=$sim->execute($customer,'conversations/bootstrap',['conversation_id'=>$wire]);
 ck($page['conversation_mode']==='collaboration'&&$page['order_context']['simulation']===true&&$page['order_context']['public_no']==='','group is labeled as test with no real order link');
 ck($page['messages'][0]['sender_id']==='7000000000000000002','administrator identity uses a separate numeric display namespace');
+deny(fn()=>$sim->execute($customer,'messages/locate',['conversation_id'=>$wire,'message_id'=>$foreign['message_id']]),404);
 $profiles=$sim->participants($customer,[['conversation_id'=>$wire,'policy_version'=>'1']]);
 ck(count($profiles['items'][0]['members'])===4&&$profiles['items'][0]['members'][0]['simulation']===true,'mini participants include all explicitly selected roles');
 deny(fn()=>$sim->execute($outside,'conversations/bootstrap',['conversation_id'=>$wire]),403);
@@ -117,6 +119,7 @@ foreach(['normal','failed','missing'] as $variant){
  ck(!str_contains($html,'test-center.entry-token'),'chat testing contains no temporary-entry action');
  file_put_contents($dir.'/sandbox-'.$variant.'.html','<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>'.$css.'</style><body class="admin-body"><main class="admin-content" style="max-width:1200px;margin:auto">'.$html.'</main></body></html>');
 }
+$room=$sandbox->create($input,1)['id']; // Included PHP view uses its own loop variable named room.
 $ready=true;$values=[];
 file_put_contents($dir.'/sandbox-native.json',json_encode(['page'=>$page,'profiles'=>$profiles,'digests'=>$digests],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR));
 $beforeUsers=$db->fetchAll('SELECT * FROM users ORDER BY id');$beforeAdmins=$db->fetchAll('SELECT * FROM admin_users ORDER BY id');
