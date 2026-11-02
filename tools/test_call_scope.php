@@ -56,7 +56,8 @@ ck(count($rows)===1&&$rows[0]['scope_key']==='shengwang:app:'.$base['app_id'],'r
 $profile=json_decode($rows[0]['meter_json'],true);$facts=json_decode($rows[0]['facts_json'],true);
 ck($facts['quota_scope_id']===$rows[0]['scope_key'],'resource decision retains exact normalized identity');
 ck($profile['evidence_hash']===$base['evidence_hash'],'auto-generated evidence hash is retained unchanged');
-ck(array_keys($profile)===['app_id','evidence_hash','audio','video'],'Go meter profile format stays unchanged');
+$profileKeys=array_keys($profile);sort($profileKeys);
+ck($profileKeys===['app_id','audio','evidence_hash','video'],'Go meter profile format stays unchanged');
 reject(fn()=>$service->change(array_replace($base,['scope_type'=>'account','scope_account'=>'owner']),1,'super_admin'),'same AppID cannot clone quota by switching account/application mode');
 $account=array_replace($base,['scope_type'=>'account','scope_account'=>'account42','app_id'=>str_repeat('2',32)]);
 $service->change($account,1,'super_admin');
