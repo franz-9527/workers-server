@@ -1,0 +1,20 @@
+<view class="call-page {{historyPage ? 'call-history-page' : ''}}">
+ <block wx:if="{{historyPage}}"><view class="call-title">通话记录</view><view wx:for="{{history}}" wx:key="call_id" class="history-row"><view>{{item.media==='video'?'视频通话':'语音通话'}} · {{item.label}}</view><text>{{item.time}}</text></view><view wx:if="{{!history.length}}">暂无通话记录</view><button wx:if="{{hasMoreHistory}}" bindtap="loadHistory">查看更多</button><button bindtap="back">返回</button></block>
+ <block wx:else><view class="call-person"><image class="call-avatar" src="{{peerAvatar}}" mode="aspectFill"/><view class="call-title">{{peerName}}</view><view class="call-kind">{{video?'视频通话':'语音通话'}}</view></view>
+ <view class="call-status" aria-live="polite">{{status}}</view>
+ <view wx:if="{{notice}}" class="call-notice">{{notice}}</view>
+ <view wx:if="{{isNative && call && canHangup}}" class="call-hint">请在微信通话窗口中接听、静音或挂断</view>
+ <view wx:if="{{!isNative}}" class="call-stage {{video ? 'is-video' : 'is-audio'}}">
+  <live-player wx:if="{{remoteURL}}" id="call-player" src="{{remoteURL}}" mode="RTC" autoplay sound-mode="{{speaker?'speaker':'ear'}}" orientation="vertical" object-fit="contain" bindstatechange="playerState" bindnetstatus="playerNet" />
+  <live-pusher wx:if="{{localURL}}" id="call-pusher" class="{{video?'local-video':'audio-pusher'}}" url="{{localURL}}" mode="RTC" autopush enable-camera="{{video}}" enable-mic="{{!muted}}" muted="{{muted}}" beauty="0" whiteness="0" aspect="9:16" min-bitrate="200" max-bitrate="1000" video-width="480" video-height="640" bindstatechange="pusherState" bindnetstatus="pusherNet" />
+ </view>
+ <view class="call-controls">
+  <button wx:if="{{canAccept}}" class="call-control accept" bindtap="accept" disabled="{{busy}}" aria-label="接听通话"><view class="call-control-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>接听</text></button>
+  <button wx:if="{{canHangup && !canAccept && !isNative}}" class="call-control {{muted ? 'is-selected' : ''}}" bindtap="mute" aria-label="{{muted ? '取消静音' : '静音'}}" aria-pressed="{{muted}}"><view class="call-control-icon"><text class="chat-icon chat-icon-mic" aria-hidden="true"></text></view><text>{{muted?'取消静音':'静音'}}</text></button>
+  <button wx:if="{{canHangup && !canAccept && !isNative}}" class="call-control {{speaker ? 'is-selected' : ''}}" bindtap="speaker" aria-label="{{speaker ? '切换听筒' : '切换扬声器'}}"><view class="call-control-icon"><text class="chat-icon chat-icon-speaker" aria-hidden="true"></text></view><text>{{speaker?'扬声器':'听筒'}}</text></button>
+  <button wx:if="{{canHangup && !canAccept && video && !isNative}}" class="call-control" bindtap="switchCamera" aria-label="切换摄像头"><view class="call-control-icon"><text class="chat-icon chat-icon-switch" aria-hidden="true"></text></view><text>翻转</text></button>
+  <button wx:if="{{canHangup}}" class="call-control hangup" bindtap="hangup" aria-label="{{canAccept ? '拒接通话' : '挂断通话'}}"><view class="call-control-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>{{canAccept?'拒接':'挂断'}}</text></button>
+  <button wx:if="{{!canHangup}}" bindtap="back">返回</button>
+ </view>
+ </block>
+</view>

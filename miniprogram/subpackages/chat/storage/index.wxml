@@ -1,0 +1,9 @@
+<view class="cache-page">
+ <view class="cache-card"><view class="cache-label">聊天缓存已占用</view><view class="cache-total">{{total}}</view><view class="cache-hint">清理只释放本设备空间，不删除云端消息，不影响已读状态。</view></view>
+ <view class="cache-card"><view class="cache-title">选择清理类型</view><view class="cache-options"><button wx:for="{{kinds}}" wx:key="key" class="cache-choice {{item.selected ? 'selected' : ''}}" data-kind="{{item.key}}" bindtap="toggle" disabled="{{busy}}">{{item.selected ? '✓ ' : ''}}{{item.name}}</button></view><view class="cache-hint">默认保留文字，可自行选择。图片、语音和文字按后台保存设置重新获取；云端已清理的视频清除本机缓存后将无法再次播放，封面与抽帧仍保留。</view><button class="cache-action" bindtap="clearSelected" disabled="{{busy || loading || !items.length}}">{{busy ? '正在清理…' : '清理所选类型'}}</button></view>
+ <view wx:if="{{error}}" class="cache-card"><view role="alert">{{error}}</view><button bindtap="refresh" disabled="{{busy}}">重试</button></view>
+ <view wx:elif="{{loading}}" class="cache-card">正在统计缓存…</view>
+ <view wx:elif="{{!items.length}}" class="cache-card">暂无聊天缓存</view>
+ <view wx:else class="cache-card"><view class="cache-title">按会话与类型清理</view><view wx:for="{{items}}" wx:key="key" class="cache-row"><view class="cache-copy"><view>{{item.title}}</view><view class="cache-hint">{{item.size}}</view></view><button size="mini" data-key="{{item.key}}" bindtap="clearOne" disabled="{{busy}}">清理</button></view><button wx:if="{{hasMore}}" bindtap="more" disabled="{{busy}}">查看更多</button></view>
+</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>
