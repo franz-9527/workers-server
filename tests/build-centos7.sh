@@ -3,8 +3,16 @@ set -euo pipefail
 PY=/opt/python/cp313-cp313/bin/python
 "$PY" --version
 getconf GNU_LIBC_VERSION
-yum install -y libjpeg-turbo-devel zlib-devel libwebp-devel
-"$PY" -m pip install 'setuptools==80.9.0' 'wheel==0.45.1' 'packaging==25.0' 'scikit-build-core==0.11.6' 'nanobind==2.9.2' 'cmake==3.31.6' 'ninja==1.11.1.4'
+yum install -y libjpeg-turbo-devel zlib-devel
+"$PY" -m pip install 'setuptools==80.9.0' 'wheel==0.45.1' 'packaging==25.0' 'scikit-build-core==0.11.6' 'nanobind==2.9.2' 'pybind11==3.0.2' 'cmake==3.31.6' 'ninja==1.11.1.4'
+curl --fail --location --proto '=https' --tlsv1.2 https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz -o /tmp/libwebp-1.6.0.tar.gz
+echo 'e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564  /tmp/libwebp-1.6.0.tar.gz' | sha256sum -c -
+tar -xzf /tmp/libwebp-1.6.0.tar.gz -C /tmp
+(cd /tmp/libwebp-1.6.0 && ./configure --prefix=/tmp/chat-native --enable-libwebpmux --enable-libwebpdemux --disable-static --disable-gl --disable-sdl && make -j2 && make install)
+export CFLAGS="-I/tmp/chat-native/include"
+export LDFLAGS="-L/tmp/chat-native/lib"
+export LD_LIBRARY_PATH="/tmp/chat-native/lib:${LD_LIBRARY_PATH:-}"
+export PKG_CONFIG_PATH="/tmp/chat-native/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 mkdir -p /tmp/chat-sdists /tmp/chat-built wheelhouse
 "$PY" -m pip download --no-deps --no-build-isolation --no-binary=:all: --require-hashes -r chat/helpers/images/requirements-py313-sources.lock -d /tmp/chat-sdists
 for src in /tmp/chat-sdists/*.tar.gz; do
