@@ -192,7 +192,12 @@ const file=(text,name='核验资料.txt')=>({name,mimeType:'text/plain',buffer:B
   assert.equal(await page.locator('nav a[href*="section=credentials"]').count(),0)
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false)
   const inputs=await form.locator('.chat-call-config-group input:not([type="checkbox"]):not([type="hidden"])').evaluateAll(nodes=>nodes.map(n=>({w:n.clientWidth,top:n.getBoundingClientRect().top})))
-  if(width>=768)assert.ok(inputs[0].w<600,'credential fields use compact columns')
+  if(width>=768){
+   assert.ok(inputs[0].w<600,'credential fields use compact columns')
+   assert.ok(Math.abs(inputs[0].top-inputs[1].top)<2,'credential fields form two aligned columns')
+   const buttonTops=await page.locator('#chat-call-diagnostics .admin-inline-actions button').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top))
+   assert.ok(Math.max(...buttonTops)-Math.min(...buttonTops)<2,'diagnostic buttons stay together without stretched form columns')
+  }
   await page.screenshot({path:'test-artifacts/call-scope-settings-'+width+'-'+colorScheme+'.png',fullPage:true})
   await form.locator('button[type="submit"]').click();await page.waitForTimeout(100)
   assert.equal(sent.length,1)
