@@ -1,0 +1,7 @@
+.offline-collection-notice{box-sizing:border-box;display:flex;align-items:flex-start;gap:18rpx;margin:16rpx 24rpx;padding:22rpx 24rpx;border:1rpx solid #efd5a1;border-radius:18rpx;background:#fff7e8;color:#785728}
+.offline-collection-icon{flex:none;margin-top:4rpx;color:#ce851f;font-size:38rpx}
+.offline-collection-copy{flex:1;min-width:0}
+.offline-collection-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12rpx;flex-wrap:wrap;font-size:26rpx;font-weight:600}
+.offline-collection-amount{color:#b76a12;font-size:34rpx;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.offline-collection-description{margin-top:8rpx;color:#977747;font-size:23rpx;line-height:1.55}
+@media(prefers-color-scheme:dark){.offline-collection-notice{border-color:#735a32;background:#342c1f;color:#ebd2a6}.offline-collection-icon,.offline-collection-amount{color:#f1b967}.offline-collection-description{color:#c2ab86}}

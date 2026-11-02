@@ -1,0 +1,12 @@
+<view wx:if="{{active && health}}" class="subscription-hint" role="status" aria-live="polite">
+ <text class="cuIcon-weixin subscription-hint-icon" aria-hidden="true"></text>
+ <view class="subscription-hint-text">{{hintText}}</view>
+ <view class="subscription-hint-actions">
+  <view class="subscription-hint-control {{pending ? 'is-pending' : ''}}" role="button" aria-disabled="{{pending}}" aria-label="{{hintText + '，' + actionText}}" hover-class="subscription-hint-hover" bindtap="open">{{pending ? '处理中' : actionText}}</view>
+  <view wx:if="{{health.action === 'top_up'}}" class="subscription-hint-control subscription-hint-settings {{pending ? 'is-pending' : ''}}" role="button" aria-disabled="{{pending}}" aria-label="微信提醒设置" hover-class="subscription-hint-hover" bindtap="openSettings">设置</view>
+ </view>
+</view>
+<view wx:if="{{active && reviewPending}}" class="review-waiting-card">
+ <view class="review-waiting-icon"><text class="cuIcon-timefill"></text></view>
+ <view class="review-waiting-copy"><text class="review-waiting-title">已进入审核，请耐心等待</text><text class="review-waiting-desc">审核期间仍可修改资料，保存会更新本次审核资料。</text></view>
+</view>
