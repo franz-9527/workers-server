@@ -9,7 +9,7 @@ use WorkerAdmin\Core\Database;
 use WorkerAdmin\Application\Chat\ChatCallAdministration;
 function app_config($key,$fallback=null){return $fallback;}
 function ck($ok,$label){if(!$ok)throw new RuntimeException($label);$GLOBALS['passed'][]=$label;}
-function reject($fn,$label){try{$fn();}catch(RuntimeException $e){ck(true,$label);return;}throw new RuntimeException('accepted: '.$label);}
+function reject($fn,$label){try{$fn();}catch(RuntimeException|InvalidArgumentException $e){ck(true,$label);return;}throw new RuntimeException('accepted: '.$label);}
 function e($v){return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
 function admin_url($route,$params=[]){return '/admin/?'.http_build_query(['route'=>$route]+$params);}
 function csrf(){return new class{function input(){return '<input type="hidden" name="csrf" value="fixture">';}};}
