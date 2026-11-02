@@ -154,7 +154,7 @@ function json_response($body,$status=200){$GLOBALS['jsonResult']=[$body,$status]
 $_SERVER['REQUEST_METHOD']='GET';$_GET=['room'=>$new];$_POST=[];
 $csrfTest=new TestCsrf();$module=new \WorkerAdmin\Http\Admin\Modules\ChatTestingAdminModule($db,new TestAuth(),$csrfTest);
 $module->dispatch('chat.testing');ck($rendered['ready']&&$rendered['activeMenu']==='chat.testing','actual controller exposes the migrated ready workspace');
-ck(isset($rendered['chatState'])&&!isset($rendered['data'])&&$rendered['chatState']['room']['id']===$new,'controller sends distinct page state instead of the reserved renderer parameter');
+ck(isset($rendered['chatState'])&&!isset($rendered['data'])&&(string)$rendered['chatState']['room']['id']===$new,'controller sends distinct page state instead of the reserved renderer parameter');
 ck(str_contains($renderedHTML,'chat-testing-log')&&str_contains($renderedHTML,'演示客户甲'),'actual controller payload reaches real template renderer');
 deny(fn()=>(new \WorkerAdmin\Http\Admin\Modules\ChatTestingAdminModule($db,new TestAuth('operations'),$csrfTest))->dispatch('chat.testing'),403);
 $_SERVER['REQUEST_METHOD']='POST';$_POST=['_action'=>'clear_all'];$csrfTest->deny=true;deny(fn()=>$module->dispatch('chat.testing'),403);
