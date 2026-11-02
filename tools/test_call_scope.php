@@ -9,6 +9,7 @@ use WorkerAdmin\Core\Database;
 use WorkerAdmin\Application\Chat\ChatCallAdministration;
 function app_config($key,$fallback=null){return $GLOBALS['fixtureAppConfig'][$key]??$fallback;}
 function setting($key,$fallback=null){return $fallback;}
+function base_path(string $path=''):string{if(!empty($GLOBALS['fixtureBreakDiagnostics']))throw new RuntimeException('fixture diagnostic unavailable');return dirname(__DIR__).'/server'.($path!==''?'/'.$path:'');}
 function ck($ok,$label){if(!$ok)throw new RuntimeException($label);$GLOBALS['passed'][]=$label;}
 function reject($fn,$label){try{$fn();}catch(RuntimeException|InvalidArgumentException $e){ck(true,$label);return;}throw new RuntimeException('accepted: '.$label);}
 function e($v){return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
@@ -178,10 +179,10 @@ $runtime->save(['ffprobe_binary'=>'/usr/bin/ffprobe'],1,'super_admin');
 ck($runtime->configuration()['asr_profile']==='disabled'&&$runtime->configuration()['asr_api_name']==='','explicit ASR disable persists across later saves');
 $runtime->save(['asr_profile'=>'sentence_asr'],1,'super_admin');
 reject(fn()=>$runtime->save(['asr_profile'=>'disabled'],2,'operations'),'ASR changes remain super-admin only');
-$GLOBALS['fixtureAppConfig']['database']=['host'=>'203.0.113.1'];
+$GLOBALS['fixtureBreakDiagnostics']=true;
 reject(fn()=>$runtime->status([]),'runtime diagnostic may fail independently of saved configuration');
 ck($runtime->configuration()['asr_api_name']==='SentenceASR','saved form readback survives a capability diagnostic failure');
-unset($GLOBALS['fixtureAppConfig']['database']);
+unset($GLOBALS['fixtureBreakDiagnostics']);
 
 $settingsBefore=$db->fetch('SELECT revision,config_json FROM chat_call_settings WHERE id=1');
 $credentialsBefore=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.calls.provider_credentials'");
