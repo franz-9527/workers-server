@@ -77,14 +77,15 @@ final class ChatGoRuntimeConfig
         $callback=(new ChatMediaCallbackSettings($this->db,$this->cipher))->runtime(
             trim((string)\setting('wechat.miniapp_appid','')),$this->siteUrl());
         return ['redis_password'=>$password,'wechat_callback_token'=>$callback['token'],
-            'wechat_callback_aes_key'=>$callback['aes_key'],'errors'=>$errors];
+            'wechat_callback_aes_key'=>$callback['aes_key'],'callback_verified'=>$callback['verified'],
+            'callback_configured'=>$callback['configured'],'callback_url'=>$callback['url'],'errors'=>$errors];
     }
 
 
     /** Saved form values are independent of optional capability diagnostics. */
     public function configuration():array
     {
-        $tools=$this->goSettings();
+        $tools=$this->goSettings();$redis=$this->redisSettings();
         $api=trim((string)($tools[self::ASR_API_KEY]??''));
         $profile=$tools[self::ASR_PROFILE_KEY]??($api===''||$api==='SentenceASR'?'sentence_asr':'custom');
         if(!in_array($profile,['sentence_asr','custom','disabled'],true))$profile='custom';
@@ -92,7 +93,8 @@ final class ChatGoRuntimeConfig
         if($profile==='disabled')$api='';
         $encoding=$tools[self::ASR_ENCODING_KEY]??'object';
         if(!in_array($encoding,['object','json_string'],true))$encoding='object';
-        return ['python_binary'=>$tools[self::PYTHON_KEY]??'/usr/bin/python3',
+        return ['redis_enabled'=>$redis['enabled'],'redis_address'=>$redis['address'],'redis_password_configured'=>$redis['password_ciphertext']!=='',
+            'python_binary'=>$tools[self::PYTHON_KEY]??'/usr/bin/python3',
             'ffmpeg_binary'=>$tools[self::FFMPEG_KEY]??'/usr/bin/ffmpeg','ffprobe_binary'=>$tools[self::FFPROBE_KEY]??'/usr/bin/ffprobe',
             'asr_profile'=>$profile,'asr_api_name'=>$api,'asr_data_encoding'=>$encoding,
             'calls_php_endpoint'=>$tools[self::CALLS_ENDPOINT_KEY]??''];

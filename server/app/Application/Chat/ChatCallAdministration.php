@@ -102,7 +102,8 @@ final class ChatCallAdministration
                     if((string)$pool['revision']!==($input['pool_revision']??''))throw new RuntimeException('资源池已变化，请刷新');
                     $proof=self::optionalEvidence($input);
                     $profile=json_decode($pool['meter_json'],true,32,JSON_THROW_ON_ERROR);
-                    $facts['verified']=self::flag($input,'verified')&&($profile['usage_known']??true)===true;$facts['hard_stop_verified']=self::flag($input,'hard_stop_verified');$facts['verified_at']=time();
+                    if(array_key_exists('max_age_seconds',$input))$facts['max_age_seconds']=self::number($input,'max_age_seconds',30,86400);
+                     $facts['verified']=self::flag($input,'verified')&&($profile['usage_known']??true)===true;$facts['hard_stop_verified']=self::flag($input,'hard_stop_verified');$facts['verified_at']=time();
                     $profile['evidence_hash']=$proof;$profile['entitlement_confirmed']=self::flag($input,'verified');
                     $this->db->execute('UPDATE chat_call_resource_pools SET meter_json=:profile,revision=revision+1 WHERE id=:id',['profile'=>json_encode($profile,JSON_THROW_ON_ERROR),'id'=>$pool['id']]);
                 }

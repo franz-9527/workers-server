@@ -8,7 +8,7 @@ use WorkerAdmin\Domain\Chat\CallQuotaScope;
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Application\Chat\ChatCallAdministration;
 function app_config($key,$fallback=null){return $GLOBALS['fixtureAppConfig'][$key]??$fallback;}
-function setting($key,$fallback=null){return $fallback;}
+function setting($key,$fallback=null){return $GLOBALS['fixtureSettings'][$key]??$fallback;}
 function base_path(string $path=''):string{if(!empty($GLOBALS['fixtureBreakDiagnostics']))throw new RuntimeException('fixture diagnostic unavailable');return dirname(__DIR__).'/server'.($path!==''?'/'.$path:'');}
 function ck($ok,$label){if(!$ok)throw new RuntimeException($label);$GLOBALS['passed'][]=$label;}
 function reject($fn,$label){try{$fn();}catch(RuntimeException|InvalidArgumentException $e){ck(true,$label);return;}throw new RuntimeException('accepted: '.$label);}
@@ -179,10 +179,15 @@ $runtime->save(['ffprobe_binary'=>'/usr/bin/ffprobe'],1,'super_admin');
 ck($runtime->configuration()['asr_profile']==='disabled'&&$runtime->configuration()['asr_api_name']==='','explicit ASR disable persists across later saves');
 $runtime->save(['asr_profile'=>'sentence_asr'],1,'super_admin');
 reject(fn()=>$runtime->save(['asr_profile'=>'disabled'],2,'operations'),'ASR changes remain super-admin only');
+$GLOBALS['fixtureAppConfig']['app.url']='https://test.example.invalid';
+$GLOBALS['fixtureSettings']['wechat.miniapp_appid']='wxfixture12345678';
+$runtime->save(['wechat_callback_token'=>'FixtureCallbackToken1234','wechat_callback_aes_key'=>rtrim(base64_encode(str_repeat('a',32)),'='),'wechat_callback_confirmed'=>'1'],1,'super_admin');
 $GLOBALS['fixtureBreakDiagnostics']=true;
 reject(fn()=>$runtime->status([]),'runtime diagnostic may fail independently of saved configuration');
 ck($runtime->configuration()['asr_api_name']==='SentenceASR','saved form readback survives a capability diagnostic failure');
-unset($GLOBALS['fixtureBreakDiagnostics']);
+ck($runtime->configuration()['redis_enabled']&&$runtime->configuration()['redis_address']==='127.0.0.1:6380','Redis form values remain independent of capability diagnostics');
+ck($runtime->adminFormValues()['callback_verified']===true,'saved callback confirmation is readable independently of capability diagnostics');
+unset($GLOBALS['fixtureBreakDiagnostics'],$GLOBALS['fixtureAppConfig']['app.url'],$GLOBALS['fixtureSettings']);
 
 $settingsBefore=$db->fetch('SELECT revision,config_json FROM chat_call_settings WHERE id=1');
 $credentialsBefore=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.calls.provider_credentials'");
@@ -264,9 +269,10 @@ ck(isset($unknownResult['pool_id']),'real successful service returns its new poo
 $unknownRowDraft=$db->fetch('SELECT * FROM chat_call_resource_pools WHERE id=:id',['id'=>$unknownResult['pool_id']]);
 $unknownSummary=\WorkerAdmin\Domain\Chat\CallQuotaDisplay::summary($unknownRowDraft);
 ck($unknownSummary['official_used']===null&&$unknownSummary['remaining']===null&&!$unknownSummary['verified'],'blank official usage is unknown and cannot activate a pool');
-$service->change(['_action'=>'reverify','revision'=>'1','pool_id'=>$unknownResult['pool_id'],'pool_revision'=>'1','reason'=>'fixture verify unknown','pool_enabled'=>'1','verified'=>'1','hard_stop_verified'=>'1'],1,'super_admin');
+$service->change(['_action'=>'reverify','revision'=>'1','pool_id'=>$unknownResult['pool_id'],'pool_revision'=>'1','reason'=>'fixture verify unknown','max_age_seconds'=>'7200','pool_enabled'=>'1','verified'=>'1','hard_stop_verified'=>'1'],1,'super_admin');
 $unknownFresh=$db->fetch('SELECT * FROM chat_call_resource_pools WHERE id=:id',['id'=>$unknownResult['pool_id']]);
 ck(!json_decode($unknownFresh['facts_json'],true)['verified'],'reverification cannot silently turn unknown usage into confirmed zero');
+ck(json_decode($unknownFresh['facts_json'],true)['max_age_seconds']===7200,'existing pool freshness interval can be saved in the review form');
 ck(json_decode($unknownFresh['meter_json'],true)['entitlement_confirmed']===true,'explicit entitlement confirmation persists even when official usage is still unknown');
 ck(str_contains(implode('；',\WorkerAdmin\Domain\Chat\CallQuotaDisplay::blockers($unknownFresh,['status'=>'unavailable'])),'官方已用量'),'unknown usage has an actionable explanation');
 $at=date('Y-m-d\TH:i:s',time());

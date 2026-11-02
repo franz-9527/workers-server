@@ -121,6 +121,7 @@ final class ChatSettingsAdminModule implements AdminModule
                 finally{if(isset($material['seed'])&&is_string($material['seed']))sodium_memzero($material['seed']);}
             }
         }
+        foreach(['callback_verified','callback_configured','callback_url'] as $field)if(array_key_exists($field,$secretValues))$goRuntimeState[$field]=$secretValues[$field];
         foreach(['redis_password','wechat_callback_token','wechat_callback_aes_key'] as $field)if(array_key_exists($field,$runtimeFormValues))$secretValues[$field]=$runtimeFormValues[$field];
         if(array_key_exists('wechat_callback_confirmed',$runtimeFormValues))$goRuntimeState['callback_verified']=$runtimeFormValues['wechat_callback_confirmed']==='1';
         echo \view('admin/chat-settings',[

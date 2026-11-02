@@ -63,7 +63,7 @@ final class ChatCallsAdminModule implements AdminModule
             catch(Throwable $e){$notice='操作未完成，请刷新后核对状态';}
             if(in_array(($_POST['_action']??''),['pool','reverify','configuration','settings','credentials'],true))foreach($_POST as $key=>$value)if(is_string($key)&&is_string($value)&&strlen($value)<=512)$formValues[$key]=$value;
         }
-        $canManage=$this->auth->can('chat.calls.quota.manage')&&$this->auth->can('settings.manage');
+        $canManage=($this->auth->user()['role']??'')==='super_admin'&&$this->auth->can('chat.calls.quota.manage')&&$this->auth->can('settings.manage');
         $credentials=[];
         if($canManage&&$section==='settings'){
             header('Cache-Control: no-store, private');
