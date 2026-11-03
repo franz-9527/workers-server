@@ -1,0 +1,52 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero-tag">平台服务订单</view>
+    <view class="hero-title">订单查看与绑定</view>
+    <view class="hero-desc">无需先登录即可查看基础进度；绑定后可在“我的下单”查看完整信息和后续服务。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-card">正在加载订单…</view>
+  <view wx:elif="{{errorText}}" class="state-card error">
+    <view class="state-title">暂时无法查看</view>
+    <view class="state-text">{{errorText}}</view>
+  </view>
+
+  <block wx:elif="{{preview}}">
+    <view class="card order-card">
+      <view class="card-head">
+        <view>
+          <view class="order-title">{{preview.title || preview.category || '平台服务订单'}}</view>
+          <view class="order-no">订单号 {{preview.order_no}}</view>
+        </view>
+        <view class="status-pill">{{preview.stage_text}}</view>
+      </view>
+
+      <view class="tag-row">
+        <view class="soft-tag">平台</view>
+        <view wx:if="{{preview.fulfillment_mode === 'measure_then_install'}}" class="soft-tag">先测量后施工</view>
+        <view wx:else class="soft-tag">直接施工</view>
+        <view wx:if="{{preview.customer_bound}}" class="soft-tag muted">已绑定客户</view>
+        <view wx:else class="soft-tag pending">待客户绑定</view>
+      </view>
+
+      <view class="info-row"><text class="label">服务类目</text><text class="value">{{preview.category || '施工服务'}}</text></view>
+      <view class="info-row"><text class="label">服务区域</text><text class="value">{{preview.location || '已保护'}}</text></view>
+      <view class="info-row"><text class="label">联系人</text><text class="value">{{preview.contact_name || '已保护'}}</text></view>
+      <view class="info-row"><text class="label">当前进度</text><text class="value strong">{{preview.stage_text}}</text></view>
+    </view>
+
+    <view class="card explain-card">
+      <view class="section-title">平台托管服务</view>
+      <view class="explain-item"><view class="dot"></view><text>即使暂未绑定小程序，平台和师傅仍可按约定继续测量、施工和履约。</text></view>
+      <view class="explain-item"><view class="dot"></view><text>绑定后可查看完整订单、测量成果、施工进度，并在需要时提出异议。</text></view>
+      <view class="explain-item"><view class="dot"></view><text>绑定时会核对订单预留手机号，分享卡片本身不能直接取得订单所有权。</text></view>
+    </view>
+
+    <button class="primary-btn" loading="{{claiming}}" disabled="{{claiming}}" bindtap="claimOrder">
+      {{preview.customer_bound ? '登录后查看我的订单' : '绑定并查看完整订单'}}
+    </button>
+    <button class="ghost-btn" bindtap="openOrders">进入我的下单</button>
+    <view class="footer-tip">如手机号与订单预留信息不一致，请联系平台协助处理。</view>
+  </block>
+</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>
