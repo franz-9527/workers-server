@@ -57,7 +57,7 @@ const utils=context.module.exports
   assert.deepEqual(requested[0],['progress-template','fee-template','account-template'])
   assert.deepEqual(saved,['order_progress','order_fee_change','account_funds'])
 
-  const second=await utils.requestSingleTopUp('chat_unread')
+  const second=await utils.requestImportantTopUp()
   assert.equal(second.acceptedCount,1)
   assert.deepEqual(requested[1],['chat-template'])
   assert.deepEqual(saved,['order_progress','order_fee_change','account_funds','chat_unread'])
