@@ -19,7 +19,7 @@ function activityCompare(a, b) {
   return b.activityAt - a.activityAt || idCompare(b.conversationId, a.conversationId)
 }
 function orderContext(value, role) {
- if(value&&value.simulation===true&&['customer','worker'].includes(role))return {publicNo:'',title:Array.from(String(value.title||'测试会话')).slice(0,120).join(''),workflow:'construction',role,simulation:true}
+ if(value&&value.simulation===true&&['customer','worker','platform_staff'].includes(role))return {publicNo:'',title:Array.from(String(value.title||'测试会话')).slice(0,120).join(''),workflow:'construction',role,simulation:true}
  if (!value || !/^[A-Za-z0-9_-]{1,80}$/.test(String(value.public_no || '')) || !['customer','worker','platform_staff','owner','collaborator'].includes(role)) return null
  return { publicNo: String(value.public_no), title: Array.from(String(value.title || '')).slice(0,120).join(''), workflow: value.workflow === 'measurement' ? 'measurement' : 'construction', role }
 }

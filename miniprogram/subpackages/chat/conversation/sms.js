@@ -3,7 +3,7 @@ const money=n=>'¥'+(Math.max(0,Number(n)||0)/100).toFixed(2)
 const labels={queued:'已提交，等待发送',dispatch_claimed:'正在准备发送',sending:'正在核对发送结果',provider_accepted:'已受理，等待运营商回执',uncertain:'结果待核对，请勿重复发送',delivered:'已送达，费用已结算',rejected:'未发送，预占已退回',delivery_failed:'发送失败，预占已退回',cancelled_before_send:'对方已读或状态变化，未发送',unknown:'未确认送达，预占已退回，不重复发送'}
 module.exports={
  startSMS(){
-  if(this.manager.simulation||!this.manager.io?.sms||!this.visible||!this.manager.enabled)return
+  if(this.manager.simulation||this.manager.testSandbox||!this.manager.io?.sms||!this.visible||!this.manager.enabled)return
   if(this.smsPending?.epoch!==this.manager.epoch)this.smsPending=null
   this.refreshSMS(true)
   if(!this.smsTimer)this.smsTimer=setTimeout(()=>{this.smsTimer=null;this.startSMS()},60000)
@@ -14,7 +14,7 @@ module.exports={
   this.setData({smsAnchor:'',smsFirstHint:false,smsDialog:null,smsBusy:false})
  },
  async refreshSMS(force=false){
-  if(this.manager.simulation||!this.visible||!this.data.canSend||!this.manager.io?.sms||this.smsLoading)return
+  if(this.manager.simulation||this.manager.testSandbox||!this.visible||!this.data.canSend||!this.manager.io?.sms||this.smsLoading)return
   const now=this.manager.io.now();if(!force&&this.smsLast>now-10000)return
   this.smsLast=now;this.smsLoading=true
   const life=this.life,epoch=this.manager.epoch,serial=(this.smsSerial||0)+1;this.smsSerial=serial

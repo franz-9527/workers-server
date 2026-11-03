@@ -129,7 +129,7 @@ Page({
   if(this.data.largeImage&&!this.views[this.data.largeImage.messageId]?.isImage)this.closeImage()
   this.identityPolicy=String(page.policy_version||'');this.identityViewer=String(page.viewer_actor_id||'')
   this.orderCanSend=page.can_send===true
-  this.setData({simulation:this.manager.simulation===true,messages:window,orderContext:context,canOpenOrder:!!InboxModel.orderURL(context),isGroup:page.conversation_mode==='collaboration',orderLabel:page.conversation_mode==='collaboration'?'订单协作群':context&&context.title||(context&&context.workflow==='measurement'?'测量沟通':'订单沟通'),
+  this.setData({simulation:this.manager.simulation===true,messages:window,orderContext:context,canOpenOrder:!!InboxModel.orderURL(context),isGroup:page.conversation_mode==='collaboration',orderLabel:context?.simulation?context.title:page.conversation_mode==='collaboration'?'订单协作群':context&&context.title||(context&&context.workflow==='measurement'?'测量沟通':'订单沟通'),
    canSend:page.can_send===true&&!this.data.sendRestricted,loading:false,status:this.manager.state},()=>{this.observeImages();this.restoreTextCache();this.loadParticipants()})
  },
  clearIdentities(){

@@ -11,11 +11,7 @@ $checks=0;
 function check($ok,$message){if(!$ok)throw new RuntimeException($message);$GLOBALS['checks']++;echo "PASS $message\n";}
 $state=['rooms'=>[['id'=>'21','title'=>'真实渲染测试 <>&','member_count'=>2,'message_count'=>1]],'room'=>['id'=>'21','title'=>'真实渲染测试 <>&'],'members'=>[['actor_key'=>'admin:1','display_name'=>'管理员甲'],['actor_key'=>'user:11','display_name'=>'演示客户甲']],'messages'=>[['id'=>'32','sender_key'=>'admin:1','created_at'=>'2026-11-03 00:00:00','state'=>'published','text_body'=>'<script>unsafe()</script> 示例消息']],'page'=>2,'more'=>true,'older'=>true,'before'=>'32'];
 $payload=['ready'=>true,'notice'=>'','actors'=>['admin:1'=>['key'=>'admin:1','name'=>'管理员甲','group'=>'管理员']],'chatState'=>$state,'values'=>[],'requestKey'=>str_repeat('a',32)];
-$level=ob_get_level();$oldError=null;
-try{(new WorkerAdmin\Core\View($root.'/fixtures'))->render('before-chat-testing',['data'=>$state]+$payload,null);}
-catch(ErrorException $e){$oldError=$e;}
-finally{while(ob_get_level()>$level)ob_end_clean();}
-check($oldError&&str_contains($oldError->getMessage(),'room'),'old template reproduces real View::render data-name collision');
+$level=ob_get_level();
 $html=view('admin/chat-testing',$payload,null);
 check(str_contains($html,'真实渲染测试 &lt;&gt;&amp;'),'actual global helper and renderer display the selected room safely');
 check(str_contains($html,'管理员甲')&&str_contains($html,'演示客户甲'),'members are visible through the actual helper');

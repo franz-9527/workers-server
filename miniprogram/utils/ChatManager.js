@@ -37,7 +37,7 @@ class ChatManager {
  }
  setNetwork(value) { this.network = value === true;this.calls.foreground(this.foreground&&this.network); this.disconnect(); this.stopTimers(); if (this.network) this.start() }
  reset() {
-  this.simulation=false
+  this.simulation=false;this.testSandbox=false
   this.calls.reset();
   if(this.io.av&&this.disk?.scope)this.io.av.reset(this.disk.scope).catch(()=>{});this.av.reset();if(this.disk)this.disk.reset().catch(()=>{});this.images.reset();this.epoch++; this.accountGeneration++; this.preferenceJobs.clear(); this.disconnect(); this.stopTimers(); this.token = null; this.cache.clear(); this.drafts.clear(); this.recalled.clear(); this.outbox.clear(); this.active = ''; this.reconciling = null
   this.credentialJob = null; this.credentialFailure = null; this.presenceJob = null; this.lastTyping = 0; this.digestCursor = ''; this.again = false; this.restartDigestAfterCurrent = false; this.renewing = false; this.pollFailures = 0; this.focusEpoch = (this.focusEpoch || 0) + 1
@@ -72,7 +72,7 @@ class ChatManager {
      if(result.environment&&this.io.environment&&result.environment!==this.io.environment())throw failure('CHAT_UNAUTHORIZED')
      if(this.disk&&result.actor_id&&result.environment)this.disk.bind(result.environment,String(result.actor_id))
      this.calls.actorID=String(result.actor_id||'');this.calls.setEnabled(result.calls_enabled===true);this.token = { value: result.access_token, expires, transport:result.transport||'go' }
-     this.credentialFailure=null;this.simulation=result.transport==='simulation';this.emit('transport',{simulation:this.simulation})
+     this.credentialFailure=null;this.simulation=result.transport==='simulation';this.testSandbox=result.test_sandbox===true;this.emit('transport',{simulation:this.simulation})
     }).catch(error=>{
      if(this.live(epoch)){
       const dependency=error.statusCode===503||error.statusCode===429||['CHAT_DEPENDENCY_UNAVAILABLE','CHAT_SIGNING_NOT_CONFIGURED','CHAT_RECOVERY_NOT_READY','CHAT_DISABLED'].includes(error.code)

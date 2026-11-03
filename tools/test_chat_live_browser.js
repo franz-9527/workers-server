@@ -4,7 +4,7 @@ const {chromium}=require('playwright')
 const root=path.resolve(__dirname,'..')
 if(path.basename(root)!=='workers-server')throw Error('Independent test repository required')
 const members=[{actor_key:'admin:1',wire_id:'7000000000000000001',display_name:'管理员测试',display_role:'admin'},{actor_key:'user:11',wire_id:'11',display_name:'演示客户测试',display_role:'customer'}]
-let records=[],operations=new Map(),requests=[],call=null,revision=0,id=0,checks=0
+let records=[],operations=new Map(),uploads=new Map(),pendingImages=new Map(),uploadPosts=0,requests=[],call=null,revision=0,id=0,checks=0
 const actor=key=>members.find(x=>x.actor_key===key)?.wire_id
 const view=()=>call?{...call,revision:String(revision),attempt_epoch:'1',prepared_count:2,authorized_until:Math.floor(Date.now()/1000)+45,server_time:Math.floor(Date.now()/1000),policy_version:'1'}:null
 const page=()=>({conversation_mode:'direct',order_context:{simulation:true,sandbox_room_id:'21',public_no:'',title:'【测试】完整会话',workflow:'construction'},capabilities:{cache:false,images:true,audio:true,video:true},member_role:'customer',viewer_actor_id:'11',can_send:true,policy_version:'1',messages:records,changes:[],snapshot_max_seq:String(records.length),snapshot_max_change_seq:String(records.length),sync_cursor:'fixture-sync',change_cursor:'fixture-change',history_cursor:'',has_more:false})
@@ -30,6 +30,16 @@ const server=http.createServer(async(req,res)=>{
   if(route==='conversations/preferences')return reply(res,{data:{member_version:'1',pinned:false,later:false,pinned_version:'0',later_version:'0',account_revision:'1'}})
   if(['media/pending','av/pending','calls/history'].includes(route))return reply(res,{data:[]})
   if(route==='calls/availability')return reply(res,{data:{enabled:true,audio:true,video:true}})
+  if(route==='media/upload'){const key=String(700+uploads.size);uploads.set(key,q);return reply(res,{data:{attachment_id:key,object_version:'fixture-version',key:'fixture/'+key,host:'https://upload.fixture.invalid',token:'fixture-upload',state:'created'}})}
+  if(route==='media/uploaded')return reply(res,{data:{state:'processed'}})
+  if(route==='media/status'||route==='media/cancel'){
+   const result=pendingImages.get(q.client_message_id)||operations.get(q.client_message_id)
+   return reply(res,{data:result||{client_message_id:q.client_message_id,state:'checking'}})
+  }
+  if(route==='media/url')return reply(res,{data:{url:'https://private.fixture.invalid/image.jpg',expires_at:Math.floor(Date.now()/1000)+50}})
+  if(route==='messages/send'&&['image','image_album'].includes(q.message_type)){
+   const result={client_message_id:q.client_message_id,state:'review_pending',items:q.items};pendingImages.set(q.client_message_id,{...result,request:q,who});return reply(res,{data:result})
+  }
   if(route==='messages/send'){
    if(!operations.has(q.client_message_id)){
     const row={message_id:String(++id),seq:String(id),sender_id:who,policy_version:'1',state:'published',state_version:'1',message_type:q.message_type,text:q.text||'',created_at:new Date().toISOString()}
@@ -59,6 +69,8 @@ async function main(){
   const page=await browser.newPage({viewport:{width:1440,height:1050}})
   const errors=[];page.on('pageerror',e=>errors.push(e.message))
   await page.route('https://download.agora.io/**',route=>route.fulfill({contentType:'application/javascript',body:`window.fixtureRTC={joined:0,published:0,closed:0,left:0};window.AgoraRTC={createClient:()=>({on(){},removeAllListeners(){},setClientRole:async()=>{},join:async()=>{window.fixtureRTC.joined++},publish:async()=>{window.fixtureRTC.published++},subscribe:async()=>{},renewToken:async()=>{},leave:async()=>{window.fixtureRTC.left++}}),createMicrophoneAudioTrack:async()=>({play(){},stop(){},close(){window.fixtureRTC.closed++}}),createCameraVideoTrack:async()=>({play(){},stop(){},close(){window.fixtureRTC.closed++}})};`}))
+  await page.route('https://upload.fixture.invalid',async route=>{if(route.request().method()==='POST')uploadPosts++;await route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},body:'{}'})})
+  await page.route('https://private.fixture.invalid/**',route=>route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0S8AAAAASUVORK5CYII=','base64')}))
   await page.goto(origin+'/admin/')
   const peers=page.locator('[data-live-peer]'),a=peers.nth(0),b=peers.nth(1)
   assert.equal(await peers.count(),2);assert.equal(await page.locator('[data-live-actions]:disabled').count(),2);checks++
@@ -72,6 +84,18 @@ async function main(){
   assert.equal(await page.locator('[data-live-log] script').count(),0);assert.equal(records.length,1);checks++
   await page.waitForTimeout(200)
   assert.equal(operations.size,1,'no duplicate send through socket fallback');checks++
+  await a.locator('[data-live-images]').setInputFiles({name:'fixture.png',mimeType:'image/png',buffer:Buffer.from('fixture-image')})
+  await a.getByRole('button',{name:'发送图片',exact:true}).waitFor()
+  assert.equal(uploadPosts,1,'shared uploader posted actual browser multipart data');checks++
+  await a.getByRole('button',{name:'发送图片',exact:true}).click()
+  await a.getByText('图片 · 待审核',{exact:true}).waitFor()
+  assert.equal(records.length,1,'prereview is never rendered as a published message');checks++
+  const [client,pending]=[...pendingImages][0]
+  const row={message_id:String(++id),seq:String(id),sender_id:pending.who,policy_version:'1',state:'published',state_version:'1',message_type:'image',images:pending.request.items.map(x=>({item_id:x.attachment_id})),created_at:new Date().toISOString()}
+  records.push(row);pendingImages.set(client,{client_message_id:client,state:'accepted',message_id:row.message_id})
+  await b.locator('[data-live-log] img').waitFor({timeout:15000})
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-live-log] img')).every(x=>x.complete&&x.naturalWidth>0))
+  assert.equal(await b.locator('[data-live-log] img').count(),1);checks++
   await a.locator('[data-call-video]').click()
   await b.locator('[data-call-accept]').waitFor({state:'visible',timeout:12000})
   assert.equal(await page.evaluate(()=>window.fixtureRTC.joined),0,'incoming ring never captures mic/camera before accept');checks++
@@ -90,6 +114,9 @@ async function main(){
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'mobile layout overflows');checks++
   await page.close()
   console.log('PASS TOTAL '+checks+' browser real-state-machine scenarios')
+ }catch(error){
+  for(const p of browser.contexts().flatMap(c=>c.pages())){console.error('BROWSER DIAGNOSTICS',await p.locator('[data-live-notice]').allTextContents(),await p.locator('[data-call-status]').allTextContents());await p.screenshot({path:'test-artifacts/live-chat-failure.png',fullPage:true})}
+  console.error('RECENT API',requests.slice(-18));throw error
  }finally{await browser.close();server.close()}
 }
 main().catch(e=>{console.error(e);server.close();process.exit(1)})
