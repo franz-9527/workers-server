@@ -19,6 +19,7 @@ chat_sms=read("server/app/Infrastructure/Messaging/DatabaseChatSmsDeliveryReposi
 projection=read("server/app/Infrastructure/Testing/TestMessageProjectionRecorder.php")
 policy=read("server/app/Domain/Messaging/SettingsValuePolicy.php")
 mini=read("miniprogram/utils/SubscribeMessageUtils.js")
+settings_ui=read("miniprogram/subpackages/account/settings/index.js")
 
 for title in ["订单进度提醒","订单费用变更提醒","账户资金变动提醒","聊天消息提醒"]:
     assert title in defs
@@ -49,5 +50,7 @@ assert "worker_order_update" not in projection
 assert "array_intersect_key($decoded,array_flip($publicKeys))" in policy
 assert "financial_progress: true" not in mini
 assert "order_fee_change: true" in mini and "account_funds: true" in mini
+assert "const minimum = Math.min" in mini and "const priority = candidates.filter" in mini
+assert "const minimum=Math.min" in settings_ui and "const candidates=allCandidates.filter" in settings_ui
 
 print("message refactor static coverage contract: OK")
