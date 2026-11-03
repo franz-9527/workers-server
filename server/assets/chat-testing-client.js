@@ -165,8 +165,10 @@ class TestPeer {
   const transfers=[]
   for(const row of m.images.list(this.cid)){
    const item=element('div','图片 · '+(row.code?message({code:row.code}):row.state==='editing'?(row.uploading?'上传中':'待发送'):progressName(row.state)),'chat-testing-transfer-row')
-   if(!row.submitted&&!row.uploading){const send=element('button','发送图片','admin-btn admin-btn--sm');send.onclick=()=>m.images.send(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(send)}
+   for(let index=0;index<row.items.length;index++){const file=row.items[index];if(['upload_failed','check_unavailable'].includes(file.state)){const retry=element('button','重试第'+(index+1)+'张','admin-btn admin-btn--sm');retry.onclick=()=>m.images.retry(this.cid,row.client_message_id,index).catch(e=>this.tell(message(e)));item.append(retry)}}
+   if(!row.submitted&&!row.uploading&&row.items.every(file=>file.attachment_id&&!['upload_failed','check_unavailable'].includes(file.state))){const send=element('button','发送图片','admin-btn admin-btn--sm');send.onclick=()=>m.images.send(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(send)}
    if(row.submitted&&!['accepted','rejected','canceled'].includes(row.state)){const retry=element('button','核验状态','admin-btn admin-btn--sm');retry.onclick=()=>m.images.status(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(retry)}
+   if(!row.uploading&&!['accepted','rejected','canceled'].includes(row.state)){const cancel=element('button','取消','admin-btn admin-btn--sm');cancel.onclick=()=>m.images.revise(this.cid,row.client_message_id,items=>items.splice(0)).catch(e=>this.tell(message(e)));item.append(cancel)}
    transfers.push(item)
   }
   for(const row of m.attempts(this.cid)){
@@ -175,7 +177,14 @@ class TestPeer {
    if(row.state==='unknown'||row.state==='retryable'){const retry=element('button','核验并重试','admin-btn admin-btn--sm');retry.onclick=()=>m.retryText(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(retry)}
    transfers.push(item)
   }
-  for(const row of m.av.list(this.cid))transfers.push(element('div',(row.kind==='audio'?'语音':'视频')+' · '+(row.code?message({code:row.code}):progressName(row.phase||row.state)),'chat-testing-transfer-row'))
+  for(const row of m.av.list(this.cid)){
+   const item=element('div',(row.kind==='audio'?'语音':'视频')+' · '+(row.code?message({code:row.code}):progressName(row.phase||row.state))+(row.busy?' '+row.progress+'%':''),'chat-testing-transfer-row')
+   if(!row.busy&&!['accepted','rejected','canceled'].includes(row.state)){
+    const retry=element('button',row.path?'核验并重试':'核验状态','admin-btn admin-btn--sm');retry.onclick=()=>m.av.retry(this.cid,row.client_message_id).catch(e=>this.tell(message(e)))
+    const cancel=element('button','取消','admin-btn admin-btn--sm');cancel.onclick=()=>m.av.status(this.cid,row.client_message_id,true).catch(e=>this.tell(message(e)));item.append(retry,cancel)
+   }
+   transfers.push(item)
+  }
   this.transfer.replaceChildren(...transfers)
   this.node.querySelector('[data-live-capabilities]').textContent='图片'+(cap.images?'可用':'未就绪')+' · 语音'+(cap.audio?'可用':'未就绪')+' · 视频'+(cap.video?'可用':'未就绪')
  }

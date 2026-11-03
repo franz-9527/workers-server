@@ -10,7 +10,7 @@ use WorkerAdmin\Infrastructure\Persistence\DatabaseApiActorRepository;
 use WorkerAdmin\Infrastructure\Settings\GlobalSettingsProvider;
 use WorkerAdmin\Application\Identity\ApiActorResolver;
 
-/** Isolated text simulator. Never touches Go chat, real notifications or order ownership. */
+/** Test-only room registry and legacy text records; live traffic uses scoped Go credentials. */
 final class ChatSandbox
 {
     private const ROOM_BASE=8000000000000000000;

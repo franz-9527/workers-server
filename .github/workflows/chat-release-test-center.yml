@@ -56,6 +56,7 @@ jobs:
           cd chat
           go test ./internal/message -run 'TestMySQLSandbox' -count=1 -v
       - name: Real PHP delegation and administrative view regressions
+        if: always()
         env:
           CHAT_SANDBOX_TEST: '1'
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
@@ -64,6 +65,7 @@ jobs:
           php tools/test_chat_sandbox_view.php
           php tools/render_chat_live.php
       - name: Browser shared-client media calls and original card layouts
+        if: always()
         env:
           STORE_ORDER_TEST: '1'
         run: |

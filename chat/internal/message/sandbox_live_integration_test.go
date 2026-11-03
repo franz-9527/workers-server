@@ -125,3 +125,46 @@ func TestMySQLSandboxCleanupDeletesRemoteMediaBeforePayloads(t *testing.T){
  if f.text("SELECT COUNT(*) FROM chat_image_objects o JOIN chat_image_uploads u ON u.id=o.upload_id WHERE u.conversation_id=?",string(cid))!="0"{t.Fatal("objects retained")}
  if len(storage.objects)!=0{t.Fatal("remote bytes retained",len(storage.objects))}
 }
+
+func TestMySQLSandboxLiveVideoRequiresRealPrereview(t *testing.T){
+ f,s,a,storage,inspector,q:=avFixture(t,"video");admin,mini,cid:=sandboxSeed(t,f)
+ ctx:=context.Background();body:=[]byte("sandbox-video")
+ u,e:=a.Upload(ctx,mini,cid,client(9351),"album",int64(len(body)),fileMD5(body));if e!=nil{t.Fatal(e)}
+ q.ConversationID=cid;q.ClientMessageID=client(9351);q.Items=[]MediaItem{{AttachmentID:u.AttachmentID,ObjectVersion:u.ObjectVersion}}
+ if _,e=a.Send(ctx,mini,q);e!=nil{t.Fatal(e)}
+ part,e:=a.Part(ctx,mini,cid,u.AttachmentID,1,false);if e!=nil{t.Fatal(e)}
+ if e=storage.Put(ctx,part.Key,body,"application/octet-stream");e!=nil{t.Fatal(e)}
+ if _,e=a.Part(ctx,mini,cid,u.AttachmentID,1,true);e!=nil{t.Fatal(e)}
+ if e=a.Complete(ctx,mini,cid,u.AttachmentID);e!=nil{t.Fatal(e)}
+ avSteps(t,a,4)
+ if f.text("SELECT phase FROM chat_av_jobs")!="review_pending"{t.Fatal("video skipped full prereview")}
+ if inspector.asrCalls.Load()!=1{t.Fatal("video speech skipped recognition")}
+ reviewer:=mediaAdmin();reviewer.Scopes=[]string{"chat:audit","chat:moderate","chat:media","chat:evidence"}
+ f.exec("INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(90001,'sandbox-video-review','fixture','operations','active',0,UTC_TIMESTAMP(),UTC_TIMESTAMP())")
+ f.exec("INSERT INTO chat_admin_sessions(id,admin_id,session_hash,session_version,authority_hash,scopes_json,expires_at,created_at) VALUES(90001,90001,REPEAT('a',64),REPEAT('b',64),REPEAT('c',64),'[\"chat:audit\",\"chat:moderate\",\"chat:media\",\"chat:evidence\"]',UTC_TIMESTAMP()+INTERVAL 5 MINUTE,UTC_TIMESTAMP())")
+ list,e:=a.Reviews(ctx,reviewer,"0");if e!=nil||len(list)!=1{t.Fatal(list,e)}
+ review,e:=a.Review(ctx,reviewer,list[0].IntentID,list[0].Version,"claim","完整测试视频",false,false);if e!=nil{t.Fatal(e)}
+ if _,e=a.ReviewURL(ctx,reviewer,review.IntentID,review.Version);e!=nil{t.Fatal(e)}
+ if _,e=a.Review(ctx,reviewer,review.IntentID,review.Version,"approve","已完整检查画面和原声",true,true);e!=nil{t.Fatal(e)}
+ avSteps(t,a,1)
+ result,e:=s.Query(ctx,mini,cid,q.ClientMessageID);if e!=nil||result.State!="accepted"{t.Fatal(result,e)}
+ if _,e=a.URL(ctx,admin,cid,result.MessageID,false);e!=nil{t.Fatal(e)}
+ f.exec("DELETE FROM chat_sandbox_members WHERE room_id=51");f.exec("DELETE FROM chat_sandbox_rooms WHERE id=51")
+ if _,e=a.URL(ctx,admin,cid,result.MessageID,false);e==nil{t.Fatal("cleared scope still authorized playback")}
+ if _,e=f.store.Authorize(ctx,ports.PolicyRequest{Actor:mini,ConversationID:cid,Action:"send"});e==nil{t.Fatal("deleted room still writable")}
+}
+
+func TestMySQLSandboxMultiMemberUsesRealSharedHistory(t *testing.T){
+ f,s,q:=setupMessage(t,safetyFunc(pass));admin,mini,_:=sandboxSeed(t,f)
+ f.exec("INSERT INTO chat_sandbox_rooms(id,title,created_by,request_key,request_hash,created_at) VALUES(52,'三方联调',91001,REPEAT('b',32),REPEAT('b',64),UTC_TIMESTAMP())")
+ f.exec("INSERT INTO chat_sandbox_members(room_id,actor_key,wire_id,display_name,display_role) SELECT 52,actor_key,wire_id,display_name,display_role FROM chat_sandbox_members WHERE room_id=51")
+ f.exec("INSERT INTO chat_sandbox_members(room_id,actor_key,wire_id,display_name,display_role) VALUES(52,'user:10203','10203','演示客户','customer')")
+ if e:=f.store.ValidatePrincipal(f.ctx,admin);e!=nil{t.Fatal(e)}
+ cid:=ports.ID(f.text("SELECT CAST(id AS CHAR) FROM chat_conversations WHERE scope_key='sandbox:52'"))
+ q.ConversationID=cid;q.ClientMessageID=client(9501);q.Text="多人会话共用真实消息"
+ if result,e:=s.Send(f.ctx,admin,q);e!=nil||result.State!="accepted"{t.Fatal(result,e)}
+ h,e:=NewHistoryService(f.goDB,f.store,"test",bytes.Repeat([]byte{7},32),3*time.Second);if e!=nil{t.Fatal(e)}
+ page,e:=h.Read(f.ctx,mini,HistoryRequest{ConversationID:cid,Limit:50},"bootstrap")
+ if e!=nil||len(page.Messages)!=1||page.Mode!="collaboration"{t.Fatal(page,e)}
+ if f.text("SELECT COUNT(*) FROM chat_members WHERE conversation_id=? AND can_read=1",string(cid))!="3"{t.Fatal("missing group participant")}
+}
