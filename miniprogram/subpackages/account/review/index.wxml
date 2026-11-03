@@ -1,0 +1,48 @@
+<!-- 2026-08-08：顶部双标签只保留文字与选中下划线，去除标签前置图标。 -->
+<view class="audit-header bg-white">
+  <view class="audit-tabs solid-bottom">
+    <view class="audit-tab {{activeSource === 'worker' ? 'audit-tab-active text-green' : 'text-grey'}}" data-source="worker" bindtap="switchSource">
+      <text>师傅审核</text>
+    </view>
+    <view class="audit-tab {{activeSource === 'store' ? 'audit-tab-active text-orange' : 'text-grey'}}" data-source="store" bindtap="switchSource">
+      <text>门店审核</text>
+    </view>
+  </view>
+  <!-- 2026-08-08：搜索框绑定当前标签的关键词，切换标签时自动清空。 -->
+  <view class="cu-bar bg-white search">
+    <view class="search-form round">
+      <text class="cuIcon-search"></text>
+      <input value="{{keyword}}" placeholder="{{activeSource === 'worker' ? '搜索师傅、类型、地址或手机号' : '搜索门店、类型、地址或手机号'}}" confirm-type="search" bindconfirm="searchRecord"></input>
+    </view>
+  </view>
+</view>
+
+<view class="record-list cu-list menu">
+  <!-- 2026-08-08：当前列表只渲染所选标签的数据，使用记录 ID 作为稳定键。 -->
+  <view bindtap="goDetail" data-id="{{item._id}}" class="cu-item" wx:for="{{dataList}}" wx:key="_id">
+    <view class="content">
+      <block wx:if="{{activeSource === 'worker'}}">
+        <text class="cuIcon-wenzi text-green"></text>
+        <text class="text-black">{{item.workerName}}-{{item.workerType}}</text>
+      </block>
+      <block wx:else>
+        <text class="cuIcon-taoxiaopu text-orange"></text>
+        <text class="text-black">{{item.StoreName}}-{{item.StoreType}}</text>
+      </block>
+    </view>
+    <view class="action audit-meta">
+      <view class="audit-meta-primary">
+        <text class="text-grey text-sm">{{item.time}}</text>
+        <text wx:if="{{activeSource === 'worker'}}" class="{{item.reviewStatusClass}} text-sm">({{item.reviewStatusText}})</text>
+        <text wx:else class="{{item.published ? 'text-green' : 'text-grey'}} text-sm">({{item.published ? '已审核' : '未审核'}})</text>
+      </view>
+      <!-- 通知结果仅作弱提示：成功/失败统一颜色，不抢审核状态视觉层级。 -->
+      <text wx:if="{{activeSource === 'worker'}}" class="review-notice-result text-xs">{{item.reviewNoticeText}}</text>
+    </view>
+  </view>
+</view>
+
+<!-- 2026-08-08：为当前标签提供简洁的空数据和加载完成提示。 -->
+<view wx:if="{{!loading && dataList.length === 0}}" class="audit-state text-grey text-sm">暂无{{activeSource === 'worker' ? '师傅' : '门店'}}审核记录</view>
+<view wx:if="{{!loading && loadAll && dataList.length > 0}}" class="audit-state text-grey text-xs">已加载全部记录</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>
