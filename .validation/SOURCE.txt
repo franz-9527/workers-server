@@ -1,4 +1,0 @@
-source_repo=franz-9527/workers
-source_sha=e4330a14cd644c8403d4972182e81c3e867dc7d8
-files=21
-purpose=order progress phrase fallback, order fee/account funds split, notification coverage, balanced four-template top-up
