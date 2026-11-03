@@ -231,7 +231,7 @@ function selectRequestScenes(backend, keys, settings) {
   const itemSettings = (((preparedWechatSetting() || {}).subscriptionsSetting || {}).itemSettings) || {}
   const seenTemplate = {}
   const seenTitle = {}
-  scenes = scenes.filter(item => String(item.subscription_type || 'one_time') === requestedType).filter(item => {
+  const compatible = scenes.filter(item => String(item.subscription_type || 'one_time') === requestedType).filter(item => {
     const templateId = String(item.template_id || '')
     const templateTitle = String(item.template_title || '').trim()
     const wechatStatus = String(itemSettings[templateId] || '')
@@ -241,8 +241,10 @@ function selectRequestScenes(backend, keys, settings) {
     seenTemplate[templateId] = true
     if (templateTitle) seenTitle[templateTitle] = true
     return true
-  }).slice(0, 3)
-  return { scenes, skipped, requestedType }
+  })
+  const overflow = compatible.slice(3).map(item => item.key)
+  scenes = compatible.slice(0, 3)
+  return { scenes, skipped: Array.from(new Set(skipped.concat(overflow))), requestedType }
 }
 
 // 同一次微信弹窗最多返回 3 个模板。后端当前把同一用户的场景偏好保存在一份 JSON 中，
@@ -333,7 +335,9 @@ function requestImportantTopUp(options) {
       return diff !== 0 ? diff : (Number(a.total_authorized_count) || 0) - (Number(b.total_authorized_count) || 0)
     })
   if (!candidates.length) return Promise.resolve({ enabled: false, status: 'no_candidate', items: [], acceptedCount: 0 })
-  return invokeSubscriptionRequest(backend, candidates.map(item => item.key), Object.assign({}, options || {}, { subscriptionType: 'one_time' }))
+  const minimum = Math.min(...candidates.map(item => Math.max(0, Number(item.remaining_count) || 0)))
+  const priority = candidates.filter(item => Math.max(0, Number(item.remaining_count) || 0) === minimum)
+  return invokeSubscriptionRequest(backend, priority.map(item => item.key), Object.assign({}, options || {}, { subscriptionType: 'one_time' }))
 }
 
 function requestSingleTopUp(key, options) {
