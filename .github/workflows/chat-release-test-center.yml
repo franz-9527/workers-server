@@ -1,4 +1,4 @@
-name: Native WeChat recording, direct upload and call capability regressions
+name: Native voice format conversion and WeChat chat acceptance
 on: [push, workflow_dispatch]
 permissions:
   contents: read
@@ -40,9 +40,14 @@ jobs:
           find server/app server/views -name '*.php' -print0 | xargs -0 -n1 php -l >/tmp/php-lint.txt
           node --check server/assets/chat-testing-runtime.js
           node tools/check-wxml.js miniprogram --compile
-      - name: Go formatting, compilation and unit regressions
+      - name: Prepare offline native voice tools
         run: |
-          gofmt -w chat/internal/bootstrap/server.go chat/internal/avpipeline/helper.go chat/internal/message/av_worker.go chat/internal/moderation/av.go chat/internal/message/av_inspection.go chat/internal/message/av_delivery.go chat/internal/calls/worker.go chat/internal/calls/sandbox_routing_test.go chat/internal/message/media_source.go chat/internal/message/av_worker.go chat/internal/message/media_worker.go chat/internal/calls/service.go chat/internal/ports/sandbox.go chat/internal/ports/contracts.go chat/internal/auth/sandbox.go chat/internal/auth/mysql.go chat/internal/policy/sandbox.go chat/internal/policy/projection.go chat/internal/policy/guard.go chat/internal/policy/recipient.go chat/internal/conversation/sandbox.go chat/internal/conversation/store.go chat/internal/moderation/service.go chat/internal/message/reminders.go chat/internal/message/sandbox_cleanup.go chat/internal/dependencies/mysql.go chat/internal/dependencies/messaging.go chat/internal/calls/lifecycle.go chat/internal/dependencies/dependencies_test.go chat/internal/message/history.go
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then sudo apt-get update -qq; sudo apt-get install -y ffmpeg; fi
+      - name: Go formatting, compilation and unit regressions
+        env:
+          CHAT_AV_NATIVE_TEST: '1'
+        run: |
+          gofmt -w chat/internal/bootstrap/server.go chat/internal/avpipeline/helper.go chat/internal/message/av_worker.go chat/internal/moderation/av.go chat/internal/message/av_inspection.go chat/internal/message/av_delivery.go chat/internal/calls/worker.go chat/internal/calls/sandbox_routing_test.go chat/internal/message/media_source.go chat/internal/message/media_worker.go chat/internal/calls/service.go chat/internal/ports/sandbox.go chat/internal/ports/contracts.go chat/internal/auth/sandbox.go chat/internal/auth/mysql.go chat/internal/policy/sandbox.go chat/internal/policy/projection.go chat/internal/policy/guard.go chat/internal/policy/recipient.go chat/internal/conversation/sandbox.go chat/internal/conversation/store.go chat/internal/moderation/service.go chat/internal/message/reminders.go chat/internal/message/sandbox_cleanup.go chat/internal/dependencies/mysql.go chat/internal/dependencies/messaging.go chat/internal/calls/lifecycle.go chat/internal/dependencies/dependencies_test.go chat/internal/message/history.go
           cd chat
           go test ./...
       - name: Real MySQL sandbox scope and media integration
