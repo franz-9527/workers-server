@@ -22,7 +22,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: PHP 8.3.36 syntax
         run: |
-          for file in             .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php             .validation/source/server/app/Infrastructure/Messaging/SubscriptionCatalog.php             .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionQueue.php             .validation/source/server/app/Application/Messaging/SubscriptionTestData.php             .validation/source/server/app/Infrastructure/Messaging/ChatReminderTemplate.php             .validation/source/server/app/Application/Messaging/SubscriptionPreferences.php             .validation/source/server/app/Domain/Messaging/SettingsValuePolicy.php             .validation/source/server/app/Domain/Messaging/MessageEventCatalog.php             .validation/source/server/app/Domain/Messaging/WechatTemplateValue.php             .validation/source/server/views/admin/settings-subscription-editor.php             .validation/source/server/views/admin/settings.php; do
+          for file in \
+            .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php \
+            .validation/source/server/app/Infrastructure/Messaging/SubscriptionCatalog.php \
+            .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionQueue.php \
+            .validation/source/server/app/Application/Messaging/SubscriptionTestData.php \
+            .validation/source/server/app/Infrastructure/Messaging/ChatReminderTemplate.php \
+            .validation/source/server/app/Application/Messaging/SubscriptionPreferences.php \
+            .validation/source/server/app/Domain/Messaging/SettingsValuePolicy.php \
+            .validation/source/server/app/Domain/Messaging/MessageEventCatalog.php \
+            .validation/source/server/app/Domain/Messaging/WechatTemplateValue.php \
+            .validation/source/server/views/admin/settings-subscription-editor.php \
+            .validation/source/server/views/admin/settings.php \
+            .validation/source/tools/test_notification_admin_regression.php \
+            .validation/source/tools/test_message_settings_render.php \
+            .validation/source/tools/test-message-configuration.php \
+            .validation/source/server/tests/chat_reminder_contract.php; do
             docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l "$file"
           done
       - name: JavaScript syntax
