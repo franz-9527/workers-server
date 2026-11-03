@@ -1,0 +1,28 @@
+name: temporary subscription recognize save validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-subscription-save.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-subscription-save-main
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP 8.3.36 syntax
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Domain/Messaging/SettingsValuePolicy.php
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php
+      - name: Recognize then save pending template
+        run: docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php .validation/tests/subscription_recognize_save.php
