@@ -1,0 +1,43 @@
+name: temporary message refactor validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-message-refactor.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-message-refactor-main
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify source marker
+        run: |
+          cat .validation/SOURCE.txt
+          grep -q 'source_sha=435b9989a0b5a556ac9b025e8b0178ae50b5ab07' .validation/SOURCE.txt
+
+      - name: PHP 8.3.36 syntax
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli sh -lc 'find .validation/source/server -name "*.php" -print0 | xargs -0 -n1 php -l'
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/tests/message_subscription_contract.php
+
+      - name: Message subscription behavior
+        run: docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php .validation/tests/message_subscription_contract.php
+
+      - name: Mini program subscription client
+        run: |
+          node --check .validation/source/miniprogram/utils/SubscribeMessageUtils.js
+          node .validation/tests/message_subscription_client.js
+
+      - name: Static notification coverage
+        run: python3 .validation/tests/message_refactor_static.py
