@@ -1,0 +1,29 @@
+name: temporary log fixes validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-log-fixes.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-log-fixes-main
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frontend and config regression
+        run: python3 .validation/tests/test_log_fixes.py
+      - name: PHP 8.3.36 syntax and audit capability regression
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -v
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Application/Chat/ChatCredentialIssuer.php
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php .validation/tests/test_chat_availability.php
