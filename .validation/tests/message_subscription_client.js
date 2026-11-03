@@ -48,8 +48,8 @@ const utils=context.module.exports
 
 ;(async()=>{
   const settings=await utils.getSubscriptionSettings(true)
-  assert.deepEqual(settings.items.map(x=>x.key),['order_progress','order_fee_change','account_funds','chat_unread'])
-  assert.deepEqual(settings.items.map(x=>x.title),['订单进度提醒','订单费用变更提醒','账户资金变动提醒','聊天消息提醒'])
+  assert.deepEqual(Array.from(settings.items,x=>x.key),['order_progress','order_fee_change','account_funds','chat_unread'])
+  assert.deepEqual(Array.from(settings.items,x=>x.title),['订单进度提醒','订单费用变更提醒','账户资金变动提醒','聊天消息提醒'])
   assert.equal(settings.items.some(x=>x.key==='financial_progress'),false)
 
   const first=await utils.requestSubscriptionScenes(['order_progress','order_fee_change','account_funds','chat_unread'])
