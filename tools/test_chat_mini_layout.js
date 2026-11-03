@@ -4,7 +4,8 @@ const {render}=require('./test_order_presentation')
 const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8')
 if(path.basename(root)!=='workers-server')throw Error('Independent test repository required')
 function css(file,seen=new Set()){if(seen.has(file))return'';seen.add(file);return read(file).replace(/@import\s+["']([^"']+)["'];/g,(_,p)=>css(path.posix.join(path.posix.dirname(file),p),seen)).replace(/(-?[\d.]+)rpx/g,(_,n)=>(Number(n)/7.5)+'vw')}
-const base={enabled:true,status:'http',loading:false,canSend:true,audioEnabled:true,videoEnabled:true,isGroup:true,orderLabel:'【测试】客户与师傅完整会话',orderContext:{simulation:true,title:'完整会话'},messages:[{messageId:'1',state:'published',displayName:'演示客户甲',avatarPath:'',body:'您好，请确认上门施工时间。',isText:true},{messageId:'2',state:'published',displayName:'演示师傅甲',avatarPath:'',body:'明天下午两点可以上门。',isMine:true,isText:true}],receiptLabels:{'2':'1人已读 · 1人未读'},draft:'确认施工时间',keyboardHeight:240,keyboardOpen:true,attempts:[],albums:[],avAttempts:[],smsDialog:null,notice:'',inputError:'',showTools:false,simulation:false,voiceMode:false}
+const avatar='data:image/svg+xml;base64,'+Buffer.from(read('miniprogram/images/chat-user.svg')).toString('base64')
+const base={voiceStarting:false,enabled:true,status:'http',loading:false,canSend:true,audioEnabled:true,videoEnabled:true,isGroup:true,orderLabel:'【测试】客户与师傅完整会话',orderContext:{simulation:true,title:'完整会话'},messages:[{messageId:'1',state:'published',displayName:'演示客户甲',avatarPath:avatar,body:'您好，请确认上门施工时间。',isText:true},{messageId:'2',state:'published',displayName:'演示师傅甲',avatarPath:avatar,body:'明天下午两点可以上门。',isMine:true,isText:true}],receiptLabels:{'2':'1人已读 · 1人未读'},draft:'确认施工时间',keyboardHeight:240,keyboardOpen:true,attempts:[],albums:[],avAttempts:[],smsDialog:null,notice:'',inputError:'',showTools:false,simulation:false,voiceMode:false}
 async function main(){let checks=0;const browser=await chromium.launch()
  try{for(const width of[320,375])for(const colorScheme of['light','dark'])for(const draft of['','确认施工时间']){
  const state={...base,draft},body=render(read('miniprogram/subpackages/chat/conversation/index.wxml'),state)
@@ -22,13 +23,14 @@ async function main(){let checks=0;const browser=await chromium.launch()
  assert.ok(box.input.width>width*.5,'typing area remains the largest part of the composer')
  assert.equal(await page.locator('.message-sender').count(),2,'both sides of group messages show personnel names')
  assert.ok(box.header.left<box.title.left,'details icon occupies leftmost toolbar position')
+ assert.ok(box.header.width<width*.15,'native default button width cannot displace the conversation title')
  assert.equal(await page.locator('.message-receipt').count(),1,'confirmed receipt appears below own bubble')
  assert.equal(await page.locator('.message-bubble .message-receipt').count(),0,'receipt does not occupy message content')
  await page.screenshot({path:'test-artifacts/chat-mini-'+width+'-'+colorScheme+'-'+(draft?'send':'plus')+'.png',fullPage:true})
  checks++;await context.close()
  }
  for(const width of[320,375])for(const colorScheme of['light','dark'])for(const mode of['tools','record','cancel','pending']){
-  const state={...base,draft:'',keyboardHeight:0,keyboardOpen:false,showTools:mode==='tools',voiceMode:mode!=='tools',recording:['record','cancel'].includes(mode),recordCanceled:mode==='cancel',voiceCountdown:mode==='record'?9:60,avAttempts:mode==='pending'?[{client:'123',kind:'audio',submitted:true,state:'unknown',duration:2,displayName:'演示师傅甲',failed:true,code:'微信后台尚未允许七牛上传域名',label:'发送未完成',bubbleWidth:188}]:[]}
+  const state={...base,draft:'',keyboardHeight:0,keyboardOpen:false,showTools:mode==='tools',voiceMode:mode!=='tools',recording:['record','cancel'].includes(mode),recordCanceled:mode==='cancel',voiceCountdown:mode==='record'?9:60,avAttempts:mode==='pending'?[{client:'123',avatarPath:avatar,kind:'audio',submitted:true,state:'unknown',duration:2,displayName:'演示师傅甲',failed:true,code:'微信后台尚未允许七牛上传域名',label:'发送未完成',bubbleWidth:188}]:[]}
   const context=await browser.newContext({viewport:{width,height:740},colorScheme}),page=await context.newPage()
   await page.route('**/*',r=>r.abort())
   await page.setContent('<style>html,body,page{height:100%;margin:0}page,view,scroll-view{display:block}button{box-sizing:border-box;width:184px;min-width:92px}'+css('miniprogram/app.wxss')+css('miniprogram/subpackages/chat/conversation/index.wxss')+'</style><page>'+render(read('miniprogram/subpackages/chat/conversation/index.wxml'),state)+'</page>')

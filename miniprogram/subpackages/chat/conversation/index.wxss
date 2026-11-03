@@ -203,3 +203,5 @@ page{height:100%;overflow:hidden}
 .voice-cancel-symbol{font-size:108rpx;height:148rpx;line-height:148rpx}.voice-countdown{font-size:26rpx;line-height:1.5;margin-bottom:6rpx}
 @keyframes voice-level{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
 @media(prefers-color-scheme:dark){.conversation-page .message-sender,.pending-media-state{color:#aeb5b9}.pending-media-reason{color:#efa68c}.conversation-page .composer-send{background:#079661}}
+
+.conversation-page .chat-details{flex:0 0 72rpx;width:72rpx;min-width:72rpx;max-width:72rpx;padding:0;box-sizing:border-box}.conversation-page .composer-input,.conversation-page .voice-hold{border:0;outline:0}
