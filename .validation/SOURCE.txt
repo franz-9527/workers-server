@@ -1,4 +1,0 @@
-source_repo=franz-9527/workers
-source_sha=2626d108d38e13ae65158342b0a26a1274ce29d8
-files=3
-purpose=platform service fee overdue worker notification gap
