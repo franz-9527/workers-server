@@ -1,0 +1,4 @@
+.cu-form-group .title {
+  min-width: calc(4em + 30rpx);
+}
+.profile-edit-hint{display:flex;align-items:flex-start;gap:10rpx;padding:16rpx 24rpx;background:#fff6e8;color:#8b5b17;font-size:24rpx;line-height:1.5}.profile-edit-hint>text:last-child{flex:1;min-width:0;white-space:normal;overflow-wrap:break-word}@media(prefers-color-scheme:dark){.profile-edit-hint{background:#30271b;color:#e7c389}}

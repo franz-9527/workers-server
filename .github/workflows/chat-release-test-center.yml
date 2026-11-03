@@ -1,0 +1,26 @@
+name: Worker onboarding and tab phone acceptance
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install actual WXML compiler
+        run: npm install --no-save miniprogram-compiler@0.2.3
+      - name: Source syntax and interaction regressions
+        run: |
+          node --check miniprogram/custom-tab-bar/index.js
+          node --check miniprogram/pages/record/detail.js
+          node --check miniprogram/pages/record/record.js
+          node --check miniprogram/subpackages/account/workerProfile/index.js
+          node --test tools/test_worker_onboarding.js
+      - name: Compile main and subpackage templates
+        run: |
+          node tools/check-wxml.js --self-test
+          node tools/check-wxml.js miniprogram --compile
