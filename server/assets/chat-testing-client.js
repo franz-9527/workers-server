@@ -66,7 +66,7 @@ class TestPeer {
  io(){
   const peer=this
   return {
-   environment:()=> 'test',now:()=>Date.now(),monotonicNow:()=>performance.now(),random:()=>Math.random(),setTimeout,clearTimeout,
+   environment:()=> 'test',now:()=>Date.now(),monotonicNow:()=>performance.now(),random:()=>Math.random(),setTimeout:(fn,delay)=>setTimeout(fn,delay),clearTimeout:id=>clearTimeout(id),
    randomBytes:async n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>b.toString(16).padStart(2,'0')).join(''),
    credential:()=>peer.credential(),http:(p,d,t)=>peer.request(p,d,t),socket:()=>peer.socket(),
    upload:(grant,path,progress,tasks)=>new Promise((resolve,reject)=>{

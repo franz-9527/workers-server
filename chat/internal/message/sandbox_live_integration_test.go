@@ -168,3 +168,50 @@ func TestMySQLSandboxMultiMemberUsesRealSharedHistory(t *testing.T){
  if e!=nil||len(page.Messages)!=1||page.Mode!="collaboration"{t.Fatal(page,e)}
  if f.text("SELECT COUNT(*) FROM chat_members WHERE conversation_id=? AND can_read=1",string(cid))!="3"{t.Fatal("missing group participant")}
 }
+
+type sandboxCallBroker struct{}
+func(sandboxCallBroker)Availability(context.Context)(calls.Availability,error){
+ a:=calls.Availability{};a.Settings.Revision="1";c:=&a.Settings.Config
+ c.Enabled=true;c.AudioEnabled=true;c.VideoEnabled=true;c.AudioPriority=[2]calls.Provider{calls.Wechat,calls.Shengwang};c.VideoPriority=c.AudioPriority;c.AllowFallback=false;c.Window=45;c.Margin=15;c.Heartbeat=15;c.MaxActive=10
+ for i,p:=range []calls.Provider{calls.Wechat,calls.Shengwang}{unit:="wechat_equivalent";if p==calls.Shengwang{unit="shengwang_standard"}
+ a.Pools=append(a.Pools,calls.Pool{ID:ports.ID(strconv.Itoa(i+1)),Decision:calls.ResourceDecision{SchemaVersion:1,Provider:p,ScopeID:"fixture",CycleID:"fixture",ConfigRevision:"1",Unit:unit,Status:"available",AvailableUnits:"99999999",ExpiresAt:time.Now().Unix()+300},Audio:calls.Meter{1,1,1},Video:calls.Meter{1,1,1}})}
+ return a,nil
+}
+func(sandboxCallBroker)Resource(_ context.Context,q calls.ResourceRequest)(calls.Permit,error){
+ state:="active";if strings.HasPrefix(q.Action,"release"){state="closed"}
+ return calls.Permit{CallID:q.CallID,Epoch:q.Epoch,PoolID:q.PoolID,State:state,Provider:calls.Shengwang,AppID:strings.Repeat("a",32),Until:time.Now().Unix()+60,Revision:"1"},nil
+}
+func(sandboxCallBroker)Identities(context.Context,calls.ResourceRequest)(map[string]calls.NativePerson,error){return nil,calls.ErrUnavailable}
+type sandboxCallMedia struct{p *calls.Providers}
+func(m sandboxCallMedia)Ready(p calls.Provider)bool{return m.p.Ready(p)}
+func(m sandboxCallMedia)Credentials(ctx context.Context,s calls.Session,p calls.Permit,id ports.ID)(any,error){return m.p.Credentials(ctx,s,p,id)}
+func(sandboxCallMedia)Stop(context.Context,calls.Session,calls.Permit)(bool,error){return true,nil}
+func TestMySQLSandboxRealCallLifecycleCredentialsAndClearStopsBothAccounts(t *testing.T){
+ f,_,_:=setupMessage(t,safetyFunc(pass));admin,mini,cid:=sandboxSeed(t,f)
+ host:=os.Getenv("CHAT_AUTH_TEST_MYSQL_USER_HOST");if host==""{host="127.0.0.1"}
+ for _,table:=range []string{"chat_call_accounts","chat_call_sessions","chat_call_legs","chat_call_operations","chat_call_events"}{f.exec("GRANT SELECT,INSERT,UPDATE,DELETE ON "+f.name+"."+table+" TO '"+f.user+"'@'"+host+"'")}
+ authority,e:=calls.NewOrderAuthority(f.goDB,f.store,"test");if e!=nil{t.Fatal(e)}
+ media:=sandboxCallMedia{&calls.Providers{Environment:"test",AppID:strings.Repeat("a",32),Certificate:strings.Repeat("b",32),CustomerID:"fixture",CustomerSecret:"fixture",PublishPrivilegesVerified:true}}
+ service,e:=calls.NewService(f.goDB,authority,sandboxCallBroker{},media);if e!=nil{t.Fatal(e)}
+ ready,e:=service.Available(f.ctx,mini,calls.Request{ConversationID:cid});if e!=nil||ready.(map[string]any)["video"]!=true{t.Fatal("mini availability diverged from Web routing",ready,e)}
+ view,e:=service.Create(f.ctx,admin,calls.Request{ConversationID:cid,PeerID:mini.ActorID,Media:calls.Video,Instance:strings.Repeat("a",32),Operation:digest("sandbox-live-call")});if e!=nil||view.Provider!=calls.Shengwang{t.Fatal(view,e)}
+ action:=func(p ports.Principal,name,instance string)calls.View{
+ t.Helper();current,e:=service.Status(f.ctx,p,calls.Request{CallID:view.CallID});if e!=nil{t.Fatal(e)}
+ out,e:=service.Action(f.ctx,p,name,calls.Request{CallID:view.CallID,Epoch:ports.ID(current.Epoch),Revision:ports.ID(current.Revision),Instance:instance,Operation:digest(string(p.ActorID)+":"+name+":"+current.Revision)});if e!=nil{t.Fatal(name,e)};return out
+ }
+ action(mini,"accept",strings.Repeat("b",32))
+ grants:=[]map[string]any{}
+ for i,p:=range []ports.Principal{admin,mini}{instance:=strings.Repeat("a",32);if i==1{instance=strings.Repeat("b",32)}
+ prepared,e:=service.Prepare(f.ctx,p,calls.Request{CallID:view.CallID,Epoch:"1",Instance:instance});if e!=nil{t.Fatal(e)}
+ grant:=prepared.(map[string]any)["credentials"].(map[string]any);grants=append(grants,grant)
+ if !strings.HasPrefix(grant["token"].(string),"007"){t.Fatal("real RTC token generation was bypassed")}
+ action(p,"prepared",instance)
+ }
+ if grants[0]["channel"]!=grants[1]["channel"]||grants[0]["uid"]==grants[1]["uid"]||grants[0]["peer_uid"]!=grants[1]["uid"]{t.Fatal("cross-client RTC identities mismatched",grants)}
+ action(admin,"ready",strings.Repeat("a",32));active:=action(mini,"ready",strings.Repeat("b",32));if active.State!=calls.Active{t.Fatal(active)}
+ f.exec("DELETE FROM chat_sandbox_members WHERE room_id=51");f.exec("DELETE FROM chat_sandbox_rooms WHERE id=51")
+ if _,e=service.Status(f.ctx,admin,calls.Request{CallID:view.CallID});e==nil{t.Fatal("clear retained call authorization")}
+ if e=service.Tick(f.ctx);e!=nil{t.Fatal(e)}
+ if f.text("SELECT state FROM chat_call_sessions WHERE id=?",string(view.CallID))!="ended"{t.Fatal("cleared active call was not stopped")}
+ if f.text("SELECT COUNT(*) FROM chat_call_accounts WHERE active_call_id IS NOT NULL")!="0"{t.Fatal("cleared call retained account occupancy")}
+}
