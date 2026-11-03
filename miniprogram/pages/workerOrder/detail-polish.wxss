@@ -1,0 +1,136 @@
+/* 2026-08-24：师傅订单详情页操作区域视觉优化，仅调整样式，不改变业务事件。 */
+
+/* 地址复制与导航按钮采用紧凑并排布局，避免细长描边按钮上下堆叠。 */
+.detail-page .address-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 0 10rpx;
+  text-align: initial;
+}
+
+.detail-page .address-action {
+  min-width: 166rpx;
+  height: 66rpx;
+  margin: 0 !important;
+  padding: 0 24rpx;
+  border-radius: 33rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  line-height: 66rpx;
+}
+
+.detail-page .address-action:after {
+  border: 0;
+}
+
+.detail-page .address-action text {
+  margin-right: 8rpx;
+  font-size: 27rpx;
+}
+
+.detail-page .copy-action {
+  color: #009eaf;
+  background: #edf9fa;
+  border: 1rpx solid #bcebed;
+}
+
+.detail-page .navigation-action {
+  color: #fff;
+  background: linear-gradient(135deg, #16bfca, #00a9b9);
+  box-shadow: 0 8rpx 20rpx rgba(0, 174, 190, .2);
+}
+
+/* 底部客服、分享和主操作按钮统一为清晰的“辅助操作 + 主按钮”层级。 */
+.detail-page .safe-bottom {
+  height: 190rpx;
+}
+
+.detail-page .bottom-bar {
+  box-sizing: border-box;
+  gap: 10rpx;
+  padding: 16rpx 20rpx 18rpx;
+  padding-bottom: calc(18rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
+  border-radius: 28rpx 28rpx 0 0;
+  border-top: 1rpx solid rgba(41, 82, 89, .06);
+  box-shadow: 0 -12rpx 34rpx rgba(25, 58, 64, .12);
+}
+
+.detail-page .bottom-icon {
+  flex: none;
+  width: 94rpx;
+  height: 86rpx;
+  margin: 0 !important;
+  padding: 2rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+  color: #53676c;
+  font-size: 21rpx;
+  line-height: 1.15;
+}
+
+.detail-page .bottom-icon:after {
+  border: 0;
+}
+
+.detail-page .bottom-icon text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 17rpx;
+  background: #eaf9fa;
+  color: #00a8b8;
+  font-size: 31rpx;
+}
+
+.detail-page .bottom-icon view {
+  margin-top: 7rpx;
+  white-space: nowrap;
+}
+
+.detail-page .main-action {
+  flex: 1;
+  min-width: 0;
+  height: 82rpx !important;
+  margin: 0 0 0 6rpx !important;
+  padding: 0 22rpx;
+  border-radius: 41rpx !important;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 82rpx;
+  white-space: nowrap;
+}
+
+.detail-page .main-action:after {
+  border: 0;
+}
+
+.detail-page .action-main-icon {
+  margin-right: 10rpx;
+  font-size: 30rpx;
+}
+
+.detail-page .action-primary {
+  color: #fff !important;
+  background: linear-gradient(135deg, #19c4cf, #00a8b8) !important;
+  box-shadow: 0 10rpx 24rpx rgba(0, 174, 190, .25);
+}
+
+.detail-page .action-secondary {
+  color: #008f9e !important;
+  background: #e8f9fa !important;
+  border: 1rpx solid #b9e9ec;
+}
+
+.detail-page .action-disabled {
+  color: #fff !important;
+  background: #aebbbd !important;
+  box-shadow: none;
+}

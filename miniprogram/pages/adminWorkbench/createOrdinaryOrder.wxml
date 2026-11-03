@@ -1,0 +1,5 @@
+<view class="proxy-create-page">
+  <view class="proxy-create-card"><view class="proxy-create-title">先选择真实客户</view><view class="proxy-create-hint">搜索昵称、完整手机号或用户编号。客户须已登录并授权手机号；资料提交后，由客户本人确认规则并支付预约费。</view><view class="proxy-create-search"><input value="{{query}}" bindinput="inputQuery" bindconfirm="searchCustomers" confirm-type="search" maxlength="80" placeholder="昵称 / 手机号 / 用户编号"/><button loading="{{searching}}" disabled="{{searching}}" bindtap="searchCustomers">搜索</button></view><view wx:if="{{errorText}}" class="proxy-create-error">{{errorText}}</view><view wx:if="{{searched && !searching && !customers.length && !errorText}}" class="proxy-create-hint">暂无匹配客户，请至少输入两个字符后搜索。</view></view>
+  <view wx:for="{{customers}}" wx:key="public_id" class="proxy-create-card" data-ref="{{item.public_id}}" bindtap="selectCustomer"><view class="proxy-create-title">{{item.nickname || '微信客户'}}</view><view class="proxy-create-hint">{{item.mobile_masked}} · {{item.public_id}}</view><view class="proxy-create-action">为此客户填写订单 ›</view></view>
+</view>
+<inapp-notice custom-nav="{{false}}"></inapp-notice>

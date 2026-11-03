@@ -1,0 +1,1 @@
+<section class="admin-card admin-mb-3"><div class="admin-card__body"><h2>聊天基础回归</h2><p>本页保留隔离回归夹具与结果检查。双人、多人会话及身份组合已移至聊天管理。</p><a class="admin-btn admin-btn--primary" href="<?= e(admin_url('chat.testing')) ?>">打开聊天管理 · 会话测试</a><p class="admin-text-muted admin-mt-2">使用小程序现有演示身份切换即可查看测试消息，不需要短期入口。</p></div></section>
