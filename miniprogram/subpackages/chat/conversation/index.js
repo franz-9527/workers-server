@@ -600,6 +600,6 @@ Page({
  imageActions(event){this.messageActions(event)},
 
 
- retryConnection(){if(this.visible && this.data.enabled && this.data.status!=='denied'){this.manager.schedulePoll(0);this.refreshUnread()}},
+ retryConnection(){if(this.visible && this.data.enabled && this.data.status!=='denied'){this.manager.retryConnection();this.manager.schedulePoll(0);this.refreshUnread()}},
  onPullDownRefresh(){this.retryConnection();wx.stopPullDownRefresh()}
 })

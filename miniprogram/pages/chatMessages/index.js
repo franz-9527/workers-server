@@ -64,7 +64,14 @@ Page({
     const chatEnabled = this.chatManager.enabled === true
     this.setData({ chatSimulation:this.chatManager.simulation===true,auditAllowed:false,pageVisible: true, chatEnabled, chatStatus: chatEnabled ? this.chatManager.state : 'disabled', chatAvailabilityReason:this.chatManager.availabilityReason||'', checkingLogin: !this.data.isLoggedIn })
     const app = getApp()
-    const ready = typeof app.ensureUserReady === 'function' ? app.ensureUserReady(false) : Promise.resolve(app.globalData.userInfo || {})
+    const known = app.globalData.userInfo || {}
+    const verifiedReturn = this.data.isLoggedIn && !!known.openid && this.activeIdentity === identity(known)
+    const check = typeof app.ensureUserReady === 'function' ? app.ensureUserReady(false) : Promise.resolve(known)
+    // Cloud profile refresh must not hold up the independently authenticated API.
+    const ready = verifiedReturn ? Promise.resolve(known) : check
+    if (verifiedReturn) check.then(user => {
+      if (this._visible && serial === this._showSerial && identity(user) !== this.activeIdentity) this.onShow()
+    }).catch(() => {})
     ready.then(user => {
       if (!this._visible || serial !== this._showSerial) return
       if (!user || !user.openid) {

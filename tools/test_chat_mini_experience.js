@@ -24,7 +24,7 @@ let draft={text:'你好',revision:2,source:{}},sent=[],staged=[],readyResolve
 const app={globalData:{userInfo:{openid:'real',mobile:'13800000000'}},ensureUserReady(){return new Promise(r=>readyResolve=r)}}
 async function main(){
  const page=loadPage(path.join(root,'miniprogram/subpackages/chat/conversation/index.js'))
- page.id='12';page.manager=manager;page.managerEpoch=1;page.life=3;page.visible=true;page.views={};page.identities={};page.data.enabled=true;page.data.canSend=true;page.data.audioEnabled=true;page.data.status='http';page.data.draft=draft.text;page.draftRevision=draft.revision
+ manager.cache.set('12',{canSend:true,capabilities:{audio:true,video:true}});page.id='12';page.manager=manager;page.managerEpoch=1;page.life=3;page.visible=true;page.views={};page.identities={};page.data.enabled=true;page.data.canSend=true;page.data.audioEnabled=true;page.data.status='http';page.data.draft=draft.text;page.draftRevision=draft.revision
  page.handleEvent('availability',{enabled:true});ck(page.life===3,'availability refresh does not remount conversation or invalidate pending sends')
  await page.sendText({type:'confirm',detail:{value:'键盘发送'}})
  ck(sent.length===1&&sent[0].text==='键盘发送'&&hideCalls===0,'keyboard confirm flushes final composition and sends without hiding keyboard')
@@ -60,8 +60,9 @@ async function main(){
  await m.http('message.send',payload);ck(requests.length===2&&requests[1].payload===payload&&requests[1].token==='renewed','expired credentials renew once with immutable original request')
  m.reset();ck(m.cache.size===0,'account or site reset still erases message cache')
  const inbox=loadPage(path.join(root,'miniprogram/pages/chatMessages/index.js'))
- inbox.chatManager=manager;inbox.managerEpoch=1;inbox.activeIdentity='https://fixture.invalid|real|13800000000';inbox._showSerial=0;inbox.data.isLoggedIn=true;inbox.data.chatRows=[{conversationId:'12'}];inbox.stopSummaryPolling=()=>{};inbox.getTabBar=()=>null;inbox.clearSensitive=()=>{throw Error('ordinary return cleared valid identity')};inbox.onShow()
+ inbox.chatManager=manager;inbox.managerEpoch=1;inbox.activeIdentity='https://fixture.invalid|real|13800000000';inbox._showSerial=0;inbox.data.isLoggedIn=true;inbox.data.chatRows=[{conversationId:'12'}];inbox.stopSummaryPolling=()=>{};inbox.getTabBar=()=>null;inbox.clearSensitive=()=>{throw Error('ordinary return cleared valid identity')};let refreshed=0;inbox.refreshSummary=()=>{refreshed++};inbox.scheduleSummaryRefresh=()=>{};inbox.probeAudit=()=>{};inbox.onShow();await Promise.resolve();await Promise.resolve()
  ck(inbox.data.checkingLogin===false&&inbox.data.chatRows.length===1,'returning to inbox shows valid session and loaded rows while login refresh is pending')
+ ck(refreshed===1,'valid inbox return refreshes API data without waiting for a slow cloud profile check')
  console.log('PASS TOTAL '+checks)
 }
 main().catch(error=>{console.error(error);process.exitCode=1})

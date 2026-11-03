@@ -216,6 +216,8 @@ class ChatManager {
   if (this.reconciling) { this.again = true; return this.reconciling }
   const epoch = this.epoch; const accountGeneration=this.accountGeneration; const focusEpoch = this.focusEpoch; const id = this.active
   const job = (async () => {
+   // Prioritize the visible conversation over multi-page account reconciliation.
+   if(id && this.active===id && this.focusEpoch===focusEpoch)await this.recoverConversation(id,epoch,focusEpoch)
    let cursor = ''; let hasMore = true; let pages = 0
    // Account-wide recovery checks every foreground account, even without an
    // open conversation. Each tick is bounded; pagination continues next tick.
@@ -230,7 +232,6 @@ class ChatManager {
     hasMore = page.has_more; cursor = page.next_cursor || ''; if (hasMore && !cursor) throw failure('CHAT_INVALID_RESPONSE')
    }
    this.digestCursor = hasMore ? cursor : ''; if (hasMore) this.again = true
-   if (id && this.active === id && this.focusEpoch === focusEpoch) await this.recoverConversation(id, epoch, focusEpoch)
    if (this.live(epoch)) { this.state = this.socketReady ? 'socket' : 'http'; this.pollFailures = 0 }
   })().catch(error => {
    if (this.live(epoch) && accountGeneration===this.accountGeneration) { this.pollFailures = Math.min((this.pollFailures || 0) + 1, 6); this.state = 'unavailable'; this.emit('connection', { state: 'unavailable', code: error.code }); if (error.code === 'CHAT_RESYNC_REQUIRED') this.digestCursor = '' }

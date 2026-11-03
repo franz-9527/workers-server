@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -114,11 +115,11 @@ func (s *Service) CheckText(ctx context.Context, q ports.TextRequest) (ports.Saf
 	defer cancel()
 	identity, e := s.identity(ctx, q.Actor, nil)
 	if e != nil {
-		return ports.SafetyResult{}, ports.ErrUnavailable
+		return ports.SafetyResult{}, fmt.Errorf("identity-stage: %w",e)
 	}
 	contextItems, e := s.prepare(ctx, q)
 	if e != nil {
-		return ports.SafetyResult{}, ports.ErrUnavailable
+		return ports.SafetyResult{}, fmt.Errorf("prepare-stage: %w",e)
 	}
 	previous := make([]string, 0, len(contextItems))
 	for _, item := range contextItems {
@@ -238,7 +239,7 @@ func (s *Service) identity(ctx context.Context, p ports.Principal, tx *sql.Tx) (
 		var e error
 		tx, e = s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 		if e != nil {
-			return binding{}, ports.ErrUnavailable
+			return binding{}, fmt.Errorf("fixture-identity-1")
 		}
 		defer tx.Rollback()
 	}
@@ -248,16 +249,20 @@ func (s *Service) identity(ctx context.Context, p ports.Principal, tx *sql.Tx) (
 	if e := s.source.ValidatePrincipalLocked(ctx, tx, p); e != nil {
 		return binding{}, e
 	}
-	moderationActor:=p.ActorID
-	if sandboxID,ok:=ports.SandboxSource(p.SourceID);ok {
-		if !ports.SandboxPrincipal(p){return binding{},ports.ErrInvalid}
+	moderationActor := p.ActorID
+	if sandboxID, ok := ports.SandboxSource(p.SourceID); ok {
+		if !ports.SandboxPrincipal(p) {
+			return binding{}, ports.ErrInvalid
+		}
 		var actor string
-		if tx.QueryRowContext(ctx,"SELECT CAST(moderation_user_id AS CHAR) FROM chat_sandbox_sessions WHERE id=? LOCK IN SHARE MODE",sandboxID).Scan(&actor)!=nil||actor=="0"{return binding{},ports.ErrUnavailable}
-		moderationActor=ports.ID(actor)
+		if tx.QueryRowContext(ctx, "SELECT CAST(moderation_user_id AS CHAR) FROM chat_sandbox_sessions WHERE id=? LOCK IN SHARE MODE", sandboxID).Scan(&actor) != nil || actor == "0" {
+			return binding{}, fmt.Errorf("fixture-identity-2")
+		}
+		moderationActor = ports.ID(actor)
 	}
 	rows, e := tx.QueryContext(ctx, `SELECT CAST(id AS CHAR),openid,CAST(session_version AS CHAR) FROM wechat_identities WHERE user_id=? AND app_id=? AND status='active' ORDER BY id LIMIT 2 LOCK IN SHARE MODE`, string(moderationActor), s.appID)
 	if e != nil {
-		return binding{}, ports.ErrUnavailable
+		return binding{}, fmt.Errorf("fixture-identity-3")
 	}
 	count := 0
 	var id, openid, version string
@@ -270,11 +275,11 @@ func (s *Service) identity(ctx context.Context, p ports.Principal, tx *sql.Tx) (
 	failure := rows.Err()
 	rows.Close()
 	if e != nil || failure != nil || count != 1 || !openIDPattern.MatchString(openid) || !ports.ID(version).Valid() || version == "0" {
-		return binding{}, ports.ErrUnavailable
+		return binding{}, fmt.Errorf("fixture-identity-4")
 	}
 	proof := hash(strings.Join([]string{s.environment, s.appID, string(p.ActorID), id, version, openid}, "\n"))
 	if owned && tx.Commit() != nil {
-		return binding{}, ports.ErrUnavailable
+		return binding{}, fmt.Errorf("fixture-identity-5")
 	}
 	return binding{openid, proof}, nil
 }
@@ -301,29 +306,29 @@ type contextItem struct {
 func (s *Service) prepare(ctx context.Context, q ports.TextRequest) ([]contextItem, error) {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if e != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-1: %v", e)
 	}
 	defer tx.Rollback()
 	var actor string
 	if e = tx.QueryRowContext(ctx, `SELECT CAST(actor_id AS CHAR) FROM chat_restrictions WHERE actor_id=? FOR UPDATE`, string(q.Actor.ActorID)).Scan(&actor); e != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-2: %v", e)
 	}
 	var intent string
 	e = tx.QueryRowContext(ctx, `SELECT CAST(id AS CHAR) FROM chat_send_intents WHERE id=? AND sender_id=? AND conversation_id=? AND fingerprint=? AND state='checking' LOCK IN SHARE MODE`, string(q.IntentID), string(q.Actor.ActorID), string(q.ConversationID), q.Fingerprint).Scan(&intent)
 	if e != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-3: %v", e)
 	}
 	_, e = tx.ExecContext(ctx, `INSERT INTO chat_text_checks(intent_id,sender_id,conversation_id,fingerprint,normalized_text,created_at) VALUES(?,?,?,?,?,UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE intent_id=intent_id`, intent, string(q.Actor.ActorID), string(q.ConversationID), q.Fingerprint, normalize(q.Text))
 	if e != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-4: %v", e)
 	}
 	var fp string
 	if e = tx.QueryRowContext(ctx, `SELECT fingerprint FROM chat_text_checks WHERE intent_id=? FOR UPDATE`, intent).Scan(&fp); e != nil || fp != q.Fingerprint {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-5: %v", e)
 	}
 	rows, e := tx.QueryContext(ctx, `SELECT CAST(intent_id AS CHAR),fingerprint,normalized_text FROM chat_text_checks WHERE sender_id=? AND conversation_id=? AND intent_id<>? AND created_at>=UTC_TIMESTAMP(6)-INTERVAL 2 MINUTE ORDER BY created_at DESC,id DESC LIMIT 4 FOR UPDATE`, string(q.Actor.ActorID), string(q.ConversationID), intent)
 	if e != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-6: %v", e)
 	}
 	previous := []contextItem{}
 	for rows.Next() {
@@ -336,13 +341,13 @@ func (s *Service) prepare(ctx context.Context, q ports.TextRequest) ([]contextIt
 	failure := rows.Err()
 	rows.Close()
 	if e != nil || failure != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-7: %v", e)
 	}
 	for i, j := 0, len(previous)-1; i < j; i, j = i+1, j-1 {
 		previous[i], previous[j] = previous[j], previous[i]
 	}
 	if tx.Commit() != nil {
-		return nil, ports.ErrUnavailable
+		return nil, fmt.Errorf("fixture-prepare-8: %v", e)
 	}
 	return previous, nil
 }

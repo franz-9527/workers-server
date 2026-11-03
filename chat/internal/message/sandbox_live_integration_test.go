@@ -3,6 +3,7 @@ package message
 import (
  "bytes"
  "context"
+ "database/sql"
  "fmt"
  "os"
  "path/filepath"
@@ -247,7 +248,7 @@ func TestMySQLSandboxLiveDirectReadReceiptsAndMemberRevision(t *testing.T){
 func TestMySQLSandboxRealLocalModerationForDemoWithoutWechatBinding(t *testing.T){
  f,s,q:=setupMessage(t,safetyFunc(pass));admin,mini,cid:=sandboxSeed(t,f)
  f.exec("INSERT INTO wechat_identities(user_id,app_id,openid,status,created_at,updated_at) VALUES(10203,'chat-platform-app','oS07Parent_abcdefghijklmnopqrstuv','active',UTC_TIMESTAMP(),UTC_TIMESTAMP())")
- safety,e:=moderation.New(f.goDB,"test",moderation.Config{Enabled:true,Mode:"local",AppID:"chat-platform-app"},4,2*time.Second,nil);if e!=nil{t.Fatal(e)};t.Cleanup(safety.Close);s.safety=safety
+ safety,e:=moderation.New(f.goDB,"test",moderation.Config{Enabled:true,Mode:"local",AppID:"chat-platform-app"},4,2*time.Second,nil);if e!=nil{t.Fatal(e)};t.Cleanup(safety.Close);s.safety=sandboxDiagnosticSafety{safety,t}
  for i,p:=range []ports.Principal{admin,mini}{
   q.ConversationID=cid;q.ClientMessageID=client(9800+i);q.Text="确认明天下午施工"
   result,e:=s.Send(f.ctx,p,q);if e!=nil||result.State!="accepted"{t.Fatal("real moderation path",result,e)}
@@ -256,3 +257,7 @@ func TestMySQLSandboxRealLocalModerationForDemoWithoutWechatBinding(t *testing.T
  result,e:=s.Send(f.ctx,mini,q);if e!=nil||result.State!="accepted"{t.Fatal("order text attachment moderation",result,e)}
  if f.text("SELECT COUNT(*) FROM chat_text_checks WHERE conversation_id=?",string(cid))!="3"{t.Fatal("actual moderation context not recorded")}
 }
+
+type sandboxDiagnosticSafety struct{ports.Safety;t *testing.T}
+func (s sandboxDiagnosticSafety)CheckText(ctx context.Context,q ports.TextRequest)(ports.SafetyResult,error){v,e:=s.Safety.CheckText(ctx,q);if e!=nil{s.t.Logf("fixture moderation failure: %v",e)};return v,e}
+func (s sandboxDiagnosticSafety)ValidateTextLocked(ctx context.Context,tx *sql.Tx,p ports.Principal,v ports.SafetyResult)error{return s.Safety.(finalSafety).ValidateTextLocked(ctx,tx,p,v)}
