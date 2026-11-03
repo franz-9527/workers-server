@@ -54,6 +54,7 @@ Component({
       this.notificationStateOff = null
       this._tabVisible = false
       this._navigationPending = false
+      this._navigationSerial = (this._navigationSerial || 0) + 1
     }
   },
 
@@ -61,6 +62,7 @@ Component({
     show() {
       this._tabVisible = true
       this._navigationPending = false
+      this._navigationSerial = (this._navigationSerial || 0) + 1
       const pages = getCurrentPages()
       const page = pages && pages[pages.length - 1]
       const selected = this.data.list.findIndex(item => !item.plus && page && item.pagePath === '/' + page.route)
@@ -72,6 +74,7 @@ Component({
     hide() {
       this._tabVisible = false
       this._navigationPending = false
+      this._navigationSerial = (this._navigationSerial || 0) + 1
       this.setData({ showPublishMenu: false })
     }
   },
@@ -112,12 +115,14 @@ Component({
     navigateFromMenu(url, tab) {
       if (this._navigationPending) return
       this._navigationPending = true
+      const serial = this._navigationSerial = (this._navigationSerial || 0) + 1
       this.setData({ showPublishMenu: false }, () => {
+        if (this._tabVisible === false || serial !== this._navigationSerial) return
         const navigate = tab ? wx.switchTab : wx.navigateTo
         navigate({
           url,
-          fail: () => wx.showToast({ title: '页面未能打开，请重试', icon: 'none' }),
-          complete: () => { this._navigationPending = false }
+          fail: () => { if (this._tabVisible !== false && serial === this._navigationSerial) wx.showToast({ title: '页面未能打开，请重试', icon: 'none' }) },
+          complete: () => { if (serial === this._navigationSerial) this._navigationPending = false }
         })
       })
     },

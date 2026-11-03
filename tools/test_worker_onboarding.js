@@ -118,3 +118,7 @@ test('changed templates retain explicit QR instruction and one status banner',()
  const form=read('miniprogram/subpackages/account/workerProfile/index.wxml'),record=read('miniprogram/pages/record/record.wxml')
  assert.equal((form.match(/profile-edit-hint/g)||[]).length,1);assert.doesNotMatch(form,/非必要请勿频繁|正在修改原入驻资料/);assert.match(record,/id="review-wechat"/);assert.match(record,/长按下方二维码添加微信/);assert.match(record,/reviewPending/);assert.match(form,/showSuccessModal \|\| publishLimitBlocked/)
 })
+
+test('late completion from old navigation cannot unlock a new page navigation',()=>{
+ const f=tab();f.p.createOrder();const old=f.nav[0];f.def.pageLifetimes.hide.call(f.p);f.def.pageLifetimes.show.call(f.p);f.p.publishWorker();assert.equal(f.nav.length,2);old.complete();f.p.publishWorker();assert.equal(f.nav.length,2);f.nav[1].complete();f.p.publishWorker();assert.equal(f.nav.length,3)
+})
