@@ -13,16 +13,14 @@ namespace {
 
 namespace WorkerAdmin\Infrastructure\Messaging {
     require __DIR__.'/../source/server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php';
-    final class SubscriptionCatalogFixture {
-        use OrderSubscriptionDefinitionOperations;
-    }
+    require __DIR__.'/../source/server/app/Infrastructure/Messaging/SubscriptionCatalog.php';
 }
 
 namespace {
     require __DIR__.'/../source/server/app/Domain/Messaging/SettingsValuePolicy.php';
 
     use WorkerAdmin\Domain\Messaging\SettingsValuePolicy;
-    use WorkerAdmin\Infrastructure\Messaging\SubscriptionCatalogFixture;
+    use WorkerAdmin\Infrastructure\Messaging\SubscriptionCatalog;
 
     $incomplete = [
         'template_id'=>'PRI_RECOGNIZED_001',
@@ -60,7 +58,7 @@ namespace {
         'wechat.subscribe_enabled'=>true,
         'wechat.subscribe_template_ids'=>$persisted,
     ];
-    $definitions = SubscriptionCatalogFixture::subscriptionSceneDefinitions();
+    $definitions = SubscriptionCatalog::subscriptionSceneDefinitions();
     $known = [
         'wechat.subscribe_template_ids'=>[
             'setting_value'=>json_encode($persisted, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),
@@ -74,8 +72,8 @@ namespace {
         'notification',
         'user_order_update',
         $definitions,
-        SubscriptionCatalogFixture::subscriptionSemanticLabels(),
-        SubscriptionCatalogFixture::reviewResultFixedTemplateFields()
+        SubscriptionCatalog::subscriptionSemanticLabels(),
+        SubscriptionCatalog::reviewResultFixedTemplateFields()
     );
     $saved = json_decode($updates['wechat.subscribe_template_ids'] ?? '', true);
     check(is_array($saved), 'recognized incomplete binding must save as JSON');
@@ -83,7 +81,7 @@ namespace {
     check(($saved['worker_order_update']['field_map']['legacy_unknown'] ?? '') === 'thing1', 'unrelated scene must not block or be rewritten by single-scene save');
 
     $GLOBALS['fixture_settings']['wechat.subscribe_template_ids'] = $saved;
-    $pending = SubscriptionCatalogFixture::subscriptionSceneDefinitions()['user_order_update'];
+    $pending = SubscriptionCatalog::subscriptionSceneDefinitions()['user_order_update'];
     check(($pending['configuration_complete'] ?? true) === false, 'incomplete recognized template must remain pending');
     check(($pending['available'] ?? true) === false, 'incomplete recognized template must not be sendable');
     check(($pending['availability_reason'] ?? '') === 'field_map_missing', 'pending reason must identify missing field mapping');
@@ -101,13 +99,13 @@ namespace {
         $known,
         'notification',
         'user_order_update',
-        SubscriptionCatalogFixture::subscriptionSceneDefinitions(),
-        SubscriptionCatalogFixture::subscriptionSemanticLabels(),
-        SubscriptionCatalogFixture::reviewResultFixedTemplateFields()
+        SubscriptionCatalog::subscriptionSceneDefinitions(),
+        SubscriptionCatalog::subscriptionSemanticLabels(),
+        SubscriptionCatalog::reviewResultFixedTemplateFields()
     );
     $completedSaved = json_decode($updates['wechat.subscribe_template_ids'] ?? '', true);
     $GLOBALS['fixture_settings']['wechat.subscribe_template_ids'] = $completedSaved;
-    $ready = SubscriptionCatalogFixture::subscriptionSceneDefinitions()['user_order_update'];
+    $ready = SubscriptionCatalog::subscriptionSceneDefinitions()['user_order_update'];
     check(($ready['configuration_complete'] ?? false) === true, 'fully mapped template must become configured');
     check(($ready['available'] ?? false) === true, 'fully mapped template must become available');
 
@@ -121,13 +119,13 @@ namespace {
         $known,
         'notification',
         'user_order_update',
-        SubscriptionCatalogFixture::subscriptionSceneDefinitions(),
-        SubscriptionCatalogFixture::subscriptionSemanticLabels(),
-        SubscriptionCatalogFixture::reviewResultFixedTemplateFields()
+        SubscriptionCatalog::subscriptionSceneDefinitions(),
+        SubscriptionCatalog::subscriptionSemanticLabels(),
+        SubscriptionCatalog::reviewResultFixedTemplateFields()
     );
     $wrongSaved = json_decode($updates['wechat.subscribe_template_ids'] ?? '', true);
     $GLOBALS['fixture_settings']['wechat.subscribe_template_ids'] = $wrongSaved;
-    $wrong = SubscriptionCatalogFixture::subscriptionSceneDefinitions()['user_order_update'];
+    $wrong = SubscriptionCatalog::subscriptionSceneDefinitions()['user_order_update'];
     check(($wrong['configuration_complete'] ?? true) === false, 'wrong notice field type may save but must remain pending');
     check(($wrong['available'] ?? true) === false, 'wrong notice field type must not become sendable');
 
