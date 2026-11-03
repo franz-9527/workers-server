@@ -116,7 +116,7 @@ async function main(){
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'mobile layout overflows');checks++
   await a.locator('[data-live-disconnect]').click()
   await page.waitForFunction(()=>document.querySelector('[data-live-peer] [data-live-log]').children.length===0)
-  assert.equal(await a.locator('[data-live-actions]').isDisabled(),true,'disconnect clears rendered payloads and disables all sends');checks++
+  assert.equal(await a.locator('[data-live-text] textarea').isDisabled(),true,'disconnect clears rendered payloads and disables all sends');checks++
   await page.close()
   console.log('PASS TOTAL '+checks+' browser real-state-machine scenarios')
  }catch(error){
