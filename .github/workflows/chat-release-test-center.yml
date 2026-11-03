@@ -1,4 +1,4 @@
-name: Mini-program return performance and moderation audit
+name: Full mini-program chat audit and real sandbox regression
 on: [push, workflow_dispatch]
 permissions:
   contents: read
@@ -81,6 +81,7 @@ jobs:
           path: |
             test-artifacts/*.png
             chat/internal/message/collaboration.go
+            miniprogram/utils/ChatIdentity.js
             test-artifacts/*.html
             server/assets/chat-testing-runtime.js
             chat/internal/ports/sandbox.go
