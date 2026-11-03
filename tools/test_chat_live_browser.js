@@ -97,6 +97,7 @@ async function main(){
   await b.locator('[data-live-log] img').waitFor({timeout:15000})
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('[data-live-log] img')).every(x=>x.complete&&x.naturalWidth>0))
   assert.equal(await b.locator('[data-live-log] img').count(),1);checks++
+  await a.getByText(/图片 · 已发送/).waitFor({timeout:12000});assert.equal(await a.getByRole('button',{name:'核验状态',exact:true}).count(),0);checks++
   await a.locator('[data-call-video]').click()
   await b.locator('[data-call-accept]').waitFor({state:'visible',timeout:12000})
   assert.equal(await page.evaluate(()=>window.fixtureRTC.joined),0,'incoming ring never captures mic/camera before accept');checks++
@@ -113,6 +114,9 @@ async function main(){
   await page.screenshot({path:'test-artifacts/live-chat-desktop.png',fullPage:true})
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:'test-artifacts/live-chat-mobile.png',fullPage:true})
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'mobile layout overflows');checks++
+  await a.locator('[data-live-disconnect]').click()
+  await page.waitForFunction(()=>document.querySelector('[data-live-peer] [data-live-log]').children.length===0)
+  assert.equal(await a.locator('[data-live-actions]').isDisabled(),true,'disconnect clears rendered payloads and disables all sends');checks++
   await page.close()
   console.log('PASS TOTAL '+checks+' browser real-state-machine scenarios')
  }catch(error){

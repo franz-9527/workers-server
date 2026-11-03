@@ -95,7 +95,7 @@ class TestPeer {
   this.tell('正在检查真实聊天链路…')
   const initial=await this.credential();if(life!==this.generation)return
   const m=new ChatManager(this.io());this.manager=m
-  m.subscribe((type,value)=>{if(this.manager===m){if(type==='connection'&&value.state==='unavailable')this.tell('连接暂不可用，可点击重连；正在检查的媒体请核验原发送状态');if(value?.page?.history_cursor)this.historyCursor=value.page.history_cursor;this.paint();this.paintCall()}})
+  m.subscribe((type,value)=>{if(this.manager===m){if(type==='conversation.clear'&&String(value.conversation_id)===this.cid||type==='connection'&&['CHAT_UNAUTHORIZED','CHAT_PERMISSION_DENIED'].includes(value?.code)){this.stop().then(()=>this.tell('会话已清理或身份已失效，请重新接入'));return}if(type==='connection'&&value.state==='unavailable')this.tell('连接暂不可用，可点击重连；正在检查的媒体请核验原发送状态');if(value?.page?.history_cursor)this.historyCursor=value.page.history_cursor;this.paint();this.paintCall()}})
   m.setEnabled(true);m.setForeground(true);await m.credential(m.epoch)
   let cursor='',found
   for(let page=0;page<20;page++){
@@ -112,7 +112,16 @@ class TestPeer {
   const target=this.identity.members.find(member=>String(member.wire_id)!==String(initial.actor_id));if(target)this.node.querySelector('[data-call-peer]').value=String(target.wire_id)
   this.tell(initial.moderation_ready?'已接入真实链路；可与另一端或小程序收发':'已接入；尚无可用于微信审核的真实小程序身份，请先用后台配置的小程序管理员登录一次')
   this.callTimer=setInterval(()=>this.tick().catch(e=>this.tell(message(e))),3000)
+  this.mediaTimer=setInterval(()=>this.refreshTransfers().catch(e=>this.tell(message(e))),5000)
+  await this.refreshTransfers()
   this.paint()
+ }
+ async refreshTransfers(){
+  if(this.refreshingTransfers||!this.manager||!this.cid||document.hidden)return
+  this.refreshingTransfers=true
+  const m=this.manager,cid=this.cid,life=this.generation
+  try{await m.images.refresh(cid);await m.av.refresh(cid);if(m===this.manager&&life===this.generation)this.paint()}
+  finally{this.refreshingTransfers=false}
  }
  async select(kind,files){
   this.require();if(!files.length)return
@@ -282,12 +291,12 @@ class TestPeer {
   this.paintCall()
  }
  async stop(){
-  this.generation++;clearInterval(this.callTimer);clearTimeout(this.timer)
+  this.generation++;clearInterval(this.callTimer);clearInterval(this.mediaTimer);clearTimeout(this.timer)
   const m=this.manager;this.manager=null;this.actions.disabled=true;this.cid='';this.renderKey=null;this.historyCursor=''
   await this.stopMedia()
   if(m?.calls.current&&!terminal.has(m.calls.current.state))await m.calls.action('end').catch(()=>{})
   m?.setForeground(false);m?.setEnabled(false)
-  this.files.clear();this.urls.clear();this.sessionActor='';this.tell('尚未接入')
+  this.files.clear();this.urls.clear();this.sessionActor='';this.identity=null;this.log.replaceChildren();this.transfer.replaceChildren();this.node.querySelector('[data-call-status]').textContent='当前没有通话';this.tell('尚未接入')
  }
 }
 if(root){
