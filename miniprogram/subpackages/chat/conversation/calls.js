@@ -10,6 +10,7 @@ module.exports={
   const media=event.currentTarget.dataset.media
   if(media!=='audio'&&media!=='video'||!this.data.canSend)return
   this.callOpening=true
+  let submitted=false
   const life=this.life,epoch=this.manager.epoch
   try{
    const availability=await this.manager.http('calls.availability',{conversation_id:this.id},epoch)
@@ -33,9 +34,13 @@ module.exports={
     }
     if(!peer)return
    }
+   submitted=true
    await this.manager.calls.create(this.id,peer,media)
    if(this.current(life,epoch))wx.navigateTo({url:'/subpackages/chat/call/index'})
-  }catch(error){if(this.current(life,epoch))wx.showToast({title:error.code==='CALL_BUSY'?'对方或当前账号正在通话':'呼叫未确认，可点击同一入口重试',icon:'none'})}
+  }catch(error){if(this.current(life,epoch)){
+   if(!submitted)this.setData({notice:error.code==='CHAT_NETWORK_ERROR'?'无法连接通话服务，尚未发起呼叫':'通话服务未就绪，请管理员检查声网资源、额度、私有端点及 Go 通话开关'})
+   else wx.showToast({title:error.code==='CALL_BUSY'?'对方或当前账号正在通话':'呼叫未确认，可点击同一入口重试',icon:'none'})
+  }}
   finally{this.callOpening=false}
  },
  openCallHistory(){wx.navigateTo({url:'/subpackages/chat/call/index?conversation_id='+encodeURIComponent(this.id)+'&view=history'})}

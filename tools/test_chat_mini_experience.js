@@ -56,6 +56,10 @@ async function main(){
  ck(!Cards.parse('【平台订单】\n{"publicNo":"../escape","title":"bad"}'),'order card rejects arbitrary paths')
  page.views['2']={orderCard:{publicNo:'DEMO_ORDER_1',title:'测试订单'}};page.openSharedOrder({currentTarget:{dataset:{id:'2'}}})
  ck(wx.lastURL==='/pages/userOrder/detail?id=DEMO_ORDER_1','order card opens existing permission-checked detail page')
+ const oldHttp=manager.http;manager.http=async()=>{throw Object.assign(new Error(),{code:'CALL_UNAVAILABLE'})}
+ await page.openCall({currentTarget:{dataset:{media:'audio'}}});ck(page.data.notice.includes('通话服务未就绪'),'missing call configuration is explained before any call is submitted')
+ let called=0;manager.http=async()=>({audio:true,video:true,peers:['22']});manager.calls={create:async()=>{called++}}
+ await page.openCall({currentTarget:{dataset:{media:'video'}}});ck(called===1&&wx.lastURL==='/subpackages/chat/call/index','ready calls use the real shared call manager and RTC call page');manager.http=oldHttp
  const m=new ChatManager({now:()=>now,random:()=>.2,setTimeout:timer,clearTimeout:clear,credential:async()=>({access_token:'renewed',expires_at:new Date(now+60000).toISOString()}),http:async(route,payload,token)=>{requests.push({route,payload,token});if(token==='old')throw Object.assign(new Error(),{statusCode:401,code:'CHAT_UNAUTHORIZED'});return{ok:true}},av:{}})
  m.enabled=true;m.foreground=true;m.token={value:'old',expires:now+60000};const model={canSend:true};m.cache.set('12',model);m.active='12'
  m.focus('');m.focus('12');ck(m.cache.get('12')===model,'ordinary page return reuses account-scoped conversation cache')
