@@ -43,7 +43,7 @@ final class ChatCredentialIssuer
         if ($userID === '') return false;
         try {
             return (bool)$this->db->fetch('SELECT 1 FROM chat_mini_auditors WHERE user_id=:id AND enabled=1 LIMIT 1',['id'=>$userID]);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return false;
         }
     }
