@@ -19,12 +19,12 @@ function loadPage(file){
  for(const[k,v]of Object.entries(definition))if(typeof v==='function')out[k]=v.bind(out)
  return out
 }
-const manager={epoch:1,enabled:true,foreground:true,active:'12',state:'http',focusEpoch:1,testSandbox:true,simulation:false,io:{now:()=>now,av:{info:async()=>({size:2000})}},cache:new Map(),subscribe(){return()=>{}},focus(id){this.active=id;this.focusEpoch++},draft(){return draft},saveDraft(id,text){draft={...draft,text,revision:draft.revision+1};return true},typing:async()=>{},attempts:()=>[],readTarget:()=>null,sendText:async(id,text,revision)=>{sent.push({id,text,revision});return{}},av:{stage(id,file){staged.push(file);return'client'},send:async(...args)=>sendMedia.push(args)},http:async()=>({audio:false,video:false,peers:[]}),refreshAccount(){},forgetConversation(){}}
+const manager={epoch:1,enabled:true,foreground:true,active:'12',state:'http',focusEpoch:1,testSandbox:true,simulation:false,io:{now:()=>now,av:{info:async()=>({size:2000})}},cache:new Map(),subscribe(){return()=>{}},focus(id){this.active=id;this.focusEpoch++},draft(){return draft},saveDraft(id,text){draft={...draft,text,revision:draft.revision+1};return true},typing:async()=>{},attempts:()=>[],readTarget:()=>null,sendText:async(id,text,revision)=>{sent.push({id,text,revision});return{}},av:{list(){return[]},stage(id,file){staged.push(file);return'client'},send:async(...args)=>sendMedia.push(args)},http:async()=>({audio:false,video:false,peers:[]}),refreshAccount(){},forgetConversation(){}}
 let draft={text:'你好',revision:2,source:{}},sent=[],staged=[],readyResolve
 const app={globalData:{userInfo:{openid:'real',mobile:'13800000000'}},ensureUserReady(){return new Promise(r=>readyResolve=r)}}
 async function main(){
  const page=loadPage(path.join(root,'miniprogram/subpackages/chat/conversation/index.js'))
- page.id='12';page.manager=manager;page.managerEpoch=1;page.life=3;page.visible=true;page.views={};page.identities={};page.data.canSend=true;page.data.audioEnabled=true;page.data.status='http';page.data.draft=draft.text;page.draftRevision=draft.revision
+ page.id='12';page.manager=manager;page.managerEpoch=1;page.life=3;page.visible=true;page.views={};page.identities={};page.data.enabled=true;page.data.canSend=true;page.data.audioEnabled=true;page.data.status='http';page.data.draft=draft.text;page.draftRevision=draft.revision
  page.handleEvent('availability',{enabled:true});ck(page.life===3,'availability refresh does not remount conversation or invalidate pending sends')
  await page.sendText({type:'confirm',detail:{value:'键盘发送'}})
  ck(sent.length===1&&sent[0].text==='键盘发送'&&hideCalls===0,'keyboard confirm flushes final composition and sends without hiding keyboard')
@@ -41,7 +41,7 @@ async function main(){
  const person=Identity.normalize({actor_id:'11',display_name:'演示客户甲',role:'user',avatar:'user',simulation:true})
  ck(Identity.attribution({role_source:'invite',display_role:'user'},person).displayName==='演示客户甲','sandbox sender stamps preserve authorized display names')
  page.views={'1':{messageId:'1',seq:'1',state:'published',stateVersion:'1',body:'hello',canCopy:true,isMine:false,createdAt:new Date(now).toISOString()}}
- page.replyTo=()=>{};page.openReport=()=>{}
+ page.current=(life,epoch)=>page.visible&&page.life===life&&manager.epoch===epoch;page.replyTo=()=>{};page.openReport=()=>{}
  page.messageActions({currentTarget:{dataset:{id:'1'}},touches:[{clientX:350,clientY:300}]})
  ck(page.data.messageMenu.top<300&&page.data.messageMenu.left>=12,'long-press menu appears above bubble and remains within viewport')
  page.runMessageAction({currentTarget:{dataset:{key:'copy'}}});ck(wx.clipboard==='hello'&&!page.data.messageMenu,'anchored menu dispatches the selected message action')

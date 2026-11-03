@@ -185,10 +185,12 @@ $env='production';deny(fn()=>$credentials->admin(new TestAuth(),'admin:1'),403);
 
 
 $settings['wechat.admin_openids']=[];
+$db->execute("INSERT INTO wechat_identities VALUES(2,11,'wxfixture123','demo-unusable-binding','active')");
 $miniCredential=$credentials->mini(str_repeat('a',64),$customer);
 ck($miniCredential['moderation_ready']===true,'demo actor without WeChat binding uses authenticated real parent for moderation, without fallback admin list');
 ck((string)$db->fetchValue('SELECT moderation_user_id FROM chat_sandbox_sessions WHERE origin_kind=\'mini\'')==='99','moderation is attributed to the real test operator');
 $db->execute('CREATE TABLE chat_conversations(id BIGINT PRIMARY KEY,scope_key VARCHAR(96))');
+$settings['wechat.admin_openids']=['fixture-openid'];
 $managed=$make(['admin:1','user:11','user:22']);
 $db->execute('INSERT INTO chat_conversations VALUES(71,:scope)',['scope'=>'sandbox:'.$managed]);
 $info=$sandbox->collaborate(str_repeat('a',64),'info',['conversation_id'=>'71']);

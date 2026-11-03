@@ -11,6 +11,7 @@ import (
  "testing"
  "time"
  "github.com/franz-9527/workers/chat/internal/calls"
+ "github.com/franz-9527/workers/chat/internal/moderation"
  "github.com/franz-9527/workers/chat/internal/ports"
 )
 
@@ -241,4 +242,17 @@ func TestMySQLSandboxLiveDirectReadReceiptsAndMemberRevision(t *testing.T){
  f.exec("DELETE FROM chat_sandbox_members WHERE room_id=51 AND wire_id='10202'")
  f.exec("UPDATE chat_sandbox_rooms SET revision=revision+1 WHERE id=51")
  if _,e=h.Read(f.ctx,mini,HistoryRequest{ConversationID:cid,Limit:50},"bootstrap");e==nil{t.Fatal("removed member retained access")}
+}
+
+func TestMySQLSandboxRealLocalModerationForDemoWithoutWechatBinding(t *testing.T){
+ f,s,q:=setupMessage(t,safetyFunc(pass));admin,mini,cid:=sandboxSeed(t,f)
+ f.exec("INSERT INTO wechat_identities(user_id,app_id,openid,status,created_at,updated_at) VALUES(10203,'chat-platform-app','oS07Parent_abcdefghijklmnopqrstuv','active',UTC_TIMESTAMP(),UTC_TIMESTAMP())")
+ safety,e:=moderation.New(f.goDB,"test",moderation.Config{Enabled:true,Mode:"local",AppID:"chat-platform-app"},4,2*time.Second,nil);if e!=nil{t.Fatal(e)};t.Cleanup(safety.Close);s.safety=safety
+ for i,p:=range []ports.Principal{admin,mini}{
+  q.ConversationID=cid;q.ClientMessageID=client(9800+i);q.Text="确认明天下午施工"
+  result,e:=s.Send(f.ctx,p,q);if e!=nil||result.State!="accepted"{t.Fatal("real moderation path",result,e)}
+ }
+ q.ClientMessageID=client(9890);q.Text="【平台订单】\n{\"publicNo\":\"TEST_ORDER_123\",\"title\":\"客厅墙纸施工\"}"
+ result,e:=s.Send(f.ctx,mini,q);if e!=nil||result.State!="accepted"{t.Fatal("order text attachment moderation",result,e)}
+ if f.text("SELECT COUNT(*) FROM chat_text_checks WHERE conversation_id=?",string(cid))!="3"{t.Fatal("actual moderation context not recorded")}
 }
