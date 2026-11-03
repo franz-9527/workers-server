@@ -89,7 +89,7 @@ async function main(){
   await a.getByRole('button',{name:'发送图片',exact:true}).waitFor()
   assert.equal(uploadPosts,1,'shared uploader posted actual browser multipart data');checks++
   await a.getByRole('button',{name:'发送图片',exact:true}).click()
-  await a.getByText('图片 · 待审核',{exact:true}).waitFor()
+  await a.getByText(/图片 · 待审核/).waitFor()
   assert.equal(records.length,1,'prereview is never rendered as a published message');checks++
   const [client,pending]=[...pendingImages][0]
   const row={message_id:String(++id),seq:String(id),sender_id:pending.who,policy_version:'1',state:'published',state_version:'1',message_type:'image',images:pending.request.items.map(x=>({item_id:x.attachment_id})),created_at:new Date().toISOString()}

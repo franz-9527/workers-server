@@ -215,3 +215,13 @@ func TestMySQLSandboxRealCallLifecycleCredentialsAndClearStopsBothAccounts(t *te
  if f.text("SELECT state FROM chat_call_sessions WHERE id=?",string(view.CallID))!="ended"{t.Fatal("cleared active call was not stopped")}
  if f.text("SELECT COUNT(*) FROM chat_call_accounts WHERE active_call_id IS NOT NULL")!="0"{t.Fatal("cleared call retained account occupancy")}
 }
+
+func TestMySQLSandboxCleanupRemovesPublishedTextAndInspectionText(t *testing.T){
+ f,s,q:=setupMessage(t,safetyFunc(pass));admin,_,cid:=sandboxSeed(t,f)
+ q.ConversationID=cid;q.ClientMessageID=client(9601);q.Text="清理正文"
+ if r,e:=s.Send(f.ctx,admin,q);e!=nil||r.State!="accepted"{t.Fatal(r,e)}
+ f.exec("INSERT INTO chat_text_checks(intent_id,sender_id,conversation_id,fingerprint,normalized_text,created_at) SELECT id,sender_id,conversation_id,fingerprint,'清理正文',UTC_TIMESTAMP(6) FROM chat_send_intents WHERE conversation_id=?",string(cid))
+ f.exec("DELETE FROM chat_sandbox_members WHERE room_id=51");f.exec("DELETE FROM chat_sandbox_rooms WHERE id=51")
+ if e:=s.CleanSandboxOne(f.ctx);e!=nil{t.Fatal(e)}
+ if f.text("SELECT state FROM chat_conversations WHERE id=?",string(cid))!="sandbox_cleared"||f.text("SELECT COUNT(*) FROM chat_messages WHERE conversation_id=?",string(cid))!="0"||f.text("SELECT COUNT(*) FROM chat_text_checks WHERE conversation_id=?",string(cid))!="0"{t.Fatal("clear retained text payload")}
+}

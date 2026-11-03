@@ -32,6 +32,8 @@ func (s *Service) CleanSandboxOne(ctx context.Context) error {
   "UPDATE chat_send_intents SET state='rejected',error_code='CHAT_ACTION_EXPIRED',lease_owner=NULL,lease_until=NULL WHERE conversation_id=? AND state IN ('checking','review_pending','retryable')",
   "DELETE i FROM chat_image_items i JOIN chat_messages m ON m.id=i.message_id WHERE m.conversation_id=?",
   "DELETE i FROM chat_av_items i JOIN chat_messages m ON m.id=i.message_id WHERE m.conversation_id=?",
+  "DELETE FROM chat_text_checks WHERE conversation_id=?",
+  "UPDATE chat_av_asr_requests a JOIN chat_send_intents i ON i.id=a.intent_id SET a.text_result=NULL,a.metadata_json=NULL WHERE i.conversation_id=?",
   "UPDATE chat_messages SET state='expired',text_body=NULL WHERE conversation_id=?",
   "UPDATE chat_image_bundles b JOIN chat_send_intents i ON i.id=b.intent_id SET b.principal_json='{}',b.review_state='rejected',b.expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND WHERE i.conversation_id=?",
   "UPDATE chat_image_uploads SET expires_at=UTC_TIMESTAMP(6)-INTERVAL 1 SECOND,state='blocked',lease_owner=NULL,lease_until=NULL WHERE conversation_id=? AND state<>'cleaned'",
