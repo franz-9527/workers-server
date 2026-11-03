@@ -1,4 +1,4 @@
-name: Mini-program chat return, media and sandbox integration
+name: Mini-program return performance and moderation audit
 on: [push, workflow_dispatch]
 permissions:
   contents: read
