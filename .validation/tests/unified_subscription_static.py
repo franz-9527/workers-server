@@ -11,7 +11,7 @@ settings=(root/"server/views/admin/settings.php").read_text()
 
 assert "o.workflow_profile" in queue and "普通" in queue and "测量单" in queue
 assert "subscriptionStatusForRecipient" in queue
-assert "'financial_progress'" in queue
+assert "subscriptionSceneForEvent" in queue and "SubscriptionCatalog::subscriptionRoot" in queue
 assert "m.message_type,m.created_at,cm.role,u.public_id" in chat
 assert "text_body" not in chat
 for token in ["sender_name","notice_text","message_type","chat_info"]:
