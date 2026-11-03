@@ -73,12 +73,14 @@ jobs:
           node tools/test_store_order_layout.js
           node tools/test_chat_live_browser.js
           node tools/test_chat_mini_experience.js
+          node tools/test_chat_mini_layout.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: full-chat-test-build
           path: |
             test-artifacts/*.png
+            chat/internal/message/collaboration.go
             test-artifacts/*.html
             server/assets/chat-testing-runtime.js
             chat/internal/ports/sandbox.go
