@@ -34,11 +34,9 @@ func (a *AVService) job(ctx context.Context, id ports.ID) (avJob, error) {
 	if e != nil || json.Unmarshal([]byte(principal), &v.Principal) != nil || json.Unmarshal([]byte(manifest), &v.Request) != nil || json.Unmarshal([]byte(segments), &v.Segments) != nil || v.Principal.Kind != "mini" || v.Principal.Environment != a.environment {
 		return v, ErrMedia
 	}
-	var expiry int64
-	if a.base.db.QueryRowContext(ctx, `SELECT UNIX_TIMESTAMP(expires_at) FROM login_sessions WHERE id=? AND user_id=? AND status='active'`, string(v.Principal.SourceID), string(v.Principal.ActorID)).Scan(&expiry) != nil {
-		return v, ErrRestricted
-	}
-	v.Principal.ExpiresAt = time.Unix(expiry, 0)
+	deadline,err:=mediaPrincipalExpiry(ctx,a.base.db,v.Principal)
+ if err!=nil{return v,err}
+ v.Principal.ExpiresAt=deadline
 	return v, nil
 }
 func (a *AVService) Run(ctx context.Context) {

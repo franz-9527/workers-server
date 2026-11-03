@@ -71,7 +71,8 @@ ck($sim->credential($customer)['transport']==='simulation','sandbox identity rec
 $recovery=new class implements \WorkerAdmin\Contracts\ChatRecoveryReadiness {public int $calls=0;public function ensureReady(array $config,string $environment):void{$this->calls++;throw new RuntimeException('Go must not be called');}};
 $cipher=new class implements \WorkerAdmin\Contracts\PrivateValueCipher {public function hmac(string $p,string $c):string{return hash('sha256',$p);}public function encrypt(string $p,string $c):?string{return $p;}public function decrypt(string $p,string $c):string{return $p;}};
 $issuer=new \WorkerAdmin\Application\Chat\ChatCredentialIssuer($db,[],'testing',$cipher,$recovery);
-ck($issuer->availabilityMini(str_repeat('a',64))===['enabled'=>true,'transport'=>'simulation']&&$issuer->exchangeMini(str_repeat('a',64))['transport']==='simulation'&&$recovery->calls===0,'real credential API chooses isolated demo transport without Go readiness');
+ck($issuer->availabilityMini(str_repeat('a',64))['enabled']===false,'sandbox availability reports missing real Go/signing dependencies instead of silently using simulated text');
+try{$issuer->exchangeMini(str_repeat('a',64));throw new LogicException('missing Go accepted');}catch(RuntimeException $error){ck($error->getCode()===503,'real credentials refuse missing configuration');}
 deny(fn()=>$issuer->exchangeMini(str_repeat('a',64),true),403);
 $wire=(string)(8000000000000000000+(int)$room);
 $digests=$sim->execute($customer,'conversations/digests',[]);

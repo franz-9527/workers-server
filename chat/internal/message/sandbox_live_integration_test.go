@@ -22,7 +22,7 @@ func sandboxSeed(t *testing.T,f *fixtureDB)(ports.Principal,ports.Principal,port
  }
  f.exec("CREATE TABLE IF NOT EXISTS chat_call_sessions(id BIGINT UNSIGNED PRIMARY KEY,conversation_id BIGINT UNSIGNED,state VARCHAR(16))")
  f.exec("INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(91001,'sandbox-owner','fixture','super_admin','active',0,UTC_TIMESTAMP(),UTC_TIMESTAMP())")
- f.exec("INSERT INTO chat_admin_sessions(id,admin_id,session_hash,session_version,authority_hash,scopes_json,expires_at,created_at) VALUES(91001,91001,REPEAT('a',64),REPEAT('b',64),REPEAT('c',64),'[\"chat:audit\"]',UTC_TIMESTAMP()+INTERVAL 5 MINUTE,UTC_TIMESTAMP())")
+ f.exec("INSERT INTO chat_admin_sessions(id,admin_id,session_hash,session_version,authority_hash,scopes_json,expires_at,created_at) VALUES(91001,91001,REPEAT('d',64),REPEAT('b',64),REPEAT('c',64),'[\"chat:audit\"]',UTC_TIMESTAMP()+INTERVAL 5 MINUTE,UTC_TIMESTAMP())")
  f.exec("INSERT INTO login_sessions(id,user_id,token_hash,status,expires_at,created_at,demo_actor_user_id) VALUES(81001,10201,?,'active',UTC_TIMESTAMP()+INTERVAL 5 MINUTE,UTC_TIMESTAMP(),10202)",digest("sandbox-parent"))
  f.exec("INSERT INTO chat_sandbox_rooms(id,title,created_by,request_key,request_hash,created_at) VALUES(51,'完整联调',91001,REPEAT('a',32),REPEAT('a',64),UTC_TIMESTAMP())")
  f.exec("INSERT INTO chat_sandbox_members(room_id,actor_key,wire_id,display_name,display_role) VALUES(51,'admin:91001','7000000000000091001','测试管理员','admin'),(51,'user:10202','10202','演示师傅','worker')")

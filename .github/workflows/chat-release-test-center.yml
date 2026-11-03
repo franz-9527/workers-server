@@ -42,7 +42,7 @@ jobs:
           node tools/check-wxml.js miniprogram --compile
       - name: Go formatting, compilation and unit regressions
         run: |
-          gofmt -w chat/internal/ports/sandbox.go chat/internal/ports/contracts.go chat/internal/auth/sandbox.go chat/internal/auth/mysql.go chat/internal/policy/sandbox.go chat/internal/policy/projection.go chat/internal/policy/guard.go chat/internal/policy/recipient.go chat/internal/conversation/sandbox.go chat/internal/conversation/store.go chat/internal/moderation/service.go chat/internal/message/reminders.go chat/internal/message/sandbox_cleanup.go chat/internal/dependencies/mysql.go chat/internal/dependencies/messaging.go chat/internal/calls/lifecycle.go chat/internal/dependencies/dependencies_test.go chat/internal/message/history.go
+          gofmt -w chat/internal/message/media_source.go chat/internal/message/av_worker.go chat/internal/message/media_worker.go chat/internal/calls/service.go chat/internal/ports/sandbox.go chat/internal/ports/contracts.go chat/internal/auth/sandbox.go chat/internal/auth/mysql.go chat/internal/policy/sandbox.go chat/internal/policy/projection.go chat/internal/policy/guard.go chat/internal/policy/recipient.go chat/internal/conversation/sandbox.go chat/internal/conversation/store.go chat/internal/moderation/service.go chat/internal/message/reminders.go chat/internal/message/sandbox_cleanup.go chat/internal/dependencies/mysql.go chat/internal/dependencies/messaging.go chat/internal/calls/lifecycle.go chat/internal/dependencies/dependencies_test.go chat/internal/message/history.go
           cd chat
           go test ./...
       - name: Real MySQL sandbox scope and media integration
@@ -61,9 +61,9 @@ jobs:
           CHAT_SANDBOX_TEST: '1'
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
         run: |
-          php tools/test_chat_sandbox.php
-          php tools/test_chat_sandbox_view.php
           php tools/render_chat_live.php
+          php tools/test_chat_sandbox_view.php
+          php tools/test_chat_sandbox.php
       - name: Browser shared-client media calls and original card layouts
         if: always()
         env:
@@ -95,6 +95,10 @@ jobs:
             chat/internal/message/sandbox_cleanup.go
             chat/internal/dependencies/mysql.go
             chat/internal/dependencies/messaging.go
+            chat/internal/calls/service.go
             chat/internal/calls/lifecycle.go
             chat/internal/dependencies/dependencies_test.go
             chat/internal/message/history.go
+            chat/internal/message/media_source.go
+            chat/internal/message/av_worker.go
+            chat/internal/message/media_worker.go

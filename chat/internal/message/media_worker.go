@@ -223,16 +223,9 @@ func (m *MediaService) workerPrincipal(ctx context.Context, id ports.ID) (ports.
 	if p.Kind != "mini" || p.Environment != m.environment {
 		return p, q, policy.ErrDenied
 	}
-	var expiry int64
-	if err := m.base.db.QueryRowContext(ctx, `SELECT UNIX_TIMESTAMP(expires_at) FROM login_sessions WHERE id=? AND user_id=? AND status='active'`, string(p.SourceID), string(p.ActorID)).Scan(&expiry); err != nil {
-		if err == sql.ErrNoRows {
-			return p, q, policy.ErrDenied
-		}
-		return p, q, ports.ErrUnavailable
-	}
-	// Refresh only the short-lived access deadline of the already-confirmed
-	// action; LockAuthority still validates original source/session generation.
-	p.ExpiresAt = time.Unix(expiry, 0)
+ deadline,err:=mediaPrincipalExpiry(ctx,m.base.db,p)
+ if err!=nil{if err==ErrRestricted{return p,q,policy.ErrDenied};return p,q,err}
+ p.ExpiresAt=deadline
 	return p, q, nil
 }
 func (m *MediaService) Publish(ctx context.Context, id ports.ID) (Result, error) {

@@ -267,6 +267,12 @@ func (s *Service) remember(ctx context.Context, tx *sql.Tx, p ports.Principal, q
 	return e
 }
 func (s *Service) selectPool(ctx context.Context, media Media, exclude ...Provider) (Pool, Settings, error) {
+ return s.selectAvailablePool(ctx,media,"",exclude...)
+}
+func (s *Service) selectSandboxPool(ctx context.Context,media Media)(Pool,Settings,error){
+ return s.selectAvailablePool(ctx,media,Shengwang,Wechat)
+}
+func (s *Service) selectAvailablePool(ctx context.Context, media Media, required Provider,exclude ...Provider) (Pool, Settings, error) {
 	a, e := s.broker.Availability(ctx)
 	if e != nil {
 		return Pool{}, a.Settings, e
@@ -309,6 +315,7 @@ func (s *Service) selectPool(ctx context.Context, media Media, exclude ...Provid
 		}
 	}
 	c := a.Settings.Config
+ if required==Shengwang { c.AudioPriority=[2]Provider{Shengwang,Wechat};c.VideoPriority=[2]Provider{Shengwang,Wechat};c.AllowFallback=false }
 	if c.Window < 30 || c.Margin < 15 || c.MaxActive < 1 {
 		return Pool{}, a.Settings, ErrInvalid
 	}

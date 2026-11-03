@@ -43,9 +43,9 @@ func (s *Service) Create(ctx context.Context, p ports.Principal, q Request) (Vie
 	if replay != nil {
 		return *replay, nil
 	}
-	excluded:=[]Provider{}
-	if ports.SandboxPrincipal(p){excluded=append(excluded,Wechat)}
-	pool, settings, e := s.selectPool(ctx, q.Media,excluded...)
+	var pool Pool
+ var settings Settings
+ if ports.SandboxPrincipal(p){pool,settings,e=s.selectSandboxPool(ctx,q.Media)}else{pool,settings,e=s.selectPool(ctx,q.Media)}
 	if e != nil {
 		return result, e
 	}
