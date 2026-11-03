@@ -67,7 +67,8 @@ async function main(){
  const browser=await chromium.launch({headless:true})
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1050}})
-  const errors=[];page.on('pageerror',e=>errors.push(e.message))
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>console.error('REQUEST FAILED',r.url(),r.failure()?.errorText))
+  page.on('response',async r=>{if(new URL(r.url()).pathname==='/admin/'&&r.request().method()==='POST'){try{const d=await r.json();console.log('CREDENTIAL FIXTURE',r.status(),Object.keys(d.data||{}),d.data?.environment,d.data?.expires_at)}catch(e){console.error('CREDENTIAL JSON',e.message)}}})
   await page.route('https://download.agora.io/**',route=>route.fulfill({contentType:'application/javascript',body:`window.fixtureRTC={joined:0,published:0,closed:0,left:0};window.AgoraRTC={createClient:()=>({on(){},removeAllListeners(){},setClientRole:async()=>{},join:async()=>{window.fixtureRTC.joined++},publish:async()=>{window.fixtureRTC.published++},subscribe:async()=>{},renewToken:async()=>{},leave:async()=>{window.fixtureRTC.left++}}),createMicrophoneAudioTrack:async()=>({play(){},stop(){},close(){window.fixtureRTC.closed++}}),createCameraVideoTrack:async()=>({play(){},stop(){},close(){window.fixtureRTC.closed++}})};`}))
   await page.route('https://upload.fixture.invalid',async route=>{if(route.request().method()==='POST')uploadPosts++;await route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},body:'{}'})})
   await page.route('https://private.fixture.invalid/**',route=>route.fulfill({status:200,headers:{'Access-Control-Allow-Origin':'*'},contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0S8AAAAASUVORK5CYII=','base64')}))
@@ -115,7 +116,7 @@ async function main(){
   await page.close()
   console.log('PASS TOTAL '+checks+' browser real-state-machine scenarios')
  }catch(error){
-  for(const p of browser.contexts().flatMap(c=>c.pages())){console.error('BROWSER DIAGNOSTICS',await p.locator('[data-live-notice]').allTextContents(),await p.locator('[data-call-status]').allTextContents());await p.screenshot({path:'test-artifacts/live-chat-failure.png',fullPage:true})}
+  for(const p of browser.contexts().flatMap(c=>c.pages())){console.error('BROWSER DIAGNOSTICS',await p.locator('[data-live-notice]').allTextContents(),await p.locator('[data-live-peer]').evaluateAll(xs=>xs.map(x=>x.dataset.liveFailure)),await p.locator('[data-call-status]').allTextContents());await p.screenshot({path:'test-artifacts/live-chat-failure.png',fullPage:true})}
   console.error('RECENT API',requests.slice(-18));throw error
  }finally{await browser.close();server.close()}
 }

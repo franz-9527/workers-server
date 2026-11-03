@@ -43,7 +43,7 @@ final class ChatTestingAdminModule implements AdminModule
                 }elseif(in_array($action,['delete','clear_all'],true)){
                     $counts=$service->clear($admin,$action==='delete'?$room:null);
                     \audit($action==='delete'?'chat.test_delete':'chat.test_clear_all','chat_sandbox',$action==='delete'?(int)$room:0,'清理隔离测试会话和消息，共'.array_sum($counts).'条记录');
-                    $room='';\flash('success','会话测试记录已清理');
+                    $room='';\flash('success','会话入口已清理，聊天正文与媒体文件将由Go后台继续清理。');
                 }else throw new RuntimeException('操作无效',400);
                 \redirect(\admin_url('chat.testing',array_filter(['room'=>$room],static fn($v)=>$v!=='')));return;
             }catch(RuntimeException $e){if(($_POST['_action']??'')==='live_credentials'){\json_response(['ok'=>false,'code'=>str_starts_with($e->getMessage(),'CHAT_')?$e->getMessage():'CHAT_TEST_UNAVAILABLE','message'=>['CHAT_GO_NOT_READY'=>'Go服务尚未更新或未就绪，请检查聊天设置','CHAT_SIGNING_NOT_CONFIGURED'=>'聊天签名未配置','CHAT_RECOVERY_NOT_READY'=>'聊天恢复检查未通过'][$e->getMessage()]??$e->getMessage()],in_array($e->getCode(),[400,401,403,404,409],true)?$e->getCode():503);return;}$notice=$e->getMessage();$values=$_POST;}

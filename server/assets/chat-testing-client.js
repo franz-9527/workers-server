@@ -23,7 +23,7 @@ class TestPeer {
  constructor(node,owner){
   this.node=node;this.owner=owner;this.generation=0;this.cid='';this.files=new Map();this.media=null;this.tracks=[];this.urls=new Map();this.timer=null
   this.actor=node.querySelector('[data-live-actor]');this.log=node.querySelector('[data-live-log]');this.notice=node.querySelector('[data-live-notice]');this.transfer=node.querySelector('[data-live-transfer]');this.actions=node.querySelector('[data-live-actions]')
-  node.querySelector('[data-live-connect]').onclick=async event=>{if(this.starting)return;this.starting=true;event.target.disabled=true;try{await this.start()}catch(e){this.tell(message(e))}finally{this.starting=false;event.target.disabled=false}}
+  node.querySelector('[data-live-connect]').onclick=async event=>{if(this.starting)return;this.starting=true;event.target.disabled=true;try{await this.start()}catch(e){this.node.dataset.liveFailure=e.code||e.message;this.tell(message(e))}finally{this.starting=false;event.target.disabled=false}}
   node.querySelector('[data-live-disconnect]').onclick=()=>this.stop()
   this.actor.onchange=()=>this.stop()
   node.querySelector('[data-live-text]').onsubmit=async event=>{

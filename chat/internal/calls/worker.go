@@ -48,8 +48,10 @@ func (s *Service) Available(ctx context.Context, p ports.Principal, q Request) (
 	if e != nil {
 		return nil, e
 	}
-	_, _, audio := s.selectPool(ctx, Audio)
-	_, _, video := s.selectPool(ctx, Video)
+	selectPool:=s.selectPool
+ if ports.SandboxPrincipal(p){selectPool=func(ctx context.Context,media Media,exclude ...Provider)(Pool,Settings,error){return s.selectSandboxPool(ctx,media)}}
+ _,_,audio:=selectPool(ctx,Audio)
+ _,_,video:=selectPool(ctx,Video)
 	reason := "available"
 	if audio != nil && video != nil {
 		reason = "unavailable"
