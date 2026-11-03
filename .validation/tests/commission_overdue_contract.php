@@ -14,9 +14,9 @@ check(($meta['status']??'')==='平台服务费已逾期','commission overdue wor
 
 $scheduler=file_get_contents($root.'/server/app/Services/SchedulerService.php');
 check(strpos($scheduler,'o.version order_version')!==false,'overdue scan must capture order version for deterministic event key');
-check(strpos($scheduler,"OrderNotificationService::queueAdminTask($db,'commission-overdue:'")!==false,'admin overdue task must remain');
-check(strpos($scheduler,"$this->recordOrderEvent($db,(int)$overdue['order_id'],'commission_overdue','commission_overdue'")!==false,'worker overdue order event missing');
-check(strpos($scheduler,"'amount_cents'=>$unpaid")!==false,'worker overdue notification must use unpaid amount');
+check(strpos($scheduler,"OrderNotificationService::queueAdminTask(\$db,'commission-overdue:'")!==false,'admin overdue task must remain');
+check(strpos($scheduler,"\$this->recordOrderEvent(\$db,(int)\$overdue['order_id'],'commission_overdue','commission_overdue'")!==false,'worker overdue order event missing');
+check(strpos($scheduler,"'amount_cents'=>\$unpaid")!==false,'worker overdue notification must use unpaid amount');
 check(strpos($scheduler,"'message'=>'平台服务费已逾期，请及时处理。'")!==false,'worker overdue warm notice missing');
 
 echo "commission overdue notification contract: OK\n";
