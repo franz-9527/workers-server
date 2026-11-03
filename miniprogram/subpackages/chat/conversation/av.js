@@ -17,7 +17,7 @@ module.exports={
   if(!this.manager.av)return
   const model=this.manager.cache.get(this.id),labels={editing:'待发送',unknown:'结果待核对',checking:'内容检查中',review_pending:'等待完整预审',accepted:'已发送',rejected:'未发送',canceled:'已取消'}
   this.setData({audioEnabled:!!model?.capabilities?.audio,videoEnabled:!!model?.capabilities?.video,
-   avAttempts:this.manager.av.list(this.id).filter(r=>!(r.state==='accepted'&&this.views[r.message_id])).map(r=>({client:r.client_message_id,kind:r.kind,path:r.path||'',submitted:r.submitted,state:r.state,busy:r.busy,progress:r.progress||0,duration:Math.ceil(r.duration||0),size:r.size?((r.size/1048576).toFixed(2)+' MB'):'',label:labels[r.state]||'处理中',code:r.code==='CHAT_AV_CHECK_RESULT_UNKNOWN'?'检测结果尚未确认，请保留原编号等待核对':r.code==='CHAT_CONTENT_BLOCKED'?'内容未通过检查，未发送。请勿发送私人手机号、微信号或联系二维码；正常施工信息可申请复核':r.code?'操作未完成，可核对原状态后续传':''}))})
+   avAttempts:this.manager.av.list(this.id).filter(r=>!(r.state==='accepted'&&this.views[r.message_id])).map(r=>({client:r.client_message_id,kind:r.kind,path:r.path||'',submitted:r.submitted,state:r.state,busy:r.busy,progress:r.progress||0,duration:Math.ceil(r.duration||0),size:r.size?((r.size/1048576).toFixed(2)+' MB'):'',label:labels[r.state]||'处理中',code:r.code==='CHAT_DEPENDENCY_UNAVAILABLE'?'媒体依赖未就绪，请管理员查看聊天检测':r.code==='CHAT_CHECK_UNAVAILABLE'?'内容检查暂不可用，可核验原消息后重试':r.code==='CHAT_NETWORK_ERROR'?'连接中断，可核验原消息后续传':r.code==='CHAT_AV_CHECK_RESULT_UNKNOWN'?'检测结果尚未确认，请保留原编号等待核对':r.code==='CHAT_CONTENT_BLOCKED'?'内容未通过检查，未发送。请勿发送私人手机号、微信号或联系二维码；正常施工信息可申请复核':r.code?'操作未完成，可核对原状态后续传':''}))})
  },
  stopAV(){
   this.recordCanceled=true;this.recordWanted=false

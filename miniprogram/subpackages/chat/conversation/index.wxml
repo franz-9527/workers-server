@@ -46,7 +46,7 @@
             <text wx:if="{{smsFirstHint}}" class="sms-nudge-hint">暂未读，可用余额发短信提醒</text>
             <button class="sms-nudge-button" catchtap="openSMS" aria-label="短信提醒，点击查看费用与余额"><text class="chat-icon chat-icon-notice" aria-hidden="true"></text></button>
           </view>
-          </view><button wx:if="{{item.isMine && receiptLabels[item.messageId]}}" class="message-receipt" data-id="{{item.messageId}}" catchtap="showReaders">{{receiptLabels[item.messageId]}}</button></view>
+          </view><button wx:if="{{item.isMine && item.state === 'published'}}" class="message-receipt" data-id="{{item.messageId}}" catchtap="showReaders">{{receiptLabels[item.messageId] || '查看阅读状态'}}</button></view>
         </view></block>
         <view wx:if="{{loading}}" class="conversation-empty compact"><text class="cuIcon-loading2 cuIconfont-spin"></text> 正在同步会话</view>
         <view wx:elif="{{!messages.length && status !== 'denied'}}" class="conversation-empty compact"><text class="cuIcon-comment"></text> 暂无可查看的消息</view>

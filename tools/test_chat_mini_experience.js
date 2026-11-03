@@ -9,6 +9,8 @@ function ck(value,name){assert.ok(value,name);console.log('PASS '+name);checks++
 const tasks=new Map();let next=0,hideCalls=0,definition,now=Date.now(),confirm=true,recorderStop,recorderError,sendMedia=[]
 const wx={hideKeyboard(){hideCalls++},getWindowInfo(){return{windowHeight:700,windowWidth:375}},authorize(q){q.success({})},getRecorderManager(){return{onStop(fn){recorderStop=fn},offStop(){},onError(fn){recorderError=fn},offError(){},start(){},stop(){}}},showModal(q){q.success?.({confirm})},showActionSheet(q){q.success?.({tapIndex:0})},navigateTo(q){wx.lastURL=q.url},setClipboardData(q){wx.clipboard=q.data}}
 global.wx=wx
+const orderApiPath=path.join(root,'miniprogram/utils/OrderApi.js')
+require.cache[orderApiPath]={id:orderApiPath,filename:orderApiPath,loaded:true,exports:{request:async()=>({data:{items:[{public_no:'DEMO_ORDER_1',title:'测试订单'}],has_more:false}})}}
 const runtime={refreshAvailability(){return Promise.resolve()},get(){return manager}}
 const timer=(fn,delay)=>{const id=++next;tasks.set(id,{fn,delay});return id},clear=id=>tasks.delete(id)
 function loadPage(file){
@@ -40,6 +42,7 @@ async function main(){
  ck(staged.length===1&&page.data.notice.includes('太短'),'short recording explains failure without staging an invalid media attempt')
  const person=Identity.normalize({actor_id:'11',display_name:'演示客户甲',role:'user',avatar:'user',simulation:true})
  ck(Identity.attribution({role_source:'invite',display_role:'user'},person).displayName==='演示客户甲','sandbox sender stamps preserve authorized display names')
+ ck(Identity.attribution({role_source:'platform_staff'},Identity.normalize({actor_id:'99',display_name:'平台工作人员',role:'platform',avatar:'platform'})).displayName==='平台工作人员','normal platform sender retains authorized name without a user suffix')
  page.views={'1':{messageId:'1',seq:'1',state:'published',stateVersion:'1',body:'hello',canCopy:true,isMine:false,createdAt:new Date(now).toISOString()}}
  page.current=(life,epoch)=>page.visible&&page.life===life&&manager.epoch===epoch;page.replyTo=()=>{};page.openReport=()=>{}
  page.messageActions({currentTarget:{dataset:{id:'1'}},touches:[{clientX:350,clientY:300}]})

@@ -21,11 +21,11 @@ module.exports={
   const show=rect=>{
    if(!this.current(life,epoch)||this.views[id]?.stateVersion!==version)return
    const window=typeof wx.getWindowInfo==='function'?wx.getWindowInfo():wx.getSystemInfoSync()
-   const width=Math.min(300,window.windowWidth-24),height=actions.length>4?100:54
+   const width=Math.min(300,window.windowWidth-24),height=actions.length>4?100:54,viewportHeight=window.windowHeight-(this.data.keyboardHeight||0)
    const point=event.touches?.[0]||event.changedTouches?.[0]||{}
    const y=rect?.top??point.clientY??120,x=rect?.left??point.clientX??12
    this.menuActions={id,version,life,epoch,actions}
-   this.setData({messageMenu:{top:Math.max(8,Math.min(y>=height+12?y-height-8:(rect?.bottom??y)+8,window.windowHeight-height-8)),left:Math.max(12,Math.min(x,window.windowWidth-width-12)),actions:actions.map(({key,label})=>({key,label}))}})
+   this.setData({messageMenu:{top:Math.max(8,Math.min(y>=height+12?y-height-8:(rect?.bottom??y)+8,viewportHeight-height-8)),left:Math.max(12,Math.min(x,window.windowWidth-width-12)),actions:actions.map(({key,label})=>({key,label}))}})
   }
   if(typeof wx.createSelectorQuery==='function')wx.createSelectorQuery().in(this).select('#message-'+id+' .message-bubble').boundingClientRect().exec(r=>show(r?.[0]))
   else show(null)
@@ -73,16 +73,28 @@ module.exports={
    const context=this.data.orderContext
    const candidates=context&&!context.simulation?[context]:[]
    const api=require('../../../utils/OrderApi.js')
-   const result=await api.request('orders.center','GET',{kind:context?.role==='worker'?'worker':'mine',status:'all',page:1})
+   const kind=context?.role==='worker'?'worker':'mine'
+   let pageNumber=1
+   let result
+   try{result=await api.request('orders.center','GET',{kind,status:'all',page:pageNumber})}catch(error){if(!candidates.length)throw error;result={data:{items:[],has_more:false}}}
    if(!this.current(life,epoch))return
    for(const value of result.data?.items||[])if(value.public_no&&!candidates.some(v=>(v.publicNo||v.public_no)===value.public_no))candidates.push(value)
    if(!candidates.length){this.setData({notice:'当前身份暂无可分享的订单，请先创建测试订单'});return}
    let offset=0,card
    while(!card){
-    const page=candidates.slice(offset,offset+5),more=offset+5<candidates.length
+    const page=candidates.slice(offset,offset+5),more=offset+5<candidates.length||result.data?.has_more===true
     const selection=await new Promise((resolve,reject)=>wx.showActionSheet({itemList:page.map(v=>Array.from(v.title||v.publicNo||v.public_no).slice(0,24).join('')).concat(more?['更多订单']:[]),success:resolve,fail:reject}))
     if(!this.current(life,epoch))return
-    if(selection.tapIndex===5&&more){offset+=5;continue}
+    if(selection.tapIndex===page.length&&more){
+     offset+=page.length
+     if(offset>=candidates.length&&result.data?.has_more===true){
+      result=await api.request('orders.center','GET',{kind,status:'all',page:++pageNumber})
+      if(!this.current(life,epoch))return
+      for(const value of result.data?.items||[])if(value.public_no&&!candidates.some(v=>(v.publicNo||v.public_no)===value.public_no))candidates.push(value)
+      if(offset>=candidates.length){this.setData({notice:'暂无更多可分享订单，请重新选择'});return}
+     }
+     continue
+    }
     card=page[selection.tapIndex];if(!card)return
    }
    const confirmation=await new Promise((resolve,reject)=>wx.showModal({title:'发送订单',content:'发送“'+(card.title||card.publicNo||card.public_no)+'”到当前会话？',success:resolve,fail:reject}))

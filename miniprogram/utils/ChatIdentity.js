@@ -38,6 +38,8 @@ module.exports={avatars,fallback,normalize,response,row}
 
 function attribution(sender,person){
  if(!sender||person?.simulation===true)return person||fallback()
+ const systemRole={merchant_owner:'merchant',assigned_worker:'worker',platform_staff:'platform'}[sender.role_source]
+ if(systemRole&&person?.role===systemRole)return person
  const suffix=person?.userSuffix
  if(!suffix)return fallback()
  if(['invite','owner_mobile_match'].includes(sender.role_source)&&Object.prototype.hasOwnProperty.call(labels,sender.display_role)){

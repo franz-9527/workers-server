@@ -48,7 +48,7 @@ Page({
   this.stopAV();this.stopImages();this.visible=false;this.life++;this.unreadJob=null;this.tapSending=false
   if(this.anchorTimer)clearTimeout(this.anchorTimer);this.anchorTimer=null
   if(this.draftTimer)clearTimeout(this.draftTimer);this.draftTimer=null
-  this.setData({keyboardHeight:0,recallBusy:false})
+  this.setData({keyboardHeight:0,keyboardOpen:false,recallBusy:false})
   if(this.manager.active===this.id){this.manager.typing(false).catch(()=>{});this.manager.focus('')}
  },
  onUnload(){this.onHide();if(this.stopChat)this.stopChat();this.views={}},
@@ -227,6 +227,7 @@ Page({
   })
  },
  onScroll(event) {
+  if(this.data.messageMenu)this.closeMessageMenu()
   const d=event.detail||{};this.currentTop=Number(d.scrollTop)||0
   // Only scrolltolower establishes the bottom. Scrolling up immediately stops following.
   if(this.lastTop!==undefined && this.currentTop<this.lastTop-2)this.atBottom=false

@@ -11,7 +11,7 @@ module.exports={
   const life=this.life,epoch=this.manager.epoch
   this.captureAnchor().then(anchor=>{if(this.current(life,epoch))this.setData({showTools:!this.data.showTools,keyboardHeight:0},()=>this.atBottom?this.jumpBottom():this.restoreAnchor(anchor,life,epoch))})
  },
- focusComposer(){if(this.data.showTools)this.setData({showTools:false})},
+ focusComposer(){this.closeMessageMenu();if(this.data.showTools)this.setData({showTools:false})},
  dismissTools(){this.closeMessageMenu();if(this.data.showTools)this.setData({showTools:false})},
  takePhoto(){this.chooseImages({currentTarget:{dataset:{source:'camera'}}})},
  chatInfo(){
