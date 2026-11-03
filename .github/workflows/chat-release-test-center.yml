@@ -1,4 +1,4 @@
-name: Native voice format conversion and WeChat chat acceptance
+name: Final native WeChat voice and layout acceptance
 on: [push, workflow_dispatch]
 permissions:
   contents: read
