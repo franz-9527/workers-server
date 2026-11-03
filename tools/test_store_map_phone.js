@@ -91,7 +91,11 @@ function phoneFixture(old=false) {
  const missing=name=>Object.assign(new Error('database collection '+name+' not exists'),{code:'DATABASE_COLLECTION_NOT_EXIST'})
  const db={collection:name=>({
   doc:id=>({get:async()=>{reads.push(name);if(!data[name])throw missing(name);const row=data[name].find(x=>x._id===id);if(!row)throw Error('document not found');return{data:structuredClone(row)}}}),
-  where:filter=>({limit:()=>({get:async()=>{reads.push(name);if(!data[name])throw missing(name);return{data:structuredClone(data[name].filter(row=>Object.entries(filter).every(([k,v])=>row[k]===v)))}})}),
+  where:filter=>({limit:()=>({get:async()=>{
+   reads.push(name)
+   if(!data[name])throw missing(name)
+   return {data:structuredClone(data[name].filter(row=>Object.entries(filter).every(([k,v])=>row[k]===v)))}
+  }})}),
   add:async()=>{writes.push(name);if(!data[name])throw missing(name)}
  })}
  const cloud={init(){},DYNAMIC_CURRENT_ENV:'worker-real',database:()=>db,getWXContext:()=>({OPENID:caller})}
