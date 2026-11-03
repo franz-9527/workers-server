@@ -214,6 +214,7 @@ func limitFor(q HistoryRequest) int {
 }
 func (s *HistoryService) finish(ctx context.Context, p ports.Principal, r *historyRead, page HistoryPage) (HistoryPage, error) {
 	caps := s.capabilities
+	if r.grant.OrderContext!=nil&&r.grant.OrderContext.Simulation{caps.Cache=false}
 	page.Capabilities = &caps
 	views := make([]*MessageView, 0, len(page.Messages)+len(page.Changes))
 	for i := range page.Messages {

@@ -83,7 +83,7 @@ func newFixture(t *testing.T) *fixtureDB {
 	f.user = user
 	f.exec("CREATE USER '" + user + "'@'" + fixtureHost + "' IDENTIFIED BY 's05-fixture-only'")
 	t.Cleanup(func() { root.Exec("DROP USER IF EXISTS '" + user + "'@'" + fixtureHost + "'") })
-	for _, table := range []string{"chat_storage_policy", "chat_storage_policy_audit", "users", "login_sessions", "chat_policy_guards", "chat_business_events", "chat_staff_authority_versions", "wechat_identities", "chat_admin_sessions", "chat_mini_auditors"} {
+	for _, table := range []string{"system_settings", "chat_storage_policy", "chat_storage_policy_audit", "users", "login_sessions", "chat_policy_guards", "chat_business_events", "chat_staff_authority_versions", "wechat_identities", "chat_admin_sessions", "chat_mini_auditors"} {
 		f.exec("GRANT SELECT ON `" + name + "`." + table + " TO '" + user + "'@'" + fixtureHost + "'")
 	}
 	for _, table := range []string{"chat_av_uploads", "chat_av_parts", "chat_av_jobs", "chat_av_objects", "chat_av_items", "chat_av_listens", "chat_av_raw_receipts", "chat_av_asr_requests", "chat_av_budgets", "chat_storage_applications", "chat_storage_application_errors", "chat_conversations", "chat_members", "chat_member_intervals", "chat_event_receipts", "chat_restrictions", "chat_send_intents", "chat_messages", "chat_message_changes", "chat_text_checks", "chat_risk_events", "chat_member_reads", "chat_user_preferences", "chat_preference_accounts", "chat_image_uploads", "chat_image_bundles", "chat_image_items", "chat_image_objects", "chat_image_reports", "chat_audit_accounts", "chat_audit_snapshots", "chat_audit_snapshot_items", "chat_cases", "chat_reminder_events", "chat_reminder_clusters", "chat_reminder_budgets", "chat_reminder_intents"} {

@@ -41,8 +41,8 @@ func (r *Reader) sandboxLocked(ctx context.Context,tx *sql.Tx,scope string)(Proj
    err=tx.QueryRowContext(ctx,"SELECT 1 FROM users WHERE id=? AND status='active' LOCK IN SHARE MODE",m.wire).Scan(&active)
   }else{return Projection{},ErrDenied}
   if err==sql.ErrNoRows{return Projection{},ErrDenied};if err!=nil{return Projection{},ports.ErrUnavailable}
-  role,display:=m.role,m.role;if role=="admin"{role="platform_staff";display="platform"}
-  g:=ports.Grant{Mode:mode,MemberRole:role,RoleSource:"sandbox",DisplayRole:display,DisplayRoleVersion:"1",CanRead:true,CanSend:true,ScopeKey:scope,Version:"1",MemberKey:scope+":mini:"+m.wire,
+  role,display,source:=m.role,m.role,"invite";if role=="admin"{role="platform_staff";display="platform";source="platform_staff"}else if role=="worker"{source="assigned_worker"}else{display="user"}
+  g:=ports.Grant{Mode:mode,MemberRole:role,RoleSource:source,DisplayRole:display,DisplayRoleVersion:"1",CanRead:true,CanSend:true,ScopeKey:scope,Version:"1",MemberKey:scope+":mini:"+m.wire,
    OrderContext:&ports.OrderContext{PublicNo:"",Title:"【测试】"+title,Workflow:"construction",Simulation:true,SandboxRoomID:id}}
   p.Members=append(p.Members,ProjectedMember{ActorID:actor,Role:role,Grant:g})
   fingerprint+="\n"+m.key+":"+m.wire+":"+m.role

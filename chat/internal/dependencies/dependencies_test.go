@@ -60,7 +60,6 @@ func TestSettingsAndOwnership(t *testing.T) {
 		"GRANT UPDATE ON `bixuan_test_chat`.`chat_calls` TO 'u'@'h'",
 		"GRANT UPDATE ON `bixuan_test_chat`.`system_settings` TO 'u'@'h'",
 		"GRANT SELECT ON `bixuan_test_chat`.`user_wallets` TO 'u'@'h'",
-		"GRANT SELECT ON `bixuan_test_chat`.`admin_users` TO 'u'@'h'",
 		"GRANT UPDATE ON `bixuan_test_chat`.`chat_admin_sessions` TO 'u'@'h'",
 		"GRANT UPDATE ON `other_db`.`chat_messages` TO 'u'@'h'",
 		"GRANT SELECT ON `bixuan_test_chat`.* TO 'u'@'h'", "GRANT CREATE ON `bixuan_test_chat`.`chat_messages` TO 'u'@'h'",
@@ -232,4 +231,14 @@ func TestMySQLContractErrorExposesSafeCode(t *testing.T) {
 	if state.Code != "CHAT_DATABASE_SESSION_INVALID" || state.State != "unavailable" {
 		t.Fatal("mysql contract detail was flattened")
 	}
+}
+
+func TestSandboxReadOnlyGrantsStayTestingOnly(t *testing.T) {
+ for _,table:=range []string{"chat_sandbox_rooms","chat_sandbox_members","chat_sandbox_sessions","admin_users"} {
+  line:="GRANT SELECT ON bixuan_test_chat."+table+" TO 'u'@'h'"
+  if !safeGrant(line,"bixuan_test_chat","test"){t.Fatal("test authority read refused",table)}
+  if safeGrant(line,"bixuan_test_chat","production"){t.Fatal("test authority exposed to production",table)}
+  if safeGrant(strings.Replace(line,"SELECT","UPDATE",1),"bixuan_test_chat","test"){t.Fatal("PHP authority write accepted",table)}
+ }
+ if !mysql57.MatchString("5.7.44")||mysql57.MatchString("8.0.0"){t.Fatal("MySQL version check")}
 }

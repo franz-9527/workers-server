@@ -5,6 +5,7 @@ const {ChatManager,compare}=require('../../miniprogram/utils/ChatManager.js')
 const SparkMD5=require('spark-md5')
 const terminal=new Set(['rejected','cancelled','missed','ended','failed'])
 const labels={ringing:'呼叫中',preparing:'准备接通',connecting:'正在连接',active:'通话中',stopping:'正在结束',ended:'已结束',failed:'未能接通',missed:'未接听',rejected:'已拒绝',cancelled:'已取消'}
+const progressName=value=>({editing:'待发送',unknown:'结果待核验',checking:'检查中',review_pending:'待审核',accepted:'已发送',rejected:'未通过',canceled:'已取消',retryable:'可重试',uploading:'上传中',processing:'处理中',raw_wait:'等待微信审核回调',asr:'语音识别中',raw:'媒体审核中',publish:'准备发送',published:'已发送',failed:'未完成',created:'已创建',inspect:'处理媒体中',transcribe:'语音识别中'}[value]||'等待状态同步')
 const errors={CHAT_GO_NOT_READY:'Go服务尚未运行或版本未同步',CHAT_SIGNING_NOT_CONFIGURED:'聊天签名尚未配置',CHAT_RECOVERY_NOT_READY:'聊天恢复检查未通过',CHAT_IMAGE_LIMIT:'图片最多9张，单张不超过8MB',CHAT_AV_LIMIT_EXCEEDED:'语音限60秒/1MB，视频限120秒/20MB',CHAT_SEND_RESTRICTED:'此能力尚未就绪或会话暂不可发送',CHAT_MEDIA_UNAVAILABLE:'图片链路暂不可用，请检查聊天配置',CHAT_AV_UNAVAILABLE:'音视频链路暂不可用，请检查审核及ASR配置',CHAT_CHECK_UNAVAILABLE:'审核服务暂不可用，请检查微信授权和运行配置',CALL_UNAVAILABLE:'通话资源尚未就绪，请检查声网凭据及资源池',CALL_BUSY:'成员已有通话或资源暂忙',CALL_DISABLED:'通话未开放',CHAT_UNAUTHORIZED:'身份已失效，请重新接入',CHAT_PERMISSION_DENIED:'会话已清理或成员权限已变化',CHAT_SEND_RESULT_UNKNOWN:'发送结果待核验，请保留原操作标识重试'}
 const message=e=>errors[e?.code]||(/^CHAT_|^CALL_/.test(e?.code||e?.message||'')?'能力未就绪或状态已变化，请检查聊天设置后重试':e?.message)||'操作未完成，请检查配置后重试'
 const root=document.querySelector('[data-chat-live]')
@@ -163,12 +164,18 @@ class TestPeer {
   for(const kind of ['images','audio','video'])this.node.querySelector('[data-live-'+kind+']').disabled=cap[kind]!==true
   const transfers=[]
   for(const row of m.images.list(this.cid)){
-   const item=element('div','图片 · '+(row.code?message({code:row.code}):row.state==='editing'?(row.uploading?'上传中':'待发送'):row.state),'chat-testing-transfer-row')
+   const item=element('div','图片 · '+(row.code?message({code:row.code}):row.state==='editing'?(row.uploading?'上传中':'待发送'):progressName(row.state)),'chat-testing-transfer-row')
    if(!row.submitted&&!row.uploading){const send=element('button','发送图片','admin-btn admin-btn--sm');send.onclick=()=>m.images.send(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(send)}
    if(row.submitted&&!['accepted','rejected','canceled'].includes(row.state)){const retry=element('button','核验状态','admin-btn admin-btn--sm');retry.onclick=()=>m.images.status(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(retry)}
    transfers.push(item)
   }
-  for(const row of m.av.list(this.cid))transfers.push(element('div',(row.kind==='audio'?'语音':'视频')+' · '+(row.code?message({code:row.code}):row.phase||row.state),'chat-testing-transfer-row'))
+  for(const row of m.attempts(this.cid)){
+   if(row.state==='accepted'&&model.messages.has(row.message_id))continue
+   const item=element('div','文字 · '+(row.code?message({code:row.code}):progressName(row.state)),'chat-testing-transfer-row')
+   if(row.state==='unknown'||row.state==='retryable'){const retry=element('button','核验并重试','admin-btn admin-btn--sm');retry.onclick=()=>m.retryText(this.cid,row.client_message_id).catch(e=>this.tell(message(e)));item.append(retry)}
+   transfers.push(item)
+  }
+  for(const row of m.av.list(this.cid))transfers.push(element('div',(row.kind==='audio'?'语音':'视频')+' · '+(row.code?message({code:row.code}):progressName(row.phase||row.state)),'chat-testing-transfer-row'))
   this.transfer.replaceChildren(...transfers)
   this.node.querySelector('[data-live-capabilities]').textContent='图片'+(cap.images?'可用':'未就绪')+' · 语音'+(cap.audio?'可用':'未就绪')+' · 视频'+(cap.video?'可用':'未就绪')
  }
