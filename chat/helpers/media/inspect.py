@@ -75,13 +75,13 @@ def main():
         if video or len(audio) != 1 or audio[0]["codec_name"] != "mp3":
             raise ValueError("voice codec")
         sample = int(audio[0].get("sample_rate", 0)); channels = int(audio[0].get("channels", 0))
-        if sample not in (8000, 16000) or channels != 1:
+        if sample not in (8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000) or channels not in (1, 2):
             raise ValueError("voice profile")
         pcm = command(ffmpeg, base + ["-t", "60.01", "-vn", "-map", "0:a:0", "-ar", "16000", "-ac", "1", "-f", "s16le", "pipe:1"])
         duration = len(pcm) / 32000
         if not 1 <= duration <= 60:
             raise ValueError("voice duration")
-        encoding = ["-c:a", "copy"] if sample == 16000 else ["-c:a", "libmp3lame", "-ar", "16000", "-ac", "1", "-b:a", "48k"]
+        encoding = ["-c:a", "libmp3lame", "-ar", "16000", "-ac", "1", "-b:a", "48k"]
         command(ffmpeg, base + ["-vn", "-map", "0:a:0"] + encoding + ["-write_id3v1", "0", "-id3v2_version", "0", str(root / "main.mp3")])
         output = {"kind": "audio", "mime": "audio/mpeg", "main": "main.mp3", "poster": "", "segments": ["main.mp3"],
                   "duration_ms": int(math.ceil(duration * 1000)), "has_audio": True, "qr_decision": "clear", "frames": []}
