@@ -55,11 +55,28 @@ jobs:
         run: |
           cd chat
           go test ./internal/message -run 'TestMySQLSandbox' -count=1 -v
+      - name: Real PHP delegation and administrative view regressions
+        env:
+          CHAT_SANDBOX_TEST: '1'
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: |
+          php tools/test_chat_sandbox.php
+          php tools/test_chat_sandbox_view.php
+          php tools/render_chat_live.php
+      - name: Browser shared-client media calls and original card layouts
+        env:
+          STORE_ORDER_TEST: '1'
+        run: |
+          node tools/test_store_order_prompts.js
+          node tools/test_store_order_layout.js
+          node tools/test_chat_live_browser.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: full-chat-test-build
           path: |
+            test-artifacts/*.png
+            test-artifacts/*.html
             server/assets/chat-testing-runtime.js
             chat/internal/ports/sandbox.go
             chat/internal/ports/contracts.go

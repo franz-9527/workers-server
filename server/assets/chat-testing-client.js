@@ -95,7 +95,7 @@ class TestPeer {
   this.tell('正在检查真实聊天链路…')
   const initial=await this.credential();if(life!==this.generation)return
   const m=new ChatManager(this.io());this.manager=m
-  m.subscribe((type,value)=>{if(this.manager===m){if(value?.page?.history_cursor)this.historyCursor=value.page.history_cursor;this.paint();this.paintCall()}})
+  m.subscribe((type,value)=>{if(this.manager===m){if(type==='connection'&&value.state==='unavailable')this.tell('连接暂不可用，可点击重连；正在检查的媒体请核验原发送状态');if(value?.page?.history_cursor)this.historyCursor=value.page.history_cursor;this.paint();this.paintCall()}})
   m.setEnabled(true);m.setForeground(true);await m.credential(m.epoch)
   let cursor='',found
   for(let page=0;page<20;page++){
@@ -210,6 +210,7 @@ class TestPeer {
    if(!call||terminal.has(call.state)||call.state==='ringing'||call.state==='stopping')return
    if(!this.media)await this.join(call,life)
    if(this.manager!==m||life!==this.generation)return
+   await this.signals();if(!this.media)return
    await m.calls.action('pulse')
    if(this.media&&m.calls.current.authorized_until>this.until+5){
     const grant=await m.calls.prepare();await this.media.renewToken(grant.token);this.arm(grant,life)
@@ -247,8 +248,16 @@ class TestPeer {
    if(!current())return this.stopMedia()
    await client.publish(this.tracks)
    if(!current())return this.stopMedia()
-   await m.calls.action('prepared');await m.calls.action('ready')
+   this.preparedSignal=false;this.readySignal=false
   }catch(e){await this.stopMedia();await m.calls.action('end').catch(()=>{});throw e}
+ }
+ async signals(){
+  const m=this.manager,engine=this.media;if(!m||!engine)return
+  for(const name of ['prepared','ready']){
+   const key=name+'Signal';if(this[key])continue
+   try{await m.calls.action(name);if(this.media!==engine||this.manager!==m)return;this[key]=true}
+   catch(e){if(e.code==='CALL_STATE_CONFLICT')return;throw e}
+  }
  }
  async stopMedia(){
   clearTimeout(this.deadline);this.deadline=null

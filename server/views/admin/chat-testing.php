@@ -35,7 +35,7 @@ $selectedKeys=is_array($values['members']??null)?$values['members']:[];
 <div class="chat-testing-workspace">
 <aside class="admin-card"><div class="admin-card__body"><h2>测试会话</h2>
 <?php if(!$chatState['rooms']): ?><p class="admin-text-muted">暂无会话，点击上方创建。</p><?php endif; ?>
-<?php foreach($chatState['rooms'] as $room): ?><a class="chat-testing-room <?= ($selected['id']??null)===$room['id']?'is-active':'' ?>" href="<?= e(admin_url('chat.testing',['room'=>$room['id'],'page'=>$chatState['page']])) ?>"><strong><?= e($room['title']) ?></strong><small><?= e((string)$room['member_count']) ?>位成员 · <?= e((string)$room['message_count']) ?>条消息</small></a><?php endforeach; ?>
+<?php foreach($chatState['rooms'] as $room): ?><a class="chat-testing-room <?= ($selected['id']??null)===$room['id']?'is-active':'' ?>" href="<?= e(admin_url('chat.testing',['room'=>$room['id'],'page'=>$chatState['page']])) ?>"><strong><?= e($room['title']) ?></strong><small><?= e((string)$room['member_count']) ?>位成员 · <?= !empty($room['message_count_pending'])?'联调记录待同步':e((string)$room['message_count']).'条消息' ?></small></a><?php endforeach; ?>
 <div class="admin-inline-actions admin-mt-2"><?php if($chatState['page']>1): ?><a class="admin-btn admin-btn--sm" href="<?= e(admin_url('chat.testing',['page'=>$chatState['page']-1])) ?>">上一页</a><?php endif; ?><?php if($chatState['more']): ?><a class="admin-btn admin-btn--sm" href="<?= e(admin_url('chat.testing',['page'=>$chatState['page']+1])) ?>">下一页</a><?php endif; ?></div>
 </div></aside>
 <section class="admin-card"><div class="admin-card__body">

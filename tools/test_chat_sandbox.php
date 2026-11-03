@@ -16,7 +16,7 @@ function e($v){return htmlspecialchars((string)$v,ENT_QUOTES,'UTF-8');}
 function admin_url($route,$params=[]){return '/admin/?'.http_build_query(['route'=>$route]+$params);}
 function asset_url($name){return '/server/assets/'.$name;}
 function local_datetime($value){return $value;}
-function csrf(){return new class{function input(){return '<input type="hidden" name="csrf" value="fixture">';}};}
+function csrf(){return new class{function token(){return 'fixture-csrf';}function input(){return '<input type="hidden" name="csrf" value="fixture">';}};}
 $checks=0;
 function ck($ok,$name){if(!$ok)throw new RuntimeException($name);$GLOBALS['checks']++;echo "PASS $name\n";}
 function deny($fn,$code){try{$fn();}catch(RuntimeException $e){ck($e->getCode()===$code,'denial '.$code.' '.$e->getMessage());return;}throw new RuntimeException('Unexpected acceptance');}
@@ -45,7 +45,7 @@ foreach([
 "INSERT INTO message_outbox VALUES(1,'preserve notifications')"
 ] as $sql)$db->execute($sql);
 $runner=new SqlScriptRunner();
-foreach(['2.7.1','2.7.2'] as $v){$sql=file_get_contents($root.'/server/database/upgrades/'.$v.'.sql');$runner->run($db->pdo(),$sql,$v.'.sql');$runner->run($db->pdo(),$sql,$v.'.sql');}
+foreach(['2.7.1','2.7.2','2.7.3'] as $v){$sql=file_get_contents($root.'/server/database/upgrades/'.$v.'.sql');$runner->run($db->pdo(),$sql,$v.'.sql');$runner->run($db->pdo(),$sql,$v.'.sql');}
 $sandbox=new ChatSandbox($db);ck($sandbox->ready(),'idempotent actual migrations create the three sandbox tables');
 $actors=$sandbox->actors();ck(count($actors)===5,'catalog includes two active administrators and three approved demo identities');
 ck(!isset($actors['user:99'])&&!isset($actors['admin:3']),'real users and disabled administrators are not selectable');
@@ -111,11 +111,11 @@ $env='production';deny(fn()=>$make(['admin:1','user:11']),403);deny(fn()=>$sandb
 
 // Generate real views before cleanup, including special characters and an input draft.
 $sandbox->send($room,'admin:1','<script>unsafe()</script>'."\n".'下一行','xss-test',1);
-$actors=$sandbox->actors();$data=$sandbox->dashboard(1,$room);$ready=true;$notice='';$values=[];$requestKey=str_repeat('c',32);
+$actors=$sandbox->actors();$chatState=$sandbox->dashboard(1,$room);$ready=true;$notice='';$values=[];$requestKey=str_repeat('c',32);
 $dir=$root.'/test-artifacts';if(!is_dir($dir))mkdir($dir,0775,true);$css=file_get_contents($root.'/server/assets/admin.css');
 foreach(['normal','failed','missing'] as $variant){
  $ready=$variant!=='missing';$values=$variant==='failed'?['title'=>'输入保留','members'=>['admin:1','user:11'],'_action'=>'create']:[];
- ob_start();require $root.'/server/views/admin/chat-testing.php';$html=ob_get_clean();
+ $html=(new \WorkerAdmin\Core\View($root.'/server/views'))->render('admin/chat-testing',compact('actors','chatState','ready','notice','values','requestKey'),null);
  ck(!str_contains($html,'<script>unsafe()'),'message text is escaped in the actual PHP view');
  ck(!str_contains($html,'test-center.entry-token'),'chat testing contains no temporary-entry action');
  file_put_contents($dir.'/sandbox-'.$variant.'.html','<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>'.$css.'</style><body class="admin-body"><main class="admin-content" style="max-width:1200px;margin:auto">'.$html.'</main></body></html>');
@@ -146,7 +146,7 @@ class TestCsrf extends \WorkerAdmin\Core\Csrf {
  public function __construct(){}
  public function verifyRequest(){$this->checks++;if($this->deny)throw new RuntimeException('CSRF rejected',403);}
 }
-function view($name,$data){$GLOBALS['rendered']=$data;return '';}
+function view($name,$data){$GLOBALS['rendered']=$data;$GLOBALS['renderedHTML']=(new \WorkerAdmin\Core\View(dirname(__DIR__).'/server/views'))->render($name,$data,null);return '';}
 function audit($a,$t,$id,$detail){$GLOBALS['auditRows'][]=[$a,$id,$detail];}
 function flash($type,$message){}
 function redirect($url){$GLOBALS['redirected']=$url;}
@@ -154,6 +154,8 @@ function json_response($body,$status=200){$GLOBALS['jsonResult']=[$body,$status]
 $_SERVER['REQUEST_METHOD']='GET';$_GET=['room'=>$new];$_POST=[];
 $csrfTest=new TestCsrf();$module=new \WorkerAdmin\Http\Admin\Modules\ChatTestingAdminModule($db,new TestAuth(),$csrfTest);
 $module->dispatch('chat.testing');ck($rendered['ready']&&$rendered['activeMenu']==='chat.testing','actual controller exposes the migrated ready workspace');
+ck(isset($rendered['chatState'])&&!isset($rendered['data'])&&(string)$rendered['chatState']['room']['id']===$new,'controller sends distinct page state instead of the reserved renderer parameter');
+ck(str_contains($renderedHTML,'chat-testing-log')&&str_contains($renderedHTML,'演示客户甲'),'actual controller payload reaches real template renderer');
 deny(fn()=>(new \WorkerAdmin\Http\Admin\Modules\ChatTestingAdminModule($db,new TestAuth('operations'),$csrfTest))->dispatch('chat.testing'),403);
 $_SERVER['REQUEST_METHOD']='POST';$_POST=['_action'=>'clear_all'];$csrfTest->deny=true;deny(fn()=>$module->dispatch('chat.testing'),403);
 ck((int)$db->fetchValue('SELECT COUNT(*) FROM chat_sandbox_rooms')===1,'bad CSRF cannot clear test rooms');
@@ -161,6 +163,24 @@ $csrfTest->deny=false;$module->dispatch('chat.testing');
 ck($csrfTest->checks===2&&isset($redirected)&&$auditRows[0][0]==='chat.test_clear_all','one-click clear requires CSRF and records the actual operation');
 $_SERVER['REQUEST_METHOD']='GET';$_GET=['room'=>$new,'poll'=>'1'];$module->dispatch('chat.testing');
 ck($jsonResult[1]===404,'live view reports a cleared room rather than rendering stale messages');
+
+
+// New PHP delegation uses persisted real administrator session authority, never
+// creates a normal login, and keeps the virtual actor ID serialized as a string.
+$db->execute("CREATE TABLE chat_admin_sessions(id BIGINT PRIMARY KEY,admin_id BIGINT,session_version CHAR(64),expires_at DATETIME,revoked_at DATETIME NULL)");
+$db->execute("INSERT INTO chat_admin_sessions VALUES(101,1,REPEAT('b',64),UTC_TIMESTAMP()+INTERVAL 5 MINUTE,NULL)");
+$_SESSION['chat_admin_session_id']=101;
+$credentials=new \WorkerAdmin\Application\Chat\ChatSandboxCredentials($db);
+$one=$credentials->admin(new TestAuth(),'admin:1');
+ck($one['identity']['sub']==='7000000000000000001'&&is_string($one['identity']['source_id'])&&str_starts_with($one['identity']['source_id'],'9'),'PHP delegates an explicit string actor/source namespace');
+ck($one['identity']['kind']==='mini'&&$one['identity']['scopes']===['chat:use'],'delegated source has no audit or administrative operation scopes');
+$two=$credentials->admin(new TestAuth(),'admin:1');
+ck($one['identity']['source_id']===$two['identity']['source_id']&&$one['identity']['session_version']===$two['identity']['session_version'],'refresh keeps stable delegated authority for an active media transfer or call');
+ck($one['moderation_ready']===true&&$one['expires']<=time()+300,'uses configured real mini administrator binding and bounded expiry');
+deny(fn()=>$credentials->admin(new TestAuth('operations'),'admin:1'),403);
+$db->execute("UPDATE chat_admin_sessions SET revoked_at=UTC_TIMESTAMP() WHERE id=101");
+deny(fn()=>$credentials->admin(new TestAuth(),'admin:1'),401);
+$env='production';deny(fn()=>$credentials->admin(new TestAuth(),'admin:1'),403);$env='testing';
 
 echo 'PASS TOTAL '.$checks."\n";
 }finally{$pdo->exec('DROP DATABASE '.$name);}

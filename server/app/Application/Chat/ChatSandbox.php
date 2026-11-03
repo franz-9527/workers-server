@@ -101,6 +101,11 @@ final class ChatSandbox
         $this->enabled();$page=max(1,min(10000,$page));
         $rows=$this->db->fetchAll('SELECT r.*,(SELECT COUNT(*) FROM chat_sandbox_members m WHERE m.room_id=r.id) member_count,(SELECT COUNT(*) FROM chat_sandbox_messages s WHERE s.room_id=r.id) message_count FROM chat_sandbox_rooms r ORDER BY r.id DESC LIMIT 21 OFFSET '.(($page-1)*20));
         $more=count($rows)>20;$rows=array_slice($rows,0,20);
+        if($this->liveReady())foreach($rows as &$listRoom){
+            try{$live=(int)$this->db->fetchValue("SELECT COUNT(*) FROM chat_messages m JOIN chat_conversations c ON c.id=m.conversation_id WHERE c.scope_key=:scope",['scope'=>'sandbox:'.$listRoom['id']]);$listRoom['message_count']=(int)$listRoom['message_count']+$live;}
+            catch(\Throwable $e){$listRoom['message_count_pending']=true;}
+        }unset($listRoom);
+
         if($room===''&&$rows)$room=(string)$rows[0]['id'];
         $selected=$room!==''?$this->room($this->id($room)):null;
         $messages=[];$members=[];$older=false;

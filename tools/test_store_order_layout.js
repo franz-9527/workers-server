@@ -49,9 +49,12 @@ async function main(){
     assert.ok(await scroll.evaluate(el=>el.scrollWidth>el.clientWidth+5),'worker cards actually scroll')
     await scroll.evaluate(el=>el.scrollLeft=el.scrollWidth)
     assert.ok(await scroll.evaluate(el=>el.scrollLeft>0),'left swipe reaches later support cards')
-    assert.equal(await page.locator('.order-support-card').count(),4)
+    assert.equal(await page.locator('.order-support-card').count(),3)
+    assert.equal(await page.locator('.order-support-card .order-support-head').count(),3,'the complete problem heading moves with each full card')
+    assert.equal(await page.locator('.order-support > .order-support-head').count(),0,'no heading is stranded outside the card')
+    assert.equal(await page.locator('.order-support-card').getByText('联系客服',{exact:true}).count(),0)
     const firstBox=await page.locator('.order-support-card').first().boundingBox();assert.ok(firstBox.width>width*0.8,'support entries are large full cards')
-    assert.equal(await page.locator('.order-support-card button').count(),4,'each large card has a separate action button')
+    assert.equal(await page.locator('.order-support-card button').count(),3,'each large card has a separate action button')
 
     const last=await page.locator('.order-support-card').last().boundingBox();assert.ok(last.x+last.width<=width+1,'last support card is reachable')
    }

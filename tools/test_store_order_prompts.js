@@ -49,6 +49,7 @@ async function main(){
  ck(calls.length===1,'exact user-reported missing-function error is attributed to store')
  calls=[];await assert.rejects(storefront.read('saveRecord',{}));ck(calls.length===0,'write actions are not admitted to public read helper')
  ck(!read('miniprogram/subpackages/store/utils/Storefront.js').includes('base_store'),'removed function has no frontend reference')
+ ck(support.customerCards(true,'遇到问题').every(item=>item.key!=='service'),'customer problem card also reuses the fixed customer-service footer')
  // Actual store page: default navigation is ready without cloud/login/location.
  let storeDef,pluginReads=0,navigations=[],cloudCalls=[]
  const app={globalData:{version:'fixture',location:{latitude:30,longitude:120,city:'测试城市'}}}
@@ -85,7 +86,7 @@ async function main(){
  const platform=base();platform.order.is_platform_order=true;platform.platform_order={worker_settlement_mode:'worker_collect',customer_tail_cents:45000}
  ck(support.offlineCollection(platform,true).amountText==='¥450.00','platform collection uses server-provided customer tail, not labor quote')
  d.media=[{purpose:'collection_receipt'}];ck(support.offlineCollection(d,true).description.includes('勿重复收取'),'receipt does not get treated as unpaid debt')
- ck(support.workerCards(base()).map(x=>x.key).join(',')==='cannot_contact,cannot_work,cancel_service,service','separate contact/work/cancel/service cards')
+ ck(support.workerCards(base()).map(x=>x.key).join(',')==='cannot_contact,cannot_work,cancel_service','separate contact/work/cancel cards without duplicate service entry')
  const measurement=base();measurement.order.workflow_profile='measurement';ck(support.workerCards(measurement)[1].title==='无法测量','measurement-specific label')
  ck(support.workerCards(base()).find(x=>x.key==='cancel_service').description.includes('客户不承担上门或时间补偿'),'large cancel card retains original customer-protection explanation')
  const done=base();done.actions={can_work:true};done.order.fulfillment_status='accepted';ck(support.workerCards(done).length===0,'completed order cannot reopen problem submission')

@@ -214,7 +214,10 @@ func limitFor(q HistoryRequest) int {
 }
 func (s *HistoryService) finish(ctx context.Context, p ports.Principal, r *historyRead, page HistoryPage) (HistoryPage, error) {
 	caps := s.capabilities
-	if r.grant.OrderContext!=nil&&r.grant.OrderContext.Simulation{caps.Cache=false}
+	if r.grant.OrderContext!=nil&&r.grant.OrderContext.Simulation{
+		caps.Cache=false
+		if source,ok:=ports.SandboxSource(p.SourceID);ok{var moderator uint64;if r.tx.QueryRowContext(ctx,"SELECT moderation_user_id FROM chat_sandbox_sessions WHERE id=?",source).Scan(&moderator)!=nil||moderator==0{caps.Audio=false;caps.Video=false}}
+	}
 	page.Capabilities = &caps
 	views := make([]*MessageView, 0, len(page.Messages)+len(page.Changes))
 	for i := range page.Messages {
