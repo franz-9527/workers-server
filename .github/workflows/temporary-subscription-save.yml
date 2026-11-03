@@ -24,5 +24,6 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Domain/Messaging/SettingsValuePolicy.php
           docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php
+          docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php -l .validation/source/server/app/Infrastructure/Messaging/SubscriptionCatalog.php
       - name: Recognize then save pending template
         run: docker run --rm -v "$PWD:/work" -w /work php:8.3.36-cli php .validation/tests/subscription_recognize_save.php
