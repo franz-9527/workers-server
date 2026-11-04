@@ -1,2 +1,3 @@
 source=300x300 RGBA PNG
 background=#e8f2ff rounded rx=56
+output=pure SVG paths
