@@ -40,10 +40,10 @@ jobs:
           script: |
             const checks={'mini-call/syntax':process.env.SYNTAX_STATUS,'mini-call/contract':process.env.CONTRACT_STATUS}
             let failed=false
-            for(const [context,outcome] of Object.entries(checks)){
+            for(const [checkName,outcome] of Object.entries(checks)){
               const state=outcome==='success'?'success':'failure'
               if(state!=='success')failed=true
-              await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context,description:state==='success'?'passed':'failed'})
+              await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:checkName,description:state==='success'?'passed':'failed'})
             }
             await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:failed?'failure':'success',context:'mini-call/validation',description:failed?'mini call frontend validation failed':'mini call frontend validation passed'})
             if(failed)core.setFailed('mini call frontend validation failed')
