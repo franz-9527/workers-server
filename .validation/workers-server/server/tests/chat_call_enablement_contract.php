@@ -31,7 +31,7 @@ foreach(['chat_member_reads','chat_user_preferences','chat_preference_accounts',
 $check(str_contains($status,'private function businessProbe'),'Go status has loopback business dependency probe');
 $check(str_contains($status,"GET /readyz HTTP/1.0"),'Go status probes internal readyz');
 $check(str_contains($status,"'business_ready'"),'Go status reports business readiness');
-$check(str_contains($status,"'business_enabled'")&&str_contains($status,"$snapshot['business_enabled']"),'Go readiness requires the message business runtime');
+$check(str_contains($status,"'business_enabled'")&&str_contains($status,"\$snapshot['business_enabled']"),'Go readiness requires the message business runtime');
 $check(str_contains($settingsView,'Go 业务依赖'),'admin page renders Go business dependency state');
 $check(str_contains($settingsView,'无需手填通话 PHP 地址或 chat.json'),'admin page separates automatic and manual setup');
 
