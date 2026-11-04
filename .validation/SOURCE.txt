@@ -1,0 +1,3 @@
+source_repo=franz-9527/workers
+source_sha=a42814284ab425494130923842a6a9bfca82c6fd
+purpose=direct receipt unread fallback and in-memory cache
