@@ -69,7 +69,6 @@ func hydrateSenders(ctx context.Context, tx *sql.Tx, views []*MessageView) error
 	return nil
 }
 
-
 func (s *HistoryService) peerReadSeqLocked(ctx context.Context, tx *sql.Tx, p ports.Principal, cid ports.ID, grant ports.Grant) (ports.ID, error) {
 	if grant.Mode != "direct" {
 		return "", nil
