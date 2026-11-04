@@ -26,6 +26,7 @@ final class ChatGoRuntimeStatus
             'business_probe_supported'=>false,
             'business_ready'=>false,
             'business_status'=>0,
+            'business_enabled'=>false,
             'business_message'=>'暂时无法读取 Go 业务依赖状态。',
             'mysql_state'=>'unknown',
             'mysql_code'=>'',
@@ -66,6 +67,7 @@ final class ChatGoRuntimeStatus
                 'business_probe_supported'=>$business['supported'],
                 'business_ready'=>$business['ready'],
                 'business_status'=>$business['status'],
+                'business_enabled'=>$business['business_enabled'],
                 'business_message'=>$business['message'],
                 'mysql_state'=>$business['mysql_state'],
                 'mysql_code'=>$business['mysql_code'],
@@ -88,7 +90,7 @@ final class ChatGoRuntimeStatus
     /** Probe only the loopback internal readiness endpoint; no credentials or business rows are returned. */
     private function businessProbe(string $environment):array
     {
-        $out=['supported'=>false,'ready'=>false,'status'=>0,'message'=>'PHP 当前无法探测 Go 内部业务依赖。','mysql_state'=>'unknown','mysql_code'=>'','redis_state'=>'unknown','redis_code'=>''];
+        $out=['supported'=>false,'ready'=>false,'status'=>0,'business_enabled'=>false,'message'=>'PHP 当前无法探测 Go 内部业务依赖。','mysql_state'=>'unknown','mysql_code'=>'','redis_state'=>'unknown','redis_code'=>''];
         if(!function_exists('stream_socket_client'))return $out;
         $out['supported']=true;$port=$environment==='production'?9502:19502;
         $errno=0;$error='';$socket=@stream_socket_client('tcp://127.0.0.1:'.$port,$errno,$error,0.2,STREAM_CLIENT_CONNECT);
@@ -100,12 +102,14 @@ final class ChatGoRuntimeStatus
         if(!preg_match('/^HTTP\/1\.[01] ([0-9]{3})/D',$raw,$match)){$out['message']='Go 内部诊断响应格式不正确。';return $out;}
         $out['status']=(int)$match[1];$parts=preg_split("/\r?\n\r?\n/",$raw,2);$body=$parts[1]??'';$snapshot=json_decode($body,true);
         if(is_array($snapshot)){
+            $out['business_enabled']=($snapshot['business_enabled']??false)===true;
             $out['mysql_state']=(string)($snapshot['mysql']['state']??'unknown');$out['mysql_code']=(string)($snapshot['mysql']['code']??'');
             $out['redis_state']=(string)($snapshot['redis']['state']??'unknown');$out['redis_code']=(string)($snapshot['redis']['code']??'');
         }
-        $out['ready']=$out['status']===200&&is_array($snapshot)&&($snapshot['infrastructure_ready']??false)===true;
-        if($out['ready']){$out['message']='Go 业务依赖、MySQL 与安全恢复门禁检查通过。';return $out;}
+        $out['ready']=$out['status']===200&&is_array($snapshot)&&($snapshot['infrastructure_ready']??false)===true&&$out['business_enabled'];
+        if($out['ready']){$out['message']='Go 消息业务、MySQL 与安全恢复门禁检查通过。';return $out;}
         if($out['mysql_state']!=='ready'){$out['message']='Go 无法正常使用 MySQL'.($out['mysql_code']!==''?'（'.$out['mysql_code'].'）':'').'；请先检查数据库升级、连接和权限。';return $out;}
+        if(!$out['business_enabled']&&$out['status']===200){$out['message']='Go 进程正常，但消息业务未启用；请先完成聊天数据库升级并重新应用已保存配置。';return $out;}
         $out['message']='Go 安全恢复门禁或消息业务依赖尚未就绪；请重新应用已保存配置并检查启动器状态。';
         return $out;
     }
