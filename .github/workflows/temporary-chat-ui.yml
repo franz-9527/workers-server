@@ -1,0 +1,20 @@
+name: temporary-chat-ui
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/chat-ui/**'
+      - '.github/workflows/temporary-chat-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate chat UI contract
+        run: node .validation/chat-ui/test.js
