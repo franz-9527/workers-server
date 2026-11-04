@@ -1,7 +1,7 @@
-// Isolated static UI contract; accepts supplied source strings and never connects to PHP/Go.
+// Isolated static UI contract, no PHP/Go services or private data.
 const required=['group','governance','audit','storage','call']
 function balanced(w){
- const pattern=/<\\/?([A-Za-z][A-Za-z0-9-]*)\\b(?:[^>"']|"[^"]*"|'[^']*')*>/g
+ const pattern=/<\/?([A-Za-z][A-Za-z0-9-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>/g
  let match,stack=[]
  while((match=pattern.exec(w))){
   const tag=match[1],raw=match[0]
@@ -15,7 +15,7 @@ for(const name of required){
  const part=sources[name]
  if(!part)throw Error('Missing fixture '+name)
  balanced(part.wxml)
- const handlers=[...new Set([...part.wxml.matchAll(/(?:bindtap|bindchange|bindinput|catchtap)="([a-zA-Z]\\w*)"/g)].map(x=>x[1]))]
+ const handlers=[...part.wxml.matchAll(/(?:bindtap|bindchange|bindinput|catchtap)="([a-zA-Z]\w*)"/g)].map(x=>x[1])
  for(const fn of handlers)if(!new RegExp('\\b'+fn+'\\s*\\(').test(part.js))throw Error(name+': unresolved '+fn)
  const json=JSON.parse(part.json)
  if(json.navigationBarBackgroundColor!=='#f7f7f7'||json.homeButton!==false)throw Error(name+': native navigation drift')
