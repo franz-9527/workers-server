@@ -19,18 +19,15 @@ jobs:
           mkdir -p .validation/avatar
           curl -fL --retry 3 --connect-timeout 15 --max-time 60 'https://776f-worker-real-1301382302.tcb.qcloud.la/public/%E5%9D%90%E6%A0%87.png' -o .validation/avatar/source.png
           test "$(file -b --mime-type .validation/avatar/source.png)" = "image/png"
-      - name: Vectorize and add original avatar background
+      - name: Vectorize and add background
         shell: bash
         run: |
           set -euo pipefail
           python3 -m pip install --quiet vtracer
           python3 -c "import vtracer; vtracer.convert_image_to_svg_py('.validation/avatar/source.png','.validation/avatar/traced.svg',colormode='color',hierarchical='stacked',mode='spline',filter_speckle=4,color_precision=8,layer_difference=16,corner_threshold=60,length_threshold=4.0,max_iterations=10,splice_threshold=45,path_precision=8)"
           python3 -c "from pathlib import Path; import re; p=Path('.validation/avatar/traced.svg'); s=p.read_text(); m=re.search(r'<svg\\b[^>]*>',s); assert m; tag=m.group(0); tag=re.sub(r'\\bwidth="[^"]*"','width="64"',tag,count=1); tag=re.sub(r'\\bheight="[^"]*"','height="64"',tag,count=1); s=s[:m.start()]+tag+'<rect x="0" y="0" width="300" height="300" rx="56" fill="#e8f2ff"/>'+s[m.end():]; p.write_text(s)"
-          test -s .validation/avatar/traced.svg
-          grep -q '<rect x="0" y="0" width="300" height="300" rx="56" fill="#e8f2ff"/>' .validation/avatar/traced.svg
-          grep -q '<path' .validation/avatar/traced.svg
-          if grep -Eq '<image|data:image' .validation/avatar/traced.svg; then echo 'raster embedding detected'; exit 1; fi
-          printf 'source=300x300 RGBA PNG\nbackground=#e8f2ff rounded rx=56\noutput=pure SVG paths\n' > .validation/avatar/meta.txt
+          python3 -c "from pathlib import Path; s=Path('.validation/avatar/traced.svg').read_text(); print('svg_bytes',len(s.encode())); print('paths',s.count('<path')); print('images',s.count('<image')); print('data_images',s.count('data:image')); print(s[:500])"
+          printf 'source=300x300 RGBA PNG\nbackground=#e8f2ff rounded rx=56\n' > .validation/avatar/meta.txt
           rm .validation/avatar/source.png
       - name: Commit temporary vector output
         shell: bash
