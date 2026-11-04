@@ -17,22 +17,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .validation/avatar
-          curl -fL --retry 3 --connect-timeout 15 --max-time 60 \
-            'https://776f-worker-real-1301382302.tcb.qcloud.la/public/%E5%9D%90%E6%A0%87.png' \
-            -o .validation/avatar/chat-user.png
+          curl -fL --retry 3 --connect-timeout 15 --max-time 60 'https://776f-worker-real-1301382302.tcb.qcloud.la/public/%E5%9D%90%E6%A0%87.png' -o .validation/avatar/chat-user.png
           file .validation/avatar/chat-user.png
           test "$(file -b --mime-type .validation/avatar/chat-user.png)" = "image/png"
-          python3 - <<'PY' > .validation/avatar/meta.txt
-import hashlib,struct
-p='.validation/avatar/chat-user.png'
-b=open(p,'rb').read()
-assert b[:8] == b'\x89PNG\r\n\x1a\n'
-w,h=struct.unpack('>II',b[16:24])
-print('mime=image/png')
-print('size='+str(len(b)))
-print('sha256='+hashlib.sha256(b).hexdigest())
-print(f'dimensions={w}x{h}')
-PY
+          python3 -c "import hashlib,struct; p='.validation/avatar/chat-user.png'; b=open(p,'rb').read(); assert b[:8]==b'\\x89PNG\\r\\n\\x1a\\n'; w,h=struct.unpack('>II',b[16:24]); open('.validation/avatar/meta.txt','w').write(f'mime=image/png\\nsize={len(b)}\\nsha256={hashlib.sha256(b).hexdigest()}\\ndimensions={w}x{h}\\n')"
           base64 -w0 .validation/avatar/chat-user.png > .validation/avatar/chat-user.png.b64
           rm .validation/avatar/chat-user.png
       - name: Commit temporary bytes
