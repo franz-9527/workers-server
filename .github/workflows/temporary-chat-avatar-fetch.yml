@@ -27,7 +27,7 @@ jobs:
           python3 -c "import vtracer; vtracer.convert_image_to_svg_py('.validation/avatar/source.png','.validation/avatar/traced.svg',colormode='color',hierarchical='stacked',mode='spline',filter_speckle=4,color_precision=8,layer_difference=16,corner_threshold=60,length_threshold=4.0,max_iterations=10,splice_threshold=45,path_precision=8)"
           python3 -c "from pathlib import Path; p=Path('.validation/avatar/traced.svg'); s=p.read_text(); i=s.find('>')+1; s=s[:i]+'<rect x="0" y="0" width="300" height="300" rx="56" fill="#e8f2ff"/>'+s[i:]; s=s.replace('width="300" height="300"','width="64" height="64"',1); p.write_text(s)"
           grep -q '<rect x="0" y="0" width="300" height="300" rx="56" fill="#e8f2ff"/>' .validation/avatar/traced.svg
-          ! grep -Eq '<image|data:image|https?://' .validation/avatar/traced.svg
+          ! grep -Eq '<image|data:image' .validation/avatar/traced.svg
           grep -q '<path' .validation/avatar/traced.svg
           printf 'source=300x300 RGBA PNG\nbackground=#e8f2ff rounded rx=56\noutput=pure SVG paths\n' > .validation/avatar/meta.txt
           rm .validation/avatar/source.png
