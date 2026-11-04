@@ -1,7 +1,0 @@
-source_repository=franz-9527/workers
-source_commit=4826860150ed02189a242e071ed3a75b73ebe890
-purpose=chat call test-site verification bootstrap regression
-runtime=PHP CLI lint + pure resource-policy regression
-commands=
-- php .validation/workers-server/server/tests/chat_call_verification_bootstrap.php
-- php -l on copied PHP files
