@@ -1,0 +1,15 @@
+name: temporary chat avatar role validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-chat-avatar-role.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate avatar role mapping
+        run: node .validation/tests/chat_avatar_roles.js
