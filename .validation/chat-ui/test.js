@@ -1,4 +1,5 @@
 'use strict'
+// trigger isolated validation after workflow registration
 const assert=require('node:assert/strict')
 const fs=require('node:fs')
 const f=JSON.parse(fs.readFileSync(__dirname+'/fixture.json','utf8'))
