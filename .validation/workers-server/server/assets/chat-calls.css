@@ -1,0 +1,10 @@
+.chat-call-editor{margin:10px 0;border:1px solid var(--admin-border);border-radius:10px;background:var(--admin-surface)}
+.chat-call-editor>summary{cursor:pointer;padding:10px 12px;font-weight:600;color:var(--admin-text)}
+.chat-call-editor[open]>summary{border-bottom:1px solid var(--admin-border)}
+.chat-admin-compact .chat-call-editor>form{margin:0;padding:12px}
+.chat-admin-compact .chat-call-editor .chat-admin-actions{margin-top:2px;padding-top:12px;border-top:1px solid var(--admin-border);align-items:end}
+.chat-admin-compact .chat-call-editor .chat-admin-actions>.admin-btn{flex:0 0 auto;min-width:128px}
+.chat-call-field-note{grid-column:1/-1}
+
+.chat-call-usage-refresh form{display:flex;align-items:center;gap:10px;margin-top:10px}
+.chat-call-usage-refresh form>.admin-btn{margin:0}
