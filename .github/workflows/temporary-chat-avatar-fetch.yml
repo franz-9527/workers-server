@@ -1,0 +1,46 @@
+name: temporary chat avatar fetch
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-chat-avatar-fetch.yml'
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and inspect avatar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .validation/avatar
+          curl -fL --retry 3 --connect-timeout 15 --max-time 60 \
+            'https://776f-worker-real-1301382302.tcb.qcloud.la/public/%E5%9D%90%E6%A0%87.png' \
+            -o .validation/avatar/chat-user.png
+          file .validation/avatar/chat-user.png
+          test "$(file -b --mime-type .validation/avatar/chat-user.png)" = "image/png"
+          python3 - <<'PY' > .validation/avatar/meta.txt
+import hashlib,struct
+p='.validation/avatar/chat-user.png'
+b=open(p,'rb').read()
+assert b[:8] == b'\x89PNG\r\n\x1a\n'
+w,h=struct.unpack('>II',b[16:24])
+print('mime=image/png')
+print('size='+str(len(b)))
+print('sha256='+hashlib.sha256(b).hexdigest())
+print(f'dimensions={w}x{h}')
+PY
+          base64 -w0 .validation/avatar/chat-user.png > .validation/avatar/chat-user.png.b64
+          rm .validation/avatar/chat-user.png
+      - name: Commit temporary bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .validation/avatar/meta.txt .validation/avatar/chat-user.png.b64
+          git commit -m 'test(chat): stage downloaded default avatar'
+          git push
