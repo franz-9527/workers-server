@@ -1,0 +1,4 @@
+mime=image/png
+size=16762
+sha256=5bdff5b0fd88cc89a9bb67a38a86043e7fe9e07f4a5090cccac111a80f2efa19
+dimensions=300x300
