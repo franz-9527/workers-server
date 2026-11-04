@@ -16,10 +16,10 @@ type HistoryService struct {
 	db               *sql.DB
 	conversations    *conversation.Store
 	environment      string
-	key               []byte
-	timeout           time.Duration
-	capabilities      MessageCapabilities
-	receiptPublisher  ReceiptPublisher
+	key              []byte
+	timeout          time.Duration
+	capabilities     MessageCapabilities
+	receiptPublisher ReceiptPublisher
 }
 
 func NewHistoryService(db *sql.DB, c *conversation.Store, env string, key []byte, timeout time.Duration) (*HistoryService, error) {
