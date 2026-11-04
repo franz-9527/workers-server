@@ -2,3 +2,4 @@ source_repo=franz-9527/workers
 source_sha=5600816c3cd57bf64700e4e04c0c1811cfafcb1d
 files=3
 purpose=chat testing direct call availability and Shengwang diagnostics
+validation_trigger=2
