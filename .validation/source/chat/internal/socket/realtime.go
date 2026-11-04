@@ -47,7 +47,7 @@ func NewWithPolicy(identity *auth.Service, commands Commands, policy ports.Realt
 // Called only AFTER MySQL COMMIT. Admission is bounded and performs no I/O.
 // A lost wakeup is recovered by account reconciliation and both opaque cursors.
 func (g *Gateway) Changed(m ports.CommittedMessage) {
-    g.offer(liveEvent{message:m,kind:"message.changed"})
+	g.offer(liveEvent{message: m, kind: "message.changed"})
 }
 func (g *Gateway) Committed(m ports.CommittedMessage) {
 	g.offer(liveEvent{message: m, kind: "message.new"})
@@ -137,7 +137,7 @@ func (g *Gateway) deliver() {
 					payload["expires_at"] = event.until.UnixMilli()
 				}
 				c.live(frame{RequestID: "server"}, event.kind, payload, event.message.ConversationID, event.source, event.until)
-				if event.kind == "message.new" || event.kind=="message.changed" {
+				if event.kind == "message.new" || event.kind == "message.changed" {
 					c.live(frame{RequestID: "server"}, "account.summary.changed", map[string]bool{"reconcile": true}, event.message.ConversationID, nil, time.Time{})
 				}
 			}
