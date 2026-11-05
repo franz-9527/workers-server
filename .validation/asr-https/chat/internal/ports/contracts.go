@@ -154,7 +154,7 @@ type AudioInspectionRequest struct {
 type Transcription struct {
 	Text, RequestID, AuthorityProof, ServiceID, APIName, Engine string
 	ProviderCode, ProviderMessage, ProviderInnerCode            string
-	DataEncoding, InputHost                                      string                                                    string
+	DataEncoding, InputHost                                      string
 	InputURLLength, EncodedURLLength                             int
 	Dispatched, Known, Retryable                                 bool
 }
