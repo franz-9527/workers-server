@@ -25,7 +25,13 @@ jobs:
       - name: Full offline voice preprocessing
         run: |
           FF=$(command -v ffmpeg); FP=$(command -v ffprobe)
-          python3 .validation/voice-preprocess/chat/helpers/preflight.py "$FF" "$FP" .validation/voice-preprocess/chat/helpers/media/inspect.py > /tmp/preflight.json
+          set +e
+          python3 .validation/voice-preprocess/chat/helpers/preflight.py "$FF" "$FP" .validation/voice-preprocess/chat/helpers/media/inspect.py > /tmp/preflight.json 2>/tmp/preflight.err
+          RC=$?
+          set -e
+          cat /tmp/preflight.err
+          cat /tmp/preflight.json
+          test "$RC" -eq 0
           python3 - <<'PY'
           import json
           x=json.load(open('/tmp/preflight.json'))
