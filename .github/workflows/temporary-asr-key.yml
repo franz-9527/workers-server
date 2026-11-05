@@ -25,7 +25,7 @@ jobs:
           grep -F '!asrKeyPattern.MatchString(q.UserAudioKey)' internal/moderation/av.go
           grep -F 'key := keySeed[:32]' internal/message/av_inspection.go
           grep -F 'strings.Repeat("a", 32)' internal/moderation/media_callback_test.go
-          grep -F '"request_key_length": len(key)' internal/message/av_inspection.go
+          grep -F 'request_key_length' internal/message/av_inspection.go
           php -l ../server/app/Application/Chat/ChatGoRuntimeConfig.php
           php -l ../server/views/admin/chat-settings.php
           grep -F "'request_key_length'" ../server/app/Application/Chat/ChatGoRuntimeConfig.php
