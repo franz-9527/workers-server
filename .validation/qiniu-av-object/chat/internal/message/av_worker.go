@@ -32,6 +32,7 @@ func avObjectFilename(role, mime string) (string, bool) {
 		return "", false
 	}
 }
+
 type avJob struct {
 	ID, Upload                                                                                                                ports.ID
 	Principal                                                                                                                 ports.Principal
