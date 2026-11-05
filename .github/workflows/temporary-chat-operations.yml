@@ -21,6 +21,8 @@ jobs:
         run: node --check .validation/chat-operations/miniprogram/subpackages/chat/conversation/av.js
       - name: Synthetic provider API contract
         run: php .validation/chat-operations/check.php
+      - name: Synthetic chat notifier projection
+        run: php .validation/chat-operations/check-notifications.php
       - name: Notification wiring assertions
         run: |
           python3 - <<'PY'

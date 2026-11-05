@@ -264,7 +264,8 @@ class SchedulerService
 
     private function runSmsDispatch()
     {
-        (new \WorkerAdmin\Application\Chat\ChatOperationsNotifier($this->db))->project($this->limit);
+        try{(new \WorkerAdmin\Application\Chat\ChatOperationsNotifier($this->db))->project($this->limit);}
+        catch(\Throwable $e){error_log('[chat-operations] admin-notification projection failed: '.get_class($e));}
         return (new \WorkerAdmin\Foundation\MessagingApplicationContainer($this->db))->dispatcher()->dispatch($this->limit);
     }
 
