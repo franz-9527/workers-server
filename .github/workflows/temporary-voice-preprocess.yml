@@ -29,6 +29,7 @@ jobs:
           python3 .validation/voice-preprocess/chat/helpers/preflight.py "$FF" "$FP" .validation/voice-preprocess/chat/helpers/media/inspect.py > /tmp/preflight.json 2>/tmp/preflight.err
           RC=$?
           set -e
+          echo "preflight_rc=$RC"
           cat /tmp/preflight.err
           cat /tmp/preflight.json
           test "$RC" -eq 0
