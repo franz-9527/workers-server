@@ -1,0 +1,53 @@
+name: Temporary voice preprocessing regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/voice-preprocess/**'
+      - '.github/workflows/temporary-voice-preprocess.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          python3 -m py_compile .validation/voice-preprocess/chat/helpers/media/inspect.py .validation/voice-preprocess/chat/helpers/preflight.py
+          php -l .validation/voice-preprocess/server/app/Application/Chat/ChatMediaPreflight.php
+          php -l .validation/voice-preprocess/server/app/Application/Chat/ChatGoRuntimeConfig.php
+          node --check .validation/voice-preprocess/miniprogram/subpackages/chat/conversation/av.js
+          gofmt -d .validation/voice-preprocess/chat/internal/avpipeline/helper.go | tee /tmp/gofmt.diff
+          test ! -s /tmp/gofmt.diff
+      - name: Full offline voice preprocessing
+        run: |
+          FF=$(command -v ffmpeg); FP=$(command -v ffprobe)
+          python3 .validation/voice-preprocess/chat/helpers/preflight.py "$FF" "$FP" .validation/voice-preprocess/chat/helpers/media/inspect.py > /tmp/preflight.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/preflight.json'))
+          assert x['ffmpeg'] and x['ffprobe'], x
+          assert x['voice_pipeline'], x
+          assert not x['voice_error'], x
+          print(x)
+          PY
+      - name: Existing stricter hard ulimit must not crash helper startup
+        run: |
+          FF=$(command -v ffmpeg); FP=$(command -v ffprobe)
+          TMP=$(mktemp -d); ROOT="$TMP/bxchat-av-restrict"; mkdir "$ROOT"
+          python3 - <<'PY' "$TMP/tone.raw"
+          import math,struct,sys
+          with open(sys.argv[1],'wb') as f:
+            for n in range(19200):
+              f.write(struct.pack('<h',int(1000*math.sin(2*math.pi*440*n/16000))))
+          PY
+          "$FF" -v error -nostdin -y -f s16le -ar 16000 -ac 1 -i "$TMP/tone.raw" -c:a libmp3lame -b:a 48k -f mp3 "$ROOT/input"
+          (ulimit -n 32; python3 .validation/voice-preprocess/chat/helpers/media/inspect.py "$ROOT" voice "$FF" "$FP" inspect > "$TMP/out.json")
+          python3 - <<'PY' "$TMP/out.json"
+          import json,sys
+          x=json.load(open(sys.argv[1])); assert x['kind']=='audio' and x['main']=='main.mp3',x
+          print(x)
+          PY
