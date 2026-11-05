@@ -10,19 +10,7 @@ import (
 	"time"
 )
 
-var avObjectKey = regexp.MustCompile(`^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/(test|development|production)/[1-9][0-9]{0,19}/[0-9a-f]{64}/(part-[1-9][0-9]?|[0-9a-f]{64}/(main\.(?:mp3|mp4)|poster\.jpg|check-[01]\.mp3|frame-[0-7]\.jpg))package imagepipeline
-
-import (
-	"context"
-	"encoding/json"
-	"github.com/franz-9527/workers/chat/internal/message"
-	"io"
-	"regexp"
-	"strings"
-	"time"
-)
-
-)
+var avObjectKey = regexp.MustCompile(`^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/(test|development|production)/[1-9][0-9]{0,19}/[0-9a-f]{64}/(part-[1-9][0-9]?|[0-9a-f]{64}/(main\.(?:mp3|mp4)|poster\.jpg|check-[01]\.mp3|frame-[0-7]\.jpg))$`)
 
 func (q *Qiniu) avKey(key string) bool { return avObjectKey.MatchString(key) && q.valid(key) }
 func (q *Qiniu) avGrant(key string, size int64, mime string, temporaryDays int) (string, string, error) {

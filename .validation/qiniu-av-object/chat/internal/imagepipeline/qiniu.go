@@ -153,7 +153,7 @@ func (q *Qiniu) putForm(ctx context.Context, key string, b []byte, token, host, 
 	writer := multipart.NewWriter(&body)
 	writer.WriteField("token", token)
 	writer.WriteField("key", key)
-	if filename == "" || mime == "" || strings.ContainsAny(filename, "\\r\\n\\\"") || strings.ContainsAny(mime, "\\r\\n") {
+	if filename == "" || mime == "" || strings.ContainsAny(filename, "\r\n\"") || strings.ContainsAny(mime, "\r\n") {
 		return message.ErrMedia
 	}
 	header := make(textproto.MIMEHeader)

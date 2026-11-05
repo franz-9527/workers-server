@@ -24,35 +24,9 @@ func avObjectFilename(role, mime string) (string, bool) {
 		return "main.mp4", true
 	case role == "poster" && mime == "image/jpeg":
 		return "poster.jpg", true
-	case regexp.MustCompile(`^check-[01]package message
-
-import (
-	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"github.com/franz-9527/workers/chat/internal/ports"
-	"regexp"
-	"strings"
-	"time"
-)
-
-).MatchString(role) && mime == "audio/mpeg":
+	case regexp.MustCompile(`^check-[01]$`).MatchString(role) && mime == "audio/mpeg":
 		return role + ".mp3", true
-	case regexp.MustCompile(`^frame-[0-7]package message
-
-import (
-	"context"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"github.com/franz-9527/workers/chat/internal/ports"
-	"regexp"
-	"strings"
-	"time"
-)
-
-).MatchString(role) && mime == "image/jpeg":
+	case regexp.MustCompile(`^frame-[0-7]$`).MatchString(role) && mime == "image/jpeg":
 		return role + ".jpg", true
 	default:
 		return "", false
