@@ -1,0 +1,35 @@
+name: Temporary chat operations regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/chat-operations/**'
+      - '.github/workflows/temporary-chat-operations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          find .validation/chat-operations/server -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+      - name: Mini program JS syntax
+        run: node --check .validation/chat-operations/miniprogram/subpackages/chat/conversation/av.js
+      - name: Synthetic provider API contract
+        run: php .validation/chat-operations/check.php
+      - name: Notification wiring assertions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          d=Path('.validation/chat-operations')
+          cat=(d/'server/app/Domain/Messaging/MessageEventCatalog.php').read_text()
+          sched=(d/'server/app/Services/SchedulerService.php').read_text()
+          for key in ['chat_report_submitted', 'chat_call_quota_low']:
+              assert key in cat
+          assert 'ChatOperationsNotifier' in sched
+          print('notification wiring checks passed')
+          PY
