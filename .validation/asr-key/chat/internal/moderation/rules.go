@@ -11,34 +11,8 @@ const RuleVersion = "wechat-v2.diversion-20261025.2"
 
 var appPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{10,}$`)
-var hexPattern = regexp.MustCompile(`^[a-f0-9]{64}package moderation
-
-import (
-	"regexp"
-	"strings"
-	"unicode"
-	"unicode/utf8"
-)
-
-const RuleVersion = "wechat-v2.diversion-20261025.2"
-
-var appPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
-var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{10,}$`)
-)
-var asrKeyPattern = regexp.MustCompile(`^[a-f0-9]{32}package moderation
-
-import (
-	"regexp"
-	"strings"
-	"unicode"
-	"unicode/utf8"
-)
-
-const RuleVersion = "wechat-v2.diversion-20261025.2"
-
-var appPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
-var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{10,}$`)
-)
+var hexPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
+var asrKeyPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
 var openIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{20,64}$`)
 var clauses = regexp.MustCompile(`[，,。！？!?;；\n]+`)
 var negated = regexp.MustCompile(`(?:请勿|不要|禁止|不准|不能|别再|拒绝|不允许|不得)(?:私下|私自|绕过平台|发|发送|添加|加|提供|泄露|透露|联系|转账|走私单)`)
