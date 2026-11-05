@@ -106,6 +106,7 @@ func (a *AVService) recognize(ctx context.Context, v avJob) error {
 				"url_host": result.InputHost,
 				"url_length": result.InputURLLength,
 				"url_encoded_length": result.EncodedURLLength,
+				"request_key_length": len(key),
 			})
 			_, _ = a.base.db.ExecContext(ctx, `UPDATE chat_av_asr_requests SET state='failed',metadata_json=? WHERE intent_id=? AND ordinal=? AND state='started'`, string(meta), string(v.ID), v.Ordinal)
 			a.fail(ctx, v.ID, v.Owner, avFailureCode(e, "asr_ready"))
