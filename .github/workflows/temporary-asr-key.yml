@@ -1,0 +1,32 @@
+name: Temporary compact ASR key regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-key/**'
+      - '.github/workflows/temporary-asr-key.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: '.validation/asr-key/chat/go.mod'
+          cache: false
+      - name: Syntax and contract
+        run: |
+          cd .validation/asr-key/chat
+          test -z "$(gofmt -l internal/moderation/av.go internal/moderation/rules.go internal/message/av_inspection.go internal/moderation/media_callback_test.go)"
+          grep -F 'var asrKeyPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)' internal/moderation/rules.go
+          grep -F '!asrKeyPattern.MatchString(q.UserAudioKey)' internal/moderation/av.go
+          grep -F 'key := keySeed[:32]' internal/message/av_inspection.go
+          grep -F 'strings.Repeat("a", 32)' internal/moderation/media_callback_test.go
+      - name: Compile moderation package
+        run: |
+          cd .validation/asr-key/chat
+          go mod verify
+          go test ./internal/moderation
