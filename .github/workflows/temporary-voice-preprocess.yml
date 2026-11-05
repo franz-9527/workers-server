@@ -49,13 +49,7 @@ jobs:
         run: |
           FF=$(command -v ffmpeg); FP=$(command -v ffprobe)
           TMP=$(mktemp -d); ROOT="$TMP/bxchat-av-restrict"; mkdir "$ROOT"
-          python3 - <<'PY' "$TMP/tone.raw"
-          import math,struct,sys
-          with open(sys.argv[1],'wb') as f:
-            for n in range(19200):
-              f.write(struct.pack('<h',int(1000*math.sin(2*math.pi*440*n/16000))))
-          PY
-          "$FF" -v error -nostdin -y -f s16le -ar 16000 -ac 1 -i "$TMP/tone.raw" -c:a libmp3lame -b:a 48k -f mp3 "$ROOT/input"
+          base64 -d .validation/voice-preprocess/chat/helpers/media/voice-fixture.b64 > "$ROOT/input"
           (ulimit -n 32; python3 .validation/voice-preprocess/chat/helpers/media/inspect.py "$ROOT" voice "$FF" "$FP" inspect > "$TMP/out.json")
           python3 - <<'PY' "$TMP/out.json"
           import json,sys

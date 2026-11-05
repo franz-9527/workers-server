@@ -1,4 +1,5 @@
 """Offline dependency probe. Fixed binaries only; no network, media or credentials."""
+import base64
 import io
 import json
 import os
@@ -21,24 +22,19 @@ def binary_ready(path, name):
 def voice_pipeline(python, helper, ffmpeg, ffprobe):
     if not pathlib.Path(helper).is_file():
         return False, "CHAT_AV_HELPER_RUNTIME_FAILED"
+    fixture = pathlib.Path(helper).with_name("voice-fixture.b64")
+    if not fixture.is_file() or fixture.stat().st_size > 16384:
+        return False, "CHAT_AV_HELPER_RUNTIME_FAILED"
     with tempfile.TemporaryDirectory(prefix="bxchat-preflight-") as outer:
-        raw = pathlib.Path(outer) / "tone.raw"
         root = pathlib.Path(outer) / "bxchat-av-preflight"
         root.mkdir(mode=0o700)
-        # 1.2 seconds of deterministic 16 kHz mono signed PCM; no network and
-        # no audio device. Encode it exactly as RecorderManager requests.
-        frames = bytearray()
-        import math, struct
-        for n in range(19200):
-            frames.extend(struct.pack("<h", int(1000 * math.sin(2 * math.pi * 440 * n / 16000))))
-        raw.write_bytes(frames)
-        made = subprocess.run([ffmpeg, "-v", "error", "-nostdin", "-y", "-f", "s16le",
-                               "-ar", "16000", "-ac", "1", "-i", str(raw), "-c:a", "libmp3lame",
-                               "-b:a", "48k", "-f", "mp3", str(root / "input")],
-                              stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL, timeout=4, check=False)
-        if made.returncode != 0:
-            return False, "CHAT_AV_TRANSCODE_FAILED"
+        try:
+            sample = base64.b64decode(fixture.read_bytes(), validate=True)
+        except Exception:
+            return False, "CHAT_AV_HELPER_RUNTIME_FAILED"
+        if not 512 <= len(sample) <= 65536:
+            return False, "CHAT_AV_HELPER_RUNTIME_FAILED"
+        (root / "input").write_bytes(sample)
         run = subprocess.run([python, helper, str(root), "voice", ffmpeg, ffprobe, "inspect"],
                              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL, timeout=8, check=False)

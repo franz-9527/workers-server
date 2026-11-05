@@ -15,7 +15,7 @@ final class ChatMediaPreflight
     {
         $script=$root.'/chat/helpers/preflight.py';
         // Shared configuration identity only. FPM cannot reproduce CLI system-file stats.
-        $files=[$script,$root.'/server/bin/chat-images.php',$root.'/chat/helpers/images/inspect.py',$root.'/chat/helpers/media/inspect.py'];
+        $files=[$script,$root.'/server/bin/chat-images.php',$root.'/chat/helpers/images/inspect.py',$root.'/chat/helpers/media/inspect.py',$root.'/chat/helpers/media/voice-fixture.b64'];
         $facts=[$python,$ffmpeg,$ffprobe,PHP_MAJOR_VERSION,PHP_MINOR_VERSION];
         foreach($files as $path){$facts[]=[$path,@filemtime($path),@filesize($path)];}
         $fingerprint=hash('sha256',json_encode($facts,JSON_THROW_ON_ERROR));
