@@ -29,7 +29,8 @@ def voice_pipeline(python, helper, ffmpeg, ffprobe):
         root = pathlib.Path(outer) / "bxchat-av-preflight"
         root.mkdir(mode=0o700)
         try:
-            sample = base64.b64decode(fixture.read_bytes(), validate=True)
+            encoded = fixture.read_text(encoding="ascii").strip().encode("ascii")
+            sample = base64.b64decode(encoded, validate=True)
         except Exception:
             return False, "CHAT_AV_HELPER_RUNTIME_FAILED"
         if not 512 <= len(sample) <= 65536:
