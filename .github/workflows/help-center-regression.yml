@@ -1,0 +1,41 @@
+name: Help center regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/help-center/**'
+      - '.github/workflows/help-center-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  help-center:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l tests/help-center/fixtures/server/HelpCenterAdminController.php
+          php -l tests/help-center/fixtures/server/HelpCenterApiController.php
+          php -l tests/help-center/fixtures/server/HelpCenterAdminReadModel.php
+          php -l tests/help-center/fixtures/server/help-center.php
+      - name: Mini program JavaScript syntax
+        run: |
+          node --check tests/help-center/fixtures/miniprogram/HelpApi.js
+          node --check tests/help-center/fixtures/miniprogram/index.js
+      - name: Admin inline JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('tests/help-center/fixtures/server/help-center.php').read_text(encoding='utf-8')
+          start = source.index('<script>') + len('<script>')
+          end = source.index('</script>', start)
+          Path('/tmp/help-center-inline.js').write_text(source[start:end], encoding='utf-8')
+          PY
+          node --check /tmp/help-center-inline.js
+      - name: Regression contracts
+        run: python3 tests/help-center/check.py
