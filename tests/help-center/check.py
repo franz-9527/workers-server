@@ -56,3 +56,5 @@ if wxss.count("{") != wxss.count("}"):
     raise AssertionError("WXSS brace count mismatch")
 
 print("help-center regression contracts OK")
+
+# trigger: second-round help-center regression
