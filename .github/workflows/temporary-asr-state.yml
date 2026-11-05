@@ -1,0 +1,43 @@
+name: Temporary ASR state closure regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-state/**'
+      - '.github/workflows/temporary-asr-state.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          gofmt -d .validation/asr-state/chat/internal/message/av_inspection.go | tee /tmp/1
+          gofmt -d .validation/asr-state/chat/internal/message/av_worker.go | tee /tmp/2
+          test ! -s /tmp/1 && test ! -s /tmp/2
+          php -l .validation/asr-state/server/app/Application/Chat/ChatGoRuntimeConfig.php
+          php -l .validation/asr-state/server/views/admin/chat-settings.php
+      - name: State closure contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          ins=Path('.validation/asr-state/chat/internal/message/av_inspection.go').read_text()
+          worker=Path('.validation/asr-state/chat/internal/message/av_worker.go').read_text()
+          cfg=Path('.validation/asr-state/server/app/Application/Chat/ChatGoRuntimeConfig.php').read_text()
+          view=Path('.validation/asr-state/server/views/admin/chat-settings.php').read_text()
+          assert "UPDATE chat_av_asr_requests SET state='unknown' WHERE intent_id=? AND state='started'" in ins
+          assert "if phase == \"asr_started\"" in worker
+          assert "UPDATE chat_av_asr_requests SET state='unknown' WHERE intent_id=? AND state='started'" in worker
+          assert "FROM chat_av_jobs j JOIN chat_send_intents i ON i.id=j.intent_id ORDER BY i.id DESC LIMIT 1" in cfg
+          assert "FROM chat_av_asr_requests ORDER BY created_at DESC LIMIT 1" in cfg
+          assert "'status']='asr_not_reached'" in cfg
+          assert "'status']='result_unknown'" in cfg
+          assert '最新发送：intent' in view
+          assert '最新 AV job：phase' in view
+          assert '最新 ASR：intent' in view
+          assert '还没有进入新的 SentenceASR 请求' in view
+          print('stale started ASR closes to unknown and layered diagnostics distinguish pre-ASR failures')
+          PY
