@@ -1,0 +1,57 @@
+name: Temporary ASR 9301003 regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-9301003/**'
+      - '.github/workflows/temporary-asr-9301003.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          gofmt -d .validation/asr-9301003/chat/internal/message/av_inspection.go | tee /tmp/a
+          gofmt -d .validation/asr-9301003/chat/internal/imagepipeline/qiniu_av.go | tee /tmp/b
+          gofmt -d .validation/asr-9301003/chat/internal/moderation/av.go | tee /tmp/c
+          test ! -s /tmp/a && test ! -s /tmp/b && test ! -s /tmp/c
+          php -l .validation/asr-9301003/server/app/Application/Chat/ChatGoRuntimeConfig.php
+          php -l .validation/asr-9301003/server/views/admin/chat-settings.php
+          node --check .validation/asr-9301003/miniprogram/subpackages/chat/conversation/av.js
+          node --check .validation/asr-9301003/miniprogram/subpackages/chat/conversation/voice.js
+      - name: Recorder lifecycle contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('.validation/asr-9301003/miniprogram/subpackages/chat/conversation/voice.js').read_text()
+          stop=s.index('s.onStop=async result=>')
+          send=s.index('await this.manager.av.send',stop)
+          end=s.index('endVoice(){')
+          end_block=s[end:s.index('cancelVoice(){',end)]
+          assert send>stop
+          assert 'this.manager.av.send' not in end_block
+          assert "format:'mp3'" in s and 'sampleRate:16000' in s and 'numberOfChannels:1' in s
+          print('recording waits for onStop and uses 16k mono mp3')
+          PY
+      - name: Provider request contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          msg=Path('.validation/asr-9301003/chat/internal/message/av_inspection.go').read_text()
+          mod=Path('.validation/asr-9301003/chat/internal/moderation/av.go').read_text()
+          q=Path('.validation/asr-9301003/chat/internal/imagepipeline/qiniu_av.go').read_text()
+          php=Path('.validation/asr-9301003/server/app/Application/Chat/ChatGoRuntimeConfig.php').read_text()
+          assert 'key := randomMedia()' in msg
+          assert 'strconv.Itoa(v.Ordinal)' not in msg
+          assert 'if !q.config.Private' in q and 'return object, nil' in q
+          assert 'len(q.URL) >= 2048' in mod
+          retry=mod.split('out.Retryable =',1)[1].split('\n',1)[0]
+          assert '9301011' in retry and '9301003' not in retry
+          assert "if($profile==='sentence_asr')$encoding='json_string';" in php
+          assert "$asrEncoding=$asrProfile==='sentence_asr'?'json_string'" in php
+          print('provider URL, request identity, retry and data encoding contracts passed')
+          PY
