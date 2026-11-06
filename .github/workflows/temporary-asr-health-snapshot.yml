@@ -1,0 +1,18 @@
+name: Temporary ASR health snapshot
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-asr-health-snapshot.yml'
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read test-site health once
+        run: |
+          set -euo pipefail
+          BODY=$(curl --silent --show-error --fail --max-time 15 'https://test.20m.cc/api/?route=health')
+          echo "$BODY" | jq -c '{version,chat_go,asr_probe_revision,asr_probe,wechat_si_plugin}'
