@@ -28,7 +28,6 @@ func Eligible(kind, providerCode, value string) bool {
 	return providerCode == "9301002" || providerCode == "9301003"
 }
 
-
 func ReviewTransition(errorCode, clientTranscript, sourceProof, rawDecision string) (phase string, clearTranscript bool) {
 	if errorCode == ReviewCode && clientTranscript != "" && sourceProof == "" && rawDecision == "" {
 		return "raw_ready", false
