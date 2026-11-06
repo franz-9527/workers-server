@@ -95,7 +95,7 @@ final class ChatGoRuntimeConfig
             $data=is_string($raw)?json_decode($raw,true,32):null;
             if(!is_array($data)||($data['schema_version']??null)!==1)return[];
             $status=(string)($data['status']??'');
-            if(!in_array($status,['completed','failed'],true))return[];
+            if(!in_array($status,['completed','failed','skipped'],true))return[];
             $out=['status'=>$status,'revision'=>mb_substr((string)($data['revision']??''),0,64),'tested_at'=>mb_substr((string)($data['tested_at']??''),0,64)];
             if(preg_match('/^[1-9][0-9]{0,19}$/D',(string)($data['intent_id']??''))===1)$out['intent_id']=(string)$data['intent_id'];
             if(preg_match('/^[A-Za-z0-9.-]{1,253}$/D',(string)($data['source_host']??''))===1)$out['source_host']=(string)$data['source_host'];
