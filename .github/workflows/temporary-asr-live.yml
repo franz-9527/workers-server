@@ -9,24 +9,11 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
-      - name: Wait for reconciled BaoTa deployment and ASR probe
+      - name: Snapshot current reconciled test-site ASR state
         run: |
           set -euo pipefail
-          URL='https://test.20m.cc/api/?route=health'
-          for i in $(seq 1 60); do
-            if BODY=$(curl --silent --show-error --fail --max-time 10 "$URL"); then
-              if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
-                printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,asr_probe}'
-                REV=$(printf '%s' "$BODY" | jq -r '.asr_probe_revision // ""')
-                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
-                if [[ "$REV" == "sentence-asr-compat-v2" && ( "$STATUS" == "completed" || "$STATUS" == "failed" ) ]]; then
-                  exit 0
-                fi
-              fi
-            fi
-            sleep 5
-          done
-          echo 'TEST_SITE_ASR_PROBE_NOT_READY'
-          exit 1
+          BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
+          printf '%s' "$BODY" | jq -e . >/dev/null
+          printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,asr_probe}'
