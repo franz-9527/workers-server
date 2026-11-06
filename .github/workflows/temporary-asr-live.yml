@@ -9,9 +9,9 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
-      - name: Snapshot test-site ASR probe execution state after http-source failure diagnostics
+      - name: Read current test-site chat runtime and ASR probe
         run: |
           set -euo pipefail
           BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
