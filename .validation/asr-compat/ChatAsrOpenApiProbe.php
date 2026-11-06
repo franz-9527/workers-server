@@ -10,7 +10,7 @@ final class ChatAsrOpenApiProbe
 {
     public const SERVICE='wxa8386175898e12c9';
     public const API='SentenceASR';
-    public const REVISION='sentence-asr-compat-v4';
+    public const REVISION='sentence-asr-compat-v5';
     private ?Closure $transport;
 
     public function __construct(?Closure $transport=null){$this->transport=$transport;}
@@ -26,18 +26,19 @@ final class ChatAsrOpenApiProbe
             if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
 
             $definitions=[
-                ['name'=>'service_raw_url_object','contract'=>'service_raw_url'],
-                ['name'=>'tencent_current_url_object','contract'=>'tencent_url'],
+                ['name'=>'service_16k_raw_url_key32','source'=>'raw_url','key_length'=>32],
+                ['name'=>'service_16k_encoded_url_key32','source'=>'encoded_url','key_length'=>32],
+                ['name'=>'service_16k_raw_url_key8','source'=>'raw_url','key_length'=>8],
             ];
-            if($audioBytes!=='')$definitions[]=['name'=>'tencent_current_data_object','contract'=>'tencent_data'];
+            if($audioBytes!=='')$definitions[]=['name'=>'service_16k_data_key8','source'=>'data','key_length'=>8];
 
             foreach($definitions as $definition){
                 $name=$definition['name'];$stage='prepare_'.$name;
-                $key=bin2hex(random_bytes(16));
-                if($definition['contract']==='service_raw_url')$data=$this->serviceRawUrlBody($sourceUrl,$key);
-                elseif($definition['contract']==='tencent_url')$data=$this->tencentUrlBody($sourceUrl);
-                else $data=$this->tencentDataBody($audioBytes);
-                $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$key,'data'=>$data];
+                $clientMsgId=bin2hex(random_bytes(16));
+                $audioKey=$definition['key_length']===8?bin2hex(random_bytes(4)):$clientMsgId;
+                if($definition['source']==='data')$data=$this->serviceDataBody($audioBytes,$audioKey);
+                else $data=$this->serviceUrlBody($sourceUrl,$audioKey,$definition['source']==='encoded_url');
+                $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$clientMsgId,'data'=>$data];
                 $stage='request_'.$name;$raw=$this->transport?($this->transport)($token,$body):$this->request($token,$body);
                 $stage='parse_'.$name;$result=$this->summarize($name,$raw);
                 $variants[]=$result;
@@ -55,43 +56,23 @@ final class ChatAsrOpenApiProbe
     {
         return [
             'Action'=>'SentenceRecognitionWX',
-            'EngSerViceType'=>'16k_zh',
+            'EngSerViceType'=>'16k',
             'VoiceFormat'=>'mp3',
             'UsrAudioKey'=>$key,
         ];
     }
 
-    private function serviceRawUrlBody(string $sourceUrl,string $key):array
+    private function serviceUrlBody(string $sourceUrl,string $key,bool $encoded):array
     {
         return $this->common($key)+[
             'SourceType'=>0,
-            'Url'=>$sourceUrl,
+            'Url'=>$encoded?urlencode($sourceUrl):$sourceUrl,
         ];
     }
 
-    private function tencentCommon():array
+    private function serviceDataBody(string $audioBytes,string $key):array
     {
-        return [
-            'Action'=>'SentenceRecognition',
-            'Version'=>'2019-06-14',
-            'ProjectId'=>0,
-            'SubServiceType'=>2,
-            'EngSerViceType'=>'16k_zh',
-            'VoiceFormat'=>'mp3',
-        ];
-    }
-
-    private function tencentUrlBody(string $sourceUrl):array
-    {
-        return $this->tencentCommon()+[
-            'SourceType'=>0,
-            'Url'=>$sourceUrl,
-        ];
-    }
-
-    private function tencentDataBody(string $audioBytes):array
-    {
-        return $this->tencentCommon()+[
+        return $this->common($key)+[
             'SourceType'=>1,
             'Data'=>base64_encode($audioBytes),
             'DataLen'=>strlen($audioBytes),
