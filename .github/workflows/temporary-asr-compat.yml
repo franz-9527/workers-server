@@ -33,7 +33,10 @@ jobs:
           php -l .validation/asr-compat/ChatAsrOpenApiProbe.php
           php -l .validation/asr-compat/probe_contract.php
           php -l .validation/asr-compat/chat-asr-diagnostic.php
+          php -l .validation/asr-compat/ChatWechatSIPluginProbe.php
+          php -l .validation/asr-compat/wechat_si_plugin_contract.php
           php .validation/asr-compat/probe_contract.php
+          php .validation/asr-compat/wechat_si_plugin_contract.php
           grep -F "api_sentence_asr" .validation/asr-compat/ChatAsrOpenApiProbe.php
           grep -F "api_sentence_recognition" .validation/asr-compat/ChatAsrOpenApiProbe.php
           grep -F "api_sentence_recognition_wx" .validation/asr-compat/ChatAsrOpenApiProbe.php
@@ -45,9 +48,18 @@ jobs:
           php -l .validation/asr-compat/candidate/server__views__admin__chat-settings.php
           php -l .validation/asr-compat/candidate/server__api__index.php
           php -l .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
+          php -l .validation/asr-compat/candidate/server__app__Application__Chat__ChatWechatSIPluginProbe.php
+          php -l .validation/asr-compat/candidate/server__bin__chat-wechat-si-plugin-diagnostic.php
+          test -z "$(gofmt -l .validation/asr-compat/candidate/chat__internal__asrcontract__request.go .validation/asr-compat/candidate/chat__internal__moderation__media_callback_test.go)"
+          grep -F '"Action":         "SentenceRecognitionWX"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
+          ! grep -F '"ProjectId"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
+          ! grep -F '"SubServiceType"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
+          grep -F 'len(data) != 6' .validation/asr-compat/candidate/chat__internal__moderation__media_callback_test.go
           bash -n .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
           node --check .validation/asr-compat/candidate/miniprogram__subpackages__chat__conversation__av.js
           grep -F "chat-asr-diagnostic.php" .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
+          grep -F "chat-wechat-si-plugin-diagnostic.php" .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
+          grep -F "wechat_si_plugin" .validation/asr-compat/candidate/server__api__index.php
           grep -F "asr_probe" .validation/asr-compat/candidate/server__api__index.php
           grep -F "chat_go" .validation/asr-compat/candidate/server__api__index.php
           grep -F "CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
