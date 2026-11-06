@@ -56,7 +56,7 @@ if ($route === 'health') {
                 if(isset($probe['code'])&&preg_match('/^[A-Z0-9_]{1,64}$/D',(string)$probe['code'])===1)$public['code']=(string)$probe['code'];
                 foreach(array_slice(is_array($probe['variants']??null)?$probe['variants']:[],0,4) as $variant){
                     if(!is_array($variant))continue;$name=(string)($variant['name']??'');
-                    if(!in_array($name,['service_16k_raw_url_key32','service_16k_encoded_url_key32','service_16k_raw_url_key8','service_16k_data_key8'],true))continue;
+                    if(!in_array($name,['api_sentence_asr','api_sentence_recognition','api_sentence_recognition_wx','api_sentence_recognition_lower'],true))continue;
                     $public['variants'][]=['name'=>$name,'success'=>($variant['success']??false)===true,'http_status'=>(int)($variant['http_status']??0),'errcode'=>(string)($variant['errcode']??''),'inner_code'=>(string)($variant['inner_code']??''),'request_id_present'=>($variant['request_id_present']??false)===true];
                 }
                 $health['asr_probe']=$public;
