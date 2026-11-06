@@ -27,3 +27,26 @@ func Eligible(kind, providerCode, value string) bool {
 	}
 	return providerCode == "9301002" || providerCode == "9301003"
 }
+
+
+func ReviewTransition(errorCode, clientTranscript, sourceProof, rawDecision string) (phase string, clearTranscript bool) {
+	if errorCode == ReviewCode && clientTranscript != "" && sourceProof == "" && rawDecision == "" {
+		return "raw_ready", false
+	}
+	if clientTranscript != "" && sourceProof == "" {
+		return "ready", true
+	}
+	return "ready", false
+}
+
+func PublishCandidate(kind, clientTranscript, transcript, sourceProof, textProof string) bool {
+	return kind == "audio" && clientTranscript != "" && strings.TrimSpace(transcript) == "" && sourceProof == "" && textProof == ""
+}
+
+func PublishAllowed(candidate, approved bool, rawDecision string) bool {
+	return !candidate || approved && (rawDecision == "pass" || rawDecision == "review")
+}
+
+func ClearAfterRawPass(kind, clientTranscript, sourceProof, textProof, reviewState string) bool {
+	return kind == "audio" && clientTranscript != "" && sourceProof == "" && textProof == "" && reviewState == "approved"
+}
