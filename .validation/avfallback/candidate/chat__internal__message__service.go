@@ -46,13 +46,13 @@ type Request struct {
 	Items            []MediaItem `json:"items,omitempty"`
 	Revision         int         `json:"revision,omitempty"`
 	ClientTranscript string      `json:"client_transcript,omitempty"`
-	ReplyItem       ports.ID    `json:"reply_to_item_id,omitempty"`
-	ConversationID  ports.ID    `json:"conversation_id"`
-	ClientMessageID string      `json:"client_message_id"`
-	MessageType     string      `json:"message_type"`
-	Text            string      `json:"text"`
-	ReplyTo         ports.ID    `json:"reply_to_message_id,omitempty"`
-	EditedFrom      ports.ID    `json:"edited_from_recalled_message_id,omitempty"`
+	ReplyItem        ports.ID    `json:"reply_to_item_id,omitempty"`
+	ConversationID   ports.ID    `json:"conversation_id"`
+	ClientMessageID  string      `json:"client_message_id"`
+	MessageType      string      `json:"message_type"`
+	Text             string      `json:"text"`
+	ReplyTo          ports.ID    `json:"reply_to_message_id,omitempty"`
+	EditedFrom       ports.ID    `json:"edited_from_recalled_message_id,omitempty"`
 }
 
 // Result deliberately never returns stored text, including after recall/block.
