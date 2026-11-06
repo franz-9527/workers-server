@@ -51,6 +51,7 @@ fi
 
 if [[ ${CHAT_CONFIG_MANUAL:-0} != 1 ]]; then
   run_service "$PHP_BIN" "$ROOT/server/bin/chat-asr-diagnostic.php" || true
+  run_service "$PHP_BIN" "$ROOT/server/bin/chat-wechat-si-plugin-diagnostic.php" || true
 fi
 
 export GOTOOLCHAIN=local CGO_ENABLED=0
