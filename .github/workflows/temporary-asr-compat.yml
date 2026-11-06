@@ -34,10 +34,10 @@ jobs:
           php -l .validation/asr-compat/probe_contract.php
           php -l .validation/asr-compat/chat-asr-diagnostic.php
           php .validation/asr-compat/probe_contract.php
-          grep -F "service_16k_raw_url_key32" .validation/asr-compat/ChatAsrOpenApiProbe.php
-          grep -F "service_16k_encoded_url_key32" .validation/asr-compat/ChatAsrOpenApiProbe.php
-          grep -F "service_16k_raw_url_key8" .validation/asr-compat/ChatAsrOpenApiProbe.php
-          grep -F "service_16k_data_key8" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "api_sentence_asr" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "api_sentence_recognition" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "api_sentence_recognition_wx" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "api_sentence_recognition_lower" .validation/asr-compat/ChatAsrOpenApiProbe.php
           grep -F "CHAT_ASR_OPENAPI_PROBE_CACHED" .validation/asr-compat/chat-asr-diagnostic.php
       - name: Validate exact integration candidate snapshots
         run: |
