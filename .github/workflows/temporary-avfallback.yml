@@ -1,0 +1,103 @@
+name: Temporary AV client transcript fallback
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/avfallback/**'
+      - '.github/workflows/temporary-avfallback.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Isolated fallback policy tests
+        run: |
+          set -euo pipefail
+          cd .validation/avfallback
+          test -z "$(gofmt -l ./avfallback)"
+          go test -race -count=1 ./avfallback
+          go vet ./avfallback
+      - name: WechatSI recorder adapter tests
+        run: |
+          set -euo pipefail
+          node --check .validation/avfallback/client/ChatVoiceRecorder.js
+          node .validation/avfallback/client/ChatVoiceRecorder.test.js
+      - name: Validate exact integration candidate snapshots
+        run: |
+          set -euo pipefail
+          GO_FILES=(
+            .validation/avfallback/candidate/chat__internal__avfallback__policy.go
+            .validation/avfallback/candidate/chat__internal__message__service.go
+            .validation/avfallback/candidate/chat__internal__message__media.go
+            .validation/avfallback/candidate/chat__internal__message__av.go
+            .validation/avfallback/candidate/chat__internal__message__av_inspection.go
+            .validation/avfallback/candidate/chat__internal__message__av_worker.go
+            .validation/avfallback/candidate/chat__internal__message__av_review.go
+            .validation/avfallback/candidate/chat__internal__message__av_publish.go
+            .validation/avfallback/candidate/chat__internal__message__av_test.go
+          )
+          test -z "$(gofmt -l "${GO_FILES[@]}")"
+          node --check .validation/avfallback/candidate/miniprogram__utils__ChatVoiceRecorder.js
+          node --check .validation/avfallback/candidate/miniprogram__utils__ChatAV.js
+          node --check .validation/avfallback/candidate/miniprogram__subpackages__chat__conversation__voice.js
+          node --check .validation/avfallback/candidate/server__assets__chat-av-review.js
+          node --check .validation/avfallback/candidate/server__assets__chat-governance.js
+          node - <<'NODE'
+          const fs=require('fs')
+          const app=JSON.parse(fs.readFileSync('.validation/avfallback/candidate/miniprogram__app.json','utf8'))
+          if(app.plugins?.WechatSI?.provider!=='wx069ba97219f66d99'||app.plugins?.WechatSI?.version!=='0.3.6')throw new Error('WechatSI declaration')
+          if(!app.permission?.['scope.record']?.desc)throw new Error('record permission description')
+          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('.validation/avfallback/candidate')
+          def read(name): return (root/name).read_text()
+          service=read('chat__internal__message__service.go')
+          media=read('chat__internal__message__media.go')
+          av=read('chat__internal__message__av.go')
+          inspection=read('chat__internal__message__av_inspection.go')
+          worker=read('chat__internal__message__av_worker.go')
+          review=read('chat__internal__message__av_review.go')
+          publish=read('chat__internal__message__av_publish.go')
+          avtest=read('chat__internal__message__av_test.go')
+          voice=read('miniprogram__subpackages__chat__conversation__voice.js')
+          chatav=read('miniprogram__utils__ChatAV.js')
+          admin=read('server__assets__chat-av-review.js')
+          gov=read('server__assets__chat-governance.js')
+          checks=[
+            ('ClientTranscript string',service),
+            ('r.ClientTranscript != ""',service),
+            ('q.ClientTranscript != ""',media),
+            ('avfallback.ValidOptionalTranscript',av),
+            ('ClientTranscript string',av),
+            ('avfallback.Eligible',inspection),
+            ('clientTranscriptReview',inspection),
+            ("phase='review_pending'",inspection),
+            ('avfallback.ClearAfterRawPass',inspection),
+            ('q.Text = ""',inspection),
+            ('general_confirmed=0,group_confirmed=0',worker),
+            ('TranscriptSource string',review),
+            ('client_auxiliary',review),
+            ('avfallback.ReviewTransition',review),
+            ('avfallback.PublishCandidate',publish),
+            ('avfallback.PublishAllowed',publish),
+            ('MediaProof(context.Context, ports.Principal)',publish),
+            ('video auxiliary transcript accepted',avtest),
+            ("createVoiceRecorder(name=>requirePlugin(name)",voice),
+            ('clientTranscript:String(result.clientTranscript',voice),
+            ('client_transcript:row.clientTranscript',chatav),
+            ('客户端辅助转写（不可信，需以原音为准）',admin),
+            ('客户端辅助转写（不可信，需以原音为准）',gov),
+          ]
+          for needle,body in checks:
+            if needle not in body: raise SystemExit('missing integration invariant: '+needle)
+          if "phase='ready',error_code=NULL,transcript=NULL" not in inspection:
+            raise SystemExit('raw-pass transcript cleanup missing')
+          PY
