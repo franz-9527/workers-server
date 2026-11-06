@@ -103,6 +103,8 @@ jobs:
           ]
           for needle,body in checks:
             if needle not in body: raise SystemExit('missing integration invariant: '+needle)
-          if "phase='ready',error_code=NULL,transcript=NULL" not in inspection:
+          if "transcript=NULL,phase='ready',error_code=NULL" not in inspection:
             raise SystemExit('raw-pass transcript cleanup missing')
+          if "SET state='checking',error_code=NULL" not in review or "state='review_pending'" not in review:
+            raise SystemExit('fallback review does not resume canonical checking state')
           PY
