@@ -45,6 +45,18 @@ if ($route === 'health') {
             'deployed_sha'=>$readSha($chatRoot.'/deployed-sha'),
             'running_sha'=>$readSha($chatRoot.'/state/running-sha'),
         ];
+        $pluginPath=dirname(base_path()).'/chat/bin/state/wechat-si-plugin-diagnostic.json';
+        if(!@is_link($pluginPath)&&@is_file($pluginPath)&&($pluginSize=@filesize($pluginPath))!==false&&$pluginSize>1&&$pluginSize<=4096){
+            $pluginRaw=@file_get_contents($pluginPath);$plugin=is_string($pluginRaw)?json_decode($pluginRaw,true,16):null;
+            if(is_array($plugin)&&($plugin['schema_version']??null)===1&&(string)($plugin['plugin_appid']??'')===\WorkerAdmin\Application\Chat\ChatWechatSIPluginProbe::APP_ID){
+                $state=(string)($plugin['plugin_state']??'unknown');
+                if(!in_array($state,['approved','pending','rejected','timeout','not_added','unknown'],true))$state='unknown';
+                $publicPlugin=['status'=>(string)($plugin['status']??'failed'),'tested_at'=>(string)($plugin['tested_at']??''),'plugin_state'=>$state,'approved'=>($plugin['approved']??false)===true];
+                if(isset($plugin['code'])&&preg_match('/^[A-Z0-9_]{1,80}$/D',(string)$plugin['code'])===1)$publicPlugin['code']=(string)$plugin['code'];
+                if(isset($plugin['errcode'])&&preg_match('/^-?[0-9]{1,12}$/D',(string)$plugin['errcode'])===1)$publicPlugin['errcode']=(string)$plugin['errcode'];
+                $health['wechat_si_plugin']=$publicPlugin;
+            }
+        }
         $probePath=dirname(base_path()).'/chat/bin/state/asr-openapi-diagnostic.json';
         if(!@is_link($probePath)&&@is_file($probePath)&&($probeSize=@filesize($probePath))!==false&&$probeSize>1&&$probeSize<=16384){
             $probeRaw=@file_get_contents($probePath);$probe=is_string($probeRaw)?json_decode($probeRaw,true,32):null;
