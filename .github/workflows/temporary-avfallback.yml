@@ -43,7 +43,8 @@ jobs:
             .validation/avfallback/candidate/chat__internal__message__av_publish.go
             .validation/avfallback/candidate/chat__internal__message__av_test.go
           )
-          test -z "$(gofmt -l "${GO_FILES[@]}")"
+          BAD_GOFMT="$(gofmt -l "${GO_FILES[@]}")"
+          if [[ -n "$BAD_GOFMT" ]]; then printf 'GOFMT_REQUIRED\n%s\n' "$BAD_GOFMT"; exit 1; fi
           node --check .validation/avfallback/candidate/miniprogram__utils__ChatVoiceRecorder.js
           node --check .validation/avfallback/candidate/miniprogram__utils__ChatAV.js
           node --check .validation/avfallback/candidate/miniprogram__subpackages__chat__conversation__voice.js
