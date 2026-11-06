@@ -46,7 +46,7 @@ jobs:
           BAD_GOFMT="$(gofmt -l "${GO_FILES[@]}")"
           if [[ -n "$BAD_GOFMT" ]]; then
             printf 'GOFMT_REQUIRED\n%s\n' "$BAD_GOFMT"
-            while IFS= read -r file; do gofmt -d "$file"; done <<< "$BAD_GOFMT"
+            while IFS= read -r file; do gofmt -d "$file" || true; done <<< "$BAD_GOFMT"
             exit 1
           fi
           node --check .validation/avfallback/candidate/miniprogram__utils__ChatVoiceRecorder.js
