@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"fmt"
+	"github.com/franz-9527/workers/chat/internal/avfallback"
 	"github.com/franz-9527/workers/chat/internal/policy"
 	"github.com/franz-9527/workers/chat/internal/ports"
 	"github.com/franz-9527/workers/chat/internal/storagepolicy"
@@ -33,7 +34,7 @@ func (a *AVService) Publish(ctx context.Context, id ports.ID) (Result, error) {
 			return Result{}, ErrMedia
 		}
 	}
-	fallbackCandidate := q.MessageType == "audio" && q.ClientTranscript != "" && strings.TrimSpace(v.Transcript) == "" && v.Proof == "" && v.TextProof == ""
+	fallbackCandidate := avfallback.PublishCandidate(q.MessageType, q.ClientTranscript, v.Transcript, v.Proof, v.TextProof)
 	checked := ports.SafetyResult{Decision: "passed", RuleVersion: v.TextRule, AuthorityProof: v.TextProof}
 	if fallbackCandidate {
 		proof, ok := a.base.safety.(interface {
@@ -91,8 +92,7 @@ func (a *AVService) Publish(ctx context.Context, id ports.ID) (Result, error) {
 	if hash != fp || rule != AVRule || configuration != a.configuration || phase != "ready" || q.MessageType == "video" && !approved || q.MessageType == "audio" && (raw != "pass" && !(raw == "review" && approved)) {
 		return Result{}, ErrMedia
 	}
-	fallbackApproved := fallbackCandidate && approved && (raw == "pass" || raw == "review")
-	if fallbackCandidate && !fallbackApproved {
+	if !avfallback.PublishAllowed(fallbackCandidate, approved, raw) {
 		return Result{}, ErrMedia
 	}
 	if !fallbackCandidate && (v.TextProof != v.Proof || !isMediaHash(v.Proof)) {
