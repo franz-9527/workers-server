@@ -57,7 +57,7 @@ try{
     if((string)app_config('app.env','production')!=='testing')exit(0);
     if(!is_installed())$skip('CHAT_ASR_PROBE_SITE_NOT_INSTALLED');
     if(upgrade_required())$skip('CHAT_ASR_PROBE_UPGRADE_REQUIRED');
-    $row=db()->fetch("SELECT CAST(r.intent_id AS CHAR) intent_id,r.ordinal,r.metadata_json,r.created_at,j.segments_json FROM chat_av_asr_requests r JOIN chat_av_jobs j ON j.intent_id=r.intent_id WHERE r.state='failed' AND r.created_at>=UTC_TIMESTAMP()-INTERVAL 2 DAY ORDER BY r.created_at DESC LIMIT 1");
+    $row=db()->fetch("SELECT CAST(r.intent_id AS CHAR) intent_id,CAST(j.upload_id AS CHAR) upload_id,r.ordinal,r.metadata_json,r.created_at,j.segments_json FROM chat_av_asr_requests r JOIN chat_av_jobs j ON j.intent_id=r.intent_id WHERE r.state='failed' AND r.created_at>=UTC_TIMESTAMP()-INTERVAL 2 DAY ORDER BY r.created_at DESC LIMIT 1");
     if(!$row)$skip('CHAT_ASR_PROBE_NO_FAILED_REQUEST');
     $intentId=(string)$row['intent_id'];
     $meta=json_decode((string)($row['metadata_json']??''),true,32);
@@ -65,7 +65,9 @@ try{
     $segments=json_decode((string)($row['segments_json']??''),true,32);$ordinal=(int)$row['ordinal'];
     if(!is_array($segments)||!isset($segments[$ordinal])||!is_array($segments[$ordinal]))$skip('CHAT_ASR_PROBE_SEGMENT_METADATA_MISSING',$intentId);
     $key=(string)($segments[$ordinal]['key']??'');
-    if(preg_match('#^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/test/[1-9][0-9]{0,19}/[0-9a-f]{64}/[0-9a-f]{64}/check-[01]\.mp3$#D',$key)!==1)$skip('CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED',$intentId);
+    if(preg_match('#^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/test/[1-9][0-9]{0,19}/[0-9a-f]{64}/[0-9a-f]{64}/(?:main|check-[01])\.mp3$#D',$key)!==1)$skip('CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED',$intentId);
+    $bound=(int)db()->fetchValue("SELECT COUNT(*) FROM chat_av_objects WHERE object_key=:key AND upload_id=:upload AND role IN ('main','check-0','check-1')",['key'=>$key,'upload'=>(string)$row['upload_id']]);
+    if($bound!==1)$skip('CHAT_ASR_PROBE_SEGMENT_OBJECT_UNBOUND',$intentId);
     $fingerprint=hash('sha256',ChatAsrOpenApiProbe::REVISION."\n".(string)$row['intent_id']."\n".$ordinal."\n".$key);
     if(!is_link($stateFile)&&is_file($stateFile)&&($existingRaw=@file_get_contents($stateFile))!==false){
         $existing=json_decode($existingRaw,true,32);
