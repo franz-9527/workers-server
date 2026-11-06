@@ -101,12 +101,12 @@ final class ChatGoRuntimeConfig
             if(preg_match('/^[A-Za-z0-9.-]{1,253}$/D',(string)($data['source_host']??''))===1)$out['source_host']=(string)$data['source_host'];
             if(is_int($data['source_bytes']??null)&&$data['source_bytes']>=0&&$data['source_bytes']<=3*1024*1024)$out['source_bytes']=$data['source_bytes'];
             $recommended=(string)($data['recommended']??'none');
-            if(in_array($recommended,['none','service_16k_raw_url_key32','service_16k_encoded_url_key32','service_16k_raw_url_key8','service_16k_data_key8'],true))$out['recommended']=$recommended;
+            if(in_array($recommended,['none','api_sentence_asr','api_sentence_recognition','api_sentence_recognition_wx','api_sentence_recognition_lower'],true))$out['recommended']=$recommended;
             if(isset($data['code'])&&preg_match('/^[A-Z0-9_]{1,64}$/D',(string)$data['code'])===1)$out['code']=(string)$data['code'];
             $out['variants']=[];
             foreach(array_slice(is_array($data['variants']??null)?$data['variants']:[],0,4) as $row){
                 if(!is_array($row))continue;$name=(string)($row['name']??'');
-                if(!in_array($name,['service_16k_raw_url_key32','service_16k_encoded_url_key32','service_16k_raw_url_key8','service_16k_data_key8'],true))continue;
+                if(!in_array($name,['api_sentence_asr','api_sentence_recognition','api_sentence_recognition_wx','api_sentence_recognition_lower'],true))continue;
                 $item=['name'=>$name,'success'=>($row['success']??false)===true,'request_id_present'=>($row['request_id_present']??false)===true];
                 $http=(int)($row['http_status']??0);if($http>=0&&$http<=599)$item['http_status']=$http;
                 $err=(string)($row['errcode']??'');if($err===''||preg_match('/^-?[0-9]{1,12}$/D',$err)===1)$item['errcode']=$err;
