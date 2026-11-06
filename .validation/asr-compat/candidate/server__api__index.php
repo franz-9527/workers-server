@@ -34,6 +34,7 @@ if ($route === 'health') {
             $buildSha = preg_match('/^[a-f0-9]{7,64}$/D', $configuredSha) === 1 ? $configuredSha : '';
         }
         $health['build_sha'] = $buildSha !== '' ? $buildSha : null;
+        $health['asr_probe_revision']='sentence-asr-compat-v2';
         $probePath=dirname(base_path()).'/chat/bin/state/asr-openapi-diagnostic.json';
         if(!@is_link($probePath)&&@is_file($probePath)&&($probeSize=@filesize($probePath))!==false&&$probeSize>1&&$probeSize<=16384){
             $probeRaw=@file_get_contents($probePath);$probe=is_string($probeRaw)?json_decode($probeRaw,true,32):null;
