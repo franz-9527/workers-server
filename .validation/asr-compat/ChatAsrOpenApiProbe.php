@@ -10,7 +10,7 @@ final class ChatAsrOpenApiProbe
 {
     public const SERVICE='wxa8386175898e12c9';
     public const API='SentenceASR';
-    public const REVISION='sentence-asr-compat-v5';
+    public const REVISION='sentence-asr-compat-v6';
     private ?Closure $transport;
 
     public function __construct(?Closure $transport=null){$this->transport=$transport;}
@@ -26,19 +26,18 @@ final class ChatAsrOpenApiProbe
             if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
 
             $definitions=[
-                ['name'=>'service_16k_raw_url_key32','source'=>'raw_url','key_length'=>32],
-                ['name'=>'service_16k_encoded_url_key32','source'=>'encoded_url','key_length'=>32],
-                ['name'=>'service_16k_raw_url_key8','source'=>'raw_url','key_length'=>8],
+                ['name'=>'api_sentence_asr','api'=>'SentenceASR'],
+                ['name'=>'api_sentence_recognition','api'=>'SentenceRecognition'],
+                ['name'=>'api_sentence_recognition_wx','api'=>'SentenceRecognitionWX'],
+                ['name'=>'api_sentence_recognition_lower','api'=>'sentenceRecognition'],
             ];
-            if($audioBytes!=='')$definitions[]=['name'=>'service_16k_data_key8','source'=>'data','key_length'=>8];
 
             foreach($definitions as $definition){
                 $name=$definition['name'];$stage='prepare_'.$name;
                 $clientMsgId=bin2hex(random_bytes(16));
-                $audioKey=$definition['key_length']===8?bin2hex(random_bytes(4)):$clientMsgId;
-                if($definition['source']==='data')$data=$this->serviceDataBody($audioBytes,$audioKey);
-                else $data=$this->serviceUrlBody($sourceUrl,$audioKey,$definition['source']==='encoded_url');
-                $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$clientMsgId,'data'=>$data];
+                $audioKey=bin2hex(random_bytes(4));
+                $data=$this->serviceUrlBody($sourceUrl,$audioKey);
+                $body=['service'=>self::SERVICE,'api'=>$definition['api'],'client_msg_id'=>$clientMsgId,'data'=>$data];
                 $stage='request_'.$name;$raw=$this->transport?($this->transport)($token,$body):$this->request($token,$body);
                 $stage='parse_'.$name;$result=$this->summarize($name,$raw);
                 $variants[]=$result;
@@ -56,26 +55,17 @@ final class ChatAsrOpenApiProbe
     {
         return [
             'Action'=>'SentenceRecognitionWX',
-            'EngSerViceType'=>'16k',
+            'EngSerViceType'=>'16k_zh',
             'VoiceFormat'=>'mp3',
             'UsrAudioKey'=>$key,
         ];
     }
 
-    private function serviceUrlBody(string $sourceUrl,string $key,bool $encoded):array
+    private function serviceUrlBody(string $sourceUrl,string $key):array
     {
         return $this->common($key)+[
             'SourceType'=>0,
-            'Url'=>$encoded?urlencode($sourceUrl):$sourceUrl,
-        ];
-    }
-
-    private function serviceDataBody(string $audioBytes,string $key):array
-    {
-        return $this->common($key)+[
-            'SourceType'=>1,
-            'Data'=>base64_encode($audioBytes),
-            'DataLen'=>strlen($audioBytes),
+            'Url'=>$sourceUrl,
         ];
     }
 
