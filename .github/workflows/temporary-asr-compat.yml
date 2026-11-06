@@ -41,8 +41,11 @@ jobs:
           php -l .validation/asr-compat/candidate/server__app__Application__Chat__ChatGoRuntimeConfig.php
           php -l .validation/asr-compat/candidate/server__views__admin__chat-settings.php
           php -l .validation/asr-compat/candidate/server__api__index.php
+          php -l .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
           bash -n .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
           node --check .validation/asr-compat/candidate/miniprogram__subpackages__chat__conversation__av.js
           grep -F "chat-asr-diagnostic.php" .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
           grep -F "asr_probe" .validation/asr-compat/candidate/server__api__index.php
+          grep -F "chat_go" .validation/asr-compat/candidate/server__api__index.php
+          grep -F "CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
           grep -F "openapi_probe" .validation/asr-compat/candidate/server__app__Application__Chat__ChatGoRuntimeConfig.php
