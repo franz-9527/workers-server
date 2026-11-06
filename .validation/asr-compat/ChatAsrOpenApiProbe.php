@@ -10,41 +10,64 @@ final class ChatAsrOpenApiProbe
 {
     public const SERVICE='wxa8386175898e12c9';
     public const API='SentenceASR';
-    public const REVISION='sentence-asr-compat-v1';
+    public const REVISION='sentence-asr-compat-v2';
     private ?Closure $transport;
 
     public function __construct(?Closure $transport=null){$this->transport=$transport;}
 
-    public function run(string $token,string $sourceUrl):array
+    public function run(string $token,string $sourceUrl,string $audioBytes=''):array
     {
         if(preg_match('/^[A-Za-z0-9_-]{10,2048}$/D',$token)!==1)throw new RuntimeException('probe token unavailable');
         $url=parse_url($sourceUrl);
         if(!$url||($url['scheme']??'')!=='https'||empty($url['host'])||strlen($sourceUrl)>=2048||isset($url['user'])||isset($url['pass'])||isset($url['fragment']))throw new RuntimeException('probe source unavailable');
+        if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
+
+        $definitions=[
+            ['name'=>'compat_url_object','source'=>'url','encoding'=>'object'],
+            ['name'=>'compat_url_json_string','source'=>'url','encoding'=>'json_string'],
+        ];
+        if($audioBytes!=='')$definitions[]=['name'=>'compat_data_object','source'=>'data','encoding'=>'object'];
+
         $variants=[];$recommended='none';
-        foreach(['compat_object','compat_json_string'] as $name){
+        foreach($definitions as $definition){
             $key=bin2hex(random_bytes(16));
-            $data=$this->data($sourceUrl,$key);
-            $wireData=$name==='compat_json_string'?json_encode($data,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR):$data;
+            $data=$definition['source']==='data'?$this->dataBody($audioBytes,$key):$this->urlBody($sourceUrl,$key);
+            $wireData=$definition['encoding']==='json_string'?json_encode($data,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR):$data;
             $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$key,'data'=>$wireData];
             $raw=$this->transport?($this->transport)($token,$body):$this->request($token,$body);
-            $result=$this->summarize($name,$raw);
+            $result=$this->summarize($definition['name'],$raw);
             $variants[]=$result;
-            if($recommended==='none'&&!empty($result['success']))$recommended=$name;
+            if($recommended==='none'&&!empty($result['success']))$recommended=$definition['name'];
         }
         return ['status'=>'completed','revision'=>self::REVISION,'tested_at'=>gmdate('c'),'recommended'=>$recommended,'variants'=>$variants];
     }
 
-    private function data(string $sourceUrl,string $key):array
+    private function common(string $key):array
     {
         return [
             'Action'=>'SentenceRecognitionWX',
             'ProjectId'=>0,
             'SubServiceType'=>2,
             'EngSerViceType'=>'16k_zh',
-            'SourceType'=>0,
             'VoiceFormat'=>'mp3',
-            'Url'=>str_replace('%20','+',rawurlencode($sourceUrl)),
             'UsrAudioKey'=>$key,
+        ];
+    }
+
+    private function urlBody(string $sourceUrl,string $key):array
+    {
+        return $this->common($key)+[
+            'SourceType'=>0,
+            'Url'=>str_replace('%20','+',rawurlencode($sourceUrl)),
+        ];
+    }
+
+    private function dataBody(string $audioBytes,string $key):array
+    {
+        return $this->common($key)+[
+            'SourceType'=>1,
+            'Data'=>base64_encode($audioBytes),
+            'DataLen'=>strlen($audioBytes),
         ];
     }
 
@@ -99,7 +122,7 @@ final class ChatAsrOpenApiProbe
     {
         $value=trim($value);
         if($value==='')return '';
-        $value=preg_replace('#https?://[^\\s"\'<>]+#i','[url]',$value)??'';
+        $value=preg_replace("#https?://[^\\s\"'<>]+#i",'[url]',$value)??'';
         $value=preg_replace('/(?i)(access_token|token|secret|signature)\\s*[:=]\\s*[^\\s,;]+/','$1=[redacted]',$value)??'';
         return mb_substr($value,0,240,'UTF-8');
     }
