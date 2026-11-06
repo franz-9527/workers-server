@@ -20,14 +20,17 @@ jobs:
       - name: Validate Go source and test bounded external URL fetch
         run: |
           cd .validation/asr-source/chat
-          gofmt -w internal/sourceprobe/probe.go internal/sourceprobe/probe_test.go internal/imagepipeline/qiniu_av.go
+          gofmt -w internal/sourceprobe/probe.go internal/sourceprobe/probe_test.go internal/imagepipeline/qiniu_av.go internal/message/av_inspection.go
           test -z "$(gofmt -l internal/sourceprobe/probe.go internal/sourceprobe/probe_test.go internal/imagepipeline/qiniu_av.go)"
           go test -race -count=1 ./internal/sourceprobe ./internal/imagepipeline
           go vet ./internal/sourceprobe ./internal/imagepipeline
           grep -F 'sourceprobe.VerifyMP3(ctx, q.client, providerURL)' internal/imagepipeline/qiniu_av.go
+          grep -F 'source_preflight' internal/message/av_inspection.go
       - name: Validate mini-program and backend
         run: |
           node --check .validation/asr-source/miniprogram/subpackages/chat/conversation/av.js
           php -l .validation/asr-source/server/views/admin/chat-settings.php
+          php -l .validation/asr-source/server/app/Application/Chat/ChatGoRuntimeConfig.php
           grep -F CHAT_AV_ASR_SOURCE_UNREACHABLE .validation/asr-source/server/views/admin/chat-settings.php
           grep -F CHAT_AV_ASR_SOURCE_INVALID_MP3 .validation/asr-source/miniprogram/subpackages/chat/conversation/av.js
+          grep -F source_preflight .validation/asr-source/server/app/Application/Chat/ChatGoRuntimeConfig.php
