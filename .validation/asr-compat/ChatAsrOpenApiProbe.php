@@ -26,7 +26,7 @@ final class ChatAsrOpenApiProbe
             if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
 
             $definitions=[
-                ['name'=>'legacy_raw_url_object','contract'=>'legacy_raw_url'],
+                ['name'=>'service_raw_url_object','contract'=>'service_raw_url'],
                 ['name'=>'tencent_current_url_object','contract'=>'tencent_url'],
             ];
             if($audioBytes!=='')$definitions[]=['name'=>'tencent_current_data_object','contract'=>'tencent_data'];
@@ -34,7 +34,7 @@ final class ChatAsrOpenApiProbe
             foreach($definitions as $definition){
                 $name=$definition['name'];$stage='prepare_'.$name;
                 $key=bin2hex(random_bytes(16));
-                if($definition['contract']==='legacy_raw_url')$data=$this->legacyRawUrlBody($sourceUrl,$key);
+                if($definition['contract']==='service_raw_url')$data=$this->serviceRawUrlBody($sourceUrl,$key);
                 elseif($definition['contract']==='tencent_url')$data=$this->tencentUrlBody($sourceUrl);
                 else $data=$this->tencentDataBody($audioBytes);
                 $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$key,'data'=>$data];
@@ -55,15 +55,13 @@ final class ChatAsrOpenApiProbe
     {
         return [
             'Action'=>'SentenceRecognitionWX',
-            'ProjectId'=>0,
-            'SubServiceType'=>2,
             'EngSerViceType'=>'16k_zh',
             'VoiceFormat'=>'mp3',
             'UsrAudioKey'=>$key,
         ];
     }
 
-    private function legacyRawUrlBody(string $sourceUrl,string $key):array
+    private function serviceRawUrlBody(string $sourceUrl,string $key):array
     {
         return $this->common($key)+[
             'SourceType'=>0,
