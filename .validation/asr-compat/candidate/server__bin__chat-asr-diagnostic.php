@@ -69,7 +69,9 @@ try{
     if(preg_match('#^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/test/[1-9][0-9]{0,19}/[0-9a-f]{64}/[0-9a-f]{64}/(?:main|check-[01])\.mp3$#D',$key)!==1)$skip('CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED',$intentId);
     $bound=(int)db()->fetchValue("SELECT COUNT(*) FROM chat_av_objects WHERE object_key=:key AND upload_id=:upload AND role IN ('main','check-0','check-1')",['key'=>$key,'upload'=>(string)$row['upload_id']]);
     if($bound!==1)$skip('CHAT_ASR_PROBE_SEGMENT_OBJECT_UNBOUND',$intentId);
-    $fingerprint=hash('sha256',ChatAsrOpenApiProbe::REVISION."\n".(string)$row['intent_id']."\n".$ordinal."\n".$key);
+    $probeSource=(new ReflectionClass(ChatAsrOpenApiProbe::class))->getFileName();$probeHash=is_string($probeSource)&&is_file($probeSource)?hash_file('sha256',$probeSource):'';
+    if(!is_string($probeHash)||preg_match('/^[a-f0-9]{64}$/D',$probeHash)!==1)throw new RuntimeException('probe source hash unavailable');
+    $fingerprint=hash('sha256',ChatAsrOpenApiProbe::REVISION."\n".$probeHash."\n".(string)$row['intent_id']."\n".$ordinal."\n".$key);
     if(!is_link($stateFile)&&is_file($stateFile)&&($existingRaw=@file_get_contents($stateFile))!==false){
         $existing=json_decode($existingRaw,true,32);
         if(is_array($existing)&&hash_equals((string)($existing['fingerprint']??''),$fingerprint)){fwrite(STDOUT,'CHAT_ASR_OPENAPI_PROBE_CACHED '.json_encode($public($existing),JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");exit(0);}
