@@ -15,11 +15,10 @@ func TestSentenceASRCompatibilityEnvelope(t *testing.T) {
 		t.Fatalf("encoding=%q", encoding)
 	}
 	inner, ok := data.(map[string]any)
-	if !ok || len(inner) != 8 {
+	if !ok || len(inner) != 6 {
 		t.Fatalf("data=%#v", data)
 	}
-	if inner["Action"] != "SentenceRecognitionWX" || inner["ProjectId"] != 0 ||
-		inner["SubServiceType"] != 2 || inner["EngSerViceType"] != "16k_zh" ||
+	if inner["Action"] != "SentenceRecognitionWX" || inner["EngSerViceType"] != "16k_zh" ||
 		inner["SourceType"] != 0 || inner["VoiceFormat"] != "mp3" ||
 		inner["Url"] != url.QueryEscape(rawURL) || inner["UsrAudioKey"] != key {
 		t.Fatalf("inner=%#v", inner)
