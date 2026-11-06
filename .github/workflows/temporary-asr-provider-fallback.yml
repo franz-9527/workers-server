@@ -39,6 +39,9 @@ jobs:
           set -euo pipefail
           test -z "$(gofmt -l .validation/asr-provider-fallback/candidate/*.go)"
           php -l .validation/asr-provider-fallback/candidate/chat-asr-diagnostic.php
+          php -l .validation/asr-provider-fallback/candidate/api-index.php
+          php -l .validation/asr-provider-fallback/candidate/ChatGoRuntimeConfig.php
+          php -l .validation/asr-provider-fallback/candidate/chat-settings.php
           python3 - <<'PY'
           from pathlib import Path
           root=Path('.validation/asr-provider-fallback/candidate')
@@ -47,6 +50,9 @@ jobs:
           review=(root/'av_review.go').read_text()
           publish=(root/'av_publish.go').read_text()
           diagnostic=(root/'chat-asr-diagnostic.php').read_text()
+          api=(root/'api-index.php').read_text()
+          runtime=(root/'ChatGoRuntimeConfig.php').read_text()
+          settings=(root/'chat-settings.php').read_text()
           checks=[
               ('CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW',policy),
               ('kind != "audio" || !ValidOptionalTranscript',policy),
@@ -62,6 +68,16 @@ jobs:
               ("$item['request_data_encoding']=$encoding",diagnostic),
               ("$item['input_mode']=$mode",diagnostic),
               ("$item['request_key_length']=$keyLength",diagnostic),
+              ('sentence_asr_json_string_url_encoded',api),
+              ("$item['request_data_encoding']=$encoding",api),
+              ("$item['input_mode']=$mode",api),
+              ("$item['request_key_length']=$keyLength",api),
+              ('sentence_asr_json_string_url_encoded',runtime),
+              ("$item['request_data_encoding']=$encoding",runtime),
+              ("$item['input_mode']=$mode",runtime),
+              ("$item['request_key_length']=$keyLength",runtime),
+              ('SentenceASR：Data JSON 字符串 + URL 编码',settings),
+              ('object / JSON string 歧义已排除',settings),
           ]
           for needle,body in checks:
               if needle not in body:
