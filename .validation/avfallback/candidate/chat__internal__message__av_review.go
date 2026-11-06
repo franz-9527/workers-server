@@ -12,18 +12,18 @@ import (
 )
 
 type AVReview struct {
-	ConversationID ports.ID  `json:"conversation_id"`
-	SenderID       ports.ID  `json:"sender_id"`
-	IntentID       ports.ID  `json:"intent_id"`
-	Version        ports.ID  `json:"expected_version"`
-	Hash           string    `json:"manifest_hash"`
-	Kind           string    `json:"message_type"`
-	DurationMS     int       `json:"duration_ms"`
+	ConversationID   ports.ID  `json:"conversation_id"`
+	SenderID         ports.ID  `json:"sender_id"`
+	IntentID         ports.ID  `json:"intent_id"`
+	Version          ports.ID  `json:"expected_version"`
+	Hash             string    `json:"manifest_hash"`
+	Kind             string    `json:"message_type"`
+	DurationMS       int       `json:"duration_ms"`
 	Transcript       string    `json:"transcript"`
 	TranscriptSource string    `json:"transcript_source,omitempty"`
 	HasAudio         bool      `json:"has_audio"`
-	State          string    `json:"review_state"`
-	ExpiresAt      time.Time `json:"expires_at"`
+	State            string    `json:"review_state"`
+	ExpiresAt        time.Time `json:"expires_at"`
 }
 
 func (a *AVService) admin(ctx context.Context, tx *sql.Tx, p ports.Principal) error {
