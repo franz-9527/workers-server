@@ -120,6 +120,7 @@ $asrShort=static fn(string $sha):string=>$sha===''?'—':substr($sha,0,12);
 <?php if($asrDiagnosticReady): ?>
 <p><code><?= e((string)($asrDiagnostic['provider_code']??'未知')) ?></code><?= !empty($asrDiagnostic['provider_message'])?' · '.e((string)$asrDiagnostic['provider_message']):'' ?><?= !empty($asrDiagnostic['provider_inner_code'])?' · 内层 '.e((string)$asrDiagnostic['provider_inner_code']):'' ?></p>
 <small>Service <?= e((string)($asrDiagnostic['service']??'—')) ?> · API <?= e((string)($asrDiagnostic['api']??'—')) ?> · <?= e((string)($asrDiagnostic['input_mode']??'—')) ?> · Data <?= e((string)($asrDiagnostic['data_encoding']??'—')) ?> · Key <?= e((string)($asrDiagnostic['request_key_length']??'—')) ?> · URL Host <?= e((string)($asrDiagnostic['url_host']??'—')) ?> · 长度 <?= e((string)($asrDiagnostic['url_length']??'—')) ?>/<?= e((string)($asrDiagnostic['url_encoded_length']??'—')) ?></small>
+<?php if(($asrDiagnostic['source_preflight']??'')==='passed'): ?><small>公网音频预检：测试站已通过短效签名 URL 实际 GET 到 MP3。此结果不代表微信服务商所在网络也一定可访问。</small><?php endif; ?>
 <?php elseif($asrDiagnosticStatus==='asr_not_reached'): ?>
 <?php if(in_array((string)($asrDiagnostic['job_error']??''),['CHAT_AV_ASR_SOURCE_UNREACHABLE','CHAT_AV_ASR_SOURCE_INVALID_MP3'],true)): ?>
 <p>最新语音未通过公网音频取件预检，尚未发起新的 SentenceASR 请求。</p>
