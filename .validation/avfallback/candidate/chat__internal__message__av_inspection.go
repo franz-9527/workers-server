@@ -264,7 +264,7 @@ func (a *AVService) rawResult(ctx context.Context, v avJob) error {
 	}
 	switch decision {
 	case "pass":
-		if v.Request.MessageType == "audio" && v.Request.ClientTranscript != "" && v.Proof == "" && v.TextProof == "" && v.Review == "approved" {
+		if avfallback.ClearAfterRawPass(v.Request.MessageType, v.Request.ClientTranscript, v.Proof, v.TextProof, v.Review) {
 			r, err := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET transcript=NULL,phase='ready',error_code=NULL,next_attempt_at=UTC_TIMESTAMP(6),lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, string(v.ID), v.Owner)
 			if err != nil {
 				return ports.ErrUnavailable
@@ -281,6 +281,9 @@ func (a *AVService) rawResult(ctx context.Context, v avJob) error {
 	case "risky":
 		q := v.Request
 		q.Text = v.Transcript
+		if q.ClientTranscript != "" && v.Proof == "" {
+			q.Text = ""
+		}
 		checked := ports.SafetyResult{Decision: "blocked", RuleVersion: v.TextRule, AuthorityProof: v.Proof, Finding: &ports.SafetyFinding{Provider: "wechat.media_check_async.v2", Code: "official_risky", TraceID: v.RawTrace, Level: 2, Confirmed: true}}
 		_, e = a.base.reject(ctx, v.Principal, q, v.Hash, v.ID, v.Owner, checked)
 		if e == nil {
