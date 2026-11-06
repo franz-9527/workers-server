@@ -9,23 +9,24 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     steps:
-      - name: Read current test-site deployment state
+      - name: Wait for reconciled BaoTa deployment and ASR probe
         run: |
           set -euo pipefail
-          for URL in             'https://test.20m.cc/api?route=health'             'https://test.20m.cc/api/?route=health'             'https://test.20m.cc/api/index.php?route=health'
-          do
-            CODE=$(curl --silent --show-error --output /tmp/body --write-out '%{http_code}' --max-time 10 "$URL" || true)
-            TYPE=$(curl --silent --show-error --head --max-time 10 "$URL" 2>/dev/null | awk -F': ' 'tolower($1)=="content-type"{gsub("\r","",$2);print $2;exit}' || true)
-            JSON=no
-            if jq -e . /tmp/body >/dev/null 2>&1; then JSON=yes; fi
-            PATH_PART=${URL#https://test.20m.cc}
-            echo "ROUTE_CHECK code=$CODE type=$TYPE json=$JSON path=$PATH_PART"
-            if [[ "$CODE" == "200" && "$JSON" == "yes" ]]; then
-              jq -c '{ok,service,version,build_sha,asr_probe}' /tmp/body
-              exit 0
+          URL='https://test.20m.cc/api/?route=health'
+          for i in $(seq 1 60); do
+            if BODY=$(curl --silent --show-error --fail --max-time 10 "$URL"); then
+              if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
+                printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,asr_probe}'
+                REV=$(printf '%s' "$BODY" | jq -r '.asr_probe_revision // ""')
+                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
+                if [[ "$REV" == "sentence-asr-compat-v2" && ( "$STATUS" == "completed" || "$STATUS" == "failed" ) ]]; then
+                  exit 0
+                fi
+              fi
             fi
+            sleep 5
           done
-          echo 'TEST_SITE_JSON_HEALTH_ROUTE_NOT_FOUND'
+          echo 'TEST_SITE_ASR_PROBE_NOT_READY'
           exit 1
