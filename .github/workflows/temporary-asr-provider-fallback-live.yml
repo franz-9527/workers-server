@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Wait for test-site deployment and v7 probe
         env:
-          TARGET_SHA: 9e94a195cb636c19d2a424a0c20a438c0b310ae1
+          TARGET_SHA: 4235a6445cd7bd1616065ac8c6e899b748c3ea39
         run: |
           set -euo pipefail
           URL='https://test.20m.cc/api/?route=health'
