@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Snapshot current reconciled test-site ASR state
+      - name: Snapshot test-site ASR probe execution state
         run: |
           set -euo pipefail
           BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
           printf '%s' "$BODY" | jq -e . >/dev/null
-          printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,asr_probe}'
+          printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,chat_go,asr_probe}'
