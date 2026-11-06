@@ -41,3 +41,11 @@ $stagedResult=$staged->run(str_repeat('a',32),'https://qn.example.invalid/main.m
 if(($stagedResult['status']??'')!=='failed'||($stagedResult['code']??'')!=='CHAT_ASR_PROBE_INTERNAL_REQUEST_COMPAT_URL_JSON_STRING')throw new RuntimeException('internal stage code');
 if(count($stagedResult['variants']??[])!==1||($stagedResult['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('partial variants');
 echo "ASR_OPENAPI_PROBE_STAGE_CONTRACT_PASSED\n";
+$httpCalls=0;
+$httpProbe=new ChatAsrOpenApiProbe(static function(string $token,array $body)use(&$httpCalls):array{
+    $httpCalls++;return ['status'=>200,'body'=>'{"errcode":9301003,"errmsg":"internal exception"}'];
+});
+$httpResult=$httpProbe->run(str_repeat('a',32),'http://qn.example.invalid/main.mp3?e=1&token=x:y');
+if(($httpResult['status']??'')!=='completed'||$httpCalls!==2)throw new RuntimeException('http source compatibility');
+echo "ASR_OPENAPI_PROBE_HTTP_SOURCE_PASSED\n";
+
