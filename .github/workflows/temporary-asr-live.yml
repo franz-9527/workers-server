@@ -1,4 +1,5 @@
 name: Temporary test-site ASR live diagnostic
+# Trigger after workflow creation
 on:
   push:
     branches: [main]
