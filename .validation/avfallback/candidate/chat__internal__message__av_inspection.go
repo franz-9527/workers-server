@@ -97,19 +97,19 @@ func (a *AVService) recognize(ctx context.Context, v avJob) error {
 		}
 		if result.Known {
 			meta, _ := json.Marshal(map[string]any{
-				"service": result.ServiceID,
-				"api": result.APIName,
-				"engine": result.Engine,
-				"input_mode": "url_encoded",
-				"source_preflight": "passed",
-				"data_encoding": result.DataEncoding,
-				"provider_code": result.ProviderCode,
-				"provider_message": result.ProviderMessage,
+				"service":             result.ServiceID,
+				"api":                 result.APIName,
+				"engine":              result.Engine,
+				"input_mode":          "url_encoded",
+				"source_preflight":    "passed",
+				"data_encoding":       result.DataEncoding,
+				"provider_code":       result.ProviderCode,
+				"provider_message":    result.ProviderMessage,
 				"provider_inner_code": result.ProviderInnerCode,
-				"url_host": result.InputHost,
-				"url_length": result.InputURLLength,
-				"url_encoded_length": result.EncodedURLLength,
-				"request_key_length": len(key),
+				"url_host":            result.InputHost,
+				"url_length":          result.InputURLLength,
+				"url_encoded_length":  result.EncodedURLLength,
+				"request_key_length":  len(key),
 			})
 			if avfallback.Eligible(v.Request.MessageType, result.ProviderCode, v.Request.ClientTranscript) {
 				return a.clientTranscriptReview(ctx, v, string(meta))
