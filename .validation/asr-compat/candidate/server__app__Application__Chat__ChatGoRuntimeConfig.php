@@ -101,12 +101,12 @@ final class ChatGoRuntimeConfig
             if(preg_match('/^[A-Za-z0-9.-]{1,253}$/D',(string)($data['source_host']??''))===1)$out['source_host']=(string)$data['source_host'];
             if(is_int($data['source_bytes']??null)&&$data['source_bytes']>=0&&$data['source_bytes']<=3*1024*1024)$out['source_bytes']=$data['source_bytes'];
             $recommended=(string)($data['recommended']??'none');
-            if(in_array($recommended,['none','compat_url_object','compat_url_json_string','compat_data_object'],true))$out['recommended']=$recommended;
+            if(in_array($recommended,['none','service_raw_url_object','tencent_current_url_object','tencent_current_data_object'],true))$out['recommended']=$recommended;
             if(isset($data['code'])&&preg_match('/^[A-Z0-9_]{1,64}$/D',(string)$data['code'])===1)$out['code']=(string)$data['code'];
             $out['variants']=[];
             foreach(array_slice(is_array($data['variants']??null)?$data['variants']:[],0,3) as $row){
                 if(!is_array($row))continue;$name=(string)($row['name']??'');
-                if(!in_array($name,['compat_url_object','compat_url_json_string','compat_data_object'],true))continue;
+                if(!in_array($name,['service_raw_url_object','tencent_current_url_object','tencent_current_data_object'],true))continue;
                 $item=['name'=>$name,'success'=>($row['success']??false)===true,'request_id_present'=>($row['request_id_present']??false)===true];
                 $http=(int)($row['http_status']??0);if($http>=0&&$http<=599)$item['http_status']=$http;
                 $err=(string)($row['errcode']??'');if($err===''||preg_match('/^-?[0-9]{1,12}$/D',$err)===1)$item['errcode']=$err;
