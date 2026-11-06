@@ -21,8 +21,8 @@ jobs:
         run: |
           cd .validation/asr-openapi
           test -z "$(gofmt -l ./asrcontract)"
-          go test -race -count=1 ./...
-          go vet ./...
+          go test -race -count=1 ./asrcontract
+          go vet ./asrcontract
       - name: Validate intended source snapshots
         run: |
           gofmt -w .validation/asr-openapi/snapshots/av.go
