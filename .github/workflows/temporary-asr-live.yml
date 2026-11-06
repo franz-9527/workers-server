@@ -1,5 +1,4 @@
 name: Temporary test-site ASR live diagnostic
-# Trigger after workflow creation
 on:
   push:
     branches: [main]
@@ -19,20 +18,12 @@ jobs:
           set -euo pipefail
           for i in $(seq 1 60); do
             if BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api?route=health'); then
-              printf '%s' "$BODY" > /tmp/health.json
-              python3 - <<'PY' && exit 0 || true
-import json, os
-with open('/tmp/health.json','r',encoding='utf-8') as f:
-    d=json.load(f)
-target=os.environ['TARGET_SHA']
-build=str(d.get('build_sha') or '')
-probe=d.get('asr_probe')
-print(json.dumps({'build_sha':build,'asr_probe':probe},ensure_ascii=False,separators=(',',':')))
-if not build.startswith(target[:12]):
-    raise SystemExit(2)
-if not isinstance(probe,dict) or probe.get('status') not in ('completed','failed'):
-    raise SystemExit(3)
-PY
+              printf '%s\n' "$BODY" | jq -c '{build_sha,asr_probe}'
+              BUILD=$(printf '%s' "$BODY" | jq -r '.build_sha // ""')
+              STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
+              if [[ "$BUILD" == "$TARGET_SHA" && ( "$STATUS" == "completed" || "$STATUS" == "failed" ) ]]; then
+                exit 0
+              fi
             fi
             sleep 5
           done
