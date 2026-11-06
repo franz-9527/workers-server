@@ -34,9 +34,10 @@ jobs:
           php -l .validation/asr-compat/probe_contract.php
           php -l .validation/asr-compat/chat-asr-diagnostic.php
           php .validation/asr-compat/probe_contract.php
-          grep -F "service_raw_url_object" .validation/asr-compat/ChatAsrOpenApiProbe.php
-          grep -F "tencent_current_url_object" .validation/asr-compat/ChatAsrOpenApiProbe.php
-          grep -F "tencent_current_data_object" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "service_16k_raw_url_key32" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "service_16k_encoded_url_key32" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "service_16k_raw_url_key8" .validation/asr-compat/ChatAsrOpenApiProbe.php
+          grep -F "service_16k_data_key8" .validation/asr-compat/ChatAsrOpenApiProbe.php
           grep -F "CHAT_ASR_OPENAPI_PROBE_CACHED" .validation/asr-compat/chat-asr-diagnostic.php
       - name: Validate exact integration candidate snapshots
         run: |
