@@ -1,0 +1,42 @@
+name: Temporary ASR provider fallback live verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-asr-provider-fallback-live.yml'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for test-site deployment and v7 probe
+        env:
+          TARGET_SHA: 9e94a195cb636c19d2a424a0c20a438c0b310ae1
+        run: |
+          set -euo pipefail
+          URL='https://test.20m.cc/api/?route=health'
+          for i in $(seq 1 96); do
+            if BODY=$(curl --silent --show-error --fail --max-time 10 "$URL"); then
+              if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
+                printf '%s
+' "$BODY" | jq -c '{version,chat_go,asr_probe_revision,asr_probe,wechat_si_plugin}'
+                RUNNING=$(printf '%s' "$BODY" | jq -r '.chat_go.running_sha // ""')
+                REV=$(printf '%s' "$BODY" | jq -r '.asr_probe_revision // ""')
+                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
+                NAME=$(printf '%s' "$BODY" | jq -r '.asr_probe.variants[0].name // ""')
+                ENCODING=$(printf '%s' "$BODY" | jq -r '.asr_probe.variants[0].request_data_encoding // ""')
+                MODE=$(printf '%s' "$BODY" | jq -r '.asr_probe.variants[0].input_mode // ""')
+                KEYLEN=$(printf '%s' "$BODY" | jq -r '.asr_probe.variants[0].request_key_length // 0')
+                if [[ "$RUNNING" == "$TARGET_SHA" && "$REV" == "sentence-asr-data-shape-v7" && "$STATUS" == "completed" && "$NAME" == "sentence_asr_json_string_url_encoded" && "$ENCODING" == "json_string" && "$MODE" == "url_encoded" && "$KEYLEN" == "32" ]]; then
+                  printf '%s
+' "$BODY" | jq -c '.asr_probe.variants[0]'
+                  exit 0
+                fi
+              fi
+            fi
+            sleep 5
+          done
+          echo 'TEST_SITE_ASR_PROVIDER_FALLBACK_V7_NOT_READY'
+          exit 1
