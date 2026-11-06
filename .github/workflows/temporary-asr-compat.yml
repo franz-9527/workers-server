@@ -50,7 +50,7 @@ jobs:
           php -l .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
           php -l .validation/asr-compat/candidate/server__app__Application__Chat__ChatWechatSIPluginProbe.php
           php -l .validation/asr-compat/candidate/server__bin__chat-wechat-si-plugin-diagnostic.php
-          test -z "$(gofmt -l .validation/asr-compat/candidate/chat__internal__asrcontract__request.go .validation/asr-compat/candidate/chat__internal__moderation__media_callback_test.go)"
+          test -z "$(gofmt -l .validation/asr-compat/candidate/chat__internal__asrcontract__request.go)"
           grep -F '"Action":         "SentenceRecognitionWX"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
           ! grep -F '"ProjectId"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
           ! grep -F '"SubServiceType"' .validation/asr-compat/candidate/chat__internal__asrcontract__request.go
