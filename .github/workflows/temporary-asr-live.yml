@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Snapshot test-site ASR probe execution state after internal-stage failure diagnostics
+      - name: Snapshot test-site ASR probe execution state after http-source failure diagnostics
         run: |
           set -euo pipefail
           BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
