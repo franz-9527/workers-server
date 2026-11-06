@@ -32,4 +32,7 @@ jobs:
         run: |
           php -l .validation/asr-compat/ChatAsrOpenApiProbe.php
           php -l .validation/asr-compat/probe_contract.php
+          php -l .validation/asr-compat/chat-asr-diagnostic.php
           php .validation/asr-compat/probe_contract.php
+          grep -F "compat_data_object" .validation/asr-compat/chat-asr-diagnostic.php
+          grep -F "CHAT_ASR_OPENAPI_PROBE_CACHED" .validation/asr-compat/chat-asr-diagnostic.php
