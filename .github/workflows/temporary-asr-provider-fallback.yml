@@ -38,6 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           test -z "$(gofmt -l .validation/asr-provider-fallback/candidate/*.go)"
+          php -l .validation/asr-provider-fallback/candidate/chat-asr-diagnostic.php
           python3 - <<'PY'
           from pathlib import Path
           root=Path('.validation/asr-provider-fallback/candidate')
@@ -45,6 +46,7 @@ jobs:
           inspection=(root/'av_inspection.go').read_text()
           review=(root/'av_review.go').read_text()
           publish=(root/'av_publish.go').read_text()
+          diagnostic=(root/'chat-asr-diagnostic.php').read_text()
           checks=[
               ('CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW',policy),
               ('kind != "audio" || !ValidOptionalTranscript',policy),
@@ -55,6 +57,11 @@ jobs:
               ('if v.Proof == ""',inspection),
               ('ReviewTransition(request.MessageType',review),
               ('PublishCandidate(q.MessageType, v.Transcript',publish),
+              ("in_array($providerCode,['9301002','9301003'],true)",diagnostic),
+              ('CHAT_ASR_PROBE_LATEST_NOT_PROVIDER_FAILURE',diagnostic),
+              ("$item['request_data_encoding']=$encoding",diagnostic),
+              ("$item['input_mode']=$mode",diagnostic),
+              ("$item['request_key_length']=$keyLength",diagnostic),
           ]
           for needle,body in checks:
               if needle not in body:
