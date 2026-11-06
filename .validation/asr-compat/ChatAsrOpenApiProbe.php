@@ -21,7 +21,7 @@ final class ChatAsrOpenApiProbe
         try{
             if(preg_match('/^[A-Za-z0-9_-]{10,2048}$/D',$token)!==1)throw new RuntimeException('probe token unavailable');
             $stage='validate_source';$url=parse_url($sourceUrl);
-            if(!$url||($url['scheme']??'')!=='https'||empty($url['host'])||strlen($sourceUrl)>=2048||isset($url['user'])||isset($url['pass'])||isset($url['fragment']))throw new RuntimeException('probe source unavailable');
+            if(!$url||!in_array(($url['scheme']??''),['http','https'],true)||empty($url['host'])||strlen($sourceUrl)>=2048||isset($url['user'])||isset($url['pass'])||isset($url['fragment']))throw new RuntimeException('probe source unavailable');
             $stage='validate_audio';
             if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
 
