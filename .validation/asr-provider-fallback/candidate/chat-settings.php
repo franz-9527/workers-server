@@ -167,7 +167,7 @@ $probeRecommended=(string)($openApiProbe['recommended']??'none');
 <?php elseif($probeRecommended==='api_sentence_recognition_wx'): ?><small>诊断结论：实际 API Name 是 <code>SentenceRecognitionWX</code>，应修正后台预设和 Go 正式调用。</small>
 <?php elseif($probeRecommended==='api_sentence_recognition_lower'): ?><small>诊断结论：实际 API Name 是 <code>sentenceRecognition</code>，应按大小写精确修正正式调用。</small>
 <?php elseif($probeRecommended==='sentence_asr_json_string_url_encoded'): ?><small>v7 受控探针已成功：<code>SentenceASR</code> 的 Open API 外层 <code>data</code> 应使用 JSON 字符串；正式业务仍保持单次调用，不在失败后自动切换协议重发。</small>
-<?php elseif(($openApiProbe['status']??'')==='completed'): ?><small>v7 受控探针未成功；若仍为 <code>9301002</code>，则 Open API 的 object / JSON string 歧义已排除，故障继续收敛到当前 AppID 的服务绑定、商品配置或供应商后端调用。</small>
+<?php elseif(($openApiProbe['status']??'')==='completed'): ?><small>v7 受控探针未成功。当前正式 object 路径为 <code>9301002</code>，JSON string 受控探针为 <code>9301003</code>；切换 data 形态只改变失败层级，没有形成成功调用。保持正式单次 object 请求，不在失败后自动换协议重发；故障继续按 AppID 服务绑定、商品配置或供应商后端处理。</small>
 <?php elseif(($openApiProbe['status']??'')==='skipped'): ?><small>Open API 探针尚未发起真实微信调用 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_PROBE_SKIPPED')) ?></code>。请以该前置诊断定位部署、失败记录或音频段元数据。</small>
 <?php elseif(($openApiProbe['status']??'')==='failed'): ?><small>Open API 探针执行失败 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_OPENAPI_PROBE_FAILED')) ?></code>。未保存 access_token、完整音频 URL 或媒体内容。</small>
 <?php endif; ?>

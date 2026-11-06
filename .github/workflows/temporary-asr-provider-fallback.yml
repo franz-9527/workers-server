@@ -53,6 +53,7 @@ jobs:
           api=(root/'api-index.php').read_text()
           runtime=(root/'ChatGoRuntimeConfig.php').read_text()
           settings=(root/'chat-settings.php').read_text()
+          docs=(root/'asr-doc.md').read_text()
           checks=[
               ('CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW',policy),
               ('kind != "audio" || !ValidOptionalTranscript',policy),
@@ -77,7 +78,11 @@ jobs:
               ("$item['input_mode']=$mode",runtime),
               ("$item['request_key_length']=$keyLength",runtime),
               ('SentenceASR：Data JSON 字符串 + URL 编码',settings),
-              ('object / JSON string 歧义已排除',settings),
+              ('保持正式单次 object 请求',settings),
+              ('JSON string 受控探针为 <code>9301003</code>',settings),
+              ('两种外层 data 形态均未成功',docs),
+              ('没有证据把正式业务从 object 切换为 JSON string',docs),
+              ('JSON string + 原始 URL',docs),
           ]
           for needle,body in checks:
               if needle not in body:
