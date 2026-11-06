@@ -1,0 +1,35 @@
+package asrcontract
+
+import (
+	"encoding/json"
+	"net/url"
+)
+
+const SentenceAPI = "SentenceASR"
+
+// BuildData builds the provider-specific data value placed inside WeChat's
+// /wxa/servicemarket envelope. SentenceASR keeps the compatibility fields
+// still present in Tencent's current SDK/examples because the WeChat service
+// market forwards this object to the provider.
+func BuildData(api, configuredEncoding, rawURL, key string) (any, string, int) {
+	encodedURL := url.QueryEscape(rawURL)
+	data := any(map[string]any{
+		"Action":         "SentenceRecognitionWX",
+		"ProjectId":      0,
+		"SubServiceType": 2,
+		"EngSerViceType": "16k_zh",
+		"SourceType":     0,
+		"VoiceFormat":    "mp3",
+		"Url":            encodedURL,
+		"UsrAudioKey":    key,
+	})
+	encoding := configuredEncoding
+	if api == SentenceAPI {
+		encoding = "object"
+	}
+	if encoding == "json_string" {
+		raw, _ := json.Marshal(data)
+		data = string(raw)
+	}
+	return data, encoding, len(encodedURL)
+}

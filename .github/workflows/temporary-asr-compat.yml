@@ -1,0 +1,34 @@
+name: Temporary SentenceASR compatibility probe
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-compat/**'
+      - '.github/workflows/temporary-asr-compat.yml'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, curl
+      - name: Go SentenceASR compatibility envelope
+        run: |
+          cd .validation/asr-compat
+          test -z "$(gofmt -l ./asrcontract)"
+          go test -race -count=1 ./asrcontract
+          go vet ./asrcontract
+      - name: PHP real-probe contract
+        run: |
+          php -l .validation/asr-compat/ChatAsrOpenApiProbe.php
+          php -l .validation/asr-compat/probe_contract.php
+          php .validation/asr-compat/probe_contract.php

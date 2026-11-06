@@ -1,0 +1,1 @@
+module github.com/franz-9527/workers-server/asr-compat-validation\n\ngo 1.27.3\n
