@@ -10,7 +10,7 @@ final class ChatAsrOpenApiProbe
 {
     public const SERVICE='wxa8386175898e12c9';
     public const API='SentenceASR';
-    public const REVISION='sentence-asr-compat-v2';
+    public const REVISION='sentence-asr-compat-v3';
     private ?Closure $transport;
 
     public function __construct(?Closure $transport=null){$this->transport=$transport;}
