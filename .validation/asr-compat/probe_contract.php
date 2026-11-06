@@ -30,3 +30,14 @@ foreach($calls as $index=>$body){
 if(count(array_unique(array_column($calls,'client_msg_id')))!==3)throw new RuntimeException('unique key');
 if(($result['variants'][0]['errcode']??'')!=='9301003'||($result['variants'][1]['errcode']??'')!=='9301003'||empty($result['variants'][2]['success']))throw new RuntimeException('summary');
 echo "ASR_OPENAPI_PROBE_CONTRACT_PASSED\n";
+
+$failCalls=0;
+$staged=new ChatAsrOpenApiProbe(static function(string $token,array $body)use(&$failCalls):array{
+    $failCalls++;
+    if($failCalls===1)return ['status'=>200,'body'=>'{"errcode":9301003,"errmsg":"internal exception"}'];
+    throw new RuntimeException('fixture transport failure');
+});
+$stagedResult=$staged->run(str_repeat('a',32),'https://qn.example.invalid/main.mp3?e=1&token=x:y',"ID3".str_repeat("\0",20));
+if(($stagedResult['status']??'')!=='failed'||($stagedResult['code']??'')!=='CHAT_ASR_PROBE_INTERNAL_REQUEST_COMPAT_URL_JSON_STRING')throw new RuntimeException('internal stage code');
+if(count($stagedResult['variants']??[])!==1||($stagedResult['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('partial variants');
+echo "ASR_OPENAPI_PROBE_STAGE_CONTRACT_PASSED\n";
