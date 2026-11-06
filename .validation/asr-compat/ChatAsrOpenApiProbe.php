@@ -17,29 +17,37 @@ final class ChatAsrOpenApiProbe
 
     public function run(string $token,string $sourceUrl,string $audioBytes=''):array
     {
-        if(preg_match('/^[A-Za-z0-9_-]{10,2048}$/D',$token)!==1)throw new RuntimeException('probe token unavailable');
-        $url=parse_url($sourceUrl);
-        if(!$url||($url['scheme']??'')!=='https'||empty($url['host'])||strlen($sourceUrl)>=2048||isset($url['user'])||isset($url['pass'])||isset($url['fragment']))throw new RuntimeException('probe source unavailable');
-        if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
+        $variants=[];$recommended='none';$stage='validate_token';
+        try{
+            if(preg_match('/^[A-Za-z0-9_-]{10,2048}$/D',$token)!==1)throw new RuntimeException('probe token unavailable');
+            $stage='validate_source';$url=parse_url($sourceUrl);
+            if(!$url||($url['scheme']??'')!=='https'||empty($url['host'])||strlen($sourceUrl)>=2048||isset($url['user'])||isset($url['pass'])||isset($url['fragment']))throw new RuntimeException('probe source unavailable');
+            $stage='validate_audio';
+            if($audioBytes!==''&&(strlen($audioBytes)>3*1024*1024))throw new RuntimeException('probe audio too large');
 
-        $definitions=[
-            ['name'=>'compat_url_object','source'=>'url','encoding'=>'object'],
-            ['name'=>'compat_url_json_string','source'=>'url','encoding'=>'json_string'],
-        ];
-        if($audioBytes!=='')$definitions[]=['name'=>'compat_data_object','source'=>'data','encoding'=>'object'];
+            $definitions=[
+                ['name'=>'compat_url_object','source'=>'url','encoding'=>'object'],
+                ['name'=>'compat_url_json_string','source'=>'url','encoding'=>'json_string'],
+            ];
+            if($audioBytes!=='')$definitions[]=['name'=>'compat_data_object','source'=>'data','encoding'=>'object'];
 
-        $variants=[];$recommended='none';
-        foreach($definitions as $definition){
-            $key=bin2hex(random_bytes(16));
-            $data=$definition['source']==='data'?$this->dataBody($audioBytes,$key):$this->urlBody($sourceUrl,$key);
-            $wireData=$definition['encoding']==='json_string'?json_encode($data,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR):$data;
-            $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$key,'data'=>$wireData];
-            $raw=$this->transport?($this->transport)($token,$body):$this->request($token,$body);
-            $result=$this->summarize($definition['name'],$raw);
-            $variants[]=$result;
-            if($recommended==='none'&&!empty($result['success']))$recommended=$definition['name'];
+            foreach($definitions as $definition){
+                $name=$definition['name'];$stage='prepare_'.$name;
+                $key=bin2hex(random_bytes(16));
+                $data=$definition['source']==='data'?$this->dataBody($audioBytes,$key):$this->urlBody($sourceUrl,$key);
+                $wireData=$definition['encoding']==='json_string'?json_encode($data,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR):$data;
+                $body=['service'=>self::SERVICE,'api'=>self::API,'client_msg_id'=>$key,'data'=>$wireData];
+                $stage='request_'.$name;$raw=$this->transport?($this->transport)($token,$body):$this->request($token,$body);
+                $stage='parse_'.$name;$result=$this->summarize($name,$raw);
+                $variants[]=$result;
+                if($recommended==='none'&&!empty($result['success']))$recommended=$name;
+            }
+            return ['status'=>'completed','revision'=>self::REVISION,'tested_at'=>gmdate('c'),'recommended'=>$recommended,'variants'=>$variants];
+        }catch(\Throwable $error){
+            $code='CHAT_ASR_PROBE_INTERNAL_'.strtoupper(preg_replace('/[^a-z0-9_]+/i','_',$stage)??'UNKNOWN');
+            if(preg_match('/^CHAT_ASR_PROBE_INTERNAL_[A-Z0-9_]{1,80}$/D',$code)!==1)$code='CHAT_ASR_PROBE_INTERNAL_UNKNOWN';
+            return ['status'=>'failed','revision'=>self::REVISION,'tested_at'=>gmdate('c'),'recommended'=>$recommended,'variants'=>$variants,'code'=>$code];
         }
-        return ['status'=>'completed','revision'=>self::REVISION,'tested_at'=>gmdate('c'),'recommended'=>$recommended,'variants'=>$variants];
     }
 
     private function common(string $key):array
