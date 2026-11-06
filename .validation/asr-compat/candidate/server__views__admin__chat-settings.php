@@ -155,17 +155,17 @@ $asrShort=static fn(string $sha):string=>$sha===''?'—':substr($sha,0,12);
 <?php $openApiProbe=is_array($asrDiagnostic['openapi_probe']??null)?$asrDiagnostic['openapi_probe']:[]; ?>
 <?php if($openApiProbe!==[]): ?>
 <?php
-$probeLabels=['service_16k_raw_url_key32'=>'旧商品契约 · 16k · 原始URL · Key32','service_16k_encoded_url_key32'=>'旧商品契约 · 16k · urlencode URL · Key32','service_16k_raw_url_key8'=>'旧商品契约 · 16k · 原始URL · Key8','service_16k_data_key8'=>'旧商品契约 · 16k · 直接音频 · Key8'];
+$probeLabels=['api_sentence_asr'=>'API Name: SentenceASR','api_sentence_recognition'=>'API Name: SentenceRecognition','api_sentence_recognition_wx'=>'API Name: SentenceRecognitionWX','api_sentence_recognition_lower'=>'API Name: sentenceRecognition'];
 $probeRecommended=(string)($openApiProbe['recommended']??'none');
 ?>
 <p><strong>Open API 实际探测</strong> · intent <code><?= e((string)($openApiProbe['intent_id']??'—')) ?></code> · <?= e((string)($openApiProbe['tested_at']??'—')) ?></p>
 <?php foreach(($openApiProbe['variants']??[]) as $probeVariant): ?>
 <small><?= e($probeLabels[(string)($probeVariant['name']??'')]??(string)($probeVariant['name']??'未知')) ?>：<?= !empty($probeVariant['success'])?'成功':'失败' ?> · HTTP <?= e((string)($probeVariant['http_status']??'—')) ?> · errcode <code><?= e((string)(($probeVariant['errcode']??'')!==''?$probeVariant['errcode']:'—')) ?></code><?= !empty($probeVariant['inner_code'])?' · inner '.e((string)$probeVariant['inner_code']):'' ?><?= !empty($probeVariant['request_id_present'])?' · 已返回 RequestId':'' ?></small>
 <?php endforeach; ?>
-<?php if($probeRecommended==='service_16k_raw_url_key32'): ?><small>诊断结论：旧商品契约使用 16k + 原始 URL + 32位任务键可用，应按该实测协议修正式调用。</small>
-<?php elseif($probeRecommended==='service_16k_encoded_url_key32'): ?><small>诊断结论：旧商品契约需要 16k + urlencode URL；32位任务键可用。</small>
-<?php elseif($probeRecommended==='service_16k_raw_url_key8'): ?><small>诊断结论：旧商品契约需要 8位 UsrAudioKey；URL 可直接传原始地址。</small>
-<?php elseif($probeRecommended==='service_16k_data_key8'): ?><small>诊断结论：旧商品契约的直接音频模式可用，而 URL 模式失败，优先判定服务商取件链路问题。</small>
+<?php if($probeRecommended==='api_sentence_asr'): ?><small>诊断结论：当前预设 API Name <code>SentenceASR</code> 已通过真实调用。</small>
+<?php elseif($probeRecommended==='api_sentence_recognition'): ?><small>诊断结论：实际 API Name 是 <code>SentenceRecognition</code>，应修正后台预设和 Go 正式调用。</small>
+<?php elseif($probeRecommended==='api_sentence_recognition_wx'): ?><small>诊断结论：实际 API Name 是 <code>SentenceRecognitionWX</code>，应修正后台预设和 Go 正式调用。</small>
+<?php elseif($probeRecommended==='api_sentence_recognition_lower'): ?><small>诊断结论：实际 API Name 是 <code>sentenceRecognition</code>，应按大小写精确修正正式调用。</small>
 <?php elseif(($openApiProbe['status']??'')==='completed'): ?><small>三种受控真实探测均未成功；若仍为 9301003，故障已基本收敛到当前 AppID 的服务绑定/API 配置或供应商内部异常。</small>
 <?php elseif(($openApiProbe['status']??'')==='skipped'): ?><small>Open API 探针尚未发起真实微信调用 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_PROBE_SKIPPED')) ?></code>。请以该前置诊断定位部署、失败记录或音频段元数据。</small>
 <?php elseif(($openApiProbe['status']??'')==='failed'): ?><small>Open API 探针执行失败 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_OPENAPI_PROBE_FAILED')) ?></code>。未保存 access_token、完整音频 URL 或媒体内容。</small>
