@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Wait for ASR probe v3 and print sanitized live result
+      - name: Wait for ASR probe v4 and print sanitized live result
         env:
-          TARGET_SHA: 81e7c98ce56cdfeea8239fe111009cfb0d1fc178
+          TARGET_SHA: 8fb7c3c2cae7c8b15df2dd84dc8045fa1960fb02
         run: |
           set -euo pipefail
           URL='https://test.20m.cc/api/?route=health'
@@ -24,12 +24,12 @@ jobs:
                 RUNNING=$(printf '%s' "$BODY" | jq -r '.chat_go.running_sha // ""')
                 REV=$(printf '%s' "$BODY" | jq -r '.asr_probe.revision // ""')
                 STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
-                if [[ "$RUNNING" == "$TARGET_SHA" && "$REV" == "sentence-asr-compat-v3" && ( "$STATUS" == "completed" || "$STATUS" == "failed" || "$STATUS" == "skipped" ) ]]; then
+                if [[ "$RUNNING" == "$TARGET_SHA" && "$REV" == "sentence-asr-compat-v4" && ( "$STATUS" == "completed" || "$STATUS" == "failed" || "$STATUS" == "skipped" ) ]]; then
                   exit 0
                 fi
               fi
             fi
             sleep 5
           done
-          echo 'TEST_SITE_ASR_PROBE_V3_NOT_READY'
+          echo 'TEST_SITE_ASR_PROBE_V4_NOT_READY'
           exit 1
