@@ -44,7 +44,11 @@ jobs:
             .validation/avfallback/candidate/chat__internal__message__av_test.go
           )
           BAD_GOFMT="$(gofmt -l "${GO_FILES[@]}")"
-          if [[ -n "$BAD_GOFMT" ]]; then printf 'GOFMT_REQUIRED\n%s\n' "$BAD_GOFMT"; exit 1; fi
+          if [[ -n "$BAD_GOFMT" ]]; then
+            printf 'GOFMT_REQUIRED\n%s\n' "$BAD_GOFMT"
+            while IFS= read -r file; do gofmt -d "$file"; done <<< "$BAD_GOFMT"
+            exit 1
+          fi
           node --check .validation/avfallback/candidate/miniprogram__utils__ChatVoiceRecorder.js
           node --check .validation/avfallback/candidate/miniprogram__utils__ChatAV.js
           node --check .validation/avfallback/candidate/miniprogram__subpackages__chat__conversation__voice.js
