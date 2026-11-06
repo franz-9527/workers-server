@@ -9,13 +9,27 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     steps:
-      - name: Read current test-site chat runtime and ASR probe
+      - name: Wait for ASR probe v3 and print sanitized live result
+        env:
+          TARGET_SHA: 81e7c98ce56cdfeea8239fe111009cfb0d1fc178
         run: |
           set -euo pipefail
-          BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
-          printf '%s' "$BODY" | jq -e . >/dev/null
-          printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,chat_go,asr_probe}'
-
-# v3 real service-market probe
+          URL='https://test.20m.cc/api/?route=health'
+          for i in $(seq 1 72); do
+            if BODY=$(curl --silent --show-error --fail --max-time 10 "$URL"); then
+              if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
+                printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,chat_go,asr_probe}'
+                RUNNING=$(printf '%s' "$BODY" | jq -r '.chat_go.running_sha // ""')
+                REV=$(printf '%s' "$BODY" | jq -r '.asr_probe.revision // ""')
+                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
+                if [[ "$RUNNING" == "$TARGET_SHA" && "$REV" == "sentence-asr-compat-v3" && ( "$STATUS" == "completed" || "$STATUS" == "failed" || "$STATUS" == "skipped" ) ]]; then
+                  exit 0
+                fi
+              fi
+            fi
+            sleep 5
+          done
+          echo 'TEST_SITE_ASR_PROBE_V3_NOT_READY'
+          exit 1
