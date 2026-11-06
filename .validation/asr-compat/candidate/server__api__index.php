@@ -34,7 +34,7 @@ if ($route === 'health') {
             $buildSha = preg_match('/^[a-f0-9]{7,64}$/D', $configuredSha) === 1 ? $configuredSha : '';
         }
         $health['build_sha'] = $buildSha !== '' ? $buildSha : null;
-        $health['asr_probe_revision']='sentence-asr-compat-v3';
+        $health['asr_probe_revision']=\WorkerAdmin\Application\Chat\ChatAsrOpenApiProbe::REVISION;
         $readSha=static function(string $path):?string{
             if(@is_link($path)||!@is_file($path)||($size=@filesize($path))===false||$size<7||$size>80)return null;
             $value=strtolower(trim((string)@file_get_contents($path)));
