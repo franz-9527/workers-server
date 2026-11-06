@@ -36,3 +36,13 @@ jobs:
           php .validation/asr-compat/probe_contract.php
           grep -F "compat_data_object" .validation/asr-compat/ChatAsrOpenApiProbe.php
           grep -F "CHAT_ASR_OPENAPI_PROBE_CACHED" .validation/asr-compat/chat-asr-diagnostic.php
+      - name: Validate exact integration candidate snapshots
+        run: |
+          php -l .validation/asr-compat/candidate/server__app__Application__Chat__ChatGoRuntimeConfig.php
+          php -l .validation/asr-compat/candidate/server__views__admin__chat-settings.php
+          php -l .validation/asr-compat/candidate/server__api__index.php
+          bash -n .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
+          node --check .validation/asr-compat/candidate/miniprogram__subpackages__chat__conversation__av.js
+          grep -F "chat-asr-diagnostic.php" .validation/asr-compat/candidate/chat__deploy__bt-deploy.sh
+          grep -F "asr_probe" .validation/asr-compat/candidate/server__api__index.php
+          grep -F "openapi_probe" .validation/asr-compat/candidate/server__app__Application__Chat__ChatGoRuntimeConfig.php
