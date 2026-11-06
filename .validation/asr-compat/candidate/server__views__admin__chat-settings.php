@@ -166,6 +166,8 @@ $probeRecommended=(string)($openApiProbe['recommended']??'none');
 <?php elseif($probeRecommended==='compat_url_json_string'): ?><small>诊断结论：兼容字段齐全时 JSON 字符串模式成功；需要按该真实结果调整正式调用。</small>
 <?php elseif($probeRecommended==='compat_url_object'): ?><small>诊断结论：兼容字段齐全的 URL + Object 模式成功，正式调用可继续采用该协议。</small>
 <?php elseif(($openApiProbe['status']??'')==='completed'): ?><small>三种受控真实探测均未成功；若仍为 9301003，故障已基本收敛到当前 AppID 的服务绑定/API 配置或供应商内部异常。</small>
+<?php elseif(($openApiProbe['status']??'')==='skipped'): ?><small>Open API 探针尚未发起真实微信调用 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_PROBE_SKIPPED')) ?></code>。请以该前置诊断定位部署、失败记录或音频段元数据。</small>
+<?php elseif(($openApiProbe['status']??'')==='failed'): ?><small>Open API 探针执行失败 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_OPENAPI_PROBE_FAILED')) ?></code>。未保存 access_token、完整音频 URL 或媒体内容。</small>
 <?php endif; ?>
 <?php endif; ?>
 <p class="admin-text-muted">Go current <code><?= e($asrShort($asrCurrentSha)) ?></code> · deployed <code><?= e($asrShort($asrDeployedSha)) ?></code> · running <code><?= e($asrShort($asrRunningSha)) ?></code> · <?= !empty($goStatus['versions_match'])?'版本一致':'版本未确认一致' ?>。仅显示脱敏诊断，不保存 access_token、完整音频 URL 或七牛签名参数。</p>
