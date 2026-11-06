@@ -17,3 +17,5 @@ jobs:
           BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api/?route=health')
           printf '%s' "$BODY" | jq -e . >/dev/null
           printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,chat_go,asr_probe}'
+
+# v3 real service-market probe
