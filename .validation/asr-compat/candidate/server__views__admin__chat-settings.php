@@ -155,16 +155,16 @@ $asrShort=static fn(string $sha):string=>$sha===''?'—':substr($sha,0,12);
 <?php $openApiProbe=is_array($asrDiagnostic['openapi_probe']??null)?$asrDiagnostic['openapi_probe']:[]; ?>
 <?php if($openApiProbe!==[]): ?>
 <?php
-$probeLabels=['compat_url_object'=>'URL + Object + 兼容字段','compat_url_json_string'=>'URL + JSON字符串 + 兼容字段','compat_data_object'=>'直接音频数据 + Object + 兼容字段'];
+$probeLabels=['service_raw_url_object'=>'服务市场旧契约 + 原始 URL','tencent_current_url_object'=>'腾讯当前契约 + 原始 URL','tencent_current_data_object'=>'腾讯当前契约 + 直接音频数据'];
 $probeRecommended=(string)($openApiProbe['recommended']??'none');
 ?>
 <p><strong>Open API 实际探测</strong> · intent <code><?= e((string)($openApiProbe['intent_id']??'—')) ?></code> · <?= e((string)($openApiProbe['tested_at']??'—')) ?></p>
 <?php foreach(($openApiProbe['variants']??[]) as $probeVariant): ?>
 <small><?= e($probeLabels[(string)($probeVariant['name']??'')]??(string)($probeVariant['name']??'未知')) ?>：<?= !empty($probeVariant['success'])?'成功':'失败' ?> · HTTP <?= e((string)($probeVariant['http_status']??'—')) ?> · errcode <code><?= e((string)(($probeVariant['errcode']??'')!==''?$probeVariant['errcode']:'—')) ?></code><?= !empty($probeVariant['inner_code'])?' · inner '.e((string)$probeVariant['inner_code']):'' ?><?= !empty($probeVariant['request_id_present'])?' · 已返回 RequestId':'' ?></small>
 <?php endforeach; ?>
-<?php if($probeRecommended==='compat_data_object'): ?><small>诊断结论：直接音频数据可识别而 URL 模式失败，优先排查微信/服务商到七牛域名的取件链路；不要继续改外层 data 类型。</small>
-<?php elseif($probeRecommended==='compat_url_json_string'): ?><small>诊断结论：兼容字段齐全时 JSON 字符串模式成功；需要按该真实结果调整正式调用。</small>
-<?php elseif($probeRecommended==='compat_url_object'): ?><small>诊断结论：兼容字段齐全的 URL + Object 模式成功，正式调用可继续采用该协议。</small>
+<?php if($probeRecommended==='service_raw_url_object'): ?><small>诊断结论：微信服务市场旧契约在原始 URL 形式下可用，应将正式调用改为该已实测协议。</small>
+<?php elseif($probeRecommended==='tencent_current_url_object'): ?><small>诊断结论：腾讯当前 SentenceRecognition 契约的 URL 模式可用；说明绑定商品实际已转发到现行接口，需要按真实结果调整正式调用。</small>
+<?php elseif($probeRecommended==='tencent_current_data_object'): ?><small>诊断结论：腾讯当前 SentenceRecognition 仅直接音频数据可用；URL 模式仍失败，优先排查服务商取件链路。</small>
 <?php elseif(($openApiProbe['status']??'')==='completed'): ?><small>三种受控真实探测均未成功；若仍为 9301003，故障已基本收敛到当前 AppID 的服务绑定/API 配置或供应商内部异常。</small>
 <?php elseif(($openApiProbe['status']??'')==='skipped'): ?><small>Open API 探针尚未发起真实微信调用 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_PROBE_SKIPPED')) ?></code>。请以该前置诊断定位部署、失败记录或音频段元数据。</small>
 <?php elseif(($openApiProbe['status']??'')==='failed'): ?><small>Open API 探针执行失败 · <code><?= e((string)($openApiProbe['code']??'CHAT_ASR_OPENAPI_PROBE_FAILED')) ?></code>。未保存 access_token、完整音频 URL 或媒体内容。</small>
