@@ -133,6 +133,9 @@ func (a *AVService) Review(ctx context.Context, p ports.Principal, id, expected 
 			} else {
 				_, e = tx.ExecContext(ctx, `UPDATE chat_av_jobs SET review_state='approved',general_confirmed=1,group_confirmed=1,review_version=review_version+1,review_lease_until=NULL,phase=?,error_code=NULL,next_attempt_at=UTC_TIMESTAMP(6) WHERE intent_id=?`, nextPhase, string(id))
 			}
+			if e == nil && nextPhase == "raw_ready" {
+				_, e = tx.ExecContext(ctx, `UPDATE chat_send_intents SET state='checking',error_code=NULL,lease_owner=NULL,lease_until=NULL,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state='review_pending'`, string(id))
+			}
 		} else {
 			state = "rejected"
 			_, e = tx.ExecContext(ctx, `UPDATE chat_av_jobs SET review_state='rejected',review_version=review_version+1,review_lease_until=NULL,phase='failed',error_code=? WHERE intent_id=?`, ErrBlocked.Error(), string(id))
