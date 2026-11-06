@@ -127,13 +127,7 @@ func (a *AVService) Review(ctx context.Context, p ports.Principal, id, expected 
 			if json.Unmarshal([]byte(manifest), &request) != nil {
 				return out, ErrMedia
 			}
-			nextPhase := "ready"
-			clearTranscript := false
-			if code == avfallback.ReviewCode && request.ClientTranscript != "" && sourceProof == "" && rawDecision == "" {
-				nextPhase = "raw_ready"
-			} else if request.ClientTranscript != "" && sourceProof == "" {
-				clearTranscript = true
-			}
+			nextPhase, clearTranscript := avfallback.ReviewTransition(code, request.ClientTranscript, sourceProof, rawDecision)
 			if clearTranscript {
 				_, e = tx.ExecContext(ctx, `UPDATE chat_av_jobs SET review_state='approved',general_confirmed=1,group_confirmed=1,review_version=review_version+1,review_lease_until=NULL,phase=?,error_code=NULL,transcript=NULL,next_attempt_at=UTC_TIMESTAMP(6) WHERE intent_id=?`, nextPhase, string(id))
 			} else {
