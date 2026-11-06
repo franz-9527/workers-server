@@ -22,11 +22,11 @@ foreach($calls as $body){
 }
 if(count(array_unique(array_column($calls,'client_msg_id')))!==3)throw new RuntimeException('unique key');
 
-$legacy=$calls[0]['data'];
-foreach(['Action','ProjectId','SubServiceType','EngSerViceType','SourceType','VoiceFormat','Url','UsrAudioKey'] as $key)if(!array_key_exists($key,$legacy))throw new RuntimeException('legacy missing '.$key);
-if($legacy['Action']!=='SentenceRecognitionWX'||$legacy['ProjectId']!==0||$legacy['SubServiceType']!==2||$legacy['SourceType']!==0||$legacy['VoiceFormat']!=='mp3'||$legacy['Url']!==$source)throw new RuntimeException('legacy contract');
-if(($legacy['UsrAudioKey']??'')!==($calls[0]['client_msg_id']??''))throw new RuntimeException('legacy key');
-if(isset($legacy['Version'])||isset($legacy['Data'])||isset($legacy['DataLen']))throw new RuntimeException('legacy extras');
+$service=$calls[0]['data'];
+foreach(['Action','EngSerViceType','SourceType','VoiceFormat','Url','UsrAudioKey'] as $key)if(!array_key_exists($key,$service))throw new RuntimeException('service missing '.$key);
+if($service['Action']!=='SentenceRecognitionWX'||$service['SourceType']!==0||$service['VoiceFormat']!=='mp3'||$service['Url']!==$source)throw new RuntimeException('service contract');
+if(($service['UsrAudioKey']??'')!==($calls[0]['client_msg_id']??''))throw new RuntimeException('service key');
+if(isset($service['Version'])||isset($service['ProjectId'])||isset($service['SubServiceType'])||isset($service['Data'])||isset($service['DataLen']))throw new RuntimeException('service extras');
 
 $currentUrl=$calls[1]['data'];
 foreach(['Action','Version','ProjectId','SubServiceType','EngSerViceType','SourceType','VoiceFormat','Url'] as $key)if(!array_key_exists($key,$currentUrl))throw new RuntimeException('current url missing '.$key);
@@ -39,7 +39,7 @@ if($currentData['Action']!=='SentenceRecognition'||$currentData['Version']!=='20
 if(base64_decode((string)$currentData['Data'],true)!==$audio||$currentData['DataLen']!==strlen($audio))throw new RuntimeException('current data bytes');
 if(isset($currentData['UsrAudioKey'])||isset($currentData['Url']))throw new RuntimeException('current data extras');
 
-if(($result['variants'][0]['name']??'')!=='legacy_raw_url_object'||($result['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('legacy summary');
+if(($result['variants'][0]['name']??'')!=='service_raw_url_object'||($result['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('service summary');
 if(($result['variants'][1]['name']??'')!=='tencent_current_url_object'||($result['variants'][1]['errcode']??'')!=='9301003')throw new RuntimeException('current url summary');
 if(($result['variants'][2]['name']??'')!=='tencent_current_data_object'||empty($result['variants'][2]['success']))throw new RuntimeException('current data summary');
 echo "ASR_OPENAPI_PROBE_CONTRACT_PASSED\n";
@@ -52,7 +52,7 @@ $staged=new ChatAsrOpenApiProbe(static function(string $token,array $body)use(&$
 });
 $stagedResult=$staged->run(str_repeat('a',32),$source,"ID3".str_repeat("\0",20));
 if(($stagedResult['status']??'')!=='failed'||($stagedResult['code']??'')!=='CHAT_ASR_PROBE_INTERNAL_REQUEST_TENCENT_CURRENT_URL_OBJECT')throw new RuntimeException('internal stage code');
-if(count($stagedResult['variants']??[])!==1||($stagedResult['variants'][0]['name']??'')!=='legacy_raw_url_object'||($stagedResult['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('partial variants');
+if(count($stagedResult['variants']??[])!==1||($stagedResult['variants'][0]['name']??'')!=='service_raw_url_object'||($stagedResult['variants'][0]['errcode']??'')!=='9301003')throw new RuntimeException('partial variants');
 echo "ASR_OPENAPI_PROBE_STAGE_CONTRACT_PASSED\n";
 
 $httpCalls=0;
