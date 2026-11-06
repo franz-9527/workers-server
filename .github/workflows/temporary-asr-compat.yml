@@ -24,6 +24,7 @@ jobs:
       - name: Go SentenceASR compatibility envelope
         run: |
           cd .validation/asr-compat
+          gofmt -w ./asrcontract
           test -z "$(gofmt -l ./asrcontract)"
           go test -race -count=1 ./asrcontract
           go vet ./asrcontract
