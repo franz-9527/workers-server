@@ -35,12 +35,25 @@ if ($route === 'health') {
         }
         $health['build_sha'] = $buildSha !== '' ? $buildSha : null;
         $health['asr_probe_revision']='sentence-asr-compat-v2';
+        $readSha=static function(string $path):?string{
+            if(@is_link($path)||!@is_file($path)||($size=@filesize($path))===false||$size<7||$size>80)return null;
+            $value=strtolower(trim((string)@file_get_contents($path)));
+            return preg_match('/^[a-f0-9]{7,64}$/D',$value)===1?$value:null;
+        };
+        $chatRoot=dirname(base_path()).'/chat/bin';
+        $health['chat_go']=[
+            'deployed_sha'=>$readSha($chatRoot.'/deployed-sha'),
+            'running_sha'=>$readSha($chatRoot.'/state/running-sha'),
+        ];
         $probePath=dirname(base_path()).'/chat/bin/state/asr-openapi-diagnostic.json';
         if(!@is_link($probePath)&&@is_file($probePath)&&($probeSize=@filesize($probePath))!==false&&$probeSize>1&&$probeSize<=16384){
             $probeRaw=@file_get_contents($probePath);$probe=is_string($probeRaw)?json_decode($probeRaw,true,32):null;
             if(is_array($probe)&&($probe['schema_version']??null)===1){
-                $public=['status'=>(string)($probe['status']??''),'revision'=>(string)($probe['revision']??''),'tested_at'=>(string)($probe['tested_at']??''),'recommended'=>(string)($probe['recommended']??'none'),'variants'=>[]];
+                $status=(string)($probe['status']??'');
+                if(!in_array($status,['completed','failed','skipped'],true))$status='failed';
+                $public=['status'=>$status,'revision'=>(string)($probe['revision']??''),'tested_at'=>(string)($probe['tested_at']??''),'recommended'=>(string)($probe['recommended']??'none'),'variants'=>[]];
                 if(preg_match('/^[1-9][0-9]{0,19}$/D',(string)($probe['intent_id']??''))===1)$public['intent_id']=(string)$probe['intent_id'];
+                if(isset($probe['code'])&&preg_match('/^[A-Z0-9_]{1,64}$/D',(string)$probe['code'])===1)$public['code']=(string)$probe['code'];
                 foreach(array_slice(is_array($probe['variants']??null)?$probe['variants']:[],0,3) as $variant){
                     if(!is_array($variant))continue;$name=(string)($variant['name']??'');
                     if(!in_array($name,['compat_url_object','compat_url_json_string','compat_data_object'],true))continue;
