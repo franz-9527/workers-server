@@ -22,8 +22,8 @@ jobs:
           cd .validation/asr-source/chat
           gofmt -w internal/sourceprobe/probe.go internal/sourceprobe/probe_test.go internal/imagepipeline/qiniu_av.go
           test -z "$(gofmt -l internal/sourceprobe/probe.go internal/sourceprobe/probe_test.go internal/imagepipeline/qiniu_av.go)"
-          go test -race -count=1 ./internal/sourceprobe
-          go vet ./internal/sourceprobe
+          go test -race -count=1 ./internal/sourceprobe ./internal/imagepipeline
+          go vet ./internal/sourceprobe ./internal/imagepipeline
           grep -F 'sourceprobe.VerifyMP3(ctx, q.client, providerURL)' internal/imagepipeline/qiniu_av.go
       - name: Validate mini-program and backend
         run: |
