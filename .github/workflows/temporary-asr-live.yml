@@ -1,0 +1,39 @@
+name: Temporary test-site ASR live diagnostic
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-asr-live.yml'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Wait for BaoTa test deployment and read sanitized probe
+        env:
+          TARGET_SHA: 973ad051504548bbe2a23f643b0d06635a676861
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            if BODY=$(curl --silent --show-error --fail --max-time 10 'https://test.20m.cc/api?route=health'); then
+              printf '%s' "$BODY" > /tmp/health.json
+              python3 - <<'PY' && exit 0 || true
+import json, os
+with open('/tmp/health.json','r',encoding='utf-8') as f:
+    d=json.load(f)
+target=os.environ['TARGET_SHA']
+build=str(d.get('build_sha') or '')
+probe=d.get('asr_probe')
+print(json.dumps({'build_sha':build,'asr_probe':probe},ensure_ascii=False,separators=(',',':')))
+if not build.startswith(target[:12]):
+    raise SystemExit(2)
+if not isinstance(probe,dict) or probe.get('status') not in ('completed','failed'):
+    raise SystemExit(3)
+PY
+            fi
+            sleep 5
+          done
+          echo 'TEST_SITE_ASR_PROBE_NOT_READY'
+          exit 1
