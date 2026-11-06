@@ -14,12 +14,12 @@ const SentenceAPI = "SentenceASR"
 func BuildData(api, configuredEncoding, rawURL, key string) (any, string, int) {
 	encodedURL := url.QueryEscape(rawURL)
 	data := any(map[string]any{
-		"Action":          "SentenceRecognitionWX",
-		"EngSerViceType":  "16k_zh",
-		"SourceType":      0,
-		"VoiceFormat":     "mp3",
-		"Url":             encodedURL,
-		"UsrAudioKey":     key,
+		"Action":         "SentenceRecognitionWX",
+		"EngSerViceType": "16k_zh",
+		"SourceType":     0,
+		"VoiceFormat":    "mp3",
+		"Url":            encodedURL,
+		"UsrAudioKey":    key,
 	})
 	encoding := configuredEncoding
 	if api == SentenceAPI {
