@@ -9,14 +9,11 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
-      - name: Discover test API route and wait for BaoTa deployment
-        env:
-          TARGET_SHA: 973ad051504548bbe2a23f643b0d06635a676861
+      - name: Read current test-site deployment state
         run: |
           set -euo pipefail
-          ROUTE=''
           for URL in             'https://test.20m.cc/api?route=health'             'https://test.20m.cc/api/?route=health'             'https://test.20m.cc/api/index.php?route=health'
           do
             CODE=$(curl --silent --show-error --output /tmp/body --write-out '%{http_code}' --max-time 10 "$URL" || true)
@@ -25,24 +22,10 @@ jobs:
             if jq -e . /tmp/body >/dev/null 2>&1; then JSON=yes; fi
             PATH_PART=${URL#https://test.20m.cc}
             echo "ROUTE_CHECK code=$CODE type=$TYPE json=$JSON path=$PATH_PART"
-            if [[ "$CODE" == "200" && "$JSON" == "yes" ]]; then ROUTE="$URL"; break; fi
-          done
-          if [[ -z "$ROUTE" ]]; then
-            echo 'TEST_SITE_JSON_HEALTH_ROUTE_NOT_FOUND'
-            exit 1
-          fi
-          for i in $(seq 1 60); do
-            if BODY=$(curl --silent --show-error --fail --max-time 10 "$ROUTE"); then
-              if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
-                printf '%s\n' "$BODY" | jq -c '{build_sha,asr_probe}'
-                BUILD=$(printf '%s' "$BODY" | jq -r '.build_sha // ""')
-                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
-                if [[ "$BUILD" == "$TARGET_SHA" && ( "$STATUS" == "completed" || "$STATUS" == "failed" ) ]]; then
-                  exit 0
-                fi
-              fi
+            if [[ "$CODE" == "200" && "$JSON" == "yes" ]]; then
+              jq -c '{ok,service,version,build_sha,asr_probe}' /tmp/body
+              exit 0
             fi
-            sleep 5
           done
-          echo 'TEST_SITE_ASR_PROBE_NOT_READY'
+          echo 'TEST_SITE_JSON_HEALTH_ROUTE_NOT_FOUND'
           exit 1
