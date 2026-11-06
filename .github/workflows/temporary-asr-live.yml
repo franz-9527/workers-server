@@ -11,25 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Wait for ASR probe v6 and print sanitized live result
+      - name: Wait for six-field ASR deployment and WechatSI authorization probe
         env:
-          TARGET_SHA: cd054a9b4a474c357f903082a4014947b013f20f
+          TARGET_SHA: badf0a724d6c136a88fe7d07defcc84a542c6691
         run: |
           set -euo pipefail
           URL='https://test.20m.cc/api/?route=health'
           for i in $(seq 1 72); do
             if BODY=$(curl --silent --show-error --fail --max-time 10 "$URL"); then
               if printf '%s' "$BODY" | jq -e . >/dev/null 2>&1; then
-                printf '%s\n' "$BODY" | jq -c '{version,build_sha,asr_probe_revision,chat_go,asr_probe}'
+                printf '%s\n' "$BODY" | jq -c '{version,chat_go,asr_probe_revision,asr_probe,wechat_si_plugin}'
                 RUNNING=$(printf '%s' "$BODY" | jq -r '.chat_go.running_sha // ""')
-                REV=$(printf '%s' "$BODY" | jq -r '.asr_probe.revision // ""')
-                STATUS=$(printf '%s' "$BODY" | jq -r '.asr_probe.status // ""')
-                if [[ "$RUNNING" == "$TARGET_SHA" && "$REV" == "sentence-asr-compat-v6" && ( "$STATUS" == "completed" || "$STATUS" == "failed" || "$STATUS" == "skipped" ) ]]; then
+                PLUGIN_STATUS=$(printf '%s' "$BODY" | jq -r '.wechat_si_plugin.status // ""')
+                if [[ "$RUNNING" == "$TARGET_SHA" && ( "$PLUGIN_STATUS" == "completed" || "$PLUGIN_STATUS" == "failed" ) ]]; then
                   exit 0
                 fi
               fi
             fi
             sleep 5
           done
-          echo 'TEST_SITE_ASR_PROBE_V6_NOT_READY'
+          echo 'TEST_SITE_WECHATSI_PLUGIN_PROBE_NOT_READY'
           exit 1
