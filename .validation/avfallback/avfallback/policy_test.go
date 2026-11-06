@@ -25,7 +25,6 @@ func TestFallbackEligibility(t *testing.T) {
 	}
 }
 
-
 func TestFallbackReviewTransitions(t *testing.T) {
 	phase, clear := ReviewTransition(ReviewCode, "辅助文字", "", "")
 	if phase != "raw_ready" || clear {
