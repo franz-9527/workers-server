@@ -49,5 +49,8 @@ jobs:
           grep -F "chat_go" .validation/asr-compat/candidate/server__api__index.php
           grep -F "CHAT_ASR_PROBE_SEGMENT_KEY_UNSUPPORTED" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
           grep -F "CHAT_ASR_PROBE_SEGMENT_OBJECT_UNBOUND" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
+          grep -F "CHAT_ASR_PROBE_FAILED_SOURCE_URL" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
+          grep -F "CHAT_ASR_PROBE_FAILED_TOKEN" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
+          grep -F "CHAT_ASR_PROBE_FAILED_PROVIDER" .validation/asr-compat/candidate/server__bin__chat-asr-diagnostic.php
           php -r '$p="#^(?:chatav|(?:[A-Za-z0-9_-]{1,40}/){1,4}av)/test/[1-9][0-9]{0,19}/[0-9a-f]{64}/[0-9a-f]{64}/(?:main|check-[01])\\.mp3$#D";$base="test/chat/av/test/30/".str_repeat("a",64)."/".str_repeat("b",64)."/";exit(preg_match($p,$base."main.mp3")===1&&preg_match($p,$base."check-0.mp3")===1&&preg_match($p,$base."poster.jpg")===0?0:1);'
           grep -F "openapi_probe" .validation/asr-compat/candidate/server__app__Application__Chat__ChatGoRuntimeConfig.php
