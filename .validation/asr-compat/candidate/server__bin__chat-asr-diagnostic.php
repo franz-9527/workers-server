@@ -53,6 +53,7 @@ $download=static function(string $url):string{
     return$ok!==false&&in_array($status,[200,206],true)&&$body!==''?$body:'';
 };
 
+$stage='preflight';
 try{
     if((string)app_config('app.env','production')!=='testing')exit(0);
     if(!is_installed())$skip('CHAT_ASR_PROBE_SITE_NOT_INSTALLED');
@@ -73,12 +74,17 @@ try{
         $existing=json_decode($existingRaw,true,32);
         if(is_array($existing)&&hash_equals((string)($existing['fingerprint']??''),$fingerprint)){fwrite(STDOUT,'CHAT_ASR_OPENAPI_PROBE_CACHED '.json_encode($public($existing),JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");exit(0);}
     }
-    $url=$providerUrl($key);$audio=$download($url);$token=WeChatAccessTokenProvider::fromSettings()->get();
-    $result=(new ChatAsrOpenApiProbe())->run($token,$url,$audio);
+    $stage='source_url';$url=$providerUrl($key);
+    $stage='download';$audio=$download($url);
+    $stage='token';$token=WeChatAccessTokenProvider::fromSettings()->get();
+    $stage='provider';$result=(new ChatAsrOpenApiProbe())->run($token,$url,$audio);
+    $stage='write';
     $result['schema_version']=1;$result['intent_id']=(string)$row['intent_id'];$result['fingerprint']=$fingerprint;
     $parsed=parse_url($url);$result['source_host']=(string)($parsed['host']??'');$result['source_bytes']=strlen($audio);
     $write($result);fwrite(STDOUT,'CHAT_ASR_OPENAPI_PROBE '.json_encode($public($result),JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");
 }catch(Throwable $error){
-    $failure=['schema_version'=>1,'status'=>'failed','revision'=>ChatAsrOpenApiProbe::REVISION,'tested_at'=>gmdate('c'),'recommended'=>'none','variants'=>[],'code'=>'CHAT_ASR_OPENAPI_PROBE_FAILED'];
-    $write($failure);fwrite(STDERR,"CHAT_ASR_OPENAPI_PROBE_FAILED\n");
+    $codes=['preflight'=>'CHAT_ASR_PROBE_FAILED_PREFLIGHT','source_url'=>'CHAT_ASR_PROBE_FAILED_SOURCE_URL','download'=>'CHAT_ASR_PROBE_FAILED_DOWNLOAD','token'=>'CHAT_ASR_PROBE_FAILED_TOKEN','provider'=>'CHAT_ASR_PROBE_FAILED_PROVIDER','write'=>'CHAT_ASR_PROBE_FAILED_WRITE'];
+    $code=$codes[$stage]??'CHAT_ASR_OPENAPI_PROBE_FAILED';
+    $failure=['schema_version'=>1,'status'=>'failed','revision'=>ChatAsrOpenApiProbe::REVISION,'tested_at'=>gmdate('c'),'recommended'=>'none','variants'=>[],'code'=>$code];
+    $write($failure);fwrite(STDERR,$code."\n");
 }
