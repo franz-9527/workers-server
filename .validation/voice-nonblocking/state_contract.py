@@ -16,9 +16,12 @@ checks=[
  ('v.Request.MessageType == "audio" && v.Proof == ""',worker),
  ('return a.advance(ctx, v, "ready")',worker),
  ('q.MessageType == "audio" && raw != ""',publish),
+ ('q.MessageType == "audio" && raw != "" && raw != "pass"',publish),
  ('rawDecision == "" || rawDecision == "pass"',policy),
  ('sourceProof == "" && textProof == ""',policy),
  ("partialTranscript",recorder),
+ ("function mergeTranscript",recorder),
+ ("if(stopped||recognitionFailed)return",recorder),
  ("recognitionFailed",recorder),
  ("语音优先、转写增强",docs),
 ]

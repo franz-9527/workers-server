@@ -6,6 +6,16 @@ function cleanTranscript(value){
  return text
 }
 
+function mergeTranscript(current,value){
+ const next=cleanTranscript(value)
+ if(!next)return current
+ if(!current)return next
+ if(next===current||current.endsWith(next))return current
+ if(next.startsWith(current))return next
+ const combined=cleanTranscript(current+next)
+ return combined||current
+}
+
 function createPluginRecorder(manager){
  const listeners={start:new Set(),stop:new Set(),error:new Set(),interrupt:new Set()}
  let partialTranscript='',recognitionFailed=false,errorTimer=null,stopped=false
@@ -13,7 +23,7 @@ function createPluginRecorder(manager){
  const add=(name,fn)=>{if(typeof fn==='function')listeners[name].add(fn)}
  const remove=(name,fn)=>listeners[name].delete(fn)
  manager.onStart=res=>emit('start',res)
- manager.onRecognize=res=>{const text=cleanTranscript(res&&(res.result!=null?res.result:res.Result));if(text)partialTranscript=text}
+ manager.onRecognize=res=>{partialTranscript=mergeTranscript(partialTranscript,res&&(res.result!=null?res.result:res.Result))}
  manager.onStop=res=>{
   stopped=true;if(errorTimer)clearTimeout(errorTimer);errorTimer=null
   const finalText=cleanTranscript(res&&(res.result!=null?res.result:res.Result))
@@ -27,6 +37,7 @@ function createPluginRecorder(manager){
   })
  }
  manager.onError=res=>{
+  if(stopped||recognitionFailed)return
   recognitionFailed=true;pluginDisabled=true
   try{manager.stop()}catch(_){}
   if(errorTimer)clearTimeout(errorTimer)
@@ -38,6 +49,8 @@ function createPluginRecorder(manager){
   onError:fn=>add('error',fn),offError:fn=>remove('error',fn),
   onInterruptionBegin:fn=>add('interrupt',fn),offInterruptionBegin:fn=>remove('interrupt',fn),
   start(options={}){
+   partialTranscript='';recognitionFailed=false;stopped=false
+   if(errorTimer)clearTimeout(errorTimer);errorTimer=null
    try{
     manager.start({duration:Math.min(60000,Math.max(1000,Number(options.duration)||60000)),lang:'zh_CN'})
    }catch(error){

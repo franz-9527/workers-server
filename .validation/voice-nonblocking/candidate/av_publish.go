@@ -89,6 +89,9 @@ func (a *AVService) Publish(ctx context.Context, id ports.ID) (Result, error) {
 		return Result{}, ErrExpired
 	}
 	approved := review == "approved" && general && anti
+	if q.MessageType == "audio" && raw != "" && raw != "pass" {
+		return Result{}, ErrMedia
+	}
 	if hash != fp || rule != AVRule || configuration != a.configuration || phase != "ready" || q.MessageType == "video" && !approved {
 		return Result{}, ErrMedia
 	}
