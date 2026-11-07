@@ -1,0 +1,28 @@
+name: Temporary ASR self-diagnostic validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-self-diagnostic/**'
+      - '.github/workflows/temporary-asr-self-diagnostic.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: testrepo
+      - name: PHP syntax
+        run: |
+          set -euo pipefail
+          php -l testrepo/.validation/asr-self-diagnostic/candidate/server/app/Application/Chat/ChatAsrSelfDiagnostic.php
+          php -l testrepo/.validation/asr-self-diagnostic/candidate/server/app/Http/Admin/Modules/ChatSettingsAdminModule.php
+          php -l testrepo/.validation/asr-self-diagnostic/candidate/server/views/admin/chat-settings.php
+      - name: Passive diagnostic scenarios
+        run: |
+          set -euo pipefail
+          php testrepo/.validation/asr-self-diagnostic/self_diagnostic_test.php
+          python3 testrepo/.validation/asr-self-diagnostic/contract.py
