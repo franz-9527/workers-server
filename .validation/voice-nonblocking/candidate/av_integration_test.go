@@ -60,11 +60,13 @@ func (f *avInspectorFixture) SubmitAudio(context.Context, ports.AudioInspectionR
 	f.rawCalls.Add(1)
 	return ports.AudioTicket{TraceID: "fixture-trace", AuthorityProof: strings.Repeat("a", 64), Known: true, Dispatched: true}, nil
 }
-func avFixture(t *testing.T, kind string) (*fixtureDB, *Service, *AVService, avMemory, *avInspectorFixture, Request) {
-	type avSafety struct{ safetyFunc }
+type avSafety struct{ safetyFunc }
+
 func (avSafety) MediaProof(context.Context, ports.Principal) (ports.SafetyResult, error) {
 	return ports.SafetyResult{Decision: "media_identity", RuleVersion: "av-text-fixture", AuthorityProof: strings.Repeat("a", 64)}, nil
 }
+
+func avFixture(t *testing.T, kind string) (*fixtureDB, *Service, *AVService, avMemory, *avInspectorFixture, Request) {
 	f, s, q := setupMessage(t, avSafety{safetyFunc(func(ctx context.Context, r ports.TextRequest) (ports.SafetyResult, error) {
 		return ports.SafetyResult{Decision: "passed", RuleVersion: "av-text-fixture", AuthorityProof: strings.Repeat("a", 64)}, nil
 	})})

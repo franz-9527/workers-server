@@ -19,7 +19,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-root"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -48,6 +48,7 @@ jobs:
           cp testrepo/.validation/voice-nonblocking/candidate/av_worker.go source/chat/internal/message/av_worker.go
           cp testrepo/.validation/voice-nonblocking/candidate/av_publish.go source/chat/internal/message/av_publish.go
           cp testrepo/.validation/voice-nonblocking/candidate/av_integration_test.go source/chat/internal/message/av_integration_test.go
+          gofmt -w source/chat/internal/avfallback/policy.go source/chat/internal/message/av_inspection.go source/chat/internal/message/av_worker.go source/chat/internal/message/av_publish.go source/chat/internal/message/av_integration_test.go
           test -z "$(gofmt -l source/chat/internal/avfallback/policy.go source/chat/internal/message/av_inspection.go source/chat/internal/message/av_worker.go source/chat/internal/message/av_publish.go source/chat/internal/message/av_integration_test.go)"
           python3 testrepo/.validation/voice-nonblocking/state_contract.py
           node testrepo/.validation/voice-nonblocking/recorder_test.js
