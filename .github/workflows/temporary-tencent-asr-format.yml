@@ -29,3 +29,5 @@ jobs:
           git push origin HEAD:main
 
 # rerun after optional-ASR change
+
+# rerun after repaired optional credential patch
