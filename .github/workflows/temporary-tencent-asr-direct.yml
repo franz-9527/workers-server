@@ -81,3 +81,5 @@ jobs:
         run: |
           set -euo pipefail
           python3 .validation/tencent-asr-direct/contract.py
+
+# trigger after gofmt
