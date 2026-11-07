@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Wait for test-site chatd deployment
         env:
-          TARGET_SHA: 0d51f10a401a7219b4af2d632c1a41a6005db06d
+          TARGET_SHA: 674236979dc6e26d475ae0e495777717631179d8
         run: |
           set -euo pipefail
           URL='https://test.20m.cc/api/?route=health'
