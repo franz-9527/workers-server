@@ -51,7 +51,13 @@ CREATE TABLE chat_av_jobs(
  next_attempt_at DATETIME(6) NOT NULL,
  lease_owner VARCHAR(64) NULL,
  lease_until DATETIME(6) NULL,
- expires_at DATETIME(6) NOT NULL
+ expires_at DATETIME(6) NOT NULL,
+ review_state VARCHAR(32) NOT NULL DEFAULT 'pending',
+ review_version INT UNSIGNED NOT NULL DEFAULT 0,
+ general_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+ group_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+ reviewer_id BIGINT UNSIGNED NULL,
+ review_lease_until DATETIME(6) NULL
 );
 CREATE TABLE chat_av_asr_requests(
  intent_id BIGINT UNSIGNED NOT NULL,
@@ -65,10 +71,10 @@ INSERT INTO chat_send_intents VALUES
 INSERT INTO chat_av_uploads VALUES
  (33,'audio'),(34,'audio'),(35,'audio'),(36,'video');
 INSERT INTO chat_av_jobs VALUES
- (33,33,'{"client_transcript":"同声传译兜底"}',NULL,'raw_started','trace33','review',NULL,UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR),
- (34,34,'{"client_transcript":""}',NULL,'unknown','trace34','review','CHAT_AV_RESULT_UNKNOWN',UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR),
- (35,35,'{"client_transcript":"辅助文字"}',NULL,'review_pending','trace35','review','CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW',UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR),
- (36,36,'{"client_transcript":""}',NULL,'raw_started','trace36','review',NULL,UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR);
+ (33,33,'{"client_transcript":"同声传译兜底"}',NULL,'raw_started','trace33','review',NULL,UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR,'claimed',7,1,1,90001,UTC_TIMESTAMP(6)+INTERVAL 5 MINUTE),
+ (34,34,'{"client_transcript":""}',NULL,'unknown','trace34','review','CHAT_AV_RESULT_UNKNOWN',UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR,'claimed',3,1,1,90001,UTC_TIMESTAMP(6)+INTERVAL 5 MINUTE),
+ (35,35,'{"client_transcript":"辅助文字"}',NULL,'review_pending','trace35','review','CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW',UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR,'claimed',5,1,1,90001,UTC_TIMESTAMP(6)+INTERVAL 5 MINUTE),
+ (36,36,'{"client_transcript":""}',NULL,'raw_started','trace36','review',NULL,UTC_TIMESTAMP(6),'old',UTC_TIMESTAMP(6)+INTERVAL 1 MINUTE,UTC_TIMESTAMP(6)+INTERVAL 1 HOUR,'claimed',4,1,1,90001,UTC_TIMESTAMP(6)+INTERVAL 5 MINUTE);
 INSERT INTO chat_av_asr_requests VALUES (33,'failed'),(34,'unknown'),(35,'failed'),(36,'failed');
 """
 def mysql(sql):
@@ -80,13 +86,13 @@ def mysql(sql):
 mysql(setup)
 mysql("USE voice_nonblocking_test;\n"+query+";")
 out=mysql("""USE voice_nonblocking_test;
-SELECT CONCAT_WS('|',j.intent_id,j.phase,IFNULL(j.transcript,''),IFNULL(j.raw_trace_id,''),IFNULL(j.raw_decision,''),i.state,IFNULL(i.error_code,''),IFNULL(j.lease_owner,''))
+SELECT CONCAT_WS('|',j.intent_id,j.phase,IFNULL(j.transcript,''),IFNULL(j.raw_trace_id,''),IFNULL(j.raw_decision,''),i.state,IFNULL(i.error_code,''),IFNULL(j.lease_owner,''),j.review_state,j.general_confirmed,j.group_confirmed,IFNULL(j.reviewer_id,''),IFNULL(j.review_lease_until,''))
 FROM chat_av_jobs j JOIN chat_send_intents i ON i.id=j.intent_id ORDER BY j.intent_id;
 """).strip().splitlines()
 rows={int(line.split("|",1)[0]):line.split("|") for line in out}
 for intent in (33,34,35):
     row=rows[intent]
-    if row[1]!="text_ready" or row[3]!="" or row[4]!="" or row[5]!="checking" or row[6]!="" or row[7]!="":
+    if row[1]!="text_ready" or row[3]!="" or row[4]!="" or row[5]!="checking" or row[6]!="" or row[7]!="" or row[8]!="pending" or row[9]!="0" or row[10]!="0" or row[11]!="" or row[12]!="":
         raise SystemExit(f"intent {intent} not recovered: {row}")
 if rows[33][2]!="同声传译兜底" or rows[35][2]!="辅助文字":
     raise SystemExit("client transcript was not restored")

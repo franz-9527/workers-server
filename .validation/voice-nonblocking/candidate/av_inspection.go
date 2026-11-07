@@ -142,10 +142,18 @@ func (a *AVService) recognize(ctx context.Context, v avJob) error {
 		return a.unknown(ctx, v)
 	}
 	if !result.Known || !isMediaHash(result.AuthorityProof) || v.Proof != "" && v.Proof != result.AuthorityProof || result.RequestID == "" {
+		if v.Request.MessageType == "audio" {
+			meta, _ := json.Marshal(map[string]any{"server_asr": "invalid_result", "request_id_present": result.RequestID != "", "authority_proof_present": isMediaHash(result.AuthorityProof)})
+			return a.audioRecognitionFallback(ctx, v, string(meta), "unknown", false)
+		}
 		return a.unknown(ctx, v)
 	}
 	transcript := strings.TrimSpace(v.Transcript + " " + result.Text)
 	if len([]rune(transcript)) > 2000 || len(transcript) > 4000 {
+		if v.Request.MessageType == "audio" {
+			meta, _ := json.Marshal(map[string]any{"server_asr": "invalid_transcript", "reason": "too_long"})
+			return a.audioRecognitionFallback(ctx, v, string(meta), "failed", false)
+		}
 		a.fail(ctx, v.ID, v.Owner, "CHAT_AUDIO_TRANSCRIPT_TOO_LONG")
 		return ErrCheck
 	}
