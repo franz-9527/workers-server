@@ -4,13 +4,13 @@ import subprocess
 ROOT=Path(__file__).parent
 body=(ROOT/'candidate'/'av_worker.go').read_text()
 start=body.find("UPDATE chat_av_jobs j JOIN chat_send_intents i ON i.id=j.intent_id JOIN chat_av_uploads u ON u.id=j.upload_id SET ")
-end_marker="AND j.expires_at>UTC_TIMESTAMP(6)"
+end_marker="`, avfallback.ReviewCode)"
 if start<0:
     raise SystemExit("recovery SQL start not found")
 end=body.find(end_marker,start)
 if end<0:
     raise SystemExit("recovery SQL end not found")
-query=body[start:end+len(end_marker)]
+query=body[start:end]
 if query.count("?")!=1:
     raise SystemExit("unexpected recovery placeholder count")
 query=query.replace("?","'CHAT_AV_ASR_PROVIDER_FALLBACK_REVIEW'",1)
