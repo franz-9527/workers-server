@@ -195,7 +195,7 @@ func (a *AVService) submitRaw(ctx context.Context, v avJob) error {
 		}
 		return a.unknown(ctx, v)
 	}
-	if !result.Known || result.TraceID == "" || result.AuthorityProof != v.Proof {
+	if !result.Known || result.TraceID == "" || !isMediaHash(result.AuthorityProof) || !avfallback.RawAuthorityCompatible(v.Proof, result.AuthorityProof) {
 		return a.unknown(ctx, v)
 	}
 	_, e = a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET raw_trace_id=?,phase='raw_wait',lease_owner=NULL,lease_until=NULL,next_attempt_at=UTC_TIMESTAMP(6)+INTERVAL 5 SECOND WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, result.TraceID, string(v.ID), v.Owner)
@@ -280,10 +280,22 @@ func (a *AVService) rawResult(ctx context.Context, v avJob) error {
 	case "risky":
 		q := v.Request
 		q.Text = v.Transcript
-		if v.Proof == "" {
+		rule, proof := v.TextRule, v.Proof
+		if proof == "" {
 			q.Text = ""
+			provider, ok := a.base.safety.(interface {
+				MediaProof(context.Context, ports.Principal) (ports.SafetyResult, error)
+			})
+			if !ok {
+				return ErrCheck
+			}
+			current, err := provider.MediaProof(ctx, v.Principal)
+			if err != nil || current.Decision != "media_identity" || current.RuleVersion == "" || !isMediaHash(current.AuthorityProof) {
+				return ErrCheck
+			}
+			rule, proof = current.RuleVersion, current.AuthorityProof
 		}
-		checked := ports.SafetyResult{Decision: "blocked", RuleVersion: v.TextRule, AuthorityProof: v.Proof, Finding: &ports.SafetyFinding{Provider: "wechat.media_check_async.v2", Code: "official_risky", TraceID: v.RawTrace, Level: 2, Confirmed: true}}
+		checked := ports.SafetyResult{Decision: "blocked", RuleVersion: rule, AuthorityProof: proof, Finding: &ports.SafetyFinding{Provider: "wechat.media_check_async.v2", Code: "official_risky", TraceID: v.RawTrace, Level: 2, Confirmed: true}}
 		_, e = a.base.reject(ctx, v.Principal, q, v.Hash, v.ID, v.Owner, checked)
 		if e == nil {
 			_, _ = a.base.db.ExecContext(ctx, `UPDATE chat_av_uploads SET legal_hold=1 WHERE id=?`, string(v.Upload))

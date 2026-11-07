@@ -7,10 +7,14 @@ avjs=(root/'av.js').read_text()
 docs=(root/'asr-doc.md').read_text()
 checks=[
  ("return !candidate || rawDecision == \"pass\"",policy),
+ ("func RawAuthorityCompatible(sourceProof, providerProof string)",policy),
  ("providerFallbackRawCheck(ctx, v, string(meta))",inspection),
  ("phase='raw_ready'",inspection),
  ("state='checking'",inspection),
  ("CHAT_AV_WECHAT_MEDIA_REVIEW_REQUIRED",inspection),
+ ("!avfallback.RawAuthorityCompatible(v.Proof, result.AuthorityProof)",inspection),
+ ("current, err := provider.MediaProof(ctx, v.Principal)",inspection),
+ ("rule, proof = current.RuleVersion, current.AuthorityProof",inspection),
  ("recoverProviderFallbackReviews",worker),
  ("j.error_code=?",worker),
  ("avfallback.ReviewCode",worker),

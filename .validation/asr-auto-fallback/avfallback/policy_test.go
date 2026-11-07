@@ -58,3 +58,15 @@ func TestProviderFallbackPublishRequiresRawPassNotAdminApproval(t *testing.T) {
 		t.Fatal("proofless fallback must clear after raw pass without admin review")
 	}
 }
+
+func TestRawAuthorityCompatibleAllowsProoflessFallbackOnlyWithProviderProof(t *testing.T) {
+	if !RawAuthorityCompatible("", "current-proof") {
+		t.Fatal("proofless provider fallback must accept the current raw-media authority")
+	}
+	if !RawAuthorityCompatible("same-proof", "same-proof") {
+		t.Fatal("normal media must preserve matching authority")
+	}
+	if RawAuthorityCompatible("old-proof", "new-proof") || RawAuthorityCompatible("", "") {
+		t.Fatal("mismatched or missing raw-media authority accepted")
+	}
+}

@@ -48,6 +48,10 @@ func PublishAllowed(candidate, _ bool, rawDecision string) bool {
 	return !candidate || rawDecision == "pass"
 }
 
+func RawAuthorityCompatible(sourceProof, providerProof string) bool {
+	return providerProof != "" && (sourceProof == "" || sourceProof == providerProof)
+}
+
 func ClearAfterRawPass(kind, sourceProof, textProof, _ string) bool {
 	return kind == "audio" && sourceProof == "" && textProof == ""
 }
