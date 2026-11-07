@@ -1,0 +1,34 @@
+name: Temporary Tencent ASR deployment verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-tencent-asr-live.yml'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for test Go deployment
+        env:
+          TARGET_SHA: 897bd5635ce14ee11a0da619f64a5f20d690a424
+        run: |
+          set -euo pipefail
+          URL='https://test.20m.cc/api/?route=health'
+          for i in $(seq 1 120); do
+            BODY="$(curl --silent --show-error --fail --max-time 10 "$URL" || true)"
+            if echo "$BODY" | jq -e . >/dev/null 2>&1; then
+              echo "$BODY" | jq -c '{version,chat_go,asr_probe}'
+              RUNNING="$(echo "$BODY" | jq -r '.chat_go.running_sha // ""')"
+              DEPLOYED="$(echo "$BODY" | jq -r '.chat_go.deployed_sha // ""')"
+              if [[ "$RUNNING" == "$TARGET_SHA" && "$DEPLOYED" == "$TARGET_SHA" ]]; then
+                echo 'TENCENT_ASR_DEPLOY_OK'
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo 'TENCENT_ASR_DEPLOY_NOT_READY'
+          exit 1
