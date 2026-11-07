@@ -13,7 +13,7 @@ docs=(root/'docs/订单聊天/官方语音识别插件与音视频通话.md').re
 
 checks=[
  ('ASRPublicRoot',config),('asr_public_root',config),('validASRPublicOrigin',config),('env != "test"',config),
- ('NewASRMirrorStorage',config),('10*time.Minute',mirror),('sourceprobe.VerifyMP3',mirror),
+ ('NewASRMirrorStorage',config),('ttl < 5*time.Minute || ttl > 30*time.Minute',mirror),('sourceprobe.VerifyMP3',mirror),
  ('sha256.Sum256(body)',mirror),('asrMirrorName',mirror),('CleanInspection',mirror),
  ('CleanInspection(context.Context)',cleanup),
  ("$root.'/server/uploads/chat-asr'",php),("'asr_public_ttl_seconds'=>!empty($caps['asr_public_root'])?600:0",php),
