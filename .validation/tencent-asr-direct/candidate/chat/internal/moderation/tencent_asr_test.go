@@ -51,3 +51,15 @@ func TestTencentSentenceRecognitionKeepsProviderRequestIDOnError(t *testing.T) {
 		t.Fatalf("provider error diagnostic lost: %#v err=%v", result, err)
 	}
 }
+
+func TestTencentSentenceRecognitionMissingCredentialsDoesNotDispatch(t *testing.T) {
+	called := false
+	a := &AV{
+		c: AVConfig{Provider:"tencent_cloud",APIName:"SentenceRecognition",DataEncoding:"json",Engine:"16k_zh_dialect"},
+		client: httpFunc(func(*http.Request)(*http.Response,error){ called=true; return nil,nil }),
+	}
+	result, err := a.recognizeTencent(context.Background(), ports.AudioInspectionRequest{URL:"https://test.20m.cc/uploads/chat-asr/"+strings.Repeat("c",64)+".mp3"}, binding{proof:strings.Repeat("a",64)})
+	if err == nil || called || result.Dispatched || result.ProviderCode != "NOT_CONFIGURED" || result.Retryable {
+		t.Fatalf("missing credentials must be a non-dispatched enhancement failure: %#v err=%v", result, err)
+	}
+}

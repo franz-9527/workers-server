@@ -532,7 +532,8 @@ final class ChatGoRuntimeConfig
 
         $appId=trim((string)\setting('wechat.miniapp_appid',''));$secret=trim((string)\setting('wechat.miniapp_secret',''));
         $asrReady=$asr['asr_profile']==='tencent_sentence'&&$asrApi==='SentenceRecognition'&&$asrEncoding==='json'&&in_array($asrEngine,['16k_zh_dialect','16k_zh','16k_zh-PY','16k_yue'],true)&&$tencentId!==''&&$tencentKey!==''&&!$tencentCredentialError;
-        if(!$asrReady)$avMissing[]=$asr['asr_profile']==='disabled'?'语音识别服务已停用':'腾讯云一句话识别 SecretId / SecretKey 未配置、无法解密或引擎配置无效';
+        // Server ASR is an enhancement: missing Tencent credentials must not disable voice/video delivery.
+        // The Go inspector keeps WeChat media safety available and returns a non-dispatched ASR diagnostic until credentials are configured.
         if($secret==='')$avMissing[]='后台小程序 AppSecret 未配置';
         $credentialFile='';$rejectionDirectory='';
         if($requested&&$this->validAppId($appId)&&$secret!=='')[$credentialFile,$rejectionDirectory]=$this->prepareWechatCredential($environment,$appId,$secret);
@@ -575,7 +576,7 @@ final class ChatGoRuntimeConfig
             'tencent_asr_secret_id'=>$asrReady?$tencentId:'','tencent_asr_secret_key'=>$asrReady?$tencentKey:'',
             'tencent_asr_secret_id_configured'=>$asr['tencent_asr_secret_id_configured'],'tencent_asr_secret_key_configured'=>$asr['tencent_asr_secret_key_configured'],
             'asr_public_root'=>$states['audio']['enabled']?$asrPublicRoot:'','asr_public_origin'=>$states['audio']['enabled']?$asrPublicOrigin:'','asr_public_ready'=>$asrPublicReady,
-            'asr_profile'=>$asr['asr_profile'],'asr_configured'=>$asrReady,'wechat_secret_configured'=>$secret!=='','av_prerequisites_ready'=>!$avMissing,
+            'asr_profile'=>$asr['asr_profile'],'asr_configured'=>$asrReady,'asr_missing'=>$asrReady?[]:[$asr['asr_profile']==='disabled'?'服务端语音识别已停用':'腾讯云一句话识别 SecretId / SecretKey 未配置、无法解密或引擎配置无效'],'wechat_secret_configured'=>$secret!=='','av_prerequisites_ready'=>!$avMissing,
             'wechat_credential_ready'=>$credentialFile!=='','av_enabled'=>$states['audio']['enabled'],'av_temp_root'=>$states['audio']['enabled']?$avTemp:'',
             'wechat_credential_file'=>$states['audio']['enabled']?$credentialFile:'','wechat_rejection_directory'=>$states['audio']['enabled']?$rejectionDirectory:'',
             'callback_verification_enabled'=>$requested&&$messages&&$callback['configured'],

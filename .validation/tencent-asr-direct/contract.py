@@ -22,6 +22,8 @@ must=[
  ('encrypted key','TENCENT_ASR_SECRET_KEY_CONTEXT' in php and 'cipher->encrypt($tencentSecretKey' in php),
  ('runtime env',"CHAT_TENCENT_ASR_SECRET_ID" in php and "CHAT_TENCENT_ASR_SECRET_KEY" in php),
  ('usage','estimated_free_remaining' in php and 'free_monthly_success_calls' in php),
+ ('ASR optional for voice','missing Tencent credentials must not disable voice/video delivery' in php),
+ ('missing credentials no dispatch','CHAT_AV_ASR_TENCENT_NOT_CONFIGURED' in go),
  ('no fake official remaining',"official_remaining_available'=>false" in php),
  ('admin fields','name="tencent_asr_secret_id"' in view and 'name="tencent_asr_secret_key"' in view),
  ('password fields','type="password"' in view),

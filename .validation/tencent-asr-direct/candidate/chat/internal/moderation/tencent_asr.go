@@ -84,6 +84,12 @@ func (a *AV) recognizeTencent(ctx context.Context, q ports.AudioInspectionReques
 		ServiceID: "tencent_cloud_asr", APIName: tencentASRAction, Engine: a.c.Engine,
 		DataEncoding: "json", AuthorityProof: identity.proof, Known: true, Retryable: true,
 	}
+	if a.c.SecretID == "" || a.c.SecretKey == "" {
+		out.ProviderCode = "NOT_CONFIGURED"
+		out.ProviderMessage = "Tencent Cloud ASR credentials are not configured"
+		out.Retryable = false
+		return out, asrFailure("CHAT_AV_ASR_TENCENT_NOT_CONFIGURED")
+	}
 	parsed, _ := urlParseHTTPS(q.URL)
 	if parsed == "" {
 		return out, ports.ErrInvalid

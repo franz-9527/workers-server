@@ -49,8 +49,59 @@ func NewAV(s *Service, c AVConfig, client HTTPClient) (*AV, error) {
 		return nil, ports.ErrInvalid
 	}
 	if c.Provider == "tencent_cloud" {
-		if c.APIName != "SentenceRecognition" || c.DataEncoding != "json" || !validTencentASREngine(c.Engine) ||
-			!regexp.MustCompile(`^[A-Za-z0-9]{10,128}$`).MatchString(c.SecretID) || len(c.SecretKey) < 16 || len(c.SecretKey) > 256 || strings.ContainsRune(c.SecretKey, '\x00') {
+		credentialsEmpty := c.SecretID == "" && c.SecretKey == ""
+		credentialsValid := regexp.MustCompile(`^[A-Za-z0-9]{10,128}package moderation
+
+import (
+	"bytes"
+	"context"
+	"database/sql"
+	"encoding/json"
+	"github.com/franz-9527/workers/chat/internal/asrcontract"
+	"github.com/franz-9527/workers/chat/internal/ports"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+)
+
+type asrFailure string
+
+func (e asrFailure) Error() string       { return ports.ErrUnavailable.Error() }
+func (e asrFailure) Unwrap() error       { return ports.ErrUnavailable }
+func (e asrFailure) FailureCode() string { return string(e) }
+
+const ASRServiceID = "wxa8386175898e12c9"
+
+type AVConfig struct {
+	APIName      string `json:"api_name"`
+	DataEncoding string `json:"data_encoding"`
+	Provider     string `json:"provider"`
+	Engine       string `json:"engine"`
+	SecretID     string `json:"-"`
+	SecretKey    string `json:"-"`
+}
+type AV struct {
+	s      *Service
+	c      AVConfig
+	client HTTPClient
+	gate   chan struct{}
+}
+
+func NewAV(s *Service, c AVConfig, client HTTPClient) (*AV, error) {
+	if c.Provider == "" {
+		c.Provider = "wechat_service"
+	}
+	if s == nil || s.credentials == nil {
+		return nil, ports.ErrInvalid
+	}
+).MatchString(c.SecretID) && len(c.SecretKey) >= 16 && len(c.SecretKey) <= 256 && !strings.ContainsRune(c.SecretKey, '\x00')
+		if c.APIName != "SentenceRecognition" || c.DataEncoding != "json" || !validTencentASREngine(c.Engine) || (!credentialsEmpty && !credentialsValid) {
 			return nil, ports.ErrInvalid
 		}
 	} else if c.Provider != "wechat_service" || !regexp.MustCompile(`^[A-Za-z0-9_]{1,128}$`).MatchString(c.APIName) || (c.DataEncoding != "object" && c.DataEncoding != "json_string") {
