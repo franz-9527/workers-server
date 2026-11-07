@@ -1,0 +1,16 @@
+name: temporary-ui-fix-regression
+on:
+  push:
+    branches: [main]
+    paths: ['.validation/ui-fix/**','.github/workflows/temporary-ui-fix.yml']
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - run: node .validation/ui-fix/test.js
