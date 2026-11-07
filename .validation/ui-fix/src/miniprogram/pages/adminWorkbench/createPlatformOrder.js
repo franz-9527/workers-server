@@ -281,7 +281,8 @@ Page({
       const detail=res.data || {}
       const media=detail.media || []
       const measurement=detail.order && detail.order.workflow_profile==='measurement'
-      this.setData({createdMedia:media,mediaRequirements:this.data.mediaRequirements.map(rule=>Object.assign({},rule,{min:measurement?0:rule.min,count:media.filter(item=>item.purpose===rule.purpose).length,media:media.filter(item=>item.purpose===rule.purpose)})),mediaError:''})
+      const pendingSelected=this.data.mediaRequirements.some(rule=>(rule.selected||[]).length>0)
+      this.setData({createdMedia:media,mediaRequirements:this.data.mediaRequirements.map(rule=>Object.assign({},rule,{min:measurement?0:rule.min,count:media.filter(item=>item.purpose===rule.purpose).length,media:media.filter(item=>item.purpose===rule.purpose)})),mediaError:pendingSelected?this.data.mediaError:''})
     }).catch(error=>this.setData({mediaError:error.message || '图片状态读取失败，请重试'}))
   },
   uploadCreatedImages(e) {
