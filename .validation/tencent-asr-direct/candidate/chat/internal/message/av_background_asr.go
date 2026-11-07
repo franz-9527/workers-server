@@ -87,6 +87,9 @@ func (a *AVService) finishBackgroundASR(ctx context.Context, v avJob, state, met
 	if strings.TrimSpace(v.Request.ClientTranscript) != "" {
 		source = "client_plugin"
 	}
+	if state == "completed" && strings.TrimSpace(result.Text) != "" {
+		source = "tencent_cloud"
+	}
 	var diagnostic any
 	_ = json.Unmarshal([]byte(metadata), &diagnostic)
 	uploadMeta, _ := json.Marshal(map[string]any{"schema_version": 2, "source": source, "server_asr": state, "diagnostic": diagnostic})
@@ -98,7 +101,7 @@ func (a *AVService) finishBackgroundASR(ctx context.Context, v avJob, state, met
 	if _, e = tx.ExecContext(ctx, `UPDATE chat_av_asr_requests SET state=?,provider_request_id=NULLIF(?,''),text_result=NULLIF(?,''),source_proof=NULLIF(?,''),metadata_json=? WHERE intent_id=? AND ordinal=0 AND state='started'`, state, result.RequestID, result.Text, result.AuthorityProof, metadata, string(v.ID)); e != nil {
 		return ports.ErrUnavailable
 	}
-	if state == "completed" && strings.TrimSpace(v.Request.ClientTranscript) == "" && strings.TrimSpace(result.Text) != "" {
+	if state == "completed" && strings.TrimSpace(result.Text) != "" {
 		if _, e = tx.ExecContext(ctx, `UPDATE chat_av_uploads SET transcript=?,asr_metadata=? WHERE id=?`, strings.TrimSpace(result.Text), string(uploadMeta), string(v.Upload)); e != nil {
 			return ports.ErrUnavailable
 		}

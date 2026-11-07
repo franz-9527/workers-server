@@ -26,6 +26,8 @@ must=[
  ('admin fields','name="tencent_asr_secret_id"' in view and 'name="tencent_asr_secret_key"' in view),
  ('password fields','type="password"' in view),
  ('fallback','wx069ba97219f66d99' in view),
+ ('server transcript priority','state == "completed" && strings.TrimSpace(result.Text) != ""' in (root/'chat/internal/message/av_background_asr.go').read_text()),
+ ('server transcript source','source = "tencent_cloud"' in (root/'chat/internal/message/av_background_asr.go').read_text()),
  ('old probe disabled',"$profile!=='sentence_asr'" in diag),
  ('docs','腾讯云一句话识别直连主方案' in docs),
 ]
