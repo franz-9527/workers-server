@@ -42,6 +42,6 @@ if "UPDATE chat_send_intents" in background:
     raise SystemExit("background ASR must not mutate accepted send intent")
 if "a.recognize(ctx, v)" not in worker:
     raise SystemExit("video foreground ASR path unexpectedly removed")
-if "phase='asr_ready'" not in worker:
+if 'nextPhase, transcript, asrMeta := "asr_ready"' not in worker or 'case "asr_ready":' not in worker or 'e = a.recognize(ctx, v)' not in worker:
     raise SystemExit("video ASR path unexpectedly removed")
 print("PLUGIN_FIRST_ASR_CONTRACT_OK")
