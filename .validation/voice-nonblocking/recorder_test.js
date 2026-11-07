@@ -10,7 +10,7 @@ function manager(){
 {
  const m=manager(),events=[]
  const r=createVoiceRecorder(()=>({getRecordRecognitionManager:()=>m}),()=>{throw new Error('native not expected')})
- r.onStop=v=>events.push(v)
+ r.onStop(v=>events.push(v))
  r.start({duration:60000})
  m.onRecognize({result:'中间'})
  m.onRecognize({result:'识别'})
@@ -22,7 +22,7 @@ function manager(){
 {
  const m=manager(),events=[],errors=[]
  const r=createVoiceRecorder(()=>({getRecordRecognitionManager:()=>m}),()=>{throw new Error('native not expected')})
- r.onStop=v=>events.push(v);r.onError=e=>errors.push(e)
+ r.onStop(v=>events.push(v));r.onError(e=>errors.push(e))
  r.start({duration:60000})
  m.onRecognize({result:'可用片段'})
  m.onError({retcode:-30005,msg:'识别内部错误'})
