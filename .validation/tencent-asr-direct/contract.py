@@ -14,7 +14,7 @@ must=[
  ('tencent host','asr.tencentcloudapi.com' in go),
  ('direct action','SentenceRecognition' in go),
  ('TC3','TC3-HMAC-SHA256' in go),
- ('raw URL','"Url":              q.URL' in go),
+ ('raw URL',re.search(r'"Url"\s*:\s*q\.URL',go) is not None),
  ('dialect engine','16k_zh_dialect' in go and '16k_zh_dialect' in php),
  ('direct provider',"Provider == \"tencent_cloud\"" in av),
  ('secret env config','ASRSecretIDEnv' in cfg and 'ASRSecretKeyEnv' in cfg),
