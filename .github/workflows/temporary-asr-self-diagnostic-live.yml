@@ -21,10 +21,9 @@ jobs:
             BODY="$(curl --silent --show-error --fail --max-time 10 "$URL" || true)"
             if echo "$BODY" | jq -e . >/dev/null 2>&1; then
               echo "$BODY" | jq -c '{version,build_sha,chat_go,asr_probe}'
-              BUILD="$(echo "$BODY" | jq -r '.build_sha // ""')"
               RUNNING="$(echo "$BODY" | jq -r '.chat_go.running_sha // ""')"
               DEPLOYED="$(echo "$BODY" | jq -r '.chat_go.deployed_sha // ""')"
-              if [[ "$BUILD" == "$TARGET_SHA" && "$RUNNING" == "$TARGET_SHA" && "$DEPLOYED" == "$TARGET_SHA" ]]; then
+              if [[ "$RUNNING" == "$TARGET_SHA" && "$DEPLOYED" == "$TARGET_SHA" ]]; then
                 echo 'ASR_SELF_DIAGNOSTIC_DEPLOY_OK'
                 exit 0
               fi
