@@ -1,0 +1,37 @@
+name: Temporary ASR auto fallback validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-auto-fallback/**'
+      - '.github/workflows/temporary-asr-auto-fallback.yml'
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Validate fallback policy
+        run: |
+          set -euo pipefail
+          cd .validation/asr-auto-fallback
+          test -z "$(gofmt -l ./avfallback)"
+          go test -race -count=1 ./avfallback
+          go vet ./avfallback
+          python3 state_contract.py
+      - name: Record validation result
+        run: |
+          set -euo pipefail
+          mkdir -p .validation/results
+          printf 'PASS %s\n' "$GITHUB_SHA" > .validation/results/asr-auto-fallback.txt
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .validation/results/asr-auto-fallback.txt
+          git commit -m 'test: record ASR auto fallback validation'
+          git push
