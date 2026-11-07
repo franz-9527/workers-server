@@ -21,6 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           cd .validation/asr-auto-fallback
+          gofmt -w ./avfallback
           test -z "$(gofmt -l ./avfallback)"
           go test -race -count=1 ./avfallback
           go vet ./avfallback
