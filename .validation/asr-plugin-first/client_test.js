@@ -11,7 +11,7 @@ const manager={
   now:()=>1700000000000,random:()=>0.25,
   av:{
    info:async()=>({size:100,digest:'a'.repeat(32)}),
-   save:async()=>{},warn:()=>{},network:async()=>'wifi',unlink:async()=>{}
+   save:async()=>{},remove:async()=>{},warn:()=>{},network:async()=>'wifi',unlink:async()=>{}
   },
   upload:async()=>{}
  },
