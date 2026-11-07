@@ -25,14 +25,7 @@ jobs:
           test -z "$(gofmt -l ./avfallback)"
           go test -race -count=1 ./avfallback
           go vet ./avfallback
+          gofmt -w candidate/policy.go candidate/av_inspection.go candidate/av_worker.go
           python3 state_contract.py
-      - name: Record validation result
-        run: |
-          set -euo pipefail
-          mkdir -p .validation/results
-          printf 'PASS %s\n' "$GITHUB_SHA" > .validation/results/asr-auto-fallback.txt
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add .validation/results/asr-auto-fallback.txt
-          git commit -m 'test: record ASR auto fallback validation'
-          git push
+      - name: Validation complete
+        run: echo ASR_AUTO_FALLBACK_VALIDATION_PASS

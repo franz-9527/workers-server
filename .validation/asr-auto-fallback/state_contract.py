@@ -18,6 +18,8 @@ checks=[
  ("语音安全检测无法自动确认",avjs),
  ("不再进入管理员人工预审",docs),
  ("自动把旧版",docs),
+ ("原音直接进入微信原音安全检测",docs),
+ ("直接进入原音官方媒体安全检测降级",docs),
 ]
 for needle,body in checks:
     if needle not in body:
@@ -26,6 +28,8 @@ for forbidden,body in [
  ("providerFallbackReview(ctx, v",inspection),
  ("approved && (rawDecision == \"pass\" || rawDecision == \"review\")",policy),
  ("管理员必须实际播放原音",docs),
+ ("人工完整播放原音",docs),
+ ("原音人工复核",docs),
 ]:
     if forbidden in body:
         raise SystemExit("forbidden legacy invariant: "+forbidden)
