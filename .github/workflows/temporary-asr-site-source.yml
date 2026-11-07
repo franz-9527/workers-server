@@ -18,9 +18,6 @@ jobs:
       - name: Syntax and contract
         run: |
           set -euo pipefail
-          gofmt -w testrepo/.validation/asr-site-source/candidate/chat/internal/avpipeline/config.go
-          gofmt -w testrepo/.validation/asr-site-source/candidate/chat/internal/imagepipeline/local_asr_mirror.go
-          gofmt -w testrepo/.validation/asr-site-source/candidate/chat/internal/message/av_cleanup.go
           test -z "$(gofmt -l testrepo/.validation/asr-site-source/candidate/chat/internal/avpipeline/config.go testrepo/.validation/asr-site-source/candidate/chat/internal/imagepipeline/local_asr_mirror.go testrepo/.validation/asr-site-source/candidate/chat/internal/message/av_cleanup.go)"
           php -l testrepo/.validation/asr-site-source/candidate/server/app/Application/Chat/ChatGoRuntimeConfig.php
           php -l testrepo/.validation/asr-site-source/candidate/server/app/Application/Chat/ChatAsrOpenApiProbe.php
