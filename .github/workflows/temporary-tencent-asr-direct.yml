@@ -83,3 +83,5 @@ jobs:
           python3 .validation/tencent-asr-direct/contract.py
 
 # trigger after gofmt
+
+# final validation after optional-credential handling
