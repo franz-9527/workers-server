@@ -109,32 +109,32 @@ func TestMediaCallbackHTTPAndProviderErrors(t *testing.T) {
 			receiver := &callbackReceiver{}
 			h, _ := NewMediaCallback("wx0123456789abcdef", strings.Repeat("t", 24), base64.RawStdEncoding.EncodeToString(bytes.Repeat([]byte("k"), 32)), receiver)
 			t.Run("SentenceASR follows Open API object envelope", func(t *testing.T) {
-		a, c, _ := avFixture(t, `{"errcode":0,"data":{"Response":{"Result":"尺寸12米","RequestId":"fixture-id"}}}`, 200)
-		a.c.APIName = "SentenceASR"
-		a.c.DataEncoding = "json_string"
-		a.client = httpFunc(func(req *http.Request) (*http.Response, error) {
-			if req.Header.Get("Content-Type") != "application/json; charset=utf-8" {
-				t.Fatalf("content type = %q", req.Header.Get("Content-Type"))
-			}
-			var body map[string]any
-			if json.NewDecoder(req.Body).Decode(&body) != nil || len(body) != 4 || body["service"] != ASRServiceID || body["api"] != "SentenceASR" {
-				t.Fatalf("market request: %#v", body)
-			}
-			data, ok := body["data"].(map[string]any)
-			if !ok {
-				t.Fatalf("SentenceASR Open API data must be object: %#v", body["data"])
-			}
-			if len(data) != 6 || data["Action"] != "SentenceRecognitionWX" || data["EngSerViceType"] != "16k_zh" || data["SourceType"] != float64(0) || data["VoiceFormat"] != "mp3" || data["Url"] != url.QueryEscape("https://cdn.example.invalid/main.mp3?e=1&token=a:b") || data["UsrAudioKey"] != body["client_msg_id"] {
-				t.Fatalf("SentenceASR data: %#v", data)
-			}
-			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"errcode":0,"data":"{\"Response\":{\"Result\":\"尺寸12米\",\"RequestId\":\"fixture-id\"}}"}`))}, nil
-		})
-		out, e := a.recognize(context.Background(), ports.AudioInspectionRequest{URL: "https://cdn.example.invalid/main.mp3?e=1&token=a:b", UserAudioKey: strings.Repeat("a", 32)}, binding{proof: "proof"}, c)
-		if e != nil || out.DataEncoding != "object" || out.Text != "尺寸12米" {
-			t.Fatalf("SentenceASR recognition: %+v %v", out, e)
-		}
-	})
-	for _, v := range []struct {
+				a, c, _ := avFixture(t, `{"errcode":0,"data":{"Response":{"Result":"尺寸12米","RequestId":"fixture-id"}}}`, 200)
+				a.c.APIName = "SentenceASR"
+				a.c.DataEncoding = "json_string"
+				a.client = httpFunc(func(req *http.Request) (*http.Response, error) {
+					if req.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+						t.Fatalf("content type = %q", req.Header.Get("Content-Type"))
+					}
+					var body map[string]any
+					if json.NewDecoder(req.Body).Decode(&body) != nil || len(body) != 4 || body["service"] != ASRServiceID || body["api"] != "SentenceASR" {
+						t.Fatalf("market request: %#v", body)
+					}
+					data, ok := body["data"].(map[string]any)
+					if !ok {
+						t.Fatalf("SentenceASR Open API data must be object: %#v", body["data"])
+					}
+					if len(data) != 6 || data["Action"] != "SentenceRecognitionWX" || data["EngSerViceType"] != "16k_zh" || data["SourceType"] != float64(0) || data["VoiceFormat"] != "mp3" || data["Url"] != url.QueryEscape("https://cdn.example.invalid/main.mp3?e=1&token=a:b") || data["UsrAudioKey"] != body["client_msg_id"] {
+						t.Fatalf("SentenceASR data: %#v", data)
+					}
+					return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"errcode":0,"data":"{\"Response\":{\"Result\":\"尺寸12米\",\"RequestId\":\"fixture-id\"}}"}`))}, nil
+				})
+				out, e := a.recognize(context.Background(), ports.AudioInspectionRequest{URL: "https://cdn.example.invalid/main.mp3?e=1&token=a:b", UserAudioKey: strings.Repeat("a", 32)}, binding{proof: "proof"}, c)
+				if e != nil || out.DataEncoding != "object" || out.Text != "尺寸12米" {
+					t.Fatalf("SentenceASR recognition: %+v %v", out, e)
+				}
+			})
+			for _, v := range []struct {
 				code          int
 				suggest, want string
 			}{{0, "pass", "pass"}, {0, "risky", "risky"}, {0, "review", "review"}, {-1, "pass", "error"}, {0, "other", "error"}} {

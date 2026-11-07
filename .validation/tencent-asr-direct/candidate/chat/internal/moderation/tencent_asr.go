@@ -92,16 +92,16 @@ func (a *AV) recognizeTencent(ctx context.Context, q ports.AudioInspectionReques
 	out.InputURLLength = len(q.URL)
 
 	payload, e := json.Marshal(map[string]any{
-		"ProjectId":        0,
-		"SubServiceType":   2,
-		"EngSerViceType":   a.c.Engine,
-		"VoiceFormat":      "mp3",
-		"SourceType":       0,
-		"Url":              q.URL,
-		"FilterDirty":      0,
-		"FilterModal":      0,
-		"FilterPunc":       0,
-		"ConvertNumMode":   1,
+		"ProjectId":      0,
+		"SubServiceType": 2,
+		"EngSerViceType": a.c.Engine,
+		"VoiceFormat":    "mp3",
+		"SourceType":     0,
+		"Url":            q.URL,
+		"FilterDirty":    0,
+		"FilterModal":    0,
+		"FilterPunc":     0,
+		"ConvertNumMode": 1,
 	})
 	if e != nil {
 		return out, ports.ErrUnavailable
