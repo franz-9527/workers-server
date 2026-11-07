@@ -27,3 +27,5 @@ jobs:
           git add -f "$ROOT"
           git commit -m "test: gofmt Tencent ASR candidate"
           git push origin HEAD:main
+
+# rerun after optional-ASR change
