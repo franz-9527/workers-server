@@ -24,6 +24,6 @@ jobs:
           fi
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add "$ROOT"
+          git add -f "$ROOT"
           git commit -m "test: gofmt Tencent ASR candidate"
           git push origin HEAD:main
