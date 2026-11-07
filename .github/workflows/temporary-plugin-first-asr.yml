@@ -1,0 +1,45 @@
+name: Temporary plugin-first ASR validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/asr-plugin-first/**'
+      - '.github/workflows/temporary-plugin-first-asr.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: testrepo
+      - name: Candidate syntax and contracts
+        run: |
+          set -euo pipefail
+          gofmt -w testrepo/.validation/asr-plugin-first/candidate/av_worker.go
+          gofmt -w testrepo/.validation/asr-plugin-first/candidate/av_publish.go
+          gofmt -w testrepo/.validation/asr-plugin-first/candidate/av_background_asr.go
+          gofmt -w testrepo/.validation/asr-plugin-first/candidate/messaging.go
+          test -z "$(gofmt -l testrepo/.validation/asr-plugin-first/candidate/*.go)"
+          node --check testrepo/.validation/asr-plugin-first/candidate/ChatAV.js
+          node --check testrepo/.validation/asr-plugin-first/candidate/av.js
+          python3 testrepo/.validation/asr-plugin-first/contract.py
+          node testrepo/.validation/asr-plugin-first/client_test.js
+      - name: MySQL 5.7 background selector regression
+        run: |
+          set -euo pipefail
+          python3 testrepo/.validation/asr-plugin-first/mysql_test.py
