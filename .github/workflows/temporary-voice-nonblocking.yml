@@ -1,0 +1,65 @@
+name: Temporary voice nonblocking validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/voice-nonblocking/**'
+      - '.github/workflows/temporary-voice-nonblocking.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: testrepo
+      - uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers
+          ref: 674236979dc6e26d475ae0e495777717631179d8
+          path: source
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Apply candidate
+        run: |
+          set -euo pipefail
+          cp testrepo/.validation/voice-nonblocking/candidate/ChatVoiceRecorder.js source/miniprogram/utils/ChatVoiceRecorder.js
+          cp testrepo/.validation/voice-nonblocking/candidate/policy.go source/chat/internal/avfallback/policy.go
+          cp testrepo/.validation/voice-nonblocking/candidate/av_inspection.go source/chat/internal/message/av_inspection.go
+          cp testrepo/.validation/voice-nonblocking/candidate/av_worker.go source/chat/internal/message/av_worker.go
+          cp testrepo/.validation/voice-nonblocking/candidate/av_publish.go source/chat/internal/message/av_publish.go
+          cp testrepo/.validation/voice-nonblocking/candidate/av_integration_test.go source/chat/internal/message/av_integration_test.go
+          test -z "$(gofmt -l source/chat/internal/avfallback/policy.go source/chat/internal/message/av_inspection.go source/chat/internal/message/av_worker.go source/chat/internal/message/av_publish.go source/chat/internal/message/av_integration_test.go)"
+          python3 testrepo/.validation/voice-nonblocking/state_contract.py
+          node testrepo/.validation/voice-nonblocking/recorder_test.js
+      - name: Go voice integration regression
+        working-directory: source/chat
+        env:
+          CHAT_AUTH_TEST_INTEGRATION: '1'
+          CHAT_INTEGRATION_MYSQL_ADDR: '127.0.0.1:3306'
+          CHAT_INTEGRATION_ADMIN_PASSWORD: 'fixture-root'
+          CHAT_AUTH_TEST_MYSQL_USER_HOST: '%'
+          CHAT_AUTH_TEST_PHP: /usr/bin/php
+        run: |
+          set -euo pipefail
+          go test -race -count=1 ./internal/avfallback
+          go test -race -count=1 ./internal/message -run 'TestMySQLAV(AudioPublishesWithoutRawCallback|SentenceASRFailureUsesWechatSITranscript|UnknownRecognitionStillPublishesPureVoice|VideoFullPrereviewAndCancellationWin)$'
