@@ -64,8 +64,10 @@ $download=static function(string $url):string{
 $stage='preflight';
 try{
     if((string)app_config('app.env','production')!=='testing')exit(0);
-    $profile=(string)(db()->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_asr_profile' LIMIT 1")??'tencent_sentence');
-    if($profile!=='sentence_asr')exit(0);
+    // Legacy WeChat service-market SentenceASR probe is retired. Historical state remains readable,
+    // but new deployments must not spend another provider call based on a stale database profile.
+    fwrite(STDOUT,"CHAT_ASR_OPENAPI_PROBE_RETIRED\n");
+    exit(0);
     if(!is_installed())$skip('CHAT_ASR_PROBE_SITE_NOT_INSTALLED');
     if(upgrade_required())$skip('CHAT_ASR_PROBE_UPGRADE_REQUIRED');
     $row=db()->fetch("SELECT CAST(r.intent_id AS CHAR) intent_id,CAST(j.upload_id AS CHAR) upload_id,r.ordinal,r.metadata_json,r.created_at,j.segments_json FROM chat_av_asr_requests r JOIN chat_av_jobs j ON j.intent_id=r.intent_id WHERE r.state='failed' AND r.created_at>=UTC_TIMESTAMP()-INTERVAL 2 DAY ORDER BY r.created_at DESC LIMIT 1");

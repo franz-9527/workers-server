@@ -30,7 +30,8 @@ must=[
  ('fallback','wx069ba97219f66d99' in view),
  ('server transcript priority','state == "completed" && strings.TrimSpace(result.Text) != ""' in (root/'chat/internal/message/av_background_asr.go').read_text()),
  ('server transcript source','source = "tencent_cloud"' in (root/'chat/internal/message/av_background_asr.go').read_text()),
- ('old probe disabled',"$profile!=='sentence_asr'" in diag),
+ ('old probe retired','CHAT_ASR_OPENAPI_PROBE_RETIRED' in diag and 'exit(0);' in diag),
+ ('disabled profile keeps valid worker contract',"'api_name'=>'SentenceRecognition','data_encoding'=>'json'" in php),
  ('docs','腾讯云一句话识别直连主方案' in docs),
 ]
 for name,ok in must:

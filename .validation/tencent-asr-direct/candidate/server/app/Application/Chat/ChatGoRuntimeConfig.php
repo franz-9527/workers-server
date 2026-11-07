@@ -380,7 +380,7 @@ final class ChatGoRuntimeConfig
             'namespace'=>(string)($q['namespace']??''),'proxy_origin'=>(string)($q['proxy_origin']??''),'proxy_key_env'=>'CHAT_MEDIA_PROXY_KEY',
             'download_origin'=>(string)($q['download_origin']??''),'upload_origin'=>(string)($q['upload_origin']??''),
             'access_key_env'=>'CHAT_QINIU_ACCESS_KEY','secret_key_env'=>'CHAT_QINIU_SECRET_KEY',
-            'asr'=>['provider'=>'tencent_cloud','api_name'=>(string)($caps['asr_api_name']??''),'data_encoding'=>(string)($caps['asr_data_encoding']??'json'),'engine'=>(string)($caps['tencent_asr_engine']??'16k_zh_dialect')],
+            'asr'=>['provider'=>'tencent_cloud','api_name'=>'SentenceRecognition','data_encoding'=>'json','engine'=>(string)($caps['tencent_asr_engine']??'16k_zh_dialect')],
             'asr_secret_id_env'=>'CHAT_TENCENT_ASR_SECRET_ID','asr_secret_key_env'=>'CHAT_TENCENT_ASR_SECRET_KEY',
             'asr_public_root'=>(string)($caps['asr_public_root']??''),'asr_public_origin'=>(string)($caps['asr_public_origin']??''),
             'asr_public_ttl_seconds'=>!empty($caps['asr_public_root'])?600:0,
