@@ -1,0 +1,47 @@
+name: Temporary chat audit P3 validation
+on:
+  push:
+    paths:
+      - '.validation/chat-audit-p3/**'
+      - '.github/workflows/temporary-chat-audit-p3.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: '.validation/chat-audit-p3/go.mod'
+      - name: Go message package
+        working-directory: .validation/chat-audit-p3
+        run: go test ./internal/message
+      - name: JavaScript syntax
+        working-directory: .validation/chat-audit-p3
+        run: |
+          node --check miniprogram/utils/ChatManager.js
+          node --check miniprogram/utils/ChatPendingLedger.js
+          node --check miniprogram/utils/ChatImages.js
+          node --check miniprogram/utils/ChatAV.js
+          node --check miniprogram/utils/ChatCache.js
+          node --check miniprogram/utils/ChatRuntime.js
+          node --check miniprogram/subpackages/chat/conversation/index.js
+          node --check miniprogram/subpackages/chat/conversation/voice.js
+          node --check miniprogram/subpackages/chat/conversation/av.js
+          node --check server/assets/chat-testing-runtime.js
+      - name: Client reliability regression
+        working-directory: .validation/chat-audit-p3
+        run: node --test tools/test_chat_s11.js tools/test_chat_av.js
+      - name: P3 structural contracts
+        working-directory: .validation/chat-audit-p3
+        run: |
+          ! grep -R "Number(client.slice(0,10))" miniprogram server/assets/chat-testing-runtime.js
+          ! grep -R "Math.floor(.*io.now().*/1000" miniprogram/utils/ChatManager.js miniprogram/utils/ChatImages.js miniprogram/utils/ChatAV.js
+          ! grep -R "func active" internal/message
+          ! grep -R "func expires" internal/message
+          grep -q "actionDeadline(time.Now())" internal/message/service.go
+          grep -q "this.ledger.put(row)" miniprogram/utils/ChatManager.js
+          grep -q "invalidateConversation(cid)" miniprogram/utils/ChatCache.js
