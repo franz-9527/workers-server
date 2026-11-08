@@ -82,7 +82,7 @@ assert.ok(script.includes('bill: null, billSheetOpen: false'));
 let page;
 require('node:vm').runInNewContext(script,{Page:o=>page=o,require:()=>({}),console,setTimeout,clearTimeout,Promise,Date},{filename:'detail.js'});
 assert.ok(page);
-let ctx={data:{bill:{},billSheetOpen:false},setData(v){Object.assign(this.data,v)}};
+let ctx={...page,data:{bill:{},billSheetOpen:false},setData(v){Object.assign(this.data,v)}};
 page.billTouchStart.call(ctx,{touches:[{clientY:300}]});
 page.billTouchEnd.call(ctx,{changedTouches:[{clientY:230}]});
 assert.equal(ctx.data.billSheetOpen,true,'upward pull opens drawer');
