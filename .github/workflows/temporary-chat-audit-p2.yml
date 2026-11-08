@@ -28,7 +28,7 @@ jobs:
           gofmt -d internal/socket/gateway.go internal/socket/gateway_test.go | tee /tmp/chat-p2-gofmt.diff
       - name: Socket tests
         working-directory: .validation/chat-audit-p2
-        run: go test ./internal/socket -count=1
+        run: go test -mod=mod ./internal/socket -count=1
       - name: Nginx config
         run: .validation/chat-audit-p2/check-nginx.sh
       - name: Go formatting gate

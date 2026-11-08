@@ -79,39 +79,39 @@ type outbound struct {
 	typingUntil  time.Time
 }
 type client struct {
-	g            *Gateway
-	ws           *websocket.Conn
-	transportMu  sync.Mutex
-	expires      atomic.Int64
-	authUntil    time.Time
-	ctx          context.Context
-	cancel       context.CancelFunc
-	identity     *auth.SocketIdentity
-	actor        ports.ID
-	kind         string
-	out          chan outbound
-	queueMu      sync.Mutex
-	stop         chan struct{}
-	once         sync.Once
-	code         atomic.Int32
-	epoch        atomic.Uint64
-	foreground   atomic.Bool
-	heartbeatMu  sync.Mutex
-	challenge    string
-	pongUntil    time.Time
+	g             *Gateway
+	ws            *websocket.Conn
+	transportMu   sync.Mutex
+	expires       atomic.Int64
+	authUntil     time.Time
+	ctx           context.Context
+	cancel        context.CancelFunc
+	identity      *auth.SocketIdentity
+	actor         ports.ID
+	kind          string
+	out           chan outbound
+	queueMu       sync.Mutex
+	stop          chan struct{}
+	once          sync.Once
+	code          atomic.Int32
+	epoch         atomic.Uint64
+	foreground    atomic.Bool
+	heartbeatMu   sync.Mutex
+	challenge     string
+	pongUntil     time.Time
 	lastActivity  time.Time
 	lastAuthority atomic.Int64
 	remoteIP      string
 	expiryWake    chan struct{}
 	budgetMu      sync.Mutex
-	budget       int
-	budgetAt     time.Time
-	stateMu      sync.Mutex
-	active       ports.ID
-	presenceAt   time.Time
-	typingAt     time.Time
-	typingUntil  time.Time
-}
+	budget        int
+	budgetAt      time.Time
+	stateMu       sync.Mutex
+	active        ports.ID
+	presenceAt    time.Time
+	typingAt      time.Time
+	typingUntil   time.Time
+
 
 func socketIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
