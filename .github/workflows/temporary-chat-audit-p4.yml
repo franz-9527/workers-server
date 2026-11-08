@@ -1,0 +1,52 @@
+name: Temporary chat audit P4 validation
+on:
+  push:
+    paths:
+      - '.validation/chat-audit-p4/**'
+      - '.github/workflows/temporary-chat-audit-p4.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: '.validation/chat-audit-p4/go.mod'
+      - name: Go formatting
+        working-directory: .validation/chat-audit-p4
+        run: |
+          gofmt -d internal/auth/mysql.go internal/imagepipeline/qiniu.go internal/imagepipeline/gateway.go internal/socket/gateway.go internal/message/av.go internal/message/av_cleanup.go internal/dependencies/runtime.go internal/dependencies/operations.go internal/imagepipeline/p4_http_test.go internal/socket/p4_observability_test.go | tee /tmp/p4-gofmt.diff
+          test ! -s /tmp/p4-gofmt.diff
+      - name: Go P4 packages
+        working-directory: .validation/chat-audit-p4
+        run: go test ./internal/auth ./internal/imagepipeline ./internal/socket ./internal/dependencies ./internal/message
+      - name: PHP syntax
+        working-directory: .validation/chat-audit-p4
+        run: |
+          php -v
+          find server/app server/views -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: PHP aggregate telemetry behavior
+        working-directory: .validation/chat-audit-p4
+        run: |
+          php -r 'require "server/app/Application/Chat/ChatOperationalTelemetry.php"; $p=sys_get_temp_dir()."/chat-p4-".bin2hex(random_bytes(8)).".json"; $t=new WorkerAdmin\Application\Chat\ChatOperationalTelemetry($p); $t->record("credential_latency_ms",12.5); $t->record("credential_latency_ms",7.5); $s=$t->snapshot(); @unlink($p); if(($s["metrics"]["credential_latency_ms"]["count"]??0)!==2 || abs(($s["metrics"]["credential_latency_ms"]["average"]??0)-10)>0.001) exit(1);'
+      - name: JavaScript syntax
+        working-directory: .validation/chat-audit-p4
+        run: node --check miniprogram/utils/ChatRuntime.js
+      - name: P4 structural contracts
+        working-directory: .validation/chat-audit-p4
+        run: |
+          grep -q 'return ErrUnauthorized' internal/auth/mysql.go
+          grep -Fq "return \$value==='1';" server/app/Application/Chat/ChatReleaseSettings.php
+          grep -q 'publicDownloadOrigin' internal/imagepipeline/qiniu.go
+          grep -q 'c.Namespace == "" || c.ProxyOrigin == ""' internal/imagepipeline/qiniu.go
+          grep -q 'chat_ws_connections' internal/dependencies/operations.go
+          grep -q 'chat_resource_busy_total' internal/dependencies/operations.go
+          grep -q 'chat_asr_cleanup_failures_total' internal/dependencies/operations.go
+          grep -q 'discover_scanned_orders' server/app/Application/Chat/ChatCollaboration.php
+          grep -q 'lockscreen_recovery_ms' miniprogram/utils/ChatRuntime.js
+          grep -q "route==='chat.telemetry'" server/app/Http/Api/Modules/ChatCredentialApiModule.php
+          ! grep -q "return \$value===null||\$value===false" server/app/Application/Chat/ChatReleaseSettings.php
