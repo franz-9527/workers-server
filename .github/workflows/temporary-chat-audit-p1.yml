@@ -1,0 +1,40 @@
+name: Temporary chat audit P1 validation
+on:
+  push:
+    paths:
+      - '.validation/chat-audit-p1/**'
+      - '.github/workflows/temporary-chat-audit-p1.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-audit-p1-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Record runtimes
+        run: |
+          php -v
+          node --version
+      - name: PHP syntax
+        run: |
+          set -e
+          for f in .validation/chat-audit-p1/*.php; do php -l "$f"; done
+      - name: JavaScript syntax
+        run: |
+          set -e
+          for f in .validation/chat-audit-p1/*.js; do node --check "$f"; done
+      - name: JavaScript contracts
+        run: node .validation/chat-audit-p1/test-contracts.js
+      - name: PHP contracts
+        run: php .validation/chat-audit-p1/test-contracts.php
