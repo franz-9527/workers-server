@@ -1,0 +1,24 @@
+name: Temporary user order bill drawer validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/user-bill-drawer-20261108/**'
+      - '.github/workflows/temporary-user-bill-drawer.yml'
+permissions:
+  contents: read
+jobs:
+  isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node version
+        run: node --version
+      - name: Syntax check
+        run: |
+          node --check .validation/user-bill-drawer-20261108/fixtures/detail.js
+          node --check .validation/user-bill-drawer-20261108/fixtures/order-support.js
+          node --check .validation/user-bill-drawer-20261108/check.js
+      - name: Accounting and interaction scenarios
+        run: node .validation/user-bill-drawer-20261108/check.js
