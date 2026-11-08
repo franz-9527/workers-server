@@ -22,15 +22,14 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y nginx
-      - name: Go formatting
+      - name: Go formatting diagnostic
         working-directory: .validation/chat-audit-p2
         run: |
-          files="$(find internal -type f -name '*.go' | sort)"
-          unformatted="$(gofmt -l $files)"
-          printf '%s\n' "$unformatted"
-          test -z "$unformatted"
+          gofmt -d internal/socket/gateway.go internal/socket/gateway_test.go | tee /tmp/chat-p2-gofmt.diff
       - name: Socket tests
         working-directory: .validation/chat-audit-p2
         run: go test ./internal/socket -count=1
       - name: Nginx config
         run: .validation/chat-audit-p2/check-nginx.sh
+      - name: Go formatting gate
+        run: test ! -s /tmp/chat-p2-gofmt.diff
