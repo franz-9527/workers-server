@@ -164,23 +164,21 @@ test('S13 pending ledger survives process restart without persisting or replayin
  let mode='lost';const storage=new Map()
  const makeLedger=()=>new ChatPendingLedger({now:()=>1700000000000,get:k=>storage.get(k),set:(k,v)=>storage.set(k,JSON.parse(JSON.stringify(v))),remove:k=>storage.delete(k)})
  const first=fixture((path,data)=>{
-  if(path==='auth/socket-ticket')return {ticket:'ticket'}
   if(path==='messages/send'){if(mode==='lost')throw Object.assign(Error('lost'),{code:'CHAT_NETWORK_ERROR'});throw Error('replay forbidden')}
   if(path==='messages/result')throw Object.assign(Error('unknown'),{code:'CHAT_SEND_RESULT_UNKNOWN'})
   return {items:[],has_more:false,badge_count:0}
  },{ledger:makeLedger()})
- await connected(first);focused(first);await first.m.sendText('9','绝不能写入本地账本的正文🙂',0)
+ first.m.ledger.bind('test','1');focused(first);await first.m.sendText('9','绝不能写入本地账本的正文🙂',0)
  const wire=JSON.stringify([...storage.values()]);assert(!wire.includes('绝不能写入')&&!wire.includes('reply_to'))
  const client=first.m.attempts('9')[0].client_message_id;assert(wire.includes(client))
  first.m.setForeground(false)
  mode='status'
  const second=fixture((path,data)=>{
-  if(path==='auth/socket-ticket')return {ticket:'ticket'}
   if(path==='messages/result')return {client_message_id:data.client_message_id,state:'accepted',message_id:'42',message_state:'published'}
   if(path==='messages/send')throw Error('recovered action must never resend')
   return {items:[],has_more:false,badge_count:0}
  },{ledger:makeLedger()})
- await connected(second);focused(second);await second.m.restorePending(second.m.epoch)
+ second.m.ledger.bind('test','1');focused(second);await second.m.restorePending(second.m.epoch)
  const recovered=second.m.attempts('9').find(row=>row.client_message_id===client);assert(recovered);assert.equal(recovered.state,'accepted');assert.equal(recovered.text,'')
  assert.equal(second.calls.filter(c=>c[0]==='messages/send').length,0);assert.equal(storage.size,0)
  second.m.setForeground(false)
