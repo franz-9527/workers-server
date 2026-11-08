@@ -1,9 +1,0 @@
-{
-  "source": "franz-9527/workers",
-  "files": {
-    "order-support.js": "15a74636b7703b2703cbbe3878529889980c9111",
-    "detail.wxml": "3849acfe5b471694ac28a31c195cd78ce0585d98",
-    "detail.js": "e3010e112178989a59424bce00e6a8c01cbaaf78",
-    "detail.wxss": "678af60a7c471994506009500d6d077caedc35a9"
-  }
-}
