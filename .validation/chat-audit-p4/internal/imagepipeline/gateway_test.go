@@ -104,7 +104,11 @@ func TestMediaGatewayRejectsUnsignedExpiredAndCrossEnvironment(t *testing.T) {
 	}
 	c := q.config
 	c.Environment = "production"
+	if _, err := NewQiniu(c); err != nil {
+		t.Fatal("public HTTP origin with HTTPS site proxy must remain valid in production", err)
+	}
+	c.ProxyOrigin = ""
 	if _, err := NewQiniu(c); err == nil {
-		t.Fatal("public test mode escaped into production")
+		t.Fatal("public HTTP origin must not bypass the HTTPS site proxy in production")
 	}
 }
