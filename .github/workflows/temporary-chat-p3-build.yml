@@ -24,9 +24,9 @@ jobs:
         working-directory: .validation/chat-p3-build
         run: |
           npm install --ignore-scripts --no-audit --no-fund
-          npx esbuild server/assets/chat-testing-client.js --bundle --platform=browser --format=iife --target=es2020 --outfile=../../../.generated/chat-testing-runtime-p3.js
-          node --check ../../../.generated/chat-testing-runtime-p3.js
-          ! grep -q 'Math.floor(m.io.now() / 1e3).*client_message_id' ../../../.generated/chat-testing-runtime-p3.js
+          npx esbuild server/assets/chat-testing-client.js --bundle --platform=browser --format=iife --target=es2020 --outfile=../../.generated/chat-testing-runtime-p3.js
+          node --check ../../.generated/chat-testing-runtime-p3.js
+          ! grep -q 'Math.floor(m.io.now() / 1e3).*client_message_id' ../../.generated/chat-testing-runtime-p3.js
       - name: Publish generated fixture
         run: |
           git config user.name "github-actions[bot]"
