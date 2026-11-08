@@ -111,7 +111,7 @@ type client struct {
 	presenceAt    time.Time
 	typingAt      time.Time
 	typingUntil   time.Time
-
+}
 
 func socketIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
