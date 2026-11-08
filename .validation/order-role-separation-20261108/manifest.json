@@ -1,0 +1,14 @@
+{
+  "candidates": {
+    "CustomerOrderBillingPresentation.js": "0759d23ab35d8bfc0bde713ec267e6935b96994f",
+    "OrderSupportPresentation.js": "f720d22fde3e3f04862fd91f813f84f4bbd5ba07",
+    "userOrder-detail.js": "47e9f28b800f4e894c77d2ae767982b0ef0e7622"
+  },
+  "current": {
+    "userOrder-detail.wxml": "3849acfe5b471694ac28a31c195cd78ce0585d98",
+    "userOrder-detail.wxss": "678af60a7c471994506009500d6d077caedc35a9",
+    "workerOrder-detail.js": "143c0be4341ae4db63eb41128c7d23dc13c5b1dc",
+    "workerOrder-detail.wxml": "ebbc1eea2a93966dd81ce7583cf636e74265bb02",
+    "workerOrder-detail.wxss": "bdb88f010486957d54089a172d5f9c0e1ebb5855"
+  }
+}
