@@ -46,7 +46,8 @@ jobs:
           grep -q 'chat_ws_connections' internal/dependencies/operations.go
           grep -q 'chat_resource_busy_total' internal/dependencies/operations.go
           grep -q 'chat_asr_cleanup_failures_total' internal/dependencies/operations.go
-          grep -q 'discover_scanned_orders' server/app/Application/Chat/ChatCollaboration.php
+          grep -q 'scanned_orders' server/app/Application/Chat/ChatCollaboration.php
+          grep -q 'discover_scanned_orders' server/app/Http/Api/Modules/ChatCredentialApiModule.php
           grep -q 'lockscreen_recovery_ms' miniprogram/utils/ChatRuntime.js
           grep -q "route==='chat.telemetry'" server/app/Http/Api/Modules/ChatCredentialApiModule.php
           ! grep -q "return \$value===null||\$value===false" server/app/Application/Chat/ChatReleaseSettings.php
