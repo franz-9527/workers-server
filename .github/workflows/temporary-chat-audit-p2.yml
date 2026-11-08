@@ -25,9 +25,10 @@ jobs:
       - name: Go formatting
         working-directory: .validation/chat-audit-p2
         run: |
-          find internal -name '*.go' -print0 | sort -z | xargs -0 gofmt -d > /tmp/gofmt.diff
-          cat /tmp/gofmt.diff
-          test ! -s /tmp/gofmt.diff
+          files="$(find internal -type f -name '*.go' | sort)"
+          unformatted="$(gofmt -l $files)"
+          printf '%s\n' "$unformatted"
+          test -z "$unformatted"
       - name: Socket tests
         working-directory: .validation/chat-audit-p2
         run: go test ./internal/socket -count=1
