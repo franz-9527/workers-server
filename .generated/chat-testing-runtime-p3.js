@@ -1608,7 +1608,7 @@
               if (!this.live(epoch)) throw failure("CHAT_CONTEXT_CHANGED");
               let row = this.outbox.get(saved.client_message_id);
               if (!row) {
-                row = { conversation_id: saved.conversation_id, client_message_id: saved.client_message_id, text: "", source: {}, state: "unknown", busy: false, recovered: true, lastSubmitted: 0, expires: this.io.now() + 7 * 24 * 60 * 60 * 1e3 };
+                row = { conversation_id: saved.conversation_id, client_message_id: saved.client_message_id, text: "", source: {}, state: "unknown", busy: false, recovered: true, lastSubmitted: 0, expires: this.io.now() + 30 * 60 * 1e3 };
                 this.outbox.set(row.client_message_id, row);
                 this.emitAttempt(row);
               }
@@ -1658,7 +1658,7 @@
           }
           const client = await this.clientID();
           this.checkFocus(id, this.epoch, this.focusEpoch);
-          const row = { conversation_id: id, client_message_id: client, text, source: { ...draft.source || {} }, state: "sending", busy: true, lastSubmitted: this.io.now(), expires: this.io.now() + 7 * 24 * 60 * 60 * 1e3 };
+          const row = { conversation_id: id, client_message_id: client, text, source: { ...draft.source || {} }, state: "sending", busy: true, lastSubmitted: this.io.now(), expires: this.io.now() + 30 * 60 * 1e3 };
           this.outbox.set(client, row);
           if (this.ledger) this.ledger.put(row);
           if (this.draft(id).text === text) this.saveDraft(id, "", draftRevision, {});
