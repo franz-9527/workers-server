@@ -1,0 +1,50 @@
+name: Temporary chat audit P3 validation
+on:
+  push:
+    paths:
+      - '.validation/chat-audit-p3/**'
+      - '.github/workflows/temporary-chat-audit-p3.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Go format and message tests
+        working-directory: .validation/chat-audit-p3
+        run: |
+          test -z "$(gofmt -l internal/message)"
+          go test -mod=mod ./internal/message -count=1
+      - name: Client syntax
+        working-directory: .validation/chat-audit-p3
+        run: |
+          node --check miniprogram/utils/ChatManager.js
+          node --check miniprogram/utils/ChatPendingLedger.js
+          node --check miniprogram/utils/ChatImages.js
+          node --check miniprogram/utils/ChatAV.js
+          node --check miniprogram/utils/ChatCache.js
+          node --check miniprogram/subpackages/chat/conversation/av.js
+          node --check miniprogram/subpackages/chat/conversation/voice.js
+          node --check server/assets/chat-testing-client.js
+          node --check server/assets/chat-testing-runtime.js
+      - name: Client regression tests
+        working-directory: .validation/chat-audit-p3
+        run: |
+          node --test tools/test_chat_s11.js tools/test_chat_av.js
+      - name: Third-batch invariants
+        working-directory: .validation/chat-audit-p3
+        run: |
+          ! grep -R -E 'func (active|expires)\(' internal/message
+          ! grep -R -E 'Number\(client\.slice\(0, *10\)\)' miniprogram server/assets/chat-testing-runtime.js
+          ! grep -R -E 'Math\.floor\([^\n]*io\.now\(\) */ *1000[^\n]*\+' miniprogram/utils/ChatManager.js miniprogram/utils/ChatImages.js miniprogram/utils/ChatAV.js
+          ! grep -R -E 'Math\.random\(\)' miniprogram/utils/ChatManager.js miniprogram/utils/ChatImages.js miniprogram/utils/ChatAV.js
+          grep -q 'getRandomValues' miniprogram/utils/ChatRuntime.js
+          grep -q 'class ChatPendingLedger' miniprogram/utils/ChatPendingLedger.js
+          grep -q 'async clientID()' miniprogram/utils/ChatManager.js

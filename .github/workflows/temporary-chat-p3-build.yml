@@ -1,0 +1,36 @@
+name: Temporary chat P3 browser bundle
+on:
+  push:
+    paths:
+      - '.validation/chat-p3-build/server/assets/chat-testing-client.js'
+      - '.validation/chat-p3-build/miniprogram/utils/ChatManager.js'
+      - '.validation/chat-p3-build/miniprogram/utils/ChatImages.js'
+      - '.validation/chat-p3-build/miniprogram/utils/ChatAV.js'
+      - '.validation/chat-p3-build/miniprogram/utils/ChatCalls.js'
+      - '.validation/chat-p3-build/package.json'
+      - '.github/workflows/temporary-chat-p3-build.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build browser runtime
+        working-directory: .validation/chat-p3-build
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx esbuild server/assets/chat-testing-client.js --bundle --platform=browser --format=iife --target=es2020 --outfile=../../.generated/chat-testing-runtime-p3.js
+          node --check ../../.generated/chat-testing-runtime-p3.js
+          ! grep -q 'Math.floor(m.io.now() / 1e3).*client_message_id' ../../.generated/chat-testing-runtime-p3.js
+      - name: Publish generated fixture
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .generated/chat-testing-runtime-p3.js
+          git commit -m "test: generate chat P3 browser runtime [skip ci]"
+          git push
