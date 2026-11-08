@@ -1,0 +1,51 @@
+name: Temporary chat conversation media regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/chat-conversation-media-edfb1c2e/**'
+      - '.github/workflows/temporary-chat-conversation-media.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-chat-conversation-media-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runtime versions
+        run: |
+          node --version
+          php --version | head -n 1
+          go version
+          python3 --version
+      - name: JavaScript syntax
+        run: |
+          for file in \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/index.js \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/av.js \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/experience.js \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/ChatImages.js \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/chat-testing-client.js \
+            .validation/chat-conversation-media-edfb1c2e/fixtures/chat-testing-runtime.js
+          do
+            node --check "$file"
+          done
+      - name: PHP syntax
+        run: php -l .validation/chat-conversation-media-edfb1c2e/fixtures/ChatGoRuntimeConfig.php
+      - name: Go formatting and syntax
+        run: |
+          gofmt -d .validation/chat-conversation-media-edfb1c2e/fixtures/media.go > /tmp/media.gofmt
+          test ! -s /tmp/media.gofmt
+      - name: JSON syntax
+        run: python3 -m json.tool .validation/chat-conversation-media-edfb1c2e/fixtures/config.example.json >/dev/null
+      - name: Regression contracts
+        run: python3 .validation/chat-conversation-media-edfb1c2e/check.py

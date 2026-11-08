@@ -1,0 +1,18 @@
+{
+  "source_repository": "franz-9527/workers",
+  "source_commit": "edfb1c2e09824274c21d60888c031ee8ef1b7039",
+  "purpose": "conversation media UI regression",
+  "files": {
+    "fixtures/index.wxml": "0c623d10b28803be74a3a96917bc4cc874574cfa",
+    "fixtures/index.js": "2f8732d83de23d3ed780f4b1e2e16fca1ee8f491",
+    "fixtures/index.wxss": "53f7acb73473ccb6b55909aef35b19883bf96c4a",
+    "fixtures/av.js": "bb9449907ba66d2dd8f4c01b1b53f77df14c9428",
+    "fixtures/experience.js": "fe1688d676cf1c0eb9c8b5a7db30d67fbbd6af0d",
+    "fixtures/ChatImages.js": "0e994f0ca97e5320df3720a2dc831fdf588c2ab8",
+    "fixtures/media.go": "b8b9f0bdf303878027720ebe4bea584c2d99cdd3",
+    "fixtures/ChatGoRuntimeConfig.php": "3396a86e564e49025c5d4128e24ff23949cdf7f5",
+    "fixtures/config.example.json": "dad27bf5a830e89c7ecd8196107daba22a06f20e",
+    "fixtures/chat-testing-client.js": "f795d8356d705222e73f27182f23684107e9bef3",
+    "fixtures/chat-testing-runtime.js": "258ed859797b5292f07eab5cb18e2c08adc3ad43"
+  }
+}
