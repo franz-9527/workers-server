@@ -26,25 +26,25 @@ type Commands interface {
 	Execute(context.Context, ports.Principal, string, json.RawMessage) (string, any, error)
 }
 type Gateway struct {
-	identity       *auth.Service
-	commands       Commands
-	authGate       chan struct{}
-	readGate       chan struct{}
-	writeGate      chan struct{}
-	externalGate   chan struct{}
-	mu             sync.Mutex
-	clients        map[*client]struct{}
-	preAuth        map[*client]struct{}
-	preAuthIPs     map[string]*preAuthState
-	authenticating int
-	limits         admissionLimits
-	stopping       bool
+	identity          *auth.Service
+	commands          Commands
+	authGate          chan struct{}
+	readGate          chan struct{}
+	writeGate         chan struct{}
+	externalGate      chan struct{}
+	mu                sync.Mutex
+	clients           map[*client]struct{}
+	preAuth           map[*client]struct{}
+	preAuthIPs        map[string]*preAuthState
+	authenticating    int
+	limits            admissionLimits
+	stopping          bool
 	queuedBytes       atomic.Int64
 	handshakeRejected atomic.Uint64
 	resourceBusy      atomic.Uint64
 	wg                sync.WaitGroup
-	timing         timings
-	realtime       *realtime
+	timing            timings
+	realtime          *realtime
 }
 type timings struct{ auth, write, ping, pong, idle, check, operation time.Duration }
 type admissionLimits struct {
@@ -63,6 +63,7 @@ type Stats struct {
 	HandshakeRejected uint64
 	ResourceBusy      uint64
 }
+
 func (g *Gateway) Stats() Stats {
 	if g == nil {
 		return Stats{}

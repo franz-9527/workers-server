@@ -10,7 +10,7 @@ func TestP4AdmissionCountersAreObservable(t *testing.T) {
 	g := &Gateway{
 		clients: map[*client]struct{}{}, preAuth: map[*client]struct{}{},
 		preAuthIPs: map[string]*preAuthState{},
-		limits: admissionLimits{preAuth: 0, authenticated: 1, perIP: 1, attempts: 1, window: time.Second},
+		limits:     admissionLimits{preAuth: 0, authenticated: 1, perIP: 1, attempts: 1, window: time.Second},
 	}
 	status, code := g.admitPreAuth(&client{remoteIP: "203.0.113.10"}, time.Now())
 	if status != http.StatusServiceUnavailable || code != "CHAT_RESOURCE_BUSY" {

@@ -7,9 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"sync/atomic"
 	"github.com/franz-9527/workers/chat/internal/avfallback"
 	"github.com/franz-9527/workers/chat/internal/ports"
+	"sync/atomic"
 	"time"
 )
 
@@ -59,13 +59,13 @@ type AVProcessor interface {
 	Process(context.Context, []byte, string, string) (AVArtifact, error)
 }
 type AVService struct {
-	base                       *Service
-	storage                    AVStorage
-	processor                  AVProcessor
-	inspector                  ports.AVInspector
-	environment, configuration string
-	audio, video               bool
-	dailyASR                   int
+	base                             *Service
+	storage                          AVStorage
+	processor                        AVProcessor
+	inspector                        ports.AVInspector
+	environment, configuration       string
+	audio, video                     bool
+	dailyASR                         int
 	automaticReview                  bool
 	inspectionCleanupFailures        atomic.Uint64
 	inspectionCleanupLastFailureUnix atomic.Int64
