@@ -1,0 +1,95 @@
+name: Temporary 2.7.4 release validation
+on:
+  push:
+    paths:
+      - '.validation/release-274/**'
+      - '.github/workflows/temporary-release-274.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql
+      - name: SQL checksums
+        working-directory: .validation/release-274
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'a5579951d24b766f3d571d1c3a0487c8ec1932f35788a81e6b0c8254e067dc06  upgrades/2.6.0.sql' | sha256sum -c -
+          echo '1dbe99fac9d2f54f14675688fd968f1702900792f91cdcc27b0650ffa0aeae9c  upgrades/2.7.0.sql' | sha256sum -c -
+          echo 'a349f1ca03238ab2eb1dd3c0c9171cd225552a73751cd569cb89352ac9ca7848  upgrades/2.7.1.sql' | sha256sum -c -
+          echo 'b975d4595dde0e038bbf8177d9433949359b966536dc058adf47aeac9c7c76d0  upgrades/2.7.2.sql' | sha256sum -c -
+          echo '98e6ada47f31398b60998192ecee326eb95069b4cb522c7a95266b57c6a419f3  upgrades/2.7.3.sql' | sha256sum -c -
+          echo '99d4070c2388ea1d914e35d341b00a573d83def02493df95f2d518482fb75c1c  upgrades/2.7.4.sql' | sha256sum -c -
+      - name: MySQL 5.7.44 2.6.0 to 2.7.4
+        working-directory: .validation/release-274
+        run: php release_upgrade_smoke.php
+      - name: Package script synthetic release
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIX="$RUNNER_TEMP/release-fixture"; OUT="$RUNNER_TEMP/release-out"
+          rm -rf "$FIX" "$OUT"; mkdir -p "$FIX"/{server/api,server/app/Support,server/database/upgrades,server/config,server/storage/logs,server/tests,miniprogram/config,cloudfunctions}
+          cp .validation/release-274/package-release.sh "$FIX/package-release.sh"
+          cd "$FIX"
+          git init -b main
+          git config user.name release-test
+          git config user.email release-test@example.invalid
+          printf '2.6.0\n' > server/VERSION
+          printf '<?php echo "api";\n' > server/api/index.php
+          printf '<?php function release_fixture(){}\n' > server/app/Support/functions.php
+          chmod +x server/app/Support/functions.php
+          printf '{"upgrades":[]}\n' > server/database/upgrades/manifest.json
+          printf 'SELECT 1;\n' > server/database/upgrades/2.6.0.sql
+          printf '# upgrade\n' > server/UPGRADE.md
+          printf 'SAFE=example\n' > server/.env.example
+          printf 'DO_NOT_PACKAGE=1\n' > server/.env
+          printf 'site-ini\n' > server/.user.ini
+          printf '<?php return [];\n' > server/config/installed.php
+          printf 'log\n' > server/storage/logs/debug.log
+          printf '<?php\n' > server/tests/test.php
+          cat > miniprogram/config/config.js <<'JS'
+          const MINIPROGRAM_VERSION = '2.7.0'
+          const API_VERSION = '2.7.0'
+          JS
+          printf 'App({})\n' > miniprogram/app.js
+          printf '{}\n' > project.config.json
+          printf '{}\n' > cloudbaserc.json
+          printf 'exports.main=()=>({ok:true})\n' > cloudfunctions/index.js
+          git add . && git commit -m base && git branch dev/2.6.0
+          printf '2.7.4\n' > server/VERSION
+          printf 'SELECT 1;\n' > server/database/upgrades/2.7.4.sql
+          git add . && git commit -m target
+          bash ./package-release.sh dev/2.6.0 "$OUT"
+          test -f "$OUT/workers-server-upgrade-2.6.0-to-2.7.4.zip"
+          test -f "$OUT/workers-miniapp-v2.7.0.zip"
+          test ! -e "$OUT/workers-miniapp-v2.7.4.zip"
+          grep -Fxq 'server_version=2.7.4' "$OUT/RELEASE-VERSIONS.txt"
+          grep -Fxq 'miniprogram_version=2.7.0' "$OUT/RELEASE-VERSIONS.txt"
+          grep -Fxq 'api_version=2.7.0' "$OUT/RELEASE-VERSIONS.txt"
+          (cd "$OUT" && sha256sum -c SHA256SUMS.txt)
+          unzip -Z1 "$OUT/workers-server-upgrade-2.6.0-to-2.7.4.zip" > "$RUNNER_TEMP/server-list"
+          grep -Fxq 'VERSION' "$RUNNER_TEMP/server-list"
+          grep -Fxq '.env.example' "$RUNNER_TEMP/server-list"
+          ! grep -Fxq '.env' "$RUNNER_TEMP/server-list"
+          ! grep -Fxq '.user.ini' "$RUNNER_TEMP/server-list"
+          ! grep -Fxq 'config/installed.php' "$RUNNER_TEMP/server-list"
+          ! grep -Eq '^(storage/|tests/)' "$RUNNER_TEMP/server-list"
+          bad="$(zipinfo -l "$OUT/workers-server-upgrade-2.6.0-to-2.7.4.zip" | awk '$1 ~ /^d/ && $1 != "drwxr-xr-x" {print} $1 ~ /^-/ && $1 != "-rw-r--r--" {print} $1 ~ /^l/ {print}')"
+          test -z "$bad"
