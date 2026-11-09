@@ -6,7 +6,7 @@ MINI_CONFIG="$(git show "$SOURCE_COMMIT:miniprogram/config/config.js")"
 MINIPROGRAM_VERSION="$(printf '%s\n' "$MINI_CONFIG" | sed -n "s/^const MINIPROGRAM_VERSION = '\\([^']*\\)'.*/\\1/p" | head -n1)"
 API_VERSION="$(printf '%s\n' "$MINI_CONFIG" | sed -n "s/^const API_VERSION = '\\([^']*\\)'.*/\\1/p" | head -n1)"
 for value in "$VERSION" "$MINIPROGRAM_VERSION" "$API_VERSION"; do
-  [[ "$value" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]] || { echo "ERROR: 无法读取合法发行版本：$value" >&2; exit 1; }
+  [[ "$value" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "ERROR: 无法读取合法发行版本：$value" >&2; exit 1; }
 done
 MODE="upgrade"
 BASE_REF=""
