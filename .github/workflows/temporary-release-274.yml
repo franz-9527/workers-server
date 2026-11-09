@@ -26,6 +26,13 @@ jobs:
         with:
           php-version: '8.3.36'
           extensions: pdo_mysql
+      - name: Release contract PHP syntax
+        working-directory: .validation/release-274
+        run: |
+          php -l chat_schema_contract.php
+          grep -Fq "2.7.x release chain mismatch" chat_schema_contract.php
+          grep -Fq "2.7.0 manifest entry missing" chat_schema_contract.php
+          grep -Fq "真实2.6.0→2.7.4整包" chat_schema_contract.php
       - name: SQL checksums
         working-directory: .validation/release-274
         shell: bash
