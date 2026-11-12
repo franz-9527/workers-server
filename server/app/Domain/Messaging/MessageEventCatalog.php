@@ -249,14 +249,6 @@ final class MessageEventCatalog
             $extra['priority'] = (string) ($channel==='sms'?($meta['sms_priority']??'normal'):$meta['priority']);
             $result[$eventKey] = $extra;
         }
-        foreach ($configured as $eventKey => $saved) {
-            if (isset($result[$eventKey]) || isset($all[$eventKey])) continue;
-            $extra = is_array($saved) ? $saved : [];
-            $extra['enabled'] = filter_var(is_array($saved) ? ($saved['enabled'] ?? false) : $saved, FILTER_VALIDATE_BOOLEAN);
-            $extra['priority'] = isset($extra['priority']) && $extra['priority'] === 'normal' ? 'normal' : 'important';
-            $result[(string)$eventKey] = $extra;
-        }
-
         return $result;
     }
 

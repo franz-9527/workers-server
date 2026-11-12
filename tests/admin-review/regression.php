@@ -16,20 +16,25 @@ spl_autoload_register(static function ($name) {
 });
 function setting($key,$default=null){return $GLOBALS['settings'][$key]??$default;}
 function app_config($key,$default=null){return $default;}
+function write_log($channel,$message){throw new RuntimeException($message);}
 function public_id(){return bin2hex(random_bytes(12));}
 function decrypt_private_value($value,$context){return $value;}
 function check($ok,$message){if(!$ok)throw new RuntimeException($message);echo "PASS $message\n";}
 
+$path=sys_get_temp_dir().'/worker-admin-session-'.bin2hex(random_bytes(6));
+AdminSessionPolicy::configureFileStorage($path);
+$storageReady=session_save_path()===$path&&(int)ini_get('session.gc_maxlifetime')===604800;
+rmdir($path);
+check($storageReady,'session files have separate storage and seven-day GC ceiling');
 check(AdminSessionPolicy::idleSeconds()===43200,'default twelve hours');
 $GLOBALS['settings'][AdminSessionPolicy::SETTING]=30;
 check(AdminSessionPolicy::idleSeconds()===1800,'saved minutes take effect');
 $GLOBALS['settings'][AdminSessionPolicy::SETTING]=0;
 check(AdminSessionPolicy::idleSeconds()===900,'minimum timeout is enforced');
-$path=sys_get_temp_dir().'/worker-admin-session-'.bin2hex(random_bytes(6));
-// PHP forbids session ini changes after output, so verify storage before any subsequent HTTP test.
 $old=MessageEventCatalog::get('worker_collection_code_submitted');
 check(!empty($old['notification_retired'])&&!$old['wecom_visible']&&!$old['sms_visible'],'obsolete collection code event retired');
 check(!MessageEventCatalog::enabled('wecom','worker_collection_code_submitted',['worker_collection_code_submitted'=>true]),'old saved event cannot re-enable');
+check(!isset(MessageEventCatalog::switches('sms',['retired_fixture_event'=>true])['retired_fixture_event']),'unknown historical SMS switch hidden');
 check(MessageEventCatalog::get('worker_collection_code_auto_approved')['wecom_visible'],'current spot-check event retained');
 
 $legacy=SubscriptionCatalog::subscriptionSceneDefinitions()['reviewResult'];
@@ -44,7 +49,11 @@ $custom=['template_id'=>$template,'synced_template_id'=>$template,
 $GLOBALS['settings']['wechat.subscribe_template_ids']=['reviewResult'=>$custom];
 $scene=SubscriptionCatalog::subscriptionSceneDefinitions()['reviewResult'];
 check($scene['available']&&$scene['field_map']['status']==='phrase9'&&$scene['field_map']['audit_note']==='thing7','saved synchronized template infers review fields');
-$sample=(new WorkerAdmin\Application\Messaging\SubscriptionTestData())->buildSubscriptionTestData('reviewResult',$scene);
+$sample=(new WorkerAdmin\Application\Messaging\SubscriptionTestData(new class implements WorkerAdmin\Contracts\SettingsProvider {
+    public function get(string $key,$default=null){return setting($key,$default);}
+    public function bool(string $key,bool $default=false):bool{return (bool)setting($key,$default);}
+    public function int(string $key,int $default=0):int{return (int)setting($key,$default);}
+}))->buildSubscriptionTestData('reviewResult',$scene);
 check(isset($sample['name2'],$sample['phrase9'],$sample['thing7'],$sample['time6'])&&!isset($sample['name1']),'test send uses real review field mapping');
 $broken=$custom;
 $broken['template_fields'][]='thing12';

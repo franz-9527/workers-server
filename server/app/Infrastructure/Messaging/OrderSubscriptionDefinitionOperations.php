@@ -14,7 +14,7 @@ trait OrderSubscriptionDefinitionOperations
         'status'=>'phrase3',
         'notice_text'=>'thing5',
     ];
-    private const REVIEW_SEMANTICS = ['worker_name','applicant_mobile','status','notice_text','audit_note','time'];
+    private const REVIEW_SEMANTICS = ['worker_name','applicant_mobile','status','audit_note','notice_text','time'];
 
     public static function subscriptionSceneDefinitions(): array
     {
