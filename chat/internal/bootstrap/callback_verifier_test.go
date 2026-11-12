@@ -37,7 +37,7 @@ func TestProductionCallbackVerificationKeepsMediaClosed(t *testing.T) {
 	c.AV.CallbackVerification = true
 	c.AV.CallbackTokenEnv = "CHAT_WECHAT_CALLBACK_TOKEN"
 	c.AV.CallbackKeyEnv = "CHAT_WECHAT_CALLBACK_AES_KEY"
-	c.Safety.AppID = "wx0123456789abcdef"
+	c.AV.CallbackAppID = "wx0123456789abcdef"
 	const token = "SyntheticToken1234"
 	t.Setenv(c.AV.CallbackTokenEnv, token)
 	t.Setenv(c.AV.CallbackKeyEnv, base64.RawStdEncoding.EncodeToString(make([]byte, 32)))

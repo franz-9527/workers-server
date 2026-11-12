@@ -48,7 +48,7 @@ with tempfile.TemporaryDirectory(prefix="chat-sites-") as work:
     config = json.loads((chat / "config.example.json").read_text())
     config.update(env="production")
     config["http"] = {"listen": "127.0.0.1:9501", "internal_listen": "127.0.0.1:9502"}
-    config["safety"]["app_id"] = "wx0123456789abcdef"
+    config["av"]["callback_app_id"] = "wx0123456789abcdef"
     config["av"]["callback_verification"] = True
     config_path = chat / "chat.json"
     config_path.write_text(json.dumps(config))
@@ -90,6 +90,8 @@ with tempfile.TemporaryDirectory(prefix="chat-sites-") as work:
             log.seek(0)
             assert (state / "running-sha").exists(), log.read()
             assert (state / "running-sha").read_text().strip() == commit
+            result = json.loads(command("php", str(repo / ".validation/production-status.php")))
+            assert result["process_ready"] and not result["ready"], result
             callback = "http://127.0.0.1:9501/chat/api/v1/av/callback"
             timestamp = str(int(time.time()))
             nonce = "fixture"
@@ -109,3 +111,26 @@ with tempfile.TemporaryDirectory(prefix="chat-sites-") as work:
             proc.terminate()
             proc.wait(timeout=50)
     assert not (state / "running-sha").exists()
+
+    import http.server
+    import threading
+    class ReadyHandler(http.server.BaseHTTPRequestHandler):
+        environment = "production"
+        def log_message(self, *args):
+            pass
+        def do_GET(self):
+            self.send_response(200 if self.path == "/readyz" else 404)
+            self.end_headers()
+            self.wfile.write(json.dumps({"environment": self.environment, "provider_mode": "disabled", "simulated": False,
+                "infrastructure_ready": True, "business_enabled": True, "mysql": {"state": "ready"}, "redis": {"state": "ready"}}).encode())
+    with http.server.ThreadingHTTPServer(("127.0.0.1", 9502), ReadyHandler) as internal, http.server.ThreadingHTTPServer(("127.0.0.1", 9501), ReadyHandler) as public:
+        threading.Thread(target=internal.serve_forever, daemon=True).start()
+        threading.Thread(target=public.serve_forever, daemon=True).start()
+        result = json.loads(command("php", str(repo / ".validation/production-status.php")))
+        assert result["ready"], result
+        ReadyHandler.environment = "test"
+        result = json.loads(command("php", str(repo / ".validation/production-status.php")))
+        assert not result["process_ready"] and not result["ready"], result
+        public.shutdown()
+        internal.shutdown()
+        print("PASS: standalone production status accepts matching ready backend and rejects wrong environment")

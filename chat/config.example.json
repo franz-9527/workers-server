@@ -43,6 +43,7 @@
     "proxy_origin": "",
     "proxy_key_env": "CHAT_MEDIA_PROXY_KEY",
     "callback_verification": false,
+    "callback_app_id": "",
     "enabled": false,
     "audio": false,
     "video": false,

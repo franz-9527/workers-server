@@ -22,6 +22,7 @@ type Config struct {
 	ProxyOrigin          string              `json:"proxy_origin"`
 	ProxyKeyEnv          string              `json:"proxy_key_env"`
 	CallbackVerification bool                `json:"callback_verification"`
+	CallbackAppID        string              `json:"callback_app_id"`
 	Enabled              bool                `json:"enabled"`
 	Audio                bool                `json:"audio"`
 	Video                bool                `json:"video"`

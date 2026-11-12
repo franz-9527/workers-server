@@ -19,11 +19,12 @@ jobs:
       - name: PHP and shell syntax
         run: |
           php -l .validation/chat-settings.php
+          php -l .validation/ChatGoRuntimeStatus.php
           for script in chat/deploy/*.sh; do bash -n "$script"; done
       - name: Go formatting and regression
         working-directory: chat
         run: |
-          test -z "$(gofmt -l internal/bootstrap/app.go internal/bootstrap/config.go internal/bootstrap/callback_verifier_test.go)"
+          test -z "$(gofmt -l internal/bootstrap/app.go internal/bootstrap/config.go internal/bootstrap/callback_verifier_test.go internal/dependencies/runtime.go internal/avpipeline/config.go)"
           go test ./...
       - name: Real Linux deploy, run and callback handshake
         run: python3 .validation/production-rollout.py

@@ -60,6 +60,7 @@ type DependencyState struct {
 	Code     string `json:"code,omitempty"`
 }
 type Snapshot struct {
+	Environment         string          `json:"environment"`
 	Stage               string          `json:"stage"`
 	Scope               string          `json:"scope"`
 	InfrastructureReady bool            `json:"infrastructure_ready"`
@@ -102,7 +103,7 @@ func (r *Runtime) newSnapshot() Snapshot {
 	if r.Messages != nil {
 		scope = "business_dependencies"
 	}
-	return Snapshot{BusinessEnabled: r.Messages != nil && r.OperationsReady(), Stage: "S23", Scope: scope, ProviderMode: r.mode, Simulated: r.mode == "fake", MySQL: DependencyState{State: "disabled", Required: true}, Redis: DependencyState{State: "disabled", Required: false}}
+	return Snapshot{Environment: r.environment, BusinessEnabled: r.Messages != nil && r.OperationsReady(), Stage: "S23", Scope: scope, ProviderMode: r.mode, Simulated: r.mode == "fake", MySQL: DependencyState{State: "disabled", Required: true}, Redis: DependencyState{State: "disabled", Required: false}}
 }
 
 // Projection enables internal order membership only. No public messages/routes.

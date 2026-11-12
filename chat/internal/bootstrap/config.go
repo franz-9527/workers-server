@@ -142,7 +142,7 @@ func uniqueJSON(d *json.Decoder, depth int) bool {
 }
 
 func (c Config) productionCallbackVerifier() (http.Handler, error) {
-	return moderation.NewMediaCallbackVerifier(c.Safety.AppID, os.Getenv(c.AV.CallbackTokenEnv), os.Getenv(c.AV.CallbackKeyEnv))
+	return moderation.NewMediaCallbackVerifier(c.AV.CallbackAppID, os.Getenv(c.AV.CallbackTokenEnv), os.Getenv(c.AV.CallbackKeyEnv))
 }
 
 func (c Config) validate() *Fault {
