@@ -1,0 +1,28 @@
+name: Compact hall identity and frosted tab bar
+on:
+  push:
+    paths: ['.github/workflows/tab-hall-regression.yml', 'tests/tab-hall/**']
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save miniprogram-compiler@0.2.3 playwright@1.56.1
+      - name: Compile changed Mini Program templates
+        run: node tools/check-wxml.js miniprogram --compile
+      - run: npx playwright install --with-deps chromium
+      - name: Verify and capture light and dark layouts
+        run: node tests/tab-hall/visual.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tab-hall-preview
+          path: layout-artifacts
+          if-no-files-found: ignore
+          retention-days: 7

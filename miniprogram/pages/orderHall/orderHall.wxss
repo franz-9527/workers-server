@@ -1,0 +1,150 @@
+/* 2026-08-23：接单大厅使用现有青色主题和 ColorUI 间距体系。 */
+.hall-page{min-height:100vh;background:#f4f7f8;padding-bottom:130rpx}.hall-tabs{margin:0 24rpx;border-radius:18rpx;overflow:hidden;min-height:86rpx}.tab-item{flex:1;text-align:center;padding:28rpx 8rpx 22rpx;color:#78868a;position:relative}.tab-item.active{color:#00aabd;font-weight:700}.tab-item.active:after{content:"";position:absolute;left:34%;right:34%;bottom:10rpx;height:5rpx;border-radius:5rpx;background:#00b9cb}.category-scroll{margin-top:18rpx;white-space:nowrap}.category-row{display:inline-flex;padding:20rpx 24rpx}.category-tag{margin-right:14rpx;padding:0 25rpx;height:56rpx;line-height:56rpx}.order-list{padding:20rpx 24rpx}.order-card{border-radius:20rpx;padding:24rpx;margin-bottom:20rpx;box-shadow:0 8rpx 30rpx rgba(31,65,72,.07)}.order-cover{width:174rpx;height:150rpx;border-radius:14rpx;flex:none}.placeholder{background:#eef2f3}.order-main{min-width:0;flex:1;margin-left:22rpx}.order-title{max-width:360rpx;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.order-footer{border-top:1rpx solid #edf1f2;margin-top:20rpx;padding-top:20rpx;font-size:24rpx}.empty-box{padding:150rpx 40rpx;color:#68777a}.empty-icon{font-size:86rpx}.cuIconfont-spin{display:inline-block;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 2026-08-25：按 V2.0.1 要求，接单大厅继续使用原品牌青色，不随师傅身份切换绿色。 */
+.hall-page{background:#f4f7f8}.tab-item.active,.hall-page .text-cyan{color:#00aabd!important}.tab-item.active:after{background:#00b9cb}.hall-page .bg-cyan{background:#00b9cb!important;color:#fff!important}.hall-page .line-cyan{color:#00aabd!important;background:#fff!important;box-shadow:inset 0 0 0 1rpx #00b9cb!important}
+/* 2026-09-15：大厅卡片只展示订单状态；管理员操作统一从订单详情进入，避免小按钮误触。 */
+.order-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12rpx}.card-status-stack{display:flex;flex:none;flex-direction:column;align-items:flex-end;gap:10rpx}.order-main .order-title{max-width:300rpx}
+/* 2026-08-30：排序入口与“全部”合并为同一个胶囊，避免形成两个独立按钮。 */
+.hall-filter{margin-top:18rpx;border-top:1rpx solid #eef2f3;border-bottom:1rpx solid #eef2f3}.hall-filter .category-scroll{margin-top:0}.hall-filter .category-row{align-items:center;padding-right:24rpx}.category-tag-all{position:relative;display:inline-flex!important;align-items:center;padding-right:14rpx!important}.category-filter-divider{display:inline-block;width:1rpx;height:28rpx;margin:0 13rpx;background:currentColor;opacity:.28}.category-filter-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:34rpx;height:42rpx;font-size:25rpx}.category-filter-icon.active{font-weight:700}.sort-active-dot{position:absolute;right:5rpx;top:4rpx;width:9rpx;height:9rpx;border:2rpx solid currentColor;border-radius:50%;background:#ffb11b}.hall-page .category-tag-all.bg-gray .sort-active-dot{border-color:#eef3f4}.hall-page .category-tag-all.bg-cyan .sort-active-dot{border-color:#00b9cb}
+/* 2026-08-30：用容器内边距替代首卡片外边距，避免暗黑模式发生外边距折叠并露出黑条。 */
+page{background:#f4f7f8!important}.hall-page{box-sizing:border-box;padding-top:16rpx!important;background:linear-gradient(180deg,#00b9cb 0,#bcecf0 118rpx,#f4f7f8 270rpx)!important}
+/* 2026-09-15：大厅根背景同步暗色主题，避免滚动内容末端与安全区出现浅色露底。 */
+@media (prefers-color-scheme:dark){page{background:#101718!important}}
+/* 2026-09-20：测量单与施工单混排，卡片只做轻量紫色标识。 */
+.measurement-card{border-left:6rpx solid rgba(102,87,217,.38);background:linear-gradient(90deg,rgba(102,87,217,.035),#fff 20%)}
+.measurement-badge{margin-right:8rpx;color:#6657d9;background:#f4f2ff;border:1rpx solid #ddd8ff}
+/* 2026-10-12：当日期望上门只突出“今日”标签，具体日期保持普通文字颜色。 */
+.today-label{display:inline-block;margin-right:6rpx;padding:1rpx 8rpx;border-radius:7rpx;background:#fde8e7;color:#c62828;font-size:19rpx;line-height:28rpx;font-weight:700}
+
+/* 2026-09-28：大厅轻量区分抢单订单。 */
+.grab-badge{margin-right:8rpx;color:#b66d12;background:#fff4df;border:1rpx solid #f1d29b}.grab-mode-meta{color:#b17624;font-weight:600}@media(prefers-color-scheme:dark){.grab-badge{color:#efc27f;background:#3b301e;border-color:#64502c}.grab-mode-meta{color:#e3b873}}
+
+.expected-fee-meta{display:inline-block;margin-left:8rpx;color:#a9742d;font-size:21rpx}.expected-fee-meta.fixed{color:#c36f12;font-weight:700}
+@media(prefers-color-scheme:dark){.expected-fee-meta{color:#d6ad78}.expected-fee-meta.fixed{color:#f0b35e}.today-label{background:#4a2020;color:#ff8a83}}
+.order-category-label{display:inline-block;max-width:100%;height:auto;line-height:1.45;white-space:normal;overflow-wrap:anywhere;word-break:break-all;padding-top:6rpx;padding-bottom:6rpx;vertical-align:middle}
+/* 分类栏吸顶，身份卡与公告、订阅提醒横向对齐。 */
+.hall-page .hall-filter {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin-top: 0;
+  padding: 12rpx 0;
+  border-top: 0;
+  box-shadow: 0 5rpx 14rpx rgba(0, 0, 0, .05);
+}
+
+.hall-page .subscription-banner-slot {
+  box-sizing: border-box;
+  margin: 10rpx 24rpx 18rpx;
+  min-width: 0;
+}
+
+.hall-page .subscription-banner-slot subscription-health-banner {
+  display: block;
+  width: 100%;
+}
+
+.hall-page .identity-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  box-sizing: border-box;
+  margin: 0 24rpx 14rpx;
+  padding: 12rpx 20rpx 12rpx 24rpx;
+  min-height: 108rpx;
+  border: 1rpx solid rgba(255, 255, 255, .8);
+  border-radius: 24rpx;
+  background: linear-gradient(115deg, #f9ffff, #eaf7f9);
+  box-shadow: 0 10rpx 28rpx rgba(12, 77, 85, .09);
+}
+
+.hall-page .identity-copy {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.hall-page .identity-name {
+  color: #173c42;
+  font-size: 32rpx;
+  font-weight: 650;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hall-page .identity-status {
+  margin-top: 6rpx;
+  color: #45646a;
+  font-size: 23rpx;
+  line-height: 1.35;
+}
+
+.hall-page .identity-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 82rpx;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: #075e67;
+  font-size: 23rpx;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hall-page button.identity-action::after { border: 0; }
+
+.hall-page .identity-action-label {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  box-sizing: border-box;
+  min-height: 56rpx;
+  padding: 0 15rpx 0 17rpx;
+  border: 1rpx solid rgba(0, 107, 118, .14);
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, .65);
+}
+
+.hall-page .identity-action:active .identity-action-label { background: #d6eff1; }
+.hall-page .identity-action-arrow { font-size: 17rpx; }
+
+@media (max-width: 360px) {
+  .hall-page .subscription-banner-slot, .hall-page .identity-card {
+    margin-left: 18rpx;
+    margin-right: 18rpx;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .hall-page {
+    background: linear-gradient(180deg, #17323a 0, #13242a 110rpx, #101718 270rpx) !important;
+  }
+
+  .hall-page .hall-filter {
+    background: #1d282b !important;
+    box-shadow: 0 5rpx 14rpx rgba(0, 0, 0, .25);
+  }
+
+  .hall-page .identity-card {
+    border-color: rgba(167, 231, 235, .14);
+    background: linear-gradient(115deg, #243f45, #1b3137);
+    box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, .18);
+  }
+
+  .hall-page .identity-name { color: #f0fbfb; }
+  .hall-page .identity-status { color: #bfd3d6; }
+  .hall-page .identity-action { color: #baf0f1; }
+  .hall-page .identity-action-label {
+    border-color: rgba(168, 231, 235, .21);
+    background: rgba(141, 225, 231, .08);
+  }
+  .hall-page .identity-action:active .identity-action-label { background: #315158; }
+}
