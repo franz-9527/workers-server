@@ -66,6 +66,7 @@ check(SubscriptionCatalog::subscriptionSceneDefinitions()['reviewResult']['avail
 $GLOBALS['settings']['wechat.subscribe_template_ids']=['reviewResult'=>$custom];
 
 $db=new Database(['host'=>'127.0.0.1','port'=>(int)getenv('TEST_MYSQL_PORT'),'database'=>'worker_review_fixture','username'=>'root','password'=>'fixture-only']);
+$db->execute("ALTER DATABASE worker_review_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 $db->execute("CREATE TABLE users(id INT PRIMARY KEY,mobile_ciphertext VARCHAR(80))");
 $db->execute("CREATE TABLE worker_profiles(id INT PRIMARY KEY,user_id INT,display_name VARCHAR(80),cloud_worker_id VARCHAR(128))");
 $db->execute("CREATE TABLE worker_verifications(id INT AUTO_INCREMENT PRIMARY KEY,worker_id INT)");
