@@ -104,6 +104,21 @@ func (c Config) Validate() error {
 	}
 	return nil
 }
+// Changing callback transport must not invalidate queued jobs created by the site generator.
+func (c Config) mediaConfigHash() string {
+	switch c.CallbackRelay.Mode {
+	case "receive":
+		// The previous test-site generator set this whenever AV was enabled.
+		c.CallbackVerification = true
+	case "dispatch":
+		c.CallbackAppID = ""
+	}
+	c.CallbackRelay = moderation.MediaRelayConfig{}
+	raw, _ := json.Marshal(c)
+	digest := sha256.Sum256(raw)
+	return hex.EncodeToString(digest[:])
+}
+
 func Build(c Config, env string, base *message.Service, safety *moderation.Service) (*message.AVService, *moderation.MediaCallback, error) {
 	if c.Validate() != nil {
 		return nil, nil, ports.ErrInvalid
@@ -134,12 +149,8 @@ func Build(c Config, env string, base *message.Service, safety *moderation.Servi
 	if e != nil {
 		return nil, nil, e
 	}
-	mediaConfig := c
-	mediaConfig.CallbackRelay = moderation.MediaRelayConfig{}
-	raw, _ := json.Marshal(mediaConfig)
-	hash := sha256.Sum256(raw)
 	helper := &Helper{c.Python, c.Script, c.FFmpeg, c.FFprobe, c.TempRoot}
-	service, e := message.NewAVService(base, avStorage, helper, inspector, env, hex.EncodeToString(hash[:]), c.Audio, c.Video, c.DailyASR)
+	service, e := message.NewAVService(base, avStorage, helper, inspector, env, c.mediaConfigHash(), c.Audio, c.Video, c.DailyASR)
 	if e != nil {
 		return nil, nil, e
 	}

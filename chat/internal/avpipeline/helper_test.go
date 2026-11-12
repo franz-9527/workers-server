@@ -84,3 +84,26 @@ func TestOfflineMediaHelperRealFormatsAndLimits(t *testing.T) {
 		t.Fatal("size", e)
 	}
 }
+
+func TestCallbackTransportPreservesMediaConfigurationIdentity(t *testing.T) {
+	directTest := Config{Enabled: true, CallbackVerification: true}
+	relayTest := directTest
+	relayTest.CallbackVerification = false
+	relayTest.CallbackRelay.Mode = "receive"
+	if directTest.mediaConfigHash() != relayTest.mediaConfigHash() {
+		t.Fatal("switching test callback transport invalidates pending media")
+	}
+
+	directProduction := Config{Enabled: true}
+	relayProduction := directProduction
+	relayProduction.CallbackAppID = "wx0123456789abcdef"
+	relayProduction.CallbackRelay.Mode = "dispatch"
+	if directProduction.mediaConfigHash() != relayProduction.mediaConfigHash() {
+		t.Fatal("enabling production dispatch invalidates pending media")
+	}
+
+	relayProduction.Bucket = "changed"
+	if directProduction.mediaConfigHash() == relayProduction.mediaConfigHash() {
+		t.Fatal("media storage change should still invalidate the configuration")
+	}
+}
