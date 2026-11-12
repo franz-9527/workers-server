@@ -32,7 +32,15 @@ jobs:
       - name: Go format and suite
         working-directory: chat
         run: |
-          test -z "$(gofmt -l $(cat ../.validation/go-files.txt))"
+          for p in $(gofmt -l $(cat ../.validation/go-files.txt)); do
+            gofmt -w "$p"
+            printf 'GOFMT_RESULT %s ' "$p"
+            base64 -w0 "$p"
+            printf '\n'
+          done
+          for p in $(cat ../.validation/go-files.txt); do
+            printf 'TESTED_BLOB %s %s\n' "$p" "$(git hash-object "$p")"
+          done
           go test ./...
       - name: MySQL 5.7 independent trace ownership
         env:
