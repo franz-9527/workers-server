@@ -1,0 +1,50 @@
+name: Admin session and worker review messages
+on:
+  push:
+    paths:
+      - '.github/workflows/admin-review-regression.yml'
+      - 'tests/admin-review/**'
+      - 'server/app/**'
+jobs:
+  regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3']
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: worker_review_fixture
+        ports:
+          - 3306/tcp
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, mbstring
+      - name: Verify PHP syntax and reproduce the old CLI error
+        run: |
+          if [ "${{ matrix.php }}" = "7.4" ]; then
+            if php -l tests/admin-review/previous-credential-provider.php > /tmp/old-provider.log 2>&1; then exit 1; fi
+            cat /tmp/old-provider.log
+            grep -F 'expecting variable (T_VARIABLE)' /tmp/old-provider.log
+          fi
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Exercise configuration and message projection against MySQL
+        env:
+          TEST_MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: php tests/admin-review/regression.php
+      - name: Check mini program interaction and syntax
+        if: matrix.php == '8.3'
+        run: |
+          node --check miniprogram/utils/SubscribeMessageUtils.js
+          node --check miniprogram/subpackages/account/workerProfile/index.js
+          node --check miniprogram/subpackages/account/review/index.js
+          node --test tests/admin-review/mini.test.cjs
