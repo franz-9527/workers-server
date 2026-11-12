@@ -107,6 +107,7 @@ if (getenv('FIXTURE_REVISION')==='published') {
     $body=$GLOBALS['send_requests'][1]??[];
     check($second['success']===1&&($body['template_id']??'')===$template,'fixed code sends custom template through real dispatcher');
     check(($body['touser']??'')==='correct-account-fixture','fixed code selects identity for actual AppID');
-    check(array_keys($body['data'])===['name2','phrase9','thing7']&&$body['data']['thing7']['value']==='照片需重新上传','actual WeChat payload matches all custom review fields');
+    $keys=array_keys($body['data']);sort($keys);
+    check($keys===['name2','phrase9','thing7']&&$body['data']['phrase9']['value']==='审核未通过'&&$body['data']['thing7']['value']==='照片需重新上传','actual WeChat payload matches all custom review fields');
 }
 }
