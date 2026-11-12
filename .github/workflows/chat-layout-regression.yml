@@ -1,0 +1,20 @@
+name: Chat settings with production and repository layouts
+on:
+  push:
+    paths: ['.github/workflows/chat-layout-regression.yml', 'tests/chat-layout/**']
+permissions:
+  contents: read
+jobs:
+  restricted-php:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, curl
+      - name: Lint changed PHP
+        run: find server -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Exercise chat settings under real open_basedir rules
+        run: python3 tests/chat-layout/check.py
