@@ -36,7 +36,7 @@ func (f relayTestTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func relayFixture(trace string) ports.AudioReceipt {
 	const app = "wx0123456789abcdef"
-	return ports.AudioReceipt{AppID: app, TraceID: trace, Decision: "pass", Code: "official_pass", Fingerprint: hash(app+"\n"+trace+"\npass")}
+	return ports.AudioReceipt{AppID: app, TraceID: trace, Decision: "pass", Code: "official_pass", Fingerprint: hash(app + "\n" + trace + "\npass")}
 }
 
 func TestMediaRelayDeliversOnlyToOwningSite(t *testing.T) {
@@ -108,11 +108,11 @@ func TestMediaRelayReceiverRejectsUnsignedStaleOrChangedReceipt(t *testing.T) {
 	}
 	now := time.Now()
 	for _, tc := range []struct {
-		name string
-		body []byte
+		name  string
+		body  []byte
 		stamp time.Time
-		sign bool
-		code int
+		sign  bool
+		code  int
 	}{
 		{"unsigned", raw, now, false, http.StatusBadRequest},
 		{"stale", raw, now.Add(-time.Minute), true, http.StatusUnauthorized},

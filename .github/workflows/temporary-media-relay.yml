@@ -32,15 +32,7 @@ jobs:
       - name: Go format and suite
         working-directory: chat
         run: |
-          for p in $(cat ../.validation/go-files.txt); do
-            changed=$(gofmt -l "$p")
-            if [ -n "$changed" ]; then
-              gofmt -w "$p"
-              printf 'GOFMT_RESULT %s ' "$p"
-              base64 -w0 "$p"
-              printf '\n'
-            fi
-          done
+          test -z "$(gofmt -l $(cat ../.validation/go-files.txt))"
           go test ./...
       - name: MySQL 5.7 independent trace ownership
         env:
@@ -52,3 +44,5 @@ jobs:
           export CHAT_MEDIA_RELAY_PROD_DSN="root:relay-fixture-only@tcp(127.0.0.1:$DB_PORT)/relay_formal"
           export CHAT_MEDIA_RELAY_TEST_DSN="root:relay-fixture-only@tcp(127.0.0.1:$DB_PORT)/relay_test"
           go test -count=1 -v ./internal/message -run '^TestMySQLMediaRelayOnlyStoresLocalTrace$'
+      - name: Actual Go public callback to signed internal delivery
+        run: python3 .validation/relay-process.py

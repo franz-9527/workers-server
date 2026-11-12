@@ -23,9 +23,9 @@ import (
 
 const (
 	MediaRelayPath = "/chat/internal/v1/av/receipt"
-	relayURL = "http://127.0.0.1:19502" + MediaRelayPath
-	relayCapacity = 4096
-	relayLifetime = time.Hour
+	relayURL       = "http://127.0.0.1:19502" + MediaRelayPath
+	relayCapacity  = 4096
+	relayLifetime  = time.Hour
 )
 
 var ErrReceiptUnowned = errors.New("media receipt has no local job")
@@ -35,9 +35,9 @@ type OwnedAudioReceiver interface {
 }
 
 type MediaRelayConfig struct {
-	Mode string `json:"mode"`
+	Mode   string `json:"mode"`
 	KeyEnv string `json:"key_env"`
-	Spool string `json:"spool"`
+	Spool  string `json:"spool"`
 }
 
 func (c MediaRelayConfig) Key() ([]byte, error) {
@@ -54,14 +54,22 @@ func (c MediaRelayConfig) Key() ([]byte, error) {
 func (c MediaRelayConfig) Validate(environment string) error {
 	switch c.Mode {
 	case "":
-		if c.Spool != "" { return ports.ErrInvalid }
+		if c.Spool != "" {
+			return ports.ErrInvalid
+		}
 		return nil
 	case "receive":
-		if environment != "test" || c.Spool != "" { return ports.ErrInvalid }
+		if environment != "test" || c.Spool != "" {
+			return ports.ErrInvalid
+		}
 	case "dispatch":
-		if environment != "production" || !filepath.IsAbs(c.Spool) { return ports.ErrInvalid }
+		if environment != "production" || !filepath.IsAbs(c.Spool) {
+			return ports.ErrInvalid
+		}
 		st, err := os.Lstat(c.Spool)
-		if err != nil || !st.IsDir() || st.Mode().Perm() & 0077 != 0 { return ports.ErrInvalid }
+		if err != nil || !st.IsDir() || st.Mode().Perm()&0077 != 0 {
+			return ports.ErrInvalid
+		}
 	default:
 		return ports.ErrInvalid
 	}
@@ -127,80 +135,112 @@ func NewMediaRelayReceiver(key []byte, receiver OwnedAudioReceiver) http.Handler
 }
 
 type MediaRelay struct {
-	dir string
-	key []byte
-	local OwnedAudioReceiver
-	client *http.Client
+	dir     string
+	key     []byte
+	local   OwnedAudioReceiver
+	client  *http.Client
 	writers sync.Mutex
-	cursor int
+	cursor  int
 }
 
 func NewMediaRelay(dir string, key []byte, local OwnedAudioReceiver) *MediaRelay {
 	return &MediaRelay{dir: dir, key: key, local: local, client: &http.Client{
-		Timeout: 500*time.Millisecond,
-		Transport: &http.Transport{MaxIdleConnsPerHost: 2, IdleConnTimeout: 30*time.Second},
+		Timeout:       500 * time.Millisecond,
+		Transport:     &http.Transport{MaxIdleConnsPerHost: 2, IdleConnTimeout: 30 * time.Second},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}}
 }
 
 func (r *MediaRelay) ReceiveAudio(_ context.Context, receipt ports.AudioReceipt) error {
-	if !validRelayReceipt(receipt) { return ports.ErrInvalid }
+	if !validRelayReceipt(receipt) {
+		return ports.ErrInvalid
+	}
 	r.writers.Lock()
 	defer r.writers.Unlock()
 	name := filepath.Join(r.dir, receipt.Fingerprint+".json")
-	if _, err := os.Lstat(name); err == nil { return nil }
+	if _, err := os.Lstat(name); err == nil {
+		return nil
+	}
 	entries, err := os.ReadDir(r.dir)
-	if err != nil || len(entries) >= relayCapacity { return ports.ErrUnavailable }
+	if err != nil || len(entries) >= relayCapacity {
+		return ports.ErrUnavailable
+	}
 	raw, err := json.Marshal(receipt)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	f, err := os.CreateTemp(r.dir, ".receipt-")
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer os.Remove(f.Name())
 	_, writeErr := f.Write(raw)
 	syncErr, closeErr := f.Sync(), f.Close()
-	if writeErr != nil || syncErr != nil || closeErr != nil { return ports.ErrUnavailable }
-	if err := os.Rename(f.Name(), name); err != nil { return err }
+	if writeErr != nil || syncErr != nil || closeErr != nil {
+		return ports.ErrUnavailable
+	}
+	if err := os.Rename(f.Name(), name); err != nil {
+		return err
+	}
 	dir, err := os.Open(r.dir)
 	if err == nil {
 		defer dir.Close()
 		err = dir.Sync()
 	}
-	if err != nil { _ = os.Remove(name) }
+	if err != nil {
+		_ = os.Remove(name)
+	}
 	return err
 }
 
 func (r *MediaRelay) deliver(ctx context.Context, receipt ports.AudioReceipt) error {
 	if r.local != nil {
 		err := r.local.ReceiveOwnedAudio(ctx, receipt)
-		if !errors.Is(err, ErrReceiptUnowned) { return err }
+		if !errors.Is(err, ErrReceiptUnowned) {
+			return err
+		}
 	}
 	raw, err := json.Marshal(receipt)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, relayURL, bytes.NewReader(raw))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	stamp := strconv.FormatInt(time.Now().Unix(), 10)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Chat-Relay-Time", stamp)
 	req.Header.Set("X-Chat-Relay-Signature", hex.EncodeToString(relayMAC(r.key, stamp, raw)))
 	resp, err := r.client.Do(req)
-	if err != nil { return ports.ErrUnavailable }
+	if err != nil {
+		return ports.ErrUnavailable
+	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusNoContent { return ports.ErrUnavailable }
+	if resp.StatusCode != http.StatusNoContent {
+		return ports.ErrUnavailable
+	}
 	return nil
 }
 
 func (r *MediaRelay) sweep(ctx context.Context, logger *slog.Logger) {
 	entries, err := os.ReadDir(r.dir)
-	if err != nil || len(entries) == 0 { return }
+	if err != nil || len(entries) == 0 {
+		return
+	}
 	for i := 0; i < len(entries) && i < 64 && ctx.Err() == nil; i++ {
 		entry := entries[r.cursor%len(entries)]
-		r.cursor = (r.cursor+1)%len(entries)
+		r.cursor = (r.cursor + 1) % len(entries)
 		prefix, hasSuffix := strings.CutSuffix(entry.Name(), ".json")
 		_, nameErr := hex.DecodeString(prefix)
 		isReceipt := hasSuffix && len(prefix) == 64 && nameErr == nil
-		if !isReceipt && !strings.HasPrefix(entry.Name(), ".receipt-") { continue }
+		if !isReceipt && !strings.HasPrefix(entry.Name(), ".receipt-") {
+			continue
+		}
 		info, err := entry.Info()
-		if err != nil || !info.Mode().IsRegular() { continue }
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
 		name := filepath.Join(r.dir, entry.Name())
 		if time.Since(info.ModTime()) > relayLifetime {
 			if os.Remove(name) == nil && isReceipt {
@@ -208,14 +248,20 @@ func (r *MediaRelay) sweep(ctx context.Context, logger *slog.Logger) {
 			}
 			continue
 		}
-		if !isReceipt || info.Size() > 1024 { continue }
+		if !isReceipt || info.Size() > 1024 {
+			continue
+		}
 		raw, err := os.ReadFile(name)
 		var receipt ports.AudioReceipt
-		if err != nil || json.Unmarshal(raw, &receipt) != nil || !validRelayReceipt(receipt) { continue }
+		if err != nil || json.Unmarshal(raw, &receipt) != nil || !validRelayReceipt(receipt) {
+			continue
+		}
 		attempt, cancel := context.WithTimeout(ctx, time.Second)
 		err = r.deliver(attempt, receipt)
 		cancel()
-		if err == nil { _ = os.Remove(name) }
+		if err == nil {
+			_ = os.Remove(name)
+		}
 	}
 }
 
@@ -228,7 +274,8 @@ func (r *MediaRelay) Run(ctx context.Context, logger *slog.Logger) {
 		r.sweep(pass, logger)
 		cancel()
 		select {
-		case <-ctx.Done(): return
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
 		}
 	}

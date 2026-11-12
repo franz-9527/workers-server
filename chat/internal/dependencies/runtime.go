@@ -28,7 +28,7 @@ type Runtime struct {
 	Media                                                *message.MediaService
 	AV                                                   *message.AVService
 	MediaGateway                                         http.Handler
-	AVHTTP, AVCallback, AVRelayHTTP                       http.Handler
+	AVHTTP, AVCallback, AVRelayHTTP                      http.Handler
 	AVRelay                                              *moderation.MediaRelay
 	Governance                                           *message.GovernanceService
 	Reminders                                            *message.ReminderService
