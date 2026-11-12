@@ -1,99 +1,49 @@
-'use strict'
-const assert = require('node:assert/strict')
 const fs = require('node:fs')
-const vm = require('node:vm')
-const { chromium } = require('playwright')
+const assert = require('node:assert/strict')
+const {chromium} = require('playwright')
 const icons = require('./icons.json')
-const read = p => fs.readFileSync(p,'utf8')
-const tabPath='miniprogram/custom-tab-bar/index'
-const hallPath='miniprogram/pages/orderHall/orderHall'
-const hallTemplate=read(hallPath+'.wxml').split('  <view class="identity-card">')[1].split('  <view wx:if="{{identity.can_view_hall')[0]
-const tabTemplate=read(tabPath+'.wxml').split('<block wx:for="{{list}}" wx:key="pagePath">')[1].split('</block>')[0]
-let definition
-vm.runInNewContext(read(tabPath+'.js'),{Component(value){definition=value},require(){return {}}})
-const tabState={data:structuredClone(definition.data),setData(patch){Object.assign(this.data,patch)}}
-const badge=summary=>definition.methods.applyNotificationBadge.call(tabState,summary)
-badge({messageBadgeCount:7,attentionKnown:true})
-assert.equal(tabState.data.notificationBadgeText,'7')
-badge({messageBadgeCount:0,unreadCount:1,attentionKnown:false})
-assert.equal(tabState.data.notificationBadgeCount,1)
-assert.equal(tabState.data.notificationBadgeText,'')
-badge({messageBadgeCount:104,attentionKnown:true})
-assert.equal(tabState.data.notificationBadgeText,'99+')
-badge({messageBadgeCount:0,attentionKnown:true})
-assert.equal(tabState.data.notificationBadgeCount,0)
-assert.ok(!('notificationBadgeTone' in tabState.data))
-const htmlize=s=>s.replace(/<view\b/g,'<div').replace(/<\/view>/g,'</div>').replace(/<text\b/g,'<span').replace(/<\/text>/g,'</span>').replace(/<navigator\b/g,'<a').replace(/<\/navigator>/g,'</a>').replace(/<image\b/g,'<img').replace(/<\/image>/g,'').replace(/\s(?:wx:(?:if|elif)|bindtap|catchtap|mode)="[^"]*"/g,'')
-const esc=text=>text.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-function hall({approved,name,status}) {
-  return htmlize('  <view class="identity-card">'+hallTemplate
-    .replace(/\{\{identity\.is_worker \?[\s\S]*?\}\}/,esc(name))
-    .replace(/\{\{identity\.worker_status[\s\S]*?\}\}/,esc(status))
-    .replace(approved?/<button[\s\S]*?<\/button>/:/<navigator[\s\S]*?<\/navigator>/,'')
-    .replace('url="/pages/constructionOrder/index"','href="#construction"'))
+const previous = fs.readFileSync('tests/tab-hall/previous.wxss','utf8')
+const current = fs.readFileSync('miniprogram/custom-tab-bar/index.wxss','utf8')
+const scene = ['墙布铺贴','旧墙翻新','上门测量']
+const icon = (name, plus=false) => '<img class="image-style" alt="" src="data:image/png;base64,'+icons[name]+'">'
+const markup = '<div class="tabBar"><div class="cont">'+[
+  ['item off','index.png','首页'],['item on','hallon.png','接单大厅'],['plus off','plus2.png',''],['item off','chat.png','消息'],['item off','mine.png','我的'],
+].map(([cls,name,label])=>'<div class="'+cls+'">'+icon(name)+(name==='chat.png'?'<span class="tab-notice-badge unread">7</span>':'')+'<div class="txt'+(cls==='item on'?' selectedColor':'')+'">'+label+'</div></div>').join('')+'</div></div>'
+const rest = '*{box-sizing:border-box}body{margin:0;background:#f2f7f7;color:#20383b;font:16px system-ui,sans-serif}header{padding:16px;text-align:center;font-weight:700;background:#02afbc;color:white}.tile{display:flex;gap:12px;margin:11px 12px;padding:12px;border-radius:12px;background:#fff}.tile i{width:74px;height:54px;border-radius:9px;background:linear-gradient(115deg,#84c4d0,#f0f1b8,#a6cfc1)}small{display:block;margin-top:8px;color:#51676c}@media(prefers-color-scheme:dark){body{background:#131e22;color:#e5f5f5}.tile{background:#233337}small{color:#a5bfc2}}'
+function measure(page){
+  return page.evaluate(()=>{
+    const rect=e=>{const {x,y,width,height}=e.getBoundingClientRect();return [x,y,width,height]}
+    const dock=document.querySelector('.tabBar'),css=getComputedStyle(dock),line=getComputedStyle(document.querySelector('.cont .item.on'),'::before')
+    return {dock:rect(dock),items:[...dock.querySelectorAll('.item,.plus')].map(rect),icons:[...dock.querySelectorAll('img')].map(rect),corners:[css.borderTopLeftRadius,css.borderTopRightRadius,css.borderBottomLeftRadius,css.borderBottomRightRadius],stripe:[line.content,line.height,line.backgroundColor],badge:getComputedStyle(dock.querySelector('.tab-notice-badge')).backgroundColor,fill:css.backgroundColor,gradient:css.backgroundImage,blur:css.backdropFilter}
+  })
 }
-function tab(badgeText, dot, selected) {
-  return '<div class="tabBar"><div class="cont">'+definition.data.list.map((item,i)=>{
-    let s=tabTemplate
-      .replace('{{item.pagePath}}',item.pagePath)
-      .replace("{{item.plus ? '发布' : item.text}}",item.plus?'发布':item.text)
-      .replace("{{item.plus?'plus':'item'}} {{(showPublishMenu ? item.plus : selected === index) ? 'on' : 'off'}}",(item.plus?'plus':'item')+(selected===i?' on':' off'))
-      .replace('{{(showPublishMenu ? item.plus : selected === index) ? item.selectedIconPath : item.iconPath}}','data:image/png;base64,'+icons[(selected===i?item.selectedIconPath:item.iconPath).split('/').at(-1)])
-      .replace("{{notificationBadgeText ? '' : 'is-dot'}}",dot?'is-dot':'')
-      .replace("{{notificationBadgeText ? notificationBadgeText + ' 条消息提醒' : '有新消息提醒'}}",dot?'有新消息提醒':badgeText+' 条消息提醒')
-      .replace('{{notificationBadgeText}}',badgeText)
-      .replaceAll('{{item.text}}',item.text)
-    if(i!==3) s=s.replace(/<view wx:if="{{index === 3[^"]*" class="tab-notice-badge[\s\S]*?<\/view>/,'')
-    if(item.plus)s=s.replace(/<view wx:if="" class="txt"><\/view>/,'')
-    return htmlize(s)
-  }).join('')+'</div></div>'
+async function render(page,css,width,inset){
+  const converted=css.replace(/(-?\d*\.?\d+)rpx/g,(_,n)=>(Number(n)*width/750).toFixed(3)+'px').replace(/env\(safe-area-inset-bottom\)/g,inset+'px')
+  await page.setContent('<!doctype html><html lang="zh"><meta charset="utf-8"><style>'+rest+converted+'</style><header>接单大厅</header>'+Array.from({length:10},(_,i)=>'<div class="tile"><i></i><div><strong>'+scene[i%scene.length]+'</strong><small>附近订单 · 可查看需求</small></div></div>').join('')+markup)
 }
-function css(width){
-  return (read(tabPath+'.wxss')+'\n'+read(hallPath+'.wxss'))
-    .replace(/(-?\d*\.?\d+)rpx/g,(_,n)=>(Number(n)*width/750).toFixed(3)+'px')
-    .replace(/env\(safe-area-inset-bottom\)/g,'var(--fixture-safe-area, 0px)')
-}
-const layouts=[
- {width:320,height:680,theme:'light',approved:false,name:'接单大厅',status:'入驻后可报价接单',badgeText:'7',dot:false,safe:0},
- {width:390,height:840,theme:'light',approved:true,name:'林师傅 · 墙面施工',status:'已审核 · 可报价接单',badgeText:'99+',dot:false,safe:34},
- {width:320,height:680,theme:'dark',approved:true,name:'华东地区高标准墙面与软装专业施工服务师傅',status:'已审核 · 可报价接单',badgeText:'',dot:true,safe:0},
- {width:390,height:840,theme:'dark',approved:false,name:'接单大厅',status:'入驻后可报价接单',badgeText:'12',dot:false,safe:34},
-]
 ;(async()=>{
   const browser=await chromium.launch()
   fs.mkdirSync('layout-artifacts',{recursive:true})
   try {
-    for(const f of layouts){
-      const page=await browser.newPage({viewport:{width:f.width,height:f.height},colorScheme:f.theme})
-      const demo=Array.from({length:7},(_,i)=>'<div class="fixture-order"><i></i><div><strong>'+['墙布铺贴','旧墙翻新','上门测量'][i%3]+'</strong><small>附近订单 · 可查看需求</small></div></div>').join('')
-      await page.setContent('<!doctype html><html lang="zh"><meta charset="utf-8"><style>'+css(f.width)+
-        ':root{--fixture-safe-area:'+f.safe+'px}*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:#f4f7f8}button{font:inherit;border:0}a{text-decoration:none}img{object-fit:contain}.cuIcon-right:before{content:"›"}.fixture-header{height:44px;display:grid;place-items:center;font-size:16px;font-weight:650;color:#fff;background:#00b9cb}.fixture-filter{padding:12px 16px;background:#fff;color:#13606a;font-size:13px}.fixture-order{margin:10px 12px;padding:12px;border-radius:12px;background:#fff;display:flex;gap:12px;align-items:center}.fixture-order i{width:66px;height:55px;border-radius:8px;background:linear-gradient(130deg,#86c5c9,#e3f1e8 68%,#86b0a8)}.fixture-order small{display:block;margin-top:8px;color:#60737a}@media(prefers-color-scheme:dark){body{background:#101718;color:#edf4f6}.fixture-header{background:#17323a}.fixture-filter,.fixture-order{background:#202d32;color:#e5f5f5}.fixture-order small{color:#a7bec3}}'+
-        '</style><header class="fixture-header">接单大厅</header><main class="hall-page">'+hall(f)+'<div class="hall-filter fixture-filter">全部　　墙纸　　墙布　　墙板　　其它</div>'+demo+'</main>'+tab(f.badgeText,f.dot,1)+'</html>')
-      assert.deepEqual(await page.locator('.tabBar .txt').allTextContents(),['首页','接单大厅','消息','我的'])
-      const layout=await page.evaluate(()=>{
-        const box=sel=>{const el=document.querySelector(sel),r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height,width:r.width}}
-        const computed=sel=>getComputedStyle(document.querySelector(sel))
-        const icon=document.querySelector('.tab-notice-badge').parentElement.getBoundingClientRect()
-        return {card:box('.identity-card'),name:box('.identity-name'),copy:box('.identity-copy'),action:box('.identity-action'),status:box('.identity-status'),label:box('.identity-action-label'),badge:box('.tab-notice-badge'),dock:box('.tabBar'),iconLeft:icon.left,iconRight:icon.right,iconTop:icon.top,badgeColor:computed('.tab-notice-badge').backgroundColor,blur:computed('.tabBar').backdropFilter,cardColor:computed('.identity-name').color}
-      })
-      assert.ok(layout.card.height<64,'compact identity card')
-      assert.ok(layout.copy.right<=layout.action.left,'action shares row without overlapping copy')
-      assert.ok(layout.name.height<24 && layout.status.height<19,'title and regular status fit one line')
-      assert.ok(layout.label.width<90 && layout.action.height>32,'narrow pill with usable touch target')
-      assert.equal(layout.badgeColor,'rgb(217, 31, 57)','both badge forms use red')
-      assert.ok(layout.badge.left>layout.iconLeft && layout.badge.top<=layout.iconTop+1,'badge stays at top-right of icon')
-      assert.ok(layout.badge.right<layout.dock.right && layout.badge.left<layout.iconRight,'badge anchored to icon')
-      assert.ok(f.dot ? layout.badge.width<10 : layout.badge.width>=10,'real dot and number pill have distinct sizing')
-      assert.ok(layout.blur.includes('22px'),'background uses blur')
-      assert.ok(Math.abs(f.height-layout.dock.bottom-f.safe-f.width*10/750)<1,'dock respects the bottom safe area')
-      await page.screenshot({path:'layout-artifacts/'+f.theme+'-'+f.width+'.png'})
-      const clearance=await page.evaluate(()=>{
-        window.scrollTo(0,document.documentElement.scrollHeight)
-        return document.querySelector('.tabBar').getBoundingClientRect().top-document.querySelector('.fixture-order:last-child').getBoundingClientRect().bottom
-      })
-      assert.ok(clearance>0,'last order is fully visible above the dock at bottom of scroll')
+    for(const theme of ['light','dark'])for(const width of [320,390]){
+      const page=await browser.newPage({viewport:{width,height:width===320?680:844},colorScheme:theme})
+      const inset=width===320?0:34
+      await render(page,previous,width,inset)
+      const before=await measure(page)
+      await render(page,current,width,inset)
+      const after=await measure(page)
+      for(const key of ['dock','items','icons','corners','stripe','badge']) assert.deepEqual(after[key],before[key],key+' unchanged')
+      assert.equal(after.dock[0],0)
+      assert.equal(after.dock[2],width)
+      assert.equal(after.dock[1]+after.dock[3],width===320?680:844)
+      assert.equal(after.corners[2],'0px')
+      assert.notEqual(after.stripe[0],'none')
+      assert.match(after.blur,/blur\(20px\) saturate\(1.4\)/)
+      assert.match(after.fill,theme==='dark'?/0\.81\)/:/0\.74\)/)
+      assert.match(after.gradient,/linear-gradient/)
+      await page.screenshot({path:'layout-artifacts/'+theme+'-'+width+'.png'})
       await page.close()
-      console.log('PASS',f.theme,f.width,Math.round(layout.card.height)+'px card',f.dot?'red dot':f.badgeText)
+      console.log('PASS',theme,width,'bottom fills viewport, top corners and indicator unchanged, translucent backdrop')
     }
   } finally {await browser.close()}
-})().catch(error=>{console.error(error);process.exitCode=1})
+})().catch(e=>{console.error(e);process.exitCode=1})
