@@ -1,0 +1,470 @@
+package message
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"github.com/franz-9527/workers/chat/internal/avfallback"
+	"github.com/franz-9527/workers/chat/internal/ports"
+	"regexp"
+	"strings"
+	"time"
+)
+
+type avSegment struct {
+	Key  string `json:"key"`
+	Hash string `json:"hash"`
+}
+
+func avObjectFilename(role, mime string) (string, bool) {
+	switch {
+	case role == "main" && mime == "audio/mpeg":
+		return "main.mp3", true
+	case role == "main" && mime == "video/mp4":
+		return "main.mp4", true
+	case role == "poster" && mime == "image/jpeg":
+		return "poster.jpg", true
+	case regexp.MustCompile(`^check-[01]$`).MatchString(role) && mime == "audio/mpeg":
+		return role + ".mp3", true
+	case regexp.MustCompile(`^frame-[0-7]$`).MatchString(role) && mime == "image/jpeg":
+		return role + ".jpg", true
+	default:
+		return "", false
+	}
+}
+
+type avJob struct {
+	ID, Upload                                                                                                                ports.ID
+	Principal                                                                                                                 ports.Principal
+	Request                                                                                                                   Request
+	Hash, Phase, Owner, Source, Version, Transcript, Proof, TextRule, TextProof, RawTrace, RawDecision, Review, Configuration string
+	Segments                                                                                                                  []avSegment
+	Ordinal                                                                                                                   int
+	Main, MainHash, Poster, PosterHash, MIME                                                                                  string
+	Size                                                                                                                      int64
+	Duration                                                                                                                  int
+	HasAudio                                                                                                                  bool
+}
+
+func (a *AVService) job(ctx context.Context, id ports.ID) (avJob, error) {
+	v := avJob{ID: id}
+	var principal, manifest, segments string
+	e := a.base.db.QueryRowContext(ctx, `SELECT CAST(j.upload_id AS CHAR),j.principal_json,j.manifest_json,j.manifest_hash,j.phase,COALESCE(j.lease_owner,''),u.source,u.object_version,COALESCE(j.transcript,''),COALESCE(j.source_proof,''),COALESCE(j.text_rule,''),COALESCE(j.text_proof,''),COALESCE(j.raw_trace_id,''),COALESCE(j.raw_decision,''),j.review_state,j.configuration_hash,COALESCE(j.segments_json,'[]'),j.asr_ordinal,COALESCE(u.main_key,''),COALESCE(u.main_sha256,''),COALESCE(u.poster_key,''),COALESCE(u.poster_sha256,''),COALESCE(u.mime_type,''),u.declared_bytes,u.duration_ms,u.has_audio FROM chat_av_jobs j JOIN chat_av_uploads u ON u.id=j.upload_id WHERE j.intent_id=?`, string(id)).Scan(&v.Upload, &principal, &manifest, &v.Hash, &v.Phase, &v.Owner, &v.Source, &v.Version, &v.Transcript, &v.Proof, &v.TextRule, &v.TextProof, &v.RawTrace, &v.RawDecision, &v.Review, &v.Configuration, &segments, &v.Ordinal, &v.Main, &v.MainHash, &v.Poster, &v.PosterHash, &v.MIME, &v.Size, &v.Duration, &v.HasAudio)
+	if e != nil || json.Unmarshal([]byte(principal), &v.Principal) != nil || json.Unmarshal([]byte(manifest), &v.Request) != nil || json.Unmarshal([]byte(segments), &v.Segments) != nil || v.Principal.Kind != "mini" || v.Principal.Environment != a.environment {
+		return v, ErrMedia
+	}
+	deadline, err := mediaPrincipalExpiry(ctx, a.base.db, v.Principal)
+	if err != nil {
+		return v, err
+	}
+	v.Principal.ExpiresAt = deadline
+	return v, nil
+}
+func (a *AVService) Run(ctx context.Context) {
+	tick := time.NewTicker(time.Second)
+	defer tick.Stop()
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+		pass, cancel := context.WithTimeout(ctx, 80*time.Second)
+		_ = a.ProcessOne(pass)
+		_ = a.CleanOne(pass)
+		cancel()
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+	}
+}
+func (a *AVService) recoverNonBlockingAudio(ctx context.Context) error {
+	_, e := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs j JOIN chat_send_intents i ON i.id=j.intent_id JOIN chat_av_uploads u ON u.id=j.upload_id SET j.transcript=COALESCE(NULLIF(j.transcript,''),NULLIF(JSON_UNQUOTE(JSON_EXTRACT(j.manifest_json,'$.client_transcript')),'')),j.phase='text_ready',j.raw_trace_id=NULL,j.raw_decision=NULL,j.review_state='pending',j.review_version=j.review_version+1,j.general_confirmed=0,j.group_confirmed=0,j.reviewer_id=NULL,j.review_lease_until=NULL,j.error_code=NULL,j.next_attempt_at=UTC_TIMESTAMP(6),j.lease_owner=NULL,j.lease_until=NULL,i.state='checking',i.error_code=NULL,i.lease_owner=NULL,i.lease_until=NULL,i.updated_at=UTC_TIMESTAMP(6) WHERE u.kind='audio' AND i.state IN ('checking','review_pending') AND j.expires_at>UTC_TIMESTAMP(6) AND (j.phase IN ('asr_ready','asr_started','raw_ready','raw_started','raw_wait') OR (j.phase='review_pending' AND j.error_code=?) OR (j.phase='unknown' AND EXISTS(SELECT 1 FROM chat_av_asr_requests r WHERE r.intent_id=j.intent_id AND r.state='unknown')))`, avfallback.ReviewCode)
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	return nil
+}
+func (a *AVService) ProcessOne(ctx context.Context) error {
+	if e := a.recoverNonBlockingAudio(ctx); e != nil {
+		return e
+	}
+	tx, e := a.base.begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	var id ports.ID
+	var phase string
+	e = tx.QueryRowContext(ctx, `SELECT CAST(j.intent_id AS CHAR),j.phase FROM chat_av_jobs j JOIN chat_send_intents i ON i.id=j.intent_id WHERE i.state IN ('checking','review_pending') AND j.phase NOT IN ('uploading','review_pending','failed','published','unknown') AND j.expires_at>UTC_TIMESTAMP(6) AND j.next_attempt_at<=UTC_TIMESTAMP(6) AND (j.lease_until IS NULL OR j.lease_until<UTC_TIMESTAMP(6)) ORDER BY j.intent_id LIMIT 1 FOR UPDATE`).Scan(&id, &phase)
+	if e == sql.ErrNoRows {
+		return nil
+	}
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	owner := randomMedia()
+	if owner == "" {
+		return ports.ErrUnavailable
+	}
+	owner = owner[:32]
+	if phase == "asr_started" || phase == "raw_started" {
+		if _, e = tx.ExecContext(ctx, `UPDATE chat_av_jobs SET phase='unknown',error_code=?,lease_owner=NULL,lease_until=NULL WHERE intent_id=?`, ErrAVUnknown.Error(), string(id)); e != nil {
+			return ports.ErrUnavailable
+		}
+		if phase == "asr_started" {
+			if _, e = tx.ExecContext(ctx, `UPDATE chat_av_asr_requests SET state='unknown' WHERE intent_id=? AND state='started'`, string(id)); e != nil {
+				return ports.ErrUnavailable
+			}
+		}
+		_, e = tx.ExecContext(ctx, `UPDATE chat_send_intents SET error_code=?,updated_at=UTC_TIMESTAMP(6) WHERE id=?`, ErrAVUnknown.Error(), string(id))
+		if e != nil || tx.Commit() != nil {
+			return ports.ErrUnavailable
+		}
+		return ErrAVUnknown
+	}
+	if _, e = tx.ExecContext(ctx, `UPDATE chat_av_jobs SET lease_owner=?,lease_until=UTC_TIMESTAMP(6)+INTERVAL 90 SECOND,attempts=LEAST(attempts+1,255) WHERE intent_id=?`, owner, string(id)); e != nil {
+		return ports.ErrUnavailable
+	}
+	if _, e = tx.ExecContext(ctx, `UPDATE chat_send_intents SET lease_owner=?,lease_until=UTC_TIMESTAMP(6)+INTERVAL 90 SECOND WHERE id=?`, owner, string(id)); e != nil || tx.Commit() != nil {
+		return ports.ErrUnavailable
+	}
+	v, e := a.job(ctx, id)
+	if e != nil {
+		a.fail(ctx, id, owner, e.Error())
+		return e
+	}
+	if v.Owner != owner || v.Configuration != a.configuration {
+		a.fail(ctx, id, owner, ErrMediaVersion.Error())
+		return ErrMediaVersion
+	}
+	auth, e := a.base.begin(ctx)
+	if e != nil {
+		return e
+	}
+	_, e = a.base.authorize(ctx, auth, v.Principal, v.Request.ConversationID)
+	auth.Rollback()
+	if e != nil {
+		a.fail(ctx, id, owner, e.Error())
+		return e
+	}
+	switch phase {
+	case "prepare":
+		e = a.prepare(ctx, v)
+		if e == nil && v.Request.MessageType == "audio" {
+			_, e = a.Publish(ctx, id)
+		}
+	case "asr_ready":
+		e = a.recognize(ctx, v)
+	case "text_ready":
+		e = a.checkText(ctx, v)
+	case "raw_ready":
+		e = a.submitRaw(ctx, v)
+	case "raw_wait":
+		e = a.rawResult(ctx, v)
+	case "ready":
+		_, e = a.Publish(ctx, id)
+	default:
+		e = ErrMedia
+	}
+	if e != nil && e != ErrAVUnknown && e != ErrBlocked {
+		// Local/provider failures release only the lease. Durable started phases
+		// stay started, so a process loss cannot silently repeat a billable call.
+		_, _ = a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET error_code=?,next_attempt_at=UTC_TIMESTAMP(6)+INTERVAL 30 SECOND,lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=?`, avFailureCode(e, phase), string(id), owner)
+	}
+	return e
+}
+func (a *AVService) fail(ctx context.Context, id ports.ID, owner, code string) {
+	tx, e := a.base.begin(ctx)
+	if e != nil {
+		return
+	}
+	defer tx.Rollback()
+	r, e := tx.ExecContext(ctx, `UPDATE chat_av_jobs SET phase='failed',error_code=?,lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6)`, code, string(id), owner)
+	if e != nil {
+		return
+	}
+	n, _ := r.RowsAffected()
+	if n != 1 {
+		return
+	}
+	if _, e = tx.ExecContext(ctx, `UPDATE chat_send_intents SET state='rejected',error_code=?,lease_owner=NULL,lease_until=NULL,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state IN ('checking','review_pending')`, code, string(id)); e == nil {
+		tx.Commit()
+	}
+}
+func (a *AVService) advance(ctx context.Context, v avJob, phase string) error {
+	r, e := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET phase=?,error_code=NULL,next_attempt_at=UTC_TIMESTAMP(6),lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, phase, string(v.ID), v.Owner)
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	n, _ := r.RowsAffected()
+	if n != 1 {
+		return ports.ErrBusy
+	}
+	return nil
+}
+func (a *AVService) prepare(ctx context.Context, v avJob) error {
+	rows, e := a.base.db.QueryContext(ctx, `SELECT object_key,size_bytes FROM chat_av_parts WHERE upload_id=? AND state='present' ORDER BY ordinal`, string(v.Upload))
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	keys := []string{}
+	sizes := []int64{}
+	for rows.Next() {
+		var key string
+		var size int64
+		if rows.Scan(&key, &size) != nil {
+			rows.Close()
+			return ErrMedia
+		}
+		keys = append(keys, key)
+		sizes = append(sizes, size)
+	}
+	e = rows.Err()
+	rows.Close()
+	if e != nil || len(keys) != avParts(v.Size) {
+		return ErrMedia
+	}
+	raw := make([]byte, 0, v.Size)
+	for i, key := range keys {
+		b, e := a.storage.Read(ctx, key, sizes[i])
+		if e != nil || int64(len(b)) != sizes[i] {
+			return ErrMedia
+		}
+		raw = append(raw, b...)
+	}
+	var digest string
+	if a.base.db.QueryRowContext(ctx, `SELECT source_md5 FROM chat_av_uploads WHERE id=?`, string(v.Upload)).Scan(&digest) != nil || fileMD5(raw) != digest {
+		a.fail(ctx, v.ID, v.Owner, ErrMediaVersion.Error())
+		return ErrMediaVersion
+	}
+	out, e := a.processor.Process(ctx, raw, v.Request.MessageType, v.Source)
+	if e != nil {
+		a.fail(ctx, v.ID, v.Owner, avFailureCode(e, "prepare"))
+		return e
+	}
+	if out.QRDecision == "blocked" {
+		a.fail(ctx, v.ID, v.Owner, ErrBlocked.Error())
+		return ErrBlocked
+	}
+	prefix := mediaKeyPrefix(a.storage, a.environment, "av") + string(v.Principal.ActorID) + "/" + v.Version + "/"
+	put := func(bytes []byte, role, mime string) (string, string, error) {
+		filename, ok := avObjectFilename(role, mime)
+		if !ok {
+			return "", "", ErrMedia
+		}
+		hash := mediaHash(bytes)
+		key := prefix + hash + "/" + filename
+		if _, e := a.base.db.ExecContext(ctx, `INSERT INTO chat_av_objects(object_key,upload_id,sha256,size_bytes,role,created_at) VALUES(?,?,?,?,?,UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE object_key=object_key`, key, string(v.Upload), hash, len(bytes), role); e != nil {
+			return "", "", ports.ErrUnavailable
+		}
+		e := a.storage.PutAV(ctx, key, bytes, mime)
+		return key, hash, e
+	}
+	main, mh, e := put(out.Main, "main", out.MIME)
+	if e != nil {
+		return e
+	}
+	poster, ph := "", ""
+	if len(out.Poster) > 0 {
+		poster, ph, e = put(out.Poster, "poster", "image/jpeg")
+		if e != nil {
+			return e
+		}
+	}
+	frames := []avFrameRecord{}
+	safetyDecisions := make([]string, len(out.Frames))
+	if a.automaticReview && v.Request.MessageType == "video" {
+		checker, ok := a.base.safety.(imageSafety)
+		if !ok {
+			return ErrCheck
+		}
+		for i, frame := range out.Frames {
+			decision, err := checker.CheckImage(ctx, v.Principal, frame.Body)
+			if err != nil {
+				return err
+			}
+			safetyDecisions[i] = decision
+		}
+	}
+	for i, frame := range out.Frames {
+		if i >= 8 || len(frame.Body) > 65536 || frame.AtMS < 0 || frame.AtMS >= out.DurationMS {
+			return ErrMedia
+		}
+		if i == 0 && frame.AtMS == 0 && poster != "" {
+			frames = append(frames, avFrameRecord{Key: poster, Hash: ph, AtMS: 0, QRDecision: out.QRDecision, SafetyDecision: safetyDecisions[i]})
+			continue
+		}
+		key, hash, err := put(frame.Body, fmt.Sprintf("frame-%d", i), "image/jpeg")
+		if err != nil {
+			return err
+		}
+		frames = append(frames, avFrameRecord{Key: key, Hash: hash, AtMS: frame.AtMS, QRDecision: out.QRDecision, SafetyDecision: safetyDecisions[i]})
+	}
+	frameJSON, _ := json.Marshal(frames)
+	segments := []avSegment{}
+	for i, b := range out.Segments {
+		key, hash := main, mh
+		if v.Request.MessageType != "audio" {
+			key, hash, e = put(b, fmt.Sprintf("check-%d", i), "audio/mpeg")
+			if e != nil {
+				return e
+			}
+		}
+		segments = append(segments, avSegment{key, hash})
+	}
+	encoded, _ := json.Marshal(segments)
+	tx, e := a.base.begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	nextPhase, transcript, asrMeta := "asr_ready", "", ""
+	if v.Request.MessageType == "audio" {
+		nextPhase = "ready"
+		transcript = strings.TrimSpace(v.Request.ClientTranscript)
+		asrMeta = audioASRQueueMetadata(transcript)
+	}
+	r, e := tx.ExecContext(ctx, `UPDATE chat_av_jobs SET segments_json=?,transcript=NULLIF(?,''),source_proof=NULL,text_rule=NULL,text_proof=NULL,phase=?,lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND phase='prepare' AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, string(encoded), transcript, nextPhase, string(v.ID), v.Owner)
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	n, _ := r.RowsAffected()
+	if n != 1 {
+		return ports.ErrBusy
+	}
+	if _, e = tx.ExecContext(ctx, `UPDATE chat_av_uploads SET state='prepared',main_key=?,main_sha256=?,poster_key=NULLIF(?,''),poster_sha256=NULLIF(?,''),mime_type=?,duration_ms=?,has_audio=?,frames_json=?,asr_metadata=COALESCE(NULLIF(?,''),asr_metadata) WHERE id=?`, main, mh, poster, ph, out.MIME, out.DurationMS, out.HasAudio, string(frameJSON), asrMeta, string(v.Upload)); e != nil || tx.Commit() != nil {
+		return ports.ErrUnavailable
+	}
+	for _, key := range keys {
+		_ = a.storage.Delete(ctx, key)
+	}
+	return nil
+}
+func (a *AVService) reviewPending(ctx context.Context, v avJob) error {
+	// Clear requires actual cloud frame-content passes plus QR checks. This is
+	// reached only after all audio segments were transcribed and text checked.
+	if a.automaticReview && v.Request.MessageType == "video" && v.Phase == "text_ready" {
+		var raw string
+		if a.base.db.QueryRowContext(ctx, `SELECT COALESCE(frames_json,'[]') FROM chat_av_uploads WHERE id=?`, string(v.Upload)).Scan(&raw) != nil {
+			return ports.ErrUnavailable
+		}
+		var frames []avFrameRecord
+		clear := json.Unmarshal([]byte(raw), &frames) == nil && len(frames) > 0
+		for _, frame := range frames {
+			if frame.QRDecision != "clear" || frame.SafetyDecision != "passed" {
+				clear = false
+			}
+		}
+		if clear {
+			r, e := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET phase='ready',review_state='approved',general_confirmed=1,group_confirmed=1,review_version=review_version+1,lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, string(v.ID), v.Owner)
+			if e != nil {
+				return ports.ErrUnavailable
+			}
+			n, _ := r.RowsAffected()
+			if n != 1 {
+				return ports.ErrBusy
+			}
+			return nil
+		}
+	}
+
+	tx, e := a.base.begin(ctx)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	r, e := tx.ExecContext(ctx, `UPDATE chat_av_jobs SET phase='review_pending',review_state='pending',review_version=review_version+1,general_confirmed=0,group_confirmed=0,reviewer_id=NULL,review_lease_until=NULL,lease_owner=NULL,lease_until=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6) AND expires_at>UTC_TIMESTAMP(6)`, string(v.ID), v.Owner)
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	n, _ := r.RowsAffected()
+	if n != 1 {
+		return ports.ErrBusy
+	}
+	if _, e = tx.ExecContext(ctx, `UPDATE chat_send_intents SET state='review_pending',lease_owner=NULL,lease_until=NULL,updated_at=UTC_TIMESTAMP(6) WHERE id=? AND state='checking'`, string(v.ID)); e != nil || tx.Commit() != nil {
+		return ports.ErrUnavailable
+	}
+	return nil
+}
+func (a *AVService) checkText(ctx context.Context, v avJob) error {
+	// No trusted server-ASR proof means the transcript is auxiliary WechatSI text
+	// (or empty). It is display enrichment only and must never gate the voice file.
+	if v.Request.MessageType == "audio" && v.Proof == "" {
+		return a.advance(ctx, v, "ready")
+	}
+	var checked ports.SafetyResult
+	var e error
+	if strings.TrimSpace(v.Transcript) == "" {
+		proof, ok := a.base.safety.(interface {
+			MediaProof(context.Context, ports.Principal) (ports.SafetyResult, error)
+		})
+		if !ok {
+			return ErrCheck
+		}
+		checked, e = proof.MediaProof(ctx, v.Principal)
+	} else {
+		checked, e = a.base.safety.CheckText(ctx, ports.TextRequest{Actor: v.Principal, IntentID: v.ID, ConversationID: v.Request.ConversationID, Fingerprint: v.Hash, Text: v.Transcript})
+	}
+	if e != nil {
+		// Recognition/enrichment failures must not strand an otherwise valid
+		// voice message. Drop the transcript and publish the audio itself.
+		if v.Request.MessageType == "audio" {
+			if _, clearErr := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET transcript=NULL,source_proof=NULL,text_rule=NULL,text_proof=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6)`, string(v.ID), v.Owner); clearErr != nil {
+				return ports.ErrUnavailable
+			}
+			return a.advance(ctx, v, "ready")
+		}
+		return e
+	}
+	if v.Proof != "" && checked.AuthorityProof != v.Proof {
+		a.fail(ctx, v.ID, v.Owner, ErrMediaVersion.Error())
+		return ErrMediaVersion
+	}
+	if checked.Decision == "blocked" || checked.Decision == "review" {
+		q := v.Request
+		q.Text = v.Transcript
+		_, e = a.base.reject(ctx, v.Principal, q, v.Hash, v.ID, v.Owner, checked)
+		if e == nil {
+			_, _ = a.base.db.ExecContext(ctx, `UPDATE chat_av_uploads SET legal_hold=1 WHERE id=?`, string(v.Upload))
+			_, _ = a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET phase='failed',lease_owner=NULL,lease_until=NULL WHERE intent_id=?`, string(v.ID))
+		}
+		return e
+	}
+	if checked.Decision != "passed" && checked.Decision != "media_identity" {
+		return ErrCheck
+	}
+	r, e := a.base.db.ExecContext(ctx, `UPDATE chat_av_jobs SET text_rule=?,text_proof=?,source_proof=?,error_code=NULL WHERE intent_id=? AND lease_owner=? AND lease_until>UTC_TIMESTAMP(6)`, checked.RuleVersion, checked.AuthorityProof, checked.AuthorityProof, string(v.ID), v.Owner)
+	if e != nil {
+		return ports.ErrUnavailable
+	}
+	n, _ := r.RowsAffected()
+	if n != 1 {
+		return ports.ErrBusy
+	}
+	if v.Request.MessageType == "video" {
+		return a.reviewPending(ctx, v)
+	}
+	return a.advance(ctx, v, "ready")
+}
+func avFailureCode(err error, phase string) string {
+	if coded, ok := err.(interface{ FailureCode() string }); ok {
+		code := coded.FailureCode()
+		if regexp.MustCompile("^CHAT_AV_[A-Z0-9_]{1,56}$").MatchString(code) {
+			return code
+		}
+	}
+	switch phase {
+	case "prepare":
+		return "CHAT_AV_PREPARE_FAILED"
+	case "asr_ready", "asr_started":
+		return "CHAT_AV_ASR_UNAVAILABLE"
+	case "text_ready":
+		return "CHAT_AV_TEXT_CHECK_UNAVAILABLE"
+	case "raw_ready", "raw_started", "raw_wait":
+		return "CHAT_AV_WECHAT_MEDIA_CHECK_UNAVAILABLE"
+	default:
+		return "CHAT_CHECK_UNAVAILABLE"
+	}
+}
