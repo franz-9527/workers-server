@@ -66,6 +66,8 @@ $db->execute("DELETE FROM wechat_identities WHERE app_id='wxFixtureOther'");
 $db->execute("UPDATE users SET mobile_ciphertext='13800000000' WHERE id=1");
 $gateway=new WeChatSubscribeGateway();
 $noSms=new class implements WorkerAdmin\Contracts\SmsGateway {
+    public function enabled():bool{return false;}
+    public function querySendDetails(string $mobile,string $sendDate,?string $bizId=null):array{throw new RuntimeException('Unexpected SMS query');}
     public function send(string $mobile,string $templateCode,array $parameters,string $outId='',bool $allowDisabledForTest=false):array{throw new RuntimeException('Unexpected SMS');}
     public function sendWithOutcome(string $mobile,string $templateCode,array $parameters,string $outId='',bool $allowDisabledForTest=false):array{throw new RuntimeException('Unexpected SMS');}
 };
@@ -77,7 +79,7 @@ SubscriptionQuotaStore::saveSubscriptionPreference($db,1,'reviewResult',true,'ac
 OrderNotificationProjector::queueWorkerReviewResult($db,1,'fixture-cloud','approved','资料齐全');
 $first=$dispatcher->dispatch();
 $row=$db->fetch('SELECT status,last_error FROM message_outbox ORDER BY id DESC LIMIT 1');
-check($row&&$row['status']==='processed'&&$first['success']===1,'stock template crosses real queue, token provider, WeChat sender and receipt');
+check($row&&$row['status']==='processed'&&$first['success']===1,'stock template crosses real queue, token provider, WeChat sender and receipt'.($first['success']===1?'':(' — '.($row['last_error']??'no outbox row'))));
 check($GLOBALS['token_requests']===1&&count($GLOBALS['send_requests'])===1,'stock template called credential provider and mock WeChat once');
 check($GLOBALS['send_requests'][0]['data']['phrase3']['value']==='审核通过','stock review status retained');
 $quota=SubscriptionQuotaStore::subscriptionPreferences($db,1)['reviewResult'];
