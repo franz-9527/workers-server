@@ -71,7 +71,7 @@ $db->execute("CREATE TABLE users(id INT PRIMARY KEY,mobile_ciphertext VARCHAR(80
 $db->execute("CREATE TABLE worker_profiles(id INT PRIMARY KEY,user_id INT,display_name VARCHAR(80),cloud_worker_id VARCHAR(128))");
 $db->execute("CREATE TABLE worker_verifications(id INT AUTO_INCREMENT PRIMARY KEY,worker_id INT)");
 $db->execute("CREATE TABLE wechat_identities(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT,app_id VARCHAR(80),openid VARCHAR(100),status VARCHAR(16))");
-$db->execute("CREATE TABLE system_settings(setting_key VARCHAR(120) PRIMARY KEY,setting_value TEXT,value_type VARCHAR(16),group_name VARCHAR(16),is_public INT,description TEXT,updated_by INT NULL,created_at DATETIME,updated_at DATETIME)");
+$db->execute("CREATE TABLE system_settings(setting_key VARCHAR(120) PRIMARY KEY,setting_value TEXT,value_type VARCHAR(16),group_name VARCHAR(40),is_public INT,description TEXT,updated_by INT NULL,created_at DATETIME,updated_at DATETIME)");
 $db->execute("CREATE TABLE notifications(id INT AUTO_INCREMENT PRIMARY KEY,public_id VARCHAR(40),recipient_type VARCHAR(16),recipient_id INT,channel VARCHAR(20),template_key VARCHAR(80),title TEXT,content TEXT,data_json TEXT,status VARCHAR(16),scheduled_at DATETIME,created_at DATETIME)");
 $db->execute("CREATE TABLE message_outbox(id INT AUTO_INCREMENT PRIMARY KEY,topic VARCHAR(50),business_key VARCHAR(128) UNIQUE,payload_json JSON,status VARCHAR(16),attempt_count INT,next_attempt_at DATETIME,last_error TEXT,created_at DATETIME,processed_at DATETIME)");
 $db->execute("INSERT INTO users VALUES(1,'')");
