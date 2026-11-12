@@ -23,6 +23,12 @@ page{background:#f4f7f8!important}.hall-page{box-sizing:border-box;padding-top:1
 .expected-fee-meta{display:inline-block;margin-left:8rpx;color:#a9742d;font-size:21rpx}.expected-fee-meta.fixed{color:#c36f12;font-weight:700}
 @media(prefers-color-scheme:dark){.expected-fee-meta{color:#d6ad78}.expected-fee-meta.fixed{color:#f0b35e}.today-label{background:#4a2020;color:#ff8a83}}
 .order-category-label{display:inline-block;max-width:100%;height:auto;line-height:1.45;white-space:normal;overflow-wrap:anywhere;word-break:break-all;padding-top:6rpx;padding-bottom:6rpx;vertical-align:middle}
+/* 滚动到底时，末张订单卡停在底栏和系统安全区上方。 */
+.hall-page {
+  padding-bottom: calc(132rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(132rpx + env(safe-area-inset-bottom));
+}
+
 /* 分类栏吸顶，身份卡与公告、订阅提醒横向对齐。 */
 .hall-page .hall-filter {
   position: sticky;

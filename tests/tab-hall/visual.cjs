@@ -42,9 +42,9 @@ function tab(badgeText, dot, selected) {
       .replace("{{notificationBadgeText ? '' : 'is-dot'}}",dot?'is-dot':'')
       .replace("{{notificationBadgeText ? notificationBadgeText + ' 条消息提醒' : '有新消息提醒'}}",dot?'有新消息提醒':badgeText+' 条消息提醒')
       .replace('{{notificationBadgeText}}',badgeText)
-      .replace('{{item.text}}',item.text)
+      .replaceAll('{{item.text}}',item.text)
     if(i!==3) s=s.replace(/<view wx:if="{{index === 3[^"]*" class="tab-notice-badge[\s\S]*?<\/view>/,'')
-    if(item.plus)s=s.replace(/<view wx:if="{{item.text}}" class="txt"><\/view>/,'')
+    if(item.plus)s=s.replace(/<view wx:if="" class="txt"><\/view>/,'')
     return htmlize(s)
   }).join('')+'</div></div>'
 }
@@ -69,6 +69,7 @@ const layouts=[
       await page.setContent('<!doctype html><html lang="zh"><meta charset="utf-8"><style>'+css(f.width)+
         ':root{--fixture-safe-area:'+f.safe+'px}*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:#f4f7f8}button{font:inherit;border:0}a{text-decoration:none}img{object-fit:contain}.cuIcon-right:before{content:"›"}.fixture-header{height:44px;display:grid;place-items:center;font-size:16px;font-weight:650;color:#fff;background:#00b9cb}.fixture-filter{padding:12px 16px;background:#fff;color:#13606a;font-size:13px}.fixture-order{margin:10px 12px;padding:12px;border-radius:12px;background:#fff;display:flex;gap:12px;align-items:center}.fixture-order i{width:66px;height:55px;border-radius:8px;background:linear-gradient(130deg,#86c5c9,#e3f1e8 68%,#86b0a8)}.fixture-order small{display:block;margin-top:8px;color:#60737a}@media(prefers-color-scheme:dark){body{background:#101718;color:#edf4f6}.fixture-header{background:#17323a}.fixture-filter,.fixture-order{background:#202d32;color:#e5f5f5}.fixture-order small{color:#a7bec3}}'+
         '</style><header class="fixture-header">接单大厅</header><main class="hall-page">'+hall(f)+'<div class="hall-filter fixture-filter">全部　　墙纸　　墙布　　墙板　　其它</div>'+demo+'</main>'+tab(f.badgeText,f.dot,1)+'</html>')
+      assert.deepEqual(await page.locator('.tabBar .txt').allTextContents(),['首页','接单大厅','消息','我的'])
       const layout=await page.evaluate(()=>{
         const box=sel=>{const el=document.querySelector(sel),r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height,width:r.width}}
         const computed=sel=>getComputedStyle(document.querySelector(sel))
@@ -86,6 +87,11 @@ const layouts=[
       assert.ok(layout.blur.includes('22px'),'background uses blur')
       assert.ok(Math.abs(f.height-layout.dock.bottom-f.safe-f.width*10/750)<1,'dock respects the bottom safe area')
       await page.screenshot({path:'layout-artifacts/'+f.theme+'-'+f.width+'.png'})
+      const clearance=await page.evaluate(()=>{
+        window.scrollTo(0,document.documentElement.scrollHeight)
+        return document.querySelector('.tabBar').getBoundingClientRect().top-document.querySelector('.fixture-order:last-child').getBoundingClientRect().bottom
+      })
+      assert.ok(clearance>0,'last order is fully visible above the dock at bottom of scroll')
       await page.close()
       console.log('PASS',f.theme,f.width,Math.round(layout.card.height)+'px card',f.dot?'red dot':f.badgeText)
     }
