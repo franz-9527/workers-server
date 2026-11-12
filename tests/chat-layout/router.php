@@ -26,6 +26,8 @@ function app_config($key,$default=null){
 function setting($key,$default=null){return $default;}
 function e($value){return htmlspecialchars((string)$value,ENT_QUOTES,'UTF-8');}
 function admin_url($route,$params=[]){return '/admin/?'.http_build_query(['route'=>$route]+$params);}
+function asset_url($path){return '/assets/'.$path;}
+function local_datetime($value,$format='Y-m-d H:i'){return (string)$value;}
 function csrf(){return new class {public function input(){return '';}};}
 $db=new class extends Database {
     public function __construct(){}

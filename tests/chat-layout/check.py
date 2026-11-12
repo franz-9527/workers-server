@@ -22,7 +22,11 @@ def request(php_root, scope, env, query=""):
         for _ in range(35):
             try:
                 with urllib.request.urlopen(f"http://127.0.0.1:{port}/"+query,timeout=4) as handle:
-                    return json.loads(handle.read().decode())
+                    raw=handle.read().decode()
+                    try:
+                        return json.loads(raw)
+                    except ValueError as error:
+                        raise RuntimeError(raw) from error
             except urllib.error.URLError as error:
                 if child.poll() is not None:
                     raise RuntimeError(child.stderr.read().decode()) from error
