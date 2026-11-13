@@ -27,6 +27,7 @@ function denied(callable $call, string $code):void{
 }
 $db=new Database(['host'=>'127.0.0.1','port'=>(int)getenv('DB_PORT'),'database'=>'discount_fixture','username'=>'root','password'=>'discount-fixture-only']);
 $pdo=$db->pdo();
+$pdo->exec('ALTER DATABASE discount_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 $pdo->exec("CREATE TABLE users(id BIGINT UNSIGNED PRIMARY KEY,mobile_ciphertext VARCHAR(32)) ENGINE=InnoDB");
 $pdo->exec("CREATE TABLE worker_profiles(id BIGINT UNSIGNED PRIMARY KEY,user_id BIGINT UNSIGNED UNIQUE,verification_status VARCHAR(24),cloud_record_mode VARCHAR(24),display_name VARCHAR(64),public_id CHAR(26)) ENGINE=InnoDB");
 $pdo->exec("CREATE TABLE merchant_profiles(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,public_id CHAR(26),user_id BIGINT UNSIGNED UNIQUE,verification_status VARCHAR(24),recognition_level VARCHAR(24),order_count_7d INT DEFAULT 0,same_phone_warning_count INT DEFAULT 0,risk_score INT DEFAULT 0,reviewed_at DATETIME,created_at DATETIME,updated_at DATETIME) ENGINE=InnoDB");
