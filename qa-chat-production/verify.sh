@@ -42,23 +42,21 @@ sudo tee "$site/config/installed.php" >/dev/null <<PHP
 return ['installed'=>true,'app'=>['env'=>'production','version'=>'$version','url'=>'https://chat-fixture.invalid','key'=>str_repeat('k',32)],
 'database'=>['host'=>'127.0.0.1','port'=>3306,'database'=>'chat_fixture','username'=>'chat_fixture','password'=>'fixture-only','charset'=>'utf8mb4']];
 PHP
-binlog=/usr/local/bin/chatqa-mysqlbinlog
-mysqlbinlog=$(docker exec chatqa-mysql sh -c 'command -v mysqlbinlog')
-dockercli=$(command -v docker)
-sudo tee "$binlog" >/dev/null <<SH
-#!/bin/bash
-exec "$dockercli" exec -u root chatqa-mysql "$mysqlbinlog" "\$@"
-SH
-sudo chmod 755 "$binlog"
-sudo "$binlog" --no-defaults --version
-sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog --check
+if ! command -v mysqlbinlog >/dev/null; then
+  sudo apt-get -qq update
+  sudo apt-get -qq install -y mysql-client
+fi
+binlog=$(command -v mysqlbinlog)
+"$binlog" --no-defaults --version
+sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog" --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
 trap 'kill "$writer" 2>/dev/null || true; sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true' EXIT
-sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog
+sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog"
 kill "$writer"
 trap - EXIT
-sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (!WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::ready(app_config("chat"),"production")) exit(1); echo "PHP recovery gate is readable\n";' "$site/bootstrap.php"
+sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="ready") exit(1); echo "PHP recovery gate is readable\n";' "$site/bootstrap.php"
+sudo -u www php -d "open_basedir=$site/:/tmp/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="unreadable") exit(1); echo "PHP reports an inaccessible recovery gate separately\n";' "$site/bootstrap.php"
 export CHAT_WECHAT_CALLBACK_TOKEN=FixtureToken20260001 CHAT_WECHAT_CALLBACK_AES_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY php "$site/chat/deploy/production-runtime.php" "$site" /var/lib/bixuan-chat-prod
 cd chat

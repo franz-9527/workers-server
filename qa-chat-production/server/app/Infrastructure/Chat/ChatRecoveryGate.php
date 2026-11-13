@@ -13,13 +13,22 @@ final class ChatRecoveryGate implements ChatRecoveryReadiness
     public static function ready(array $config,string $environment): bool
     {
         $path=(string)($config['recovery_gate_file']??'');$epoch=(string)($config['recovery_epoch']??'');
-        if($path===''&&$epoch==='')return in_array($environment,['test','development'],true);
-        if(!self::path($path)||preg_match('/^[a-f0-9]{64}$/D',$epoch)!==1||!@is_file($path)||@is_link($path)||@filesize($path)>1024||(@fileperms($path)&0022)!==0)return false;
-        $raw=@file_get_contents($path);if(!is_string($raw))return false;
-        $m=json_decode($raw,true);
-        if(!is_array($m)||array_keys($m)!==['schema','environment','epoch','state'])return false;
-        if(json_encode($m,JSON_UNESCAPED_SLASHES)!==preg_replace('/\s+(?=(?:[^"]*"[^"]*")*[^"]*$)/','',$raw))return false;
-        return$m===['schema'=>1,'environment'=>$environment,'epoch'=>$epoch,'state'=>'ready'];
+        return self::status($config,$environment)==='ready';
+    }
+    public static function status(array $config,string $environment):string
+    {
+        $path=(string)($config['recovery_gate_file']??'');$epoch=(string)($config['recovery_epoch']??'');
+        if ($path===''&&$epoch===''&&in_array($environment,['test','development'],true)) return 'ready';
+        if (!self::path($path)||preg_match('/^[a-f0-9]{64}$/D',$epoch)!==1) return 'unconfigured';
+        if (!@is_file($path)||!@is_readable($path)) return 'unreadable';
+        if (@is_link($path)||@filesize($path)>1024||(@fileperms($path)&0022)!==0) return 'invalid';
+        $raw=@file_get_contents($path);
+        if (!is_string($raw)) return 'unreadable';
+        $marker=json_decode($raw,true);
+        if (!is_array($marker)||array_keys($marker)!==['schema','environment','epoch','state']
+            ||json_encode($marker,JSON_UNESCAPED_SLASHES)!==preg_replace('/\s+(?=(?:[^"]*"[^"]*")*[^"]*$)/','',$raw)
+            ||$marker['schema']!==1||$marker['environment']!==$environment||$marker['epoch']!==$epoch) return 'invalid';
+        return match ($marker['state']) {'ready'=>'ready','blocked'=>'blocked',default=>'invalid'};
     }
     public static function assertReady(array $config,string $environment): void
     {if(!self::ready($config,$environment))throw new RuntimeException('聊天安全恢复尚未核验',503);}

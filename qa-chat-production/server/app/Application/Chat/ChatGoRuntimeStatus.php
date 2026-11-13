@@ -69,7 +69,7 @@ final class ChatGoRuntimeStatus
             $ready=$processReady&&(!$business['supported']||$business['ready']);
             if($callbackOnlyReady){
                 $deployment=['state'=>'callback_only','message'=>'微信媒体审核回调入口在线。正式聊天收发待放行；部署版本以宝塔 Go 项目日志为准。'];
-                $business['message']='当前只接收和分发微信媒体审核回执。正式聊天的 MySQL、Redis 和恢复门禁待单独配置。';
+                $business['message']='当前运行微信媒体审核回执。正式文字收发尚未启动，请查看首次启用检查结果。';
             }elseif($processReady&&$business['supported']&&!$business['ready']){
                 $deployment=['state'=>'dependency_unavailable','message'=>$business['message']];
             }

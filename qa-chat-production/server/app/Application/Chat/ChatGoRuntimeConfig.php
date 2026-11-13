@@ -42,7 +42,8 @@ final class ChatGoRuntimeConfig
         $schemaReady=$this->messageSchemaReady();
         $chatEnabled=$this->chatEnabled();
         $operationsConfigured=$this->operationsConfigured($chat);
-        $operationsReady=$operationsConfigured&&($environment!=='production'||\WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::ready($chat,'production'));
+        $recoveryStatus=$environment==='production'?\WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status($chat,'production'):($operationsConfigured?'ready':'unconfigured');
+        $operationsReady=$recoveryStatus==='ready';
         $appId=trim((string)\setting('wechat.miniapp_appid',''));
         $root=ChatRuntimePaths::managedRoot();
         $messageReady=$environment==='test'&&$root!==null&&!empty($signing['configured'])&&$redis['enabled']&&$chatEnabled&&$schemaReady&&$operationsConfigured&&$this->validAppId($appId);
@@ -68,6 +69,7 @@ final class ChatGoRuntimeConfig
             'chat_enabled'=>$chatEnabled,
             'message_schema_ready'=>$schemaReady,
             'message_operations_configured'=>$operationsReady,
+            'message_recovery_status'=>$recoveryStatus,
             'message_app_id_configured'=>$this->validAppId($appId),
             'messages_enabled'=>$messageReady,'message_missing'=>$messageMissing,'message_recovery_default'=>$environment==='test'&&empty($chat['recovery_gate_file'])&&empty($chat['recovery_epoch']),
             'safety_mode'=>$messageReady?'local':($environment==='production'?'release_required':'disabled'),
