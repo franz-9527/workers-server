@@ -149,4 +149,18 @@ for _ in $(seq 1 20); do if curl -fsS http://127.0.0.1:9502/readyz; then break; 
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) exit(1); echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
 test "$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")" = READY
+# An actual blocked marker must close user routes while preserving dispatch.
+gate=/www/backup-control/bixuan-chat/production/gate.json
+sudo sed -i 's/"state":"ready"/"state":"blocked"/' "$gate"
+sudo chown root:www "$gate"
+sudo chmod 640 "$gate"
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9502/readyz)" = 503
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
+sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="blocked") exit(1);' "$site/bootstrap.php"
+sudo sed -i 's/"state":"blocked"/"state":"ready"/' "$gate"
+sudo chown root:www "$gate"
+sudo chmod 640 "$gate"
+for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9502/readyz >/dev/null; then break; fi; sleep 1; done
+curl -fsS http://127.0.0.1:9502/readyz >/dev/null
+echo 'Recovery blocks business routes without interrupting callback dispatch' 
 echo 'Installer, BaoTa launcher, recovery gate, callback and Go business readiness verified'
