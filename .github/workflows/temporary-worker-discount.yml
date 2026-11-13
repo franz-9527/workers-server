@@ -1,0 +1,31 @@
+name: Temporary worker order discount acceptance
+on: push
+permissions:
+  contents: read
+jobs:
+  mysql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: discount-fixture-only
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: discount_fixture
+        ports: ['3306/tcp']
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 --silent" --health-interval=5s --health-timeout=4s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql, mbstring
+      - name: PHP and migration checks
+        run: |
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -r '$m=json_decode(file_get_contents("server/database/upgrades/manifest.json"),true,512,JSON_THROW_ON_ERROR);$last=end($m["upgrades"]);if($last["version"]!==trim(file_get_contents("server/VERSION"))||$last["checksum"]!==hash_file("sha256","server/database/upgrades/".$last["file"]))exit(1);'
+      - name: MySQL approval, order submission and payment regression
+        env:
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+        run: php .validation/worker-discount.php
