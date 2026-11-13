@@ -1,0 +1,22 @@
+name: Isolated production chat deployment
+on:
+  push:
+    paths: ['qa-chat-production/**', '.github/workflows/qa-chat-production.yml']
+permissions:
+  contents: read
+jobs:
+  deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: qa-chat-production/chat/go.mod
+          cache-dependency-path: qa-chat-production/chat/go.sum
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql,sodium,mbstring,curl
+          coverage: none
+      - run: bash qa-chat-production/verify.sh
