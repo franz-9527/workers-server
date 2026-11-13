@@ -70,10 +70,43 @@ final class ChatGoRuntimeConfig
             'message_schema_ready'=>$schemaReady,
             'message_operations_configured'=>$operationsReady,
             'message_recovery_status'=>$recoveryStatus,
+            'production_text_status'=>$environment==='production'?$this->productionTextStatus():[],
             'message_app_id_configured'=>$this->validAppId($appId),
             'messages_enabled'=>$messageReady,'message_missing'=>$messageMissing,'message_recovery_default'=>$environment==='test'&&empty($chat['recovery_gate_file'])&&empty($chat['recovery_epoch']),
             'safety_mode'=>$messageReady?'local':($environment==='production'?'release_required':'disabled'),
         ],$caps);
+    }
+
+    private function productionTextStatus(): array
+    {
+        $directory=ChatRuntimePaths::stateDirectory();
+        if ($directory===null) return [];
+        $path=$directory.'/production-text-status';
+        $raw=!@is_link($path)?@file_get_contents($path,false,null,0,512):false;
+        if (!is_string($raw)) return [];
+        $labels=[
+            'NOT_REQUESTED'=>'尚未提交启用请求，请点击初始化',
+            'CHECKING'=>'已提交启用请求，正在检查',
+            'READY'=>'Go 启动前检查已通过',
+            'SIGNING'=>'PHP 签名未就绪',
+            'CHAT_SWITCH'=>'订单聊天总开关未开放',
+            'SCHEMA'=>'聊天数据表不完整',
+            'RECOVERY'=>'Go 无法读取有效的恢复门禁',
+            'REDIS'=>'Redis 尚未启用',
+            'REDIS_PASSWORD'=>'Redis 密码不可读取',
+            'RELEASE'=>'缺少当前版本的正式放行凭证或签名密钥',
+            'WECHAT_SAFETY'=>'微信内容安全凭证导出未启用',
+            'WECHAT_CREDENTIAL'=>'微信内容安全凭证刷新失败',
+            'MYSQL_ACCOUNT'=>'正式 MySQL 连接配置不完整',
+            'APP_KEY'=>'站点加密配置不完整',
+            'CONFIG_ERROR'=>'正式 Go 配置生成失败',
+            'GO_PREFLIGHT'=>'Go 启动前检查未通过，请查看 Go 项目日志',
+        ];
+        $out=[];
+        foreach (explode(',',trim($raw)) as $code) {
+            if (isset($labels[$code])) $out[]=$labels[$code];
+        }
+        return $out;
     }
 
     /** Normal settings rendering is intentionally secret-free. */

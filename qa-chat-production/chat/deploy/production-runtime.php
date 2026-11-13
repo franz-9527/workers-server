@@ -62,13 +62,22 @@ try {
 
     $requested = getenv("CHAT_PROD_TEXT") === "1"
         || (getenv("CHAT_PROD_TEXT") !== "0" && (string) setting("chat.go_production_text_requested", "0") === "1");
-    @unlink($state."/production.text.pending");
+    $control = $root."/storage/private/chat-runtime-control";
+    if (!is_link($control) && (is_dir($control) || @mkdir($control, 0700, true))) {
+        $report = static function (array $codes) use ($control, $write): void {
+            try { $write($control."/production-text-status", implode(",", $codes)."\n"); }
+            catch (Throwable $e) { /* runtime diagnostics are best-effort */ }
+        };
+    } else {
+        $report = static function (array $codes): void {};
+    }
+    $report($requested ? ["CHECKING"] : ["NOT_REQUESTED"]);
     if ($requested) {
         try {
             $signing = (new ChatSigningKeyManager($db, $cipher))->status((array) app_config("chat", []));
             $text = (new ChatGoRuntimeConfig($db, $cipher))->productionText($signing, $appId);
             if ($text["missing"]) {
-                $write($state."/production.text.pending", implode(",", $text["missing"])."\n");
+                $report($text["missing"]);
                 fwrite(STDERR, "CHAT_PRODUCTION_TEXT_PENDING: ".implode(", ", $text["missing"])."\n");
                 exit(4);
             }
@@ -84,6 +93,7 @@ try {
             $write($state."/production.text.env", ChatGoRuntimeConfig::environmentFile($text["environment"] + ["CHAT_PROD_TEXT" => "1"]));
             $write($state."/production.text.json", json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
         } catch (Throwable $e) {
+            $report(["CONFIG_ERROR"]);
             fwrite(STDERR, "CHAT_PRODUCTION_TEXT_CONFIG_FAILED\n");
             exit(4);
         }

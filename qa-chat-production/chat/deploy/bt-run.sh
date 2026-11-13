@@ -139,6 +139,7 @@ while (( STOP == 0 )); do
     source "$STATE/production.runtime.env" || { sleep 10; continue; }
     if [[ -s "$STATE/production.text.env" ]] && (( runtime_status == 0 )); then
       if ! "$PHP_BIN" "$PHP_ROOT/bin/chat-credentials.php" >/dev/null 2>&1; then
+        printf '%s\n' WECHAT_CREDENTIAL > "$RELOAD_STATE/production-text-status"
         echo 'CHAT_PRODUCTION_TEXT_PENDING: WECHAT_CREDENTIAL'
       elif (
         source "$STATE/production.text.env" &&
@@ -146,8 +147,10 @@ while (( STOP == 0 )); do
       ); then
         source "$STATE/production.text.env" || { sleep 10; continue; }
         CONFIG="$STATE/production.text.json"
+        printf '%s\n' READY > "$RELOAD_STATE/production-text-status"
         echo 'CHAT_PRODUCTION_TEXT_READY'
       else
+        printf '%s\n' GO_PREFLIGHT > "$RELOAD_STATE/production-text-status"
         echo 'CHAT_PRODUCTION_TEXT_PENDING: GO_PREFLIGHT'
       fi
     fi

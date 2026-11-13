@@ -24,7 +24,7 @@ docker run -d --name chatqa-mysql -e MYSQL_ROOT_PASSWORD=fixture -e MYSQL_ROOT_H
   -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin -v /www/backup-control:/www/backup-control:ro mysql:5.7.44 \
   --server-id=991 --log-bin=/var/lib/chatqa-bin/mysql-bin --binlog-format=MIXED >/dev/null
 docker run -d --name chatqa-redis -p 127.0.0.1:6379:6379 redis:7-alpine >/dev/null
-trap 'sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true; docker logs --tail 20 chatqa-mysql' ERR
+trap 'docker logs --tail 20 chatqa-mysql' ERR
 ready=0
 for _ in $(seq 1 45); do
   if docker exec chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
@@ -35,7 +35,7 @@ done
 mysql() { docker exec -i chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture "$@"; }
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
-mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);"
+mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()),('wechat.miniapp_secret','isolated-fixture-secret','string','wechat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);"
 version=$(tr -d '\r\n' < server/VERSION)
 sudo tee "$site/config/installed.php" >/dev/null <<PHP
 <?php
@@ -51,7 +51,7 @@ binlog=$(command -v mysqlbinlog)
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog" --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
-trap 'kill "$writer" 2>/dev/null || true; sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true' EXIT
+trap 'kill "$writer" 2>/dev/null || true' EXIT
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog"
 kill "$writer"
 trap - EXIT
@@ -91,10 +91,62 @@ sudo chown www:www "$release_path"
 sudo chmod 600 "$release_path"
 sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED env CHAT_PROD_TEXT=1 CHAT_PROD_RELEASE_FILE="$release_path" CHAT_RELEASE_KEY="$release_key" php "$site/chat/deploy/production-runtime.php" "$site" "$state"
 probe_config "$state/production.text.json" | python3 -c 'import json,sys;x=json.load(sys.stdin);assert x["business_enabled"] and x["infrastructure_ready"] and x["mysql"]["state"]=="ready" and x["redis"]["state"]=="ready",x'
-sudo -u www bash -c 'source "$1"; source "$2"; export CHAT_RELEASE_KEY="$3"; exec /tmp/chatqa serve --config "$4"' _ \
-  "$state/production.runtime.env" "$state/production.text.env" "$release_key" "$state/production.text.json" &
-trap 'sudo pkill -x chatqa || true' EXIT
-for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9502/readyz; then break; fi; sleep 1; done
+# Install through the same layout and script that runs on BaoTa.
+sha="$source_sha"
+base=$(printf '0%.0s' {1..40})
+sudo install -d -m 0755 "$site/chat/bin/releases/$base"
+sudo install -m 0755 /tmp/chatqa "$site/chat/bin/releases/$base/chatd"
+sudo ln -s "releases/$base" "$site/chat/bin/current"
+sudo ln -s current/chatd "$site/chat/bin/chatd"
+sudo install -d -m 0700 "$site/chat/update"
+sudo bash -s -- "$site/chat/update" "$OLDPWD" "$site" <<'SH'
+set -eu
+update=$1
+sources=$2
+site=$3
+cd "$update"
+mkdir -p deploy payload site
+for f in bt-run.sh bt-site.sh production-runtime.php init-production-recovery.php update-production.sh web-update.php; do
+  cp "$sources/chat/deploy/$f" "deploy/$f"
+done
+cp "$sources/chat/chat.production.example.json" .
+for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php; do
+  mkdir -p "site/$(dirname "$f")"
+  cp "$sources/server/$f" "site/$f"
+  if [[ ! -f "$site/$f" ]]; then install -d "$site/$(dirname "$f")"; fi
+done
+cp /tmp/chatqa payload/chatd
+/tmp/chatqa version > payload/version.json
+printf '%032d' 0 | base64 > deploy/release-public.key
+find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+SH
+sudo --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY php -r '
+require $argv[1];
+$c=(new WorkerAdmin\Foundation\ApplicationContainer(db()))->privateCipher();
+(new WorkerAdmin\Application\Chat\ChatMediaCallbackSettings(db(),$c))->saveLocked(["wechat_callback_token"=>getenv("CHAT_WECHAT_CALLBACK_TOKEN"),"wechat_callback_aes_key"=>getenv("CHAT_WECHAT_CALLBACK_AES_KEY")],1,"wxfixture","https://chat-fixture.invalid");
+' "$site/bootstrap.php"
+sudo bash "$site/chat/update/deploy/update-production.sh"
+test "$(sudo readlink "$site/chat/bin/current")" = "releases/$sha"
+sudo test -f "$site/chat/update-backup/previous/current"
+sudo tee "$state/production.local.env" >/dev/null <<ENV
+CHAT_PROD_TEXT=1
+CHAT_PROD_RELEASE_FILE=$release_path
+CHAT_RELEASE_KEY=$release_key
+ENV
+sudo chown root:www "$state/production.local.env"
+sudo chmod 640 "$state/production.local.env"
+# Seed an isolated token cache for the real PHP exporter. No vendor call is made.
+sudo -u www php -r '
+$dir=$argv[1]."/storage/private/wechat-tokens"; mkdir($dir,0700);
+$app="wxfixture"; $env="production"; $now=time();
+$file=$dir."/".hash("sha256",$env."\\n".$app).".json";
+file_put_contents($file,json_encode(["schema_version"=>1,"env"=>$env,"app_id"=>$app,"token"=>"fixture_token_for_export","issued_at"=>$now,"expires_at"=>$now+1200,"credential_hash"=>hash("sha256",$env."\\n".$app."\\nisolated-fixture-secret")])); chmod($file,0600);
+' "$site"
+sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED bash "$site/chat/deploy/bt-run.sh" --production >/tmp/chatqa-launch.log 2>&1 &
+launcher=$!
+trap 'sudo cat /tmp/chatqa-launch.log; kill "$launcher" 2>/dev/null || true' EXIT
+for _ in $(seq 1 20); do if curl -fsS http://127.0.0.1:9502/readyz; then break; fi; sleep 1; done
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) exit(1); echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
-echo 'Recovery gate, callback and Go business readiness verified'
+test "$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")" = READY
+echo 'Installer, BaoTa launcher, recovery gate, callback and Go business readiness verified'
