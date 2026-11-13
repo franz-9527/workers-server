@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 site=/www/wwwroot/worker
 source_sha=ea22d377c9e7af55fa9499230259b0b1483a403e
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
-sudo mkdir -p "$site" /var/lib/bixuan-chat-prod /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/mysql
+sudo mkdir -p "$site" /var/lib/bixuan-chat-prod /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
 sudo chown www:www /var/lib/bixuan-chat-prod
 sudo chmod 700 /var/lib/bixuan-chat-prod
 sudo chown root:www /www/backup-control/bixuan-chat/production
@@ -12,18 +12,25 @@ sudo chmod 2750 /www/backup-control/bixuan-chat/production
 sudo cp -R server/. "$site/"
 sudo cp -R chat "$site/"
 sudo ln -s "$(command -v php)" /www/server/php/83/bin/php
-sudo chmod 0755 "$site/chat"
+sudo chown root:www "$site/chat"
+sudo chmod 0750 "$site/chat"
+sudo chown 999:999 /var/lib/chatqa-bin
+sudo chmod 0750 /var/lib/chatqa-bin
 sudo mkdir -p "$site/storage/private"
 sudo chown -R www:www "$site/storage"
 sudo touch "$site/storage/install.lock"
 docker run -d --name chatqa-mysql -e MYSQL_ROOT_PASSWORD=fixture -e MYSQL_ROOT_HOST=% \
-  -p 127.0.0.1:3306:3306 -v /var/lib/mysql:/var/lib/mysql mysql:5.7.44 \
-  --server-id=991 --log-bin=/var/lib/mysql/mysql-bin --binlog-format=MIXED >/dev/null
+  -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin mysql:5.7.44 \
+  --server-id=991 --log-bin=/var/lib/chatqa-bin/mysql-bin --binlog-format=MIXED >/dev/null
 docker run -d --name chatqa-redis -p 127.0.0.1:6379:6379 redis:7-alpine >/dev/null
-for _ in $(seq 1 90); do
-  if docker exec chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture -e 'SELECT 1' >/dev/null 2>&1; then break; fi
+trap 'docker logs --tail 60 chatqa-mysql' ERR
+ready=0
+for _ in $(seq 1 45); do
+  if docker exec chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
+  if [[ $(docker inspect -f '{{.State.Running}}' chatqa-mysql) != true ]]; then break; fi
   sleep 1
 done
+[[ $ready == 1 ]]
 mysql() { docker exec -i chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture "$@"; }
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
