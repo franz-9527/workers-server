@@ -35,7 +35,7 @@ done
 mysql() { docker exec -i chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture "$@"; }
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
-mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()),('wechat.miniapp_secret','isolated-fixture-secret','string','wechat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);"
+mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()),('wechat.miniapp_secret','isolated-fixture-secret','string','wechat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value); INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(1,'fixture_admin','fixture-not-a-login-hash','super_admin','active',0,NOW(),NOW());"
 version=$(tr -d '\r\n' < server/VERSION)
 sudo tee "$site/config/installed.php" >/dev/null <<PHP
 <?php
@@ -118,7 +118,7 @@ done
 cp /tmp/chatqa payload/chatd
 /tmp/chatqa version > payload/version.json
 printf '%032d' 0 | base64 > deploy/release-public.key
-find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+find . -type f ! -name SHA256SUMS.txt -printf "%P\0" | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
 SH
 sudo --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY php -r '
 require $argv[1];
@@ -139,8 +139,8 @@ sudo chmod 640 "$state/production.local.env"
 sudo -u www php -r '
 $dir=$argv[1]."/storage/private/wechat-tokens"; mkdir($dir,0700);
 $app="wxfixture"; $env="production"; $now=time();
-$file=$dir."/".hash("sha256",$env."\\n".$app).".json";
-file_put_contents($file,json_encode(["schema_version"=>1,"env"=>$env,"app_id"=>$app,"token"=>"fixture_token_for_export","issued_at"=>$now,"expires_at"=>$now+1200,"credential_hash"=>hash("sha256",$env."\\n".$app."\\nisolated-fixture-secret")])); chmod($file,0600);
+$file=$dir."/".hash("sha256",$env."\n".$app).".json";
+file_put_contents($file,json_encode(["schema_version"=>1,"env"=>$env,"app_id"=>$app,"token"=>"fixture_token_for_export","issued_at"=>$now,"expires_at"=>$now+1200,"credential_hash"=>hash("sha256",$env."\n".$app."\nisolated-fixture-secret")])); chmod($file,0600);
 ' "$site"
 sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED bash "$site/chat/deploy/bt-run.sh" --production >/tmp/chatqa-launch.log 2>&1 &
 launcher=$!

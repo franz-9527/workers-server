@@ -12,7 +12,6 @@ final class ChatRecoveryGate implements ChatRecoveryReadiness
     {self::assertReady($config,$environment);}
     public static function ready(array $config,string $environment): bool
     {
-        $path=(string)($config['recovery_gate_file']??'');$epoch=(string)($config['recovery_epoch']??'');
         return self::status($config,$environment)==='ready';
     }
     public static function status(array $config,string $environment):string
