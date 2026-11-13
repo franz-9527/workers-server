@@ -163,10 +163,10 @@ try {
     $temporary = $archive.'.'.bin2hex(random_bytes(8));
     $input = fopen(dirname($source).'/'.$name, 'rb');
     $output = fopen($temporary, 'x');
-    if ($input === false || $output === false) throw new RuntimeException('CHAT_RECOVERY_BINLOG_ARCHIVE');
+    if ($input === false || $output === false) throw new RuntimeException('CHAT_RECOVERY_BINLOG_ARCHIVE_OPEN');
     try {
         if (stream_copy_to_stream($input, $output, $position) !== $position || !fflush($output) || !fsync($output)) {
-            throw new RuntimeException('CHAT_RECOVERY_BINLOG_ARCHIVE');
+            throw new RuntimeException('CHAT_RECOVERY_BINLOG_ARCHIVE_COPY');
         }
     } finally {
         fclose($input);
@@ -174,9 +174,10 @@ try {
     }
     $proc = proc_open([$binary,'--no-defaults','--verify-binlog-checksum','--stop-position='.$position,$temporary],
         [0=>['file','/dev/null','r'],1=>['file','/dev/null','w'],2=>['file','/dev/null','w']], $pipes);
-    if (!is_resource($proc) || proc_close($proc) !== 0 || !rename($temporary, $archive)) {
+    $archiveStatus = is_resource($proc) ? proc_close($proc) : null;
+    if ($archiveStatus !== 0 || !rename($temporary, $archive)) {
         @unlink($temporary);
-        throw new RuntimeException('CHAT_RECOVERY_BINLOG_ARCHIVE');
+        throw new RuntimeException($archiveStatus !== 0 ? 'CHAT_RECOVERY_BINLOG_ARCHIVE_VERIFY' : 'CHAT_RECOVERY_BINLOG_ARCHIVE_PUBLISH');
     }
     $from = $watermark;
     $from['position'] = '4';
@@ -213,6 +214,7 @@ try {
         default => preg_match('/^CHAT_RECOVERY_[A-Z0-9_]+$/D', $code) === 1 ? $code : 'CHAT_RECOVERY_INIT_FAILED',
     };
     $diagnostic = ['step'=>$stage, 'mysql_code'=>$mysqlCode, 'exception'=>get_class($e)];
+    if (isset($archiveStatus) && $archiveStatus !== 0) $diagnostic['mysqlbinlog_exit'] = $archiveStatus;
     if (isset($checkName)) $diagnostic['check'] = $checkName;
     if ($code === 'CHAT_RECOVERY_HISTORY_EXISTS' && !empty($history)) $diagnostic['history_rows'] = $history;
     fwrite(STDERR, $code.' '.recoveryJson($diagnostic)."\n");

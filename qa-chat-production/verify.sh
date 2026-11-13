@@ -21,7 +21,7 @@ sudo mkdir -p "$site/storage/private"
 sudo chown -R www:www "$site/storage"
 sudo touch "$site/storage/install.lock"
 docker run -d --name chatqa-mysql -e MYSQL_ROOT_PASSWORD=fixture -e MYSQL_ROOT_HOST=% \
-  -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin mysql:5.7.44 \
+  -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin -v /www/backup-control:/www/backup-control:ro mysql:5.7.44 \
   --server-id=991 --log-bin=/var/lib/chatqa-bin/mysql-bin --binlog-format=MIXED >/dev/null
 docker run -d --name chatqa-redis -p 127.0.0.1:6379:6379 redis:7-alpine >/dev/null
 trap 'sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true; docker logs --tail 20 chatqa-mysql' ERR
@@ -45,15 +45,13 @@ PHP
 sudo tee /usr/local/bin/chatqa-mysqlbinlog >/dev/null <<'SH'
 #!/bin/bash
 set -euo pipefail
-last="$4"
-docker cp "$last" chatqa-mysql:/tmp/chat-qa-archive.bin 2>/tmp/chatqa-binlog-error
-docker exec chatqa-mysql mysqlbinlog "$1" "$2" "$3" /tmp/chat-qa-archive.bin 2>>/tmp/chatqa-binlog-error
+docker exec -u root chatqa-mysql mysqlbinlog "$@" 2>/tmp/chatqa-binlog-error
 SH
 sudo chmod 755 /usr/local/bin/chatqa-mysqlbinlog
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
-trap 'kill "$writer" 2>/dev/null || true' EXIT
+trap 'kill "$writer" 2>/dev/null || true; sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true' EXIT
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog
 kill "$writer"
 trap - EXIT
