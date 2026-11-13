@@ -312,7 +312,7 @@ final class DatabaseOrderPaidPaymentSettlement
             $recognized = in_array($merchant['recognition_level'], ['suspected','confirmed'], true);
             $rate = $this->settings->int($recognized ? 'commission.merchant_detected_rate_bp' : 'commission.default_rate_bp',1000);
             $minimum = $this->settings->int($recognized ? 'commission.merchant_minimum_cents' : 'commission.minimum_cents',5000);
-            $this->db->execute('UPDATE orders SET commission_rate_bp=:rate,commission_min_cents=:minimum WHERE id=:id',
+            $this->db->execute('UPDATE orders SET commission_rate_bp=:rate,commission_min_cents=:minimum,worker_order_discount=0 WHERE id=:id',
                 ['rate'=>max(0,min(10000,$rate)),'minimum'=>max(1,$minimum),'id'=>$order['id']]);
             return;
         }

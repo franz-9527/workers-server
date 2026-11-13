@@ -106,8 +106,16 @@ $third=$draft();
 check((int)$settle($third)['commission_rate_bp']===1100,'refunded and rejected orders do not count');
 $fourth=$draft();
 $repo->review(10,'suspended','暂停',[],7);
-check((int)$settle($fourth)['commission_rate_bp']===1100,'suspended approval cannot discount an existing unpaid draft');
+$paidWithoutApproval=$settle($fourth);
+check((int)$paidWithoutApproval['commission_rate_bp']===1100&&(int)$paidWithoutApproval['worker_order_discount']===0,'suspended approval cannot discount or count an existing unpaid draft');
 $repo->review(10,'approved','',$checks,7);
 check((int)$settle($draft())['commission_rate_bp']===750,'restoring approval preserves the valid-order history');
 $pdo->exec("UPDATE worker_profiles SET verification_status='suspended' WHERE id=10");
 check($repo->status($actor)===null&&$repo->approvedAt($actor)===null,'loss of worker approval hides application and stops new discounts');
+
+$pdo->exec("INSERT INTO merchant_profiles(public_id,user_id,verification_status,recognition_level,reviewed_at,created_at) VALUES('merchant-test',4,'approved','verified',UTC_TIMESTAMP(),UTC_TIMESTAMP())");
+$merchantDraft=fn()=>(int)$orders->createDraft(['user_id'=>4],['address'=>['contact_mobile'=>'13600136000'],'answers'=>['workflow_profile'=>'construction']])['internal_id'];
+$merchantFirst=$settle($merchantDraft());
+$merchantSecond=$settle($merchantDraft());
+check($merchantFirst['order_source_type']==='merchant'&&(int)$merchantFirst['worker_order_discount']===0&&(int)$merchantFirst['commission_rate_bp']===1100
+    &&(int)$merchantSecond['commission_rate_bp']===750,'existing licensed merchant keeps the original pricing workflow');
