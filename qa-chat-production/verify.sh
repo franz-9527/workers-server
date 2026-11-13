@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 site=/www/wwwroot/worker
 source_sha=ea22d377c9e7af55fa9499230259b0b1483a403e
+export CHAT_ACCESS_SEED=$(printf "%032d" 0 | base64 -w0)
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
 sudo mkdir -p "$site" /var/lib/bixuan-chat-prod /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
 sudo chown www:www /var/lib/bixuan-chat-prod
@@ -23,7 +24,7 @@ docker run -d --name chatqa-mysql -e MYSQL_ROOT_PASSWORD=fixture -e MYSQL_ROOT_H
   -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin mysql:5.7.44 \
   --server-id=991 --log-bin=/var/lib/chatqa-bin/mysql-bin --binlog-format=MIXED >/dev/null
 docker run -d --name chatqa-redis -p 127.0.0.1:6379:6379 redis:7-alpine >/dev/null
-trap 'docker logs --tail 60 chatqa-mysql' ERR
+trap 'sudo cat /tmp/chatqa-binlog-error 2>/dev/null || true; docker logs --tail 20 chatqa-mysql' ERR
 ready=0
 for _ in $(seq 1 45); do
   if docker exec chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
@@ -45,8 +46,8 @@ sudo tee /usr/local/bin/chatqa-mysqlbinlog >/dev/null <<'SH'
 #!/bin/bash
 set -euo pipefail
 last="$4"
-docker cp "$last" chatqa-mysql:/tmp/chat-qa-archive.bin
-exec docker exec chatqa-mysql mysqlbinlog "$1" "$2" "$3" /tmp/chat-qa-archive.bin
+docker cp "$last" chatqa-mysql:/tmp/chat-qa-archive.bin 2>/tmp/chatqa-binlog-error
+docker exec chatqa-mysql mysqlbinlog "$1" "$2" "$3" /tmp/chat-qa-archive.bin 2>>/tmp/chatqa-binlog-error
 SH
 sudo chmod 755 /usr/local/bin/chatqa-mysqlbinlog
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog --check
@@ -62,9 +63,39 @@ sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_K
 cd chat
 go test ./internal/bootstrap ./internal/dependencies
 go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o /tmp/chatqa ./cmd/chatd
-sudo -u www bash -c 'source /var/lib/bixuan-chat-prod/production.runtime.env && exec /tmp/chatqa serve --config /var/lib/bixuan-chat-prod/production.runtime.json' &
+state=/var/lib/bixuan-chat-prod
+probe_config() {
+  sudo -u www bash -c 'source "$1"; [[ ! -s "$2" ]] || source "$2"; export CHAT_RELEASE_KEY="$3"; exec /tmp/chatqa check-config --config "$4" --probe' _ \
+    "$state/production.runtime.env" "$state/production.text.env" "$release_key" "$1"
+}
+release_key=$(printf '%032d' 1 | base64 -w0)
+set +e
+sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED env CHAT_PROD_TEXT=1 php "$site/chat/deploy/production-runtime.php" "$site" "$state" > /tmp/chatqa-unreleased.log 2>&1
+missing_rc=$?
+set -e
+test "$missing_rc" = 4
+grep -q 'CHAT_PRODUCTION_TEXT_PENDING: RELEASE' /tmp/chatqa-unreleased.log
+# Fixture seal is signed with a throwaway key and never leaves this runner.
+epoch=$(sudo cat "$site/config/chat-production-recovery.json")
+release_path="$state/fixture-release.json"
+sudo env QA_EPOCH="$epoch" QA_REVISION="$source_sha" QA_RELEASE_KEY="$release_key" QA_RELEASE_PATH="$release_path" python3 - <<'PY'
+import base64, hashlib, hmac, json, os, time
+env = os.environ
+body = json.dumps(dict(schema=1, environment="production", epoch=env["QA_EPOCH"],
+    revision=env["QA_REVISION"], expires_at=int(time.time())+600,
+    capabilities=["text","governance"]), separators=(",",":")).encode()
+with open(env["QA_RELEASE_PATH"], "w") as f:
+    json.dump(dict(payload=base64.b64encode(body).decode(),
+        mac=hmac.new(base64.b64decode(env["QA_RELEASE_KEY"]), body, hashlib.sha256).hexdigest()), f)
+PY
+sudo chown www:www "$release_path"
+sudo chmod 600 "$release_path"
+sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED env CHAT_PROD_TEXT=1 CHAT_PROD_RELEASE_FILE="$release_path" CHAT_RELEASE_KEY="$release_key" php "$site/chat/deploy/production-runtime.php" "$site" "$state"
+probe_config "$state/production.text.json" | python3 -c 'import json,sys;x=json.load(sys.stdin);assert x["business_enabled"] and x["infrastructure_ready"] and x["mysql"]["state"]=="ready" and x["redis"]["state"]=="ready",x'
+sudo -u www bash -c 'source "$1"; source "$2"; export CHAT_RELEASE_KEY="$3"; exec /tmp/chatqa serve --config "$4"' _ \
+  "$state/production.runtime.env" "$state/production.text.env" "$release_key" "$state/production.text.json" &
 trap 'sudo pkill -x chatqa || true' EXIT
-for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9501/livez; then break; fi; sleep 1; done
+for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9502/readyz; then break; fi; sleep 1; done
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
-curl -sS http://127.0.0.1:9502/readyz | grep -q '"business_enabled":false'
-echo 'Recovery gate and callback-only deployment verified'
+sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) exit(1); echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
+echo 'Recovery gate, callback and Go business readiness verified'
