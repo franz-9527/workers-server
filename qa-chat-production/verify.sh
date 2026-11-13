@@ -42,12 +42,15 @@ sudo tee "$site/config/installed.php" >/dev/null <<PHP
 return ['installed'=>true,'app'=>['env'=>'production','version'=>'$version','url'=>'https://chat-fixture.invalid','key'=>str_repeat('k',32)],
 'database'=>['host'=>'127.0.0.1','port'=>3306,'database'=>'chat_fixture','username'=>'chat_fixture','password'=>'fixture-only','charset'=>'utf8mb4']];
 PHP
-sudo tee /usr/local/bin/chatqa-mysqlbinlog >/dev/null <<'SH'
+binlog=/usr/local/bin/chatqa-mysqlbinlog
+mysqlbinlog=$(docker exec chatqa-mysql sh -c 'command -v mysqlbinlog')
+dockercli=$(command -v docker)
+sudo tee "$binlog" >/dev/null <<SH
 #!/bin/bash
-set -euo pipefail
-docker exec -u root chatqa-mysql mysqlbinlog "$@" 2>/tmp/chatqa-binlog-error
+exec "$dockercli" exec -u root chatqa-mysql "$mysqlbinlog" "\$@"
 SH
-sudo chmod 755 /usr/local/bin/chatqa-mysqlbinlog
+sudo chmod 755 "$binlog"
+sudo "$binlog" --no-defaults --version
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" /usr/local/bin/chatqa-mysqlbinlog --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
