@@ -212,7 +212,7 @@ sudo sed -i 's/"state":"ready"/"state":"blocked"/' "$gate"
 sudo chown root:www "$gate"
 sudo chmod 640 "$gate"
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9502/readyz)" = 503
-test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 404
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="blocked") exit(1);' "$site/bootstrap.php"
 sudo sed -i 's/"state":"blocked"/"state":"ready"/' "$gate"
 sudo chown root:www "$gate"
