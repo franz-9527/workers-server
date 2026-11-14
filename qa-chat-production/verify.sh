@@ -228,7 +228,7 @@ echo "Blocked recovery readiness HTTP=$blocked_http body=$(cat /tmp/chatqa-block
 test "$blocked" = 1
 callback_after_block=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)
 echo "Optional callback while recovery blocked HTTP=$callback_after_block"
-test "$callback_after_block" = 404
+test "$callback_after_block" = 503
 php_gate_status=$(sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; echo WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production");' "$site/bootstrap.php")
 echo "PHP recovery gate status=$php_gate_status"
 test "$php_gate_status" = blocked
@@ -245,7 +245,8 @@ for _ in $(seq 1 15); do
 done
 echo "Restored recovery readiness HTTP=$restored_http body=$(cat /tmp/chatqa-restored.json 2>/dev/null || true)"
 test "$restored" = 1
-echo 'Recovery blocks business routes without interrupting callback dispatch'
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 404
+echo 'Recovery gate blocks business readiness and restores; the unconfigured L1 callback remains optional'
 
 cleanup_launcher
 trap - EXIT
