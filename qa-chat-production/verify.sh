@@ -173,14 +173,22 @@ cleanup_launcher() {
 }
 trap cleanup_launcher EXIT
 ready=0
+ready_http=000
 for _ in $(seq 1 30); do
-  if curl -fsS http://127.0.0.1:9502/readyz >/tmp/chatqa-ready.json; then ready=1; break; fi
+  ready_http=$(curl -sS -o /tmp/chatqa-ready.json -w '%{http_code}' http://127.0.0.1:9502/readyz || true)
+  if [[ "$ready_http" == 200 ]]; then ready=1; break; fi
   sleep 1
 done
-[[ $ready == 1 ]]
-test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
-sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) exit(1); echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
-test "$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")" = READY
+echo "Go readiness HTTP=$ready_http body=$(cat /tmp/chatqa-ready.json 2>/dev/null || true)"
+sudo cat /tmp/chatqa-launch.log || true
+[[ $ready == 1 ]] || { echo 'QA_GO_READINESS_FAILED'; exit 1; }
+callback_http=$(curl -sS -o /tmp/chatqa-callback.txt -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback || true)
+echo "Go callback unauthenticated HTTP=$callback_http"
+test "$callback_http" = 403
+sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) { fwrite(STDERR,"PHP_GO_BUSINESS_NOT_READY ".json_encode($s)."\n"); exit(1); } echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
+text_status=$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")
+echo "Go production text status=$text_status"
+test "$text_status" = READY
 
 # A second BaoTa launcher must fail immediately on the same exclusive lock.
 second_log=$(mktemp)
@@ -188,6 +196,7 @@ set +e
 sudo -u www bash "$site/chat/deploy/bt-run.sh" --production >"$second_log" 2>&1
 second_rc=$?
 set -e
+echo "Second launcher exit=$second_rc output=$(cat "$second_log")"
 test "$second_rc" = 2
 grep -q 'CHAT_RUN_ALREADY_STARTED' "$second_log"
 test "$(sudo stat -c '%a' "$state/run.lock")" = 600
