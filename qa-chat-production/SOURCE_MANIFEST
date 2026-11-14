@@ -1023,3 +1023,5 @@ aa03c88827b4f510584e0244c924b38eba2df0f8  qa-chat-production/server/app/Support/
 df36e024b29d0cbdbdbfe373e0b5d75920e7d940  qa-chat-production/server/database/database.sql
 18b2821c9e8ba4d5152799739926c65649634c2b  qa-chat-production/server/tests/chat_call_resource_contract.php
 d7b80f3b4aff76baf8e8d79f6fd39a6c6ce1f802  qa-chat-production/server/views/admin/chat-settings.php
+87ecdf84fb138e58ecfe37e6b9cb7e73b3f0dae6  qa-chat-production/tools/check-chat-release.py
+a014d5a4fd776fdf9a32c025b016c659d5b1032c  qa-chat-production/tools/test_check_chat_release_profiles.py

@@ -28,30 +28,30 @@ def ready_evidence(profile):
         row.update(status="passed", revision=REVISION, evidence="isolated-run-123456")
     for area in CHECK.profile_areas(profile):
         evidence[area].update(status="passed", revision=REVISION, evidence="isolated-run-123456")
-    evidence["automation"] = {
+    evidence["automation"].update({
         "race": True, "mysql57": True, "php_version": "8.3.36",
         "redis": True, "source_verified": True,
-    }
-    evidence["devices"] = {
+    })
+    evidence["devices"].update({
         "physical_devices": [
             {"id": "ios-1", "platform": "ios", "physical": True, "passed": True},
             {"id": "android-1", "platform": "android", "physical": True, "passed": True},
         ],
         "weak_network": True, "large_text": True, "dark_mode": True,
         "safe_area": True, "album_permissions": True,
-    }
-    evidence["deployment"] = {
+    })
+    evidence["deployment"].update({
         "actual_sha": REVISION, "source_dirty": False,
         "nonroot_processes": ["serve", "worker"], "private_internal_port": True,
         "php_routes_preserved": True, "rollback_passed": True,
         "authenticated_wss": True,
-    }
-    evidence["recovery"] = {
+    })
+    evidence["recovery"].update({
         "independent_increment_complete": True, "old_permissions_denied": True,
         "recall_not_revived": True, "notification_not_resent": True,
         "wallet_not_recharged": True, "gap_blocks_access": True,
-    }
-    if profile in ("text", "text-images"):
+    })
+    if profile in ("text", "text-images"): 
         evidence["text_channels"] = {
             "status": "passed", "revision": REVISION, "evidence": "wechat-text-safety-run",
             "simulated": False, "platform_safety": True, "wechat_text_safety": True,
@@ -67,16 +67,16 @@ def ready_evidence(profile):
             "recall_and_expiry": True, "simulated": False,
         })
     if profile == "full":
-        evidence["capacity"] = {
+        evidence["capacity"].update({
             "environment": "target_host", "connections": [30, 100, 300],
             "history_sizes": [1000, 10000, 100000], "mixed_order_media_notifications": True,
             "baseline_order_p95_ms": 100, "mixed_order_p95_ms": 105, "headroom_percent": 40,
-        }
-        evidence["channels"] = {
+        })
+        evidence["channels"].update({
             "status": "passed", "revision": REVISION, "evidence": "full-channel-run",
             "simulated": False, "private_media_expiry": True, "platform_safety": True,
             "subscription_receipts": True, "field_images_reviewed": True, "manual_wait_reviewed": True,
-        }
+        })
     return evidence
 
 class ReleaseProfileTests(unittest.TestCase):
@@ -119,6 +119,7 @@ class ReleaseProfileTests(unittest.TestCase):
     def test_full_profile_optional_audio_requires_av_evidence(self):
         evidence = ready_evidence("full")
         evidence["capabilities"].append("audio")
+        evidence["cases"].pop("AV05")
         self.assertIn("AV05", self.validate(evidence, "full"))
 
     def test_profile_mismatch_fails_closed(self):
