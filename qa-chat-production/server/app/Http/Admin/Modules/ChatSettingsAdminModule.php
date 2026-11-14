@@ -82,7 +82,7 @@ final class ChatSettingsAdminModule implements AdminModule
                     if(!$canManage||\app_config('app.env')!=='production')throw new RuntimeException('仅正式站超级管理员可初始化。');
                     if(empty($signing->status($config)['configured']))$signing->generate($config,(int)$admin['id'],(string)$admin['role']);
                     $goRuntime->prepareProduction((int)$admin['id'],(string)$admin['role']);
-                    \audit('chat.production_prepare','system_setting',0,'初始化正式聊天签名并请求应用');
+                    \audit('chat.production_prepare','system_setting',0,'初始化正式文字聊天签名与短效放行并请求应用');
                     \flash('success',$control->request()['message']);
                 }elseif($action==='prepare_test'){
                     if(!$canManage)throw new RuntimeException('仅超级管理员可初始化测试聊天。');

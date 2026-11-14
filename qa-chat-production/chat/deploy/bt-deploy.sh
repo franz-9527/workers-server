@@ -20,10 +20,27 @@ if [[ "$CHAT_SITE" == production ]]; then
 else
   "$PHP_BIN" -r '$c=require $argv[1]; if(($c["app"]["env"]??"")!=="testing"){fwrite(STDERR,"CHAT_DEPLOY_TEST_SITE_REQUIRED\n");exit(2);}' "$PHP_ROOT/config/installed.php"
 fi
-mkdir -p "$BIN/releases" "$STATE"
+[[ ! -L "$BIN" && ! -L "$STATE" ]] || { echo 'CHAT_DEPLOY_STATE_SYMLINK'; exit 2; }
+mkdir -p "$BIN/releases"
 chmod 755 "$BIN" "$BIN/releases"
-if [[ $EUID == 0 ]]; then chown "$RUN_USER" "$STATE"; fi
-chmod 750 "$STATE"
+if [[ "$CHAT_SITE" == production ]]; then
+  [[ "$RUN_USER" == www ]] || { echo 'CHAT_DEPLOY_PRODUCTION_USER_REQUIRED: www'; exit 2; }
+  if [[ ! -e "$STATE" ]]; then
+    if [[ $EUID == 0 ]]; then
+      install -d -m 0700 -o www -g www "$STATE"
+    else
+      mkdir -p "$STATE" || { echo 'CHAT_DEPLOY_STATE_CREATE_FAILED'; exit 2; }
+      chmod 0700 "$STATE"
+    fi
+  fi
+  [[ -d "$STATE" && ! -L "$STATE" && $(stat -c '%U:%G:%a' -- "$STATE") == www:www:700 ]] || {
+    echo 'CHAT_DEPLOY_PRODUCTION_STATE_PERMISSIONS'; exit 2;
+  }
+else
+  mkdir -p "$STATE"
+  if [[ $EUID == 0 ]]; then chown "$RUN_USER:$(id -gn "$RUN_USER")" "$STATE"; fi
+  chmod 750 "$STATE"
+fi
 exec 9>"$BIN/deploy.lock"
 flock -n 9 || { echo 'CHAT_DEPLOY_BUSY'; exit 1; }
 BRANCH=$(git -C "$ROOT" branch --show-current)

@@ -9,7 +9,7 @@ require WORKER_BASE_PATH.'/app/Support/functions.php';
 require WORKER_BASE_PATH.'/app/Application/Chat/ChatGoUpdate.php';
 
 $inbox = ChatGoUpdate::directory();
-$state = '/var/lib/bixuan-chat-prod';
+$state = WORKER_BASE_PATH.'/chat/bin/state';
 $mode = $argv[2] ?? '';
 $revision = $argv[3] ?? '';
 $pending = $inbox.'/pending.chatgo';

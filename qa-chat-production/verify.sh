@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+repo_root=$(cd .. && pwd -P)
 site=/www/wwwroot/worker
-source_sha=ea22d377c9e7af55fa9499230259b0b1483a403e
-export CHAT_ACCESS_SEED=$(printf "%032d" 0 | base64 -w0)
+legacy_state=/var/lib/bixuan-chat-prod
+state=$site/chat/bin/state
+source_sha=$(tr -d '\r\n' < SOURCE_SHA)
+[[ "$source_sha" =~ ^[a-f0-9]{40}$ ]] || { echo 'QA_SOURCE_SHA_INVALID' >&2; exit 2; }
+while read -r expected path; do
+  [[ "$expected" =~ ^[a-f0-9]{40}$ && -n "$path" ]] || { echo 'QA_SOURCE_MANIFEST_INVALID' >&2; exit 2; }
+  actual=$(git -C "$repo_root" hash-object "$path")
+  [[ "$actual" == "$expected" ]] || { echo "QA_SOURCE_SNAPSHOT_MISMATCH: $path" >&2; exit 2; }
+done < SOURCE_MANIFEST
+echo "Testing workers source SHA: $source_sha"
+
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
-sudo mkdir -p "$site" /var/lib/bixuan-chat-prod /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
-sudo chown www:www /var/lib/bixuan-chat-prod
-sudo chmod 700 /var/lib/bixuan-chat-prod
+sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
+sudo chown www:www "$legacy_state"
+sudo chmod 0700 "$legacy_state"
+# Simulate the legacy launcher's permissive lock file; migration must normalize it safely.
+sudo -u www -- bash -c 'umask 077; : > "$1/run.lock"; printf "%s\n" "legacy-state-fixture" > "$1/legacy-sentinel"' _ "$legacy_state"
+sudo chmod 0644 "$legacy_state/run.lock"
 sudo chown root:www /www/backup-control/bixuan-chat/production
 sudo chmod 2750 /www/backup-control/bixuan-chat/production
 sudo cp -R server/. "$site/"
@@ -20,11 +33,12 @@ sudo chmod 0750 /var/lib/chatqa-bin
 sudo mkdir -p "$site/storage/private"
 sudo chown -R www:www "$site/storage"
 sudo touch "$site/storage/install.lock"
+
 docker run -d --name chatqa-mysql -e MYSQL_ROOT_PASSWORD=fixture -e MYSQL_ROOT_HOST=% \
   -p 127.0.0.1:3306:3306 -v /var/lib/chatqa-bin:/var/lib/chatqa-bin -v /www/backup-control:/www/backup-control:ro mysql:5.7.44 \
   --server-id=991 --log-bin=/var/lib/chatqa-bin/mysql-bin --binlog-format=MIXED >/dev/null
 docker run -d --name chatqa-redis -p 127.0.0.1:6379:6379 redis:7-alpine >/dev/null
-trap 'docker logs --tail 20 chatqa-mysql' ERR
+trap 'docker logs --tail 20 chatqa-mysql || true' ERR
 ready=0
 for _ in $(seq 1 45); do
   if docker exec chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture -e 'SELECT 1' >/dev/null 2>&1; then ready=1; break; fi
@@ -51,55 +65,45 @@ binlog=$(command -v mysqlbinlog)
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog" --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
-trap 'kill "$writer" 2>/dev/null || true' EXIT
+trap 'kill "$writer" 2>/dev/null || true; docker logs --tail 20 chatqa-mysql || true' ERR
 sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog"
 kill "$writer"
-trap - EXIT
+wait "$writer" 2>/dev/null || true
+trap - ERR
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="ready") exit(1); echo "PHP recovery gate is readable\n";' "$site/bootstrap.php"
 sudo -u www php -d "open_basedir=$site/:/tmp/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="unreadable") exit(1); echo "PHP reports an inaccessible recovery gate separately\n";' "$site/bootstrap.php"
-export CHAT_WECHAT_CALLBACK_TOKEN=FixtureToken20260001 CHAT_WECHAT_CALLBACK_AES_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY php "$site/chat/deploy/production-runtime.php" "$site" /var/lib/bixuan-chat-prod
+
+# Exercise the same managed first-enable path used by the super-administrator UI.
+sudo -u www php -r '
+require $argv[1];
+$db=db();
+$cipher=(new WorkerAdmin\Foundation\ApplicationContainer($db))->privateCipher();
+$config=(array)app_config("chat",[]);
+$signing=new WorkerAdmin\Application\Chat\ChatSigningKeyManager($db,$cipher);
+$state=$signing->status($config);
+if(empty($state["configured"])) $state=$signing->generate($config,1,"super_admin");
+if(empty($state["configured"])||empty($state["public_keys"])) throw new RuntimeException("CHAT_QA_SIGNING_SETUP_FAILED");
+$runtime=new WorkerAdmin\Application\Chat\ChatGoRuntimeConfig($db,$cipher);
+$runtime->prepareProduction(1,"super_admin");
+echo "Managed PHP signing and production release key initialized\n";
+' "$site/bootstrap.php"
+
 cd chat
 go test ./internal/bootstrap ./internal/dependencies
+bash -n deploy/bt-run.sh
+bash -n deploy/bt-deploy.sh
+bash -n deploy/update-production.sh
 go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o /tmp/chatqa ./cmd/chatd
-state=/var/lib/bixuan-chat-prod
-probe_config() {
-  sudo -u www bash -c 'source "$1"; [[ ! -s "$2" ]] || source "$2"; export CHAT_RELEASE_KEY="$3"; exec /tmp/chatqa check-config --config "$4" --probe' _ \
-    "$state/production.runtime.env" "$state/production.text.env" "$release_key" "$1"
-}
-release_key=$(printf '%032d' 1 | base64 -w0)
-set +e
-sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED env CHAT_PROD_TEXT=1 php "$site/chat/deploy/production-runtime.php" "$site" "$state" > /tmp/chatqa-unreleased.log 2>&1
-missing_rc=$?
-set -e
-test "$missing_rc" = 4
-grep -q 'CHAT_PRODUCTION_TEXT_PENDING: RELEASE' /tmp/chatqa-unreleased.log
-# Fixture seal is signed with a throwaway key and never leaves this runner.
-epoch=$(sudo cat "$site/config/chat-production-recovery.json")
-release_path="$state/fixture-release.json"
-sudo env QA_EPOCH="$epoch" QA_REVISION="$source_sha" QA_RELEASE_KEY="$release_key" QA_RELEASE_PATH="$release_path" python3 - <<'PY'
-import base64, hashlib, hmac, json, os, time
-env = os.environ
-body = json.dumps(dict(schema=1, environment="production", epoch=env["QA_EPOCH"],
-    revision=env["QA_REVISION"], expires_at=int(time.time())+600,
-    capabilities=["text","governance"]), separators=(",",":")).encode()
-with open(env["QA_RELEASE_PATH"], "w") as f:
-    json.dump(dict(payload=base64.b64encode(body).decode(),
-        mac=hmac.new(base64.b64decode(env["QA_RELEASE_KEY"]), body, hashlib.sha256).hexdigest()), f)
-PY
-sudo chown www:www "$release_path"
-sudo chmod 600 "$release_path"
-sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED env CHAT_PROD_TEXT=1 CHAT_PROD_RELEASE_FILE="$release_path" CHAT_RELEASE_KEY="$release_key" php "$site/chat/deploy/production-runtime.php" "$site" "$state"
-probe_config "$state/production.text.json" | python3 -c 'import json,sys;x=json.load(sys.stdin);assert x["business_enabled"] and x["infrastructure_ready"] and x["mysql"]["state"]=="ready" and x["redis"]["state"]=="ready",x'
-# Install through the same layout and script that runs on BaoTa.
-sha="$source_sha"
+cd ..
+
+# Seed an older installed binary so the real signed updater exercises the migration and switch.
 base=$(printf '0%.0s' {1..40})
 sudo install -d -m 0755 "$site/chat/bin/releases/$base"
 sudo install -m 0755 /tmp/chatqa "$site/chat/bin/releases/$base/chatd"
 sudo ln -s "releases/$base" "$site/chat/bin/current"
 sudo ln -s current/chatd "$site/chat/bin/chatd"
-sudo install -d -m 0700 "$site/chat/update"
-sudo bash -s -- "$site/chat/update" "$OLDPWD" "$site" <<'SH'
+sudo install -d -m 0700 -o root -g root "$site/chat/update"
+sudo bash -s -- "$site/chat/update" "$PWD" "$site" <<'SH'
 set -eu
 update=$1
 sources=$2
@@ -113,43 +117,72 @@ cp "$sources/chat/chat.production.example.json" .
 for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php; do
   mkdir -p "site/$(dirname "$f")"
   cp "$sources/server/$f" "site/$f"
-  if [[ ! -f "$site/$f" ]]; then install -d "$site/$(dirname "$f")"; fi
 done
 cp /tmp/chatqa payload/chatd
 /tmp/chatqa version > payload/version.json
 printf '%032d' 0 | base64 > deploy/release-public.key
 find . -type f ! -name SHA256SUMS.txt -printf "%P\0" | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
 SH
-sudo --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY php -r '
-require $argv[1];
-$c=(new WorkerAdmin\Foundation\ApplicationContainer(db()))->privateCipher();
-(new WorkerAdmin\Application\Chat\ChatMediaCallbackSettings(db(),$c))->saveLocked(["wechat_callback_token"=>getenv("CHAT_WECHAT_CALLBACK_TOKEN"),"wechat_callback_aes_key"=>getenv("CHAT_WECHAT_CALLBACK_AES_KEY")],1,"wxfixture","https://chat-fixture.invalid");
-' "$site/bootstrap.php"
+
 sudo bash "$site/chat/update/deploy/update-production.sh"
-test "$(sudo readlink "$site/chat/bin/current")" = "releases/$sha"
-sudo test -f "$site/chat/update-backup/previous/current"
-sudo tee "$state/production.local.env" >/dev/null <<ENV
-CHAT_PROD_TEXT=1
-CHAT_PROD_RELEASE_FILE=$release_path
-CHAT_RELEASE_KEY=$release_key
-ENV
-sudo chown root:www "$state/production.local.env"
-sudo chmod 640 "$state/production.local.env"
-# Seed an isolated token cache for the real PHP exporter. No vendor call is made.
+test "$(sudo readlink "$site/chat/bin/current")" = "releases/$source_sha"
+test "$(sudo stat -c '%U:%G:%a' "$state")" = "www:www:700"
+test "$(sudo stat -c '%a' "$state/run.lock")" = "600"
+test -f "$state/legacy-sentinel"
+test -f "$legacy_state.migrated/legacy-sentinel"
+test "$(sudo stat -c '%a' "$legacy_state.migrated/run.lock")" = "600"
+test ! -e "$legacy_state"
+test ! -e "$state/production.local.env"
+test -s "$state/production.text.json"
+test -s "$state/production.release.json"
+echo "Legacy state migration preserved private data and normalized run.lock"
+
+probe_config() {
+  sudo -u www bash -c 'source "$1"; [[ ! -s "$2" ]] || source "$2"; exec /tmp/chatqa check-config --config "$3" --probe' _ \
+    "$state/production.runtime.env" "$state/production.text.env" "$1"
+}
+probe_config "$state/production.text.json" | python3 -c 'import json,sys;x=json.load(sys.stdin);assert x["business_enabled"] and x["infrastructure_ready"] and x["mysql"]["state"]=="ready" and x["redis"]["state"]=="ready",x'
+
+# Seed a synthetic WeChat token cache; no vendor network call is made.
 sudo -u www php -r '
-$dir=$argv[1]."/storage/private/wechat-tokens"; mkdir($dir,0700);
+$dir=$argv[1]."/storage/private/wechat-tokens";
+if(!is_dir($dir) && !mkdir($dir,0700,true)) exit(1);
 $app="wxfixture"; $env="production"; $now=time();
 $file=$dir."/".hash("sha256",$env."\n".$app).".json";
-file_put_contents($file,json_encode(["schema_version"=>1,"env"=>$env,"app_id"=>$app,"token"=>"fixture_token_for_export","issued_at"=>$now,"expires_at"=>$now+1200,"credential_hash"=>hash("sha256",$env."\n".$app."\nisolated-fixture-secret")])); chmod($file,0600);
+file_put_contents($file,json_encode(["schema_version"=>1,"env"=>$env,"app_id"=>$app,"token"=>"fixture_token_for_export","issued_at"=>$now,"expires_at"=>$now+1200,"credential_hash"=>hash("sha256",$env."\n".$app."\nisolated-fixture-secret")]));
+chmod($file,0600);
 ' "$site"
-sudo -u www --preserve-env=CHAT_WECHAT_CALLBACK_TOKEN,CHAT_WECHAT_CALLBACK_AES_KEY,CHAT_ACCESS_SEED bash "$site/chat/deploy/bt-run.sh" --production >/tmp/chatqa-launch.log 2>&1 &
+
+sudo -u www bash "$site/chat/deploy/bt-run.sh" --production >/tmp/chatqa-launch.log 2>&1 &
 launcher=$!
-trap 'sudo cat /tmp/chatqa-launch.log; kill "$launcher" 2>/dev/null || true' EXIT
-for _ in $(seq 1 20); do if curl -fsS http://127.0.0.1:9502/readyz; then break; fi; sleep 1; done
+cleanup_launcher() {
+  sudo cat /tmp/chatqa-launch.log || true
+  kill "$launcher" 2>/dev/null || true
+  wait "$launcher" 2>/dev/null || true
+}
+trap cleanup_launcher EXIT
+ready=0
+for _ in $(seq 1 30); do
+  if curl -fsS http://127.0.0.1:9502/readyz >/tmp/chatqa-ready.json; then ready=1; break; fi
+  sleep 1
+done
+[[ $ready == 1 ]]
 test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 403
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) exit(1); echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
 test "$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")" = READY
-# An actual blocked marker must close user routes while preserving dispatch.
+
+# A second BaoTa launcher must fail immediately on the same exclusive lock.
+second_log=$(mktemp)
+set +e
+sudo -u www bash "$site/chat/deploy/bt-run.sh" --production >"$second_log" 2>&1
+second_rc=$?
+set -e
+test "$second_rc" = 2
+grep -q 'CHAT_RUN_ALREADY_STARTED' "$second_log"
+test "$(sudo stat -c '%a' "$state/run.lock")" = 600
+echo "BaoTa launcher exclusive lock verified"
+
+# A blocked recovery marker must close business readiness without interrupting callback dispatch.
 gate=/www/backup-control/bixuan-chat/production/gate.json
 sudo sed -i 's/"state":"ready"/"state":"blocked"/' "$gate"
 sudo chown root:www "$gate"
@@ -162,5 +195,9 @@ sudo chown root:www "$gate"
 sudo chmod 640 "$gate"
 for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9502/readyz >/dev/null; then break; fi; sleep 1; done
 curl -fsS http://127.0.0.1:9502/readyz >/dev/null
-echo 'Recovery blocks business routes without interrupting callback dispatch' 
-echo 'Installer, BaoTa launcher, recovery gate, callback and Go business readiness verified'
+echo 'Recovery blocks business routes without interrupting callback dispatch'
+
+cleanup_launcher
+trap - EXIT
+docker rm -f chatqa-redis chatqa-mysql >/dev/null
+echo "Isolated production chat deployment verified for source SHA $source_sha"

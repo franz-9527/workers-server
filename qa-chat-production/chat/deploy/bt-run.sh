@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One foreground BaoTa Go project owns the serve/worker pair.
 set -uo pipefail
+umask 077
 set +x
 CHAT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 ROOT=$(cd -- "$CHAT/.." && pwd -P)
@@ -14,22 +15,23 @@ if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" && $(id -un) != www ]
 fi
 BIN="$CHAT/bin"
 STATE="$BIN/state"
-if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" ]]; then
-  STATE="/var/lib/bixuan-chat-prod"
-  if [[ -L "$STATE" || ! -d "$STATE" || ! -w "$STATE" || ! -x "$STATE" ]]; then
-    echo 'CHAT_RUN_PRODUCTION_STATE_NOT_WRITABLE: /var/lib/bixuan-chat-prod'; exit 2
-  fi
-fi
 RELOAD_STATE="$STATE"
 WEB_UPDATE=0
 if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" ]]; then
   RELOAD_STATE="$PHP_ROOT/storage/private/chat-runtime-control"
   if [[ -r "$CHAT/deploy/web-update.php" && ${CHAT_CONFIG_MANUAL:-0} != 1 && ! -f "$CHAT/chat.json" ]]; then WEB_UPDATE=1; fi
 fi
-mkdir -p "$STATE" || exit 2
-if [[ $(readlink "/proc/$$/fd/8" 2>/dev/null || true) != "$STATE/run.lock" ]]; then
-  { exec 8>>"$STATE/run.lock"; } || { echo 'CHAT_RUN_LOCK_OPEN_FAILED'; exit 2; }
+if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" ]]; then
+  [[ ! -L "$BIN" && ! -L "$STATE" ]] || { echo 'CHAT_RUN_PRODUCTION_STATE_SYMLINK'; exit 2; }
+  if [[ ! -d "$STATE" ]]; then mkdir -m 0700 "$STATE" || exit 2; fi
+  [[ -d "$STATE" && $(stat -c '%U:%G:%a' -- "$STATE") == www:www:700 ]] || {
+    echo 'CHAT_RUN_PRODUCTION_STATE_PERMISSIONS'; exit 2;
+  }
+else
+  mkdir -p "$STATE" || exit 2
 fi
+[[ ! -L "$STATE/run.lock" && ( ! -e "$STATE/run.lock" || -f "$STATE/run.lock" ) ]] || { echo 'CHAT_RUN_LOCK_PATH_INVALID'; exit 2; }
+{ exec 8>>"$STATE/run.lock"; } || { echo 'CHAT_RUN_LOCK_OPEN_FAILED'; exit 2; }
 flock -n 8 || { echo 'CHAT_RUN_ALREADY_STARTED'; exit 2; }
 STOP=0
 SERVE=''
@@ -131,7 +133,7 @@ while (( STOP == 0 )); do
     fi
     rm -f -- "$STATE/production.text.env"
     runtime_status=0
-    "$PHP_BIN" "$CHAT/deploy/production-runtime.php" "$PHP_ROOT" "$STATE" || runtime_status=$?
+    "$PHP_BIN" "$CHAT/deploy/production-runtime.php" "$PHP_ROOT" "$STATE" "$REVISION" || runtime_status=$?
     if (( runtime_status != 0 && runtime_status != 4 )); then
       [[ -z "$CANDIDATE" ]] || web_finish "$CANDIDATE" CHAT_UPDATE_FAILED
       set_error 'CHAT_RUN_PRODUCTION_CONFIG_FAILED'; sleep 10; continue

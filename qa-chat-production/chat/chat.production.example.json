@@ -47,7 +47,7 @@
     "callback_relay": {
       "mode": "dispatch",
       "key_env": "CHAT_MEDIA_RELAY_KEY",
-      "spool": "/var/lib/bixuan-chat-prod/wechat-receipts"
+      "spool": "/www/wwwroot/worker/chat/bin/state/wechat-receipts"
     },
     "enabled": false,
     "audio": false,

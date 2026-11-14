@@ -16,7 +16,7 @@ jobs:
           cache-dependency-path: qa-chat-production/chat/go.sum
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.3.36'
           extensions: pdo_mysql,sodium,mbstring,curl
           coverage: none
       - run: bash qa-chat-production/verify.sh

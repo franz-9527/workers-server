@@ -3,15 +3,19 @@ declare(strict_types=1);
 
 namespace WorkerAdmin\Application\Chat;
 
-/** Managed Go is a sibling of server/ in a full repository checkout. */
+/** Resolve the colocated Go project for the production root and the test checkout/server layout. */
 final class ChatRuntimePaths
 {
     public static function managedRoot(): ?string
     {
         $phpRoot=rtrim(\base_path(),'/\\');
-        if (basename($phpRoot)!=='server') return null;
-
-        $root=dirname($phpRoot);
+        if (basename($phpRoot)==='server') {
+            $root=dirname($phpRoot);
+        } elseif ((string) \app_config('app.env','production')==='production' && basename($phpRoot)==='worker') {
+            $root=$phpRoot;
+        } else {
+            return null;
+        }
         $chat=$root.'/chat';
         if (!self::insidePhpScope($chat) || !@is_dir($chat) || !@is_readable($chat)) return null;
         return $root;
@@ -29,6 +33,13 @@ final class ChatRuntimePaths
             $path=\base_path('storage/private/chat-runtime-control');
             return self::insidePhpScope($path) ? $path : null;
         }
+        $bin=self::binDirectory();
+        return $bin===null ? null : $bin.'/state';
+    }
+
+    /** Actual Go runtime state is always beside the deployed chat binary. */
+    public static function goStateDirectory(): ?string
+    {
         $bin=self::binDirectory();
         return $bin===null ? null : $bin.'/state';
     }

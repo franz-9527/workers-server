@@ -46,7 +46,7 @@ final class ChatGoRuntimeStatus
 
         try{
             $bin=ChatRuntimePaths::binDirectory();
-            $state=$bin===null ? null : $bin.'/state';
+            $state=ChatRuntimePaths::goStateDirectory();
             $current=$bin===null ? '' : $this->readCurrent($bin.'/current');
             $deployed=$bin===null ? '' : $this->readSha($bin.'/deployed-sha');
             $running=$state===null ? '' : $this->readSha($state.'/running-sha');
@@ -95,7 +95,7 @@ final class ChatGoRuntimeStatus
                 'deployed_sha'=>$deployed,
                 'running_sha'=>$running,
                 'versions_match'=>$deployed!==''&&$running!==''&&hash_equals($deployed,$running)&&($current===''||hash_equals($current,$running)),
-                'runtime_config_exists'=>$state!==null && @is_file($state.'/chat.runtime.json'),
+                'runtime_config_exists'=>$state!==null && (@is_file($state.'/chat.runtime.json') || @is_file($state.'/production.runtime.json') || @is_file($state.'/production.text.json')),
                 'last_error'=>$lastError,
                 'deployment_state'=>$deployment['state'],
                 'deployment_message'=>$deployment['message'],
@@ -195,13 +195,13 @@ final class ChatGoRuntimeStatus
     public function callsEnabled():bool
     {
         try{
-            $state=ChatRuntimePaths::stateDirectory();
+            $state=ChatRuntimePaths::goStateDirectory();
             if ($state===null) return false;
-            $path=$state.'/chat.runtime.json';
+            $environment=$this->environment!==''?$this->environment:$this->environmentFromPHP();
+            $path=$state.($environment==='production'?'/production.text.json':'/chat.runtime.json');
             if(!@is_file($path)||!@is_readable($path)||($size=@filesize($path))===false||$size>262144)return false;
             $raw=@file_get_contents($path,false,null,0,262145);
             $config=is_string($raw)?json_decode($raw,true):null;
-            $environment=$this->environment!==''?$this->environment:$this->environmentFromPHP();
             return is_array($config)&&($config['env']??'')===$environment&&($config['calls']['enabled']??false)===true;
         }catch(\Throwable $e){return false;}
     }

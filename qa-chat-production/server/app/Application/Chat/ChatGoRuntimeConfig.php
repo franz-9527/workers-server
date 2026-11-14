@@ -30,6 +30,8 @@ final class ChatGoRuntimeConfig
     private const TENCENT_ASR_SECRET_ID_CONTEXT='chat-tencent-asr-secret-id-v1';
     private const TENCENT_ASR_SECRET_KEY_CONTEXT='chat-tencent-asr-secret-key-v1';
     private const CALLS_ENDPOINT_KEY='chat.go_calls_php_endpoint';
+    private const PRODUCTION_RELEASE_KEY='chat.go_production_release_key_ciphertext';
+    private const PRODUCTION_RELEASE_KEY_CONTEXT='chat-go-production-release-key-v1';
 
     public function __construct(private Database $db,private PrivateValueCipher $cipher){}
 
@@ -94,7 +96,10 @@ final class ChatGoRuntimeConfig
             'RECOVERY'=>'Go 无法读取有效的恢复门禁',
             'REDIS'=>'Redis 尚未启用',
             'REDIS_PASSWORD'=>'Redis 密码不可读取',
-            'RELEASE'=>'缺少当前版本的正式放行凭证或签名密钥',
+            'RELEASE'=>'缺少当前版本的正式放行凭证',
+            'RELEASE_KEY'=>'正式放行密钥尚未初始化，请由超级管理员点击首次初始化',
+            'STATE'=>'正式 Go 状态目录不可用，请先完成正式 Go 部署',
+            'REVISION'=>'无法识别当前 Go 版本 SHA，请重新部署',
             'WECHAT_SAFETY'=>'微信内容安全凭证导出未启用',
             'WECHAT_CREDENTIAL'=>'微信内容安全凭证刷新失败',
             'MYSQL_ACCOUNT'=>'正式 MySQL 连接配置不完整',
@@ -249,7 +254,58 @@ final class ChatGoRuntimeConfig
         if ($this->environment() !== 'production' || $role !== 'super_admin') {
             throw new RuntimeException('仅正式站超级管理员可初始化。');
         }
-        $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
+        $this->db->transaction(function() use($admin,$role):void {
+            $actor=$this->db->fetch("SELECT role FROM admin_users WHERE id=:id AND status IN ('active','1') AND must_change_password=0 FOR UPDATE",['id'=>$admin]);
+            if(!$actor||(string)$actor['role']!==$role||$role!=='super_admin') {
+                throw new RuntimeException('仅有效的正式站超级管理员可初始化。');
+            }
+
+            // Create the unique setting row first, then lock it. Locking only the
+            // admin row does not serialize two different super-admin accounts.
+            $description='正式 Go 短效放行密钥密文，仅服务端使用';
+            $this->db->execute(
+                "INSERT IGNORE INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,description,updated_by,created_at,updated_at)
+                 VALUES(:key,'','string','chat',0,:description,:admin,UTC_TIMESTAMP(),UTC_TIMESTAMP())",
+                ['key'=>self::PRODUCTION_RELEASE_KEY,'description'=>$description,'admin'=>$admin]
+            );
+            $setting=$this->db->fetch(
+                "SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1 FOR UPDATE",
+                ['key'=>self::PRODUCTION_RELEASE_KEY]
+            );
+            $stored=(string)($setting['setting_value']??'');
+            if($stored==='') {
+                $raw=random_bytes(32);
+                $encoded=base64_encode($raw);
+                if(function_exists('sodium_memzero')) sodium_memzero($raw);
+                try {
+                    $ciphertext=$this->cipher->encrypt($encoded,self::PRODUCTION_RELEASE_KEY_CONTEXT);
+                    $ciphertextValid=is_string($ciphertext)&&$ciphertext!==''&&$ciphertext!==$encoded;
+                } finally {
+                    if(function_exists('sodium_memzero')) sodium_memzero($encoded);
+                }
+                if(empty($ciphertextValid)) {
+                    throw new RuntimeException('正式放行签名密钥加密失败，未初始化。');
+                }
+                $this->upsert(self::PRODUCTION_RELEASE_KEY,$ciphertext,$description,$admin);
+            } else {
+                try {
+                    $encoded=$this->cipher->decrypt($stored,self::PRODUCTION_RELEASE_KEY_CONTEXT);
+                } catch(\Throwable $e) {
+                    throw new RuntimeException('正式放行签名密钥无法解密，请先检查站点 app.key。');
+                }
+                $key=false;
+                try {
+                    $key=is_string($encoded)?base64_decode($encoded,true):false;
+                    if(!is_string($key)||strlen($key)!==32||base64_encode($key)!==$encoded) {
+                        throw new RuntimeException('正式放行签名密钥损坏，请勿覆盖现有密钥。');
+                    }
+                } finally {
+                    if(is_string($encoded)&&function_exists('sodium_memzero')) sodium_memzero($encoded);
+                    if(is_string($key)&&function_exists('sodium_memzero')) sodium_memzero($key);
+                }
+            }
+            $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
+        });
     }
 
     public function save(array $input,int $admin,string $role):void
@@ -476,8 +532,8 @@ final class ChatGoRuntimeConfig
         ]];
     }
 
-    /** Prepare production text only after the operator provides a signed release. */
-    public function productionText(array $signing, string $appId):array
+    /** Build a short-lived, exact-SHA production text release from the encrypted server key. */
+    public function productionText(array $signing, string $appId, string $revision):array
     {
         if ($this->environment()!=='production') throw new RuntimeException('SITE');
         $chat=(array)\app_config('chat',[]);
@@ -491,45 +547,66 @@ final class ChatGoRuntimeConfig
             'REDIS'=>$redis['enabled'],
             'WECHAT_SAFETY'=>($chat['safety_credential_export_enabled']??false)===true,
         ] as $name=>$ready) if (!$ready) $missing[]=$name;
-        $db=$this->database();
-        $dbUser=(string)getenv('CHAT_PROD_MYSQL_USER');
-        $release=(string)getenv('CHAT_PROD_RELEASE_FILE');
-        if ($release==='' || $release[0]!=='/' || !is_readable($release) || (string)getenv('CHAT_RELEASE_KEY')==='') $missing[]='RELEASE';
-        // Reuse the installed PHP connection as the standard managed mode.
-        $dbPassword=(string)getenv('CHAT_MYSQL_PASSWORD');
-        $shared=$dbUser===''&&$dbPassword==='';
-        if ($shared) {
-            $dbUser=(string)($db['username']??'');
-            $dbPassword=(string)($db['password']??'');
-        }
-        if ($dbUser===''||$dbPassword===''||(!$shared&&!preg_match('/^bxchat_production_[A-Za-z0-9_]+$/D',$dbUser))) {
-            $missing[]='MYSQL_ACCOUNT';
-        }
-        $appKey=(string)\app_config('app.key','');
-        if ($appKey==='') $missing[]='APP_KEY';
-        if ($missing) return ['missing'=>$missing];
+        $state=ChatRuntimePaths::goStateDirectory();
+        if($state===null||is_link($state)||!is_dir($state)||!is_writable($state))$missing[]='STATE';
+        if(!is_string($revision)||!preg_match('/^[a-f0-9]{40}$/D',$revision))$missing[]='REVISION';
 
-        $credential=\base_path('storage/private/chat-credentials/production-'.hash('sha256',$appId).'.json');
-        $config=[
-            'dependencies'=>[
-                'mysql'=>['enabled'=>true,'address'=>$this->databaseAddress($db),'database'=>(string)($db['database']??''),'username'=>$dbUser,'password_env'=>'CHAT_MYSQL_PASSWORD','shared_app_credentials'=>$shared],
-                'redis'=>['enabled'=>true,'address'=>$redis['address'],'key_prefix'=>'bxchat:production:','password_env'=>$redis['password_ciphertext']!==''?'CHAT_REDIS_PASSWORD':''],
-            ],
-            'auth'=>['enabled'=>true,'public_keys'=>(object)$signing['public_keys']],
-            'conversations'=>['enabled'=>true],
-            'history'=>['enabled'=>true,'cursor_key_env'=>'CHAT_HISTORY_CURSOR_KEY'],
-            'socket'=>['enabled'=>true],
-            'messages'=>['enabled'=>true],
-            'operations'=>['gate_file'=>(string)$chat['recovery_gate_file'],'epoch'=>(string)$chat['recovery_epoch']],
-            'release'=>['staging'=>false,'file'=>$release,'key_env'=>'CHAT_RELEASE_KEY'],
-            'safety'=>['enabled'=>true,'mode'=>'wechat','app_id'=>$appId,'credential_file'=>$credential,'rejection_directory'=>(string)($chat['safety_rejection_directory']??'')],
-        ];
-        $env=['CHAT_MYSQL_PASSWORD'=>$dbPassword,'CHAT_HISTORY_CURSOR_KEY'=>hash_hmac('sha256','bixuan-chat-history-cursor-v1:production',$appKey)];
-        if ($redis['password_ciphertext']!=='') {
-            $env['CHAT_REDIS_PASSWORD']=$this->cipher->decrypt($redis['password_ciphertext'],self::REDIS_PASSWORD_CONTEXT);
-            if ($env['CHAT_REDIS_PASSWORD']==='') return ['missing'=>['REDIS_PASSWORD']];
+        $ciphertext=(string)($this->db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='".self::PRODUCTION_RELEASE_KEY."' LIMIT 1")?:'');
+        $releaseKey='';
+        if($ciphertext!==''){
+            try{$releaseKey=$this->cipher->decrypt($ciphertext,self::PRODUCTION_RELEASE_KEY_CONTEXT);}catch(\Throwable $e){$releaseKey='';}
         }
-        return ['missing'=>[],'config'=>$config,'environment'=>$env];
+        $rawKey=$releaseKey!==''?base64_decode($releaseKey,true):false;
+        try {
+            if(!is_string($rawKey)||strlen($rawKey)!==32||base64_encode($rawKey)!==$releaseKey){
+                $missing[]='RELEASE_KEY';
+                $releaseKey='';
+            }
+            $db=$this->database();
+            $dbUser=(string)getenv('CHAT_PROD_MYSQL_USER');
+            $dbPassword=(string)getenv('CHAT_MYSQL_PASSWORD');
+            $shared=$dbUser===''&&$dbPassword==='';
+            if ($shared) {
+                $dbUser=(string)($db['username']??'');
+                $dbPassword=(string)($db['password']??'');
+            }
+            if ($dbUser===''||$dbPassword===''||(!$shared&&!preg_match('/^bxchat_production_[A-Za-z0-9_]+$/D',$dbUser))) {
+                $missing[]='MYSQL_ACCOUNT';
+            }
+            $appKey=(string)\app_config('app.key','');
+            if ($appKey==='') $missing[]='APP_KEY';
+            if ($missing) return ['missing'=>array_values(array_unique($missing))];
+
+            $releasePath=$state.'/production.release.json';
+            $body=json_encode(['schema'=>1,'environment'=>'production','epoch'=>(string)$chat['recovery_epoch'],
+                'revision'=>$revision,'expires_at'=>time()+86390,'capabilities'=>['text','governance']],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
+            $releaseContent=json_encode(['payload'=>base64_encode($body),'mac'=>hash_hmac('sha256',$body,$rawKey)],
+                JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n";
+            $credential=\base_path('storage/private/chat-credentials/production-'.hash('sha256',$appId).'.json');
+            $config=[
+                'dependencies'=>[
+                    'mysql'=>['enabled'=>true,'address'=>$this->databaseAddress($db),'database'=>(string)($db['database']??''),'username'=>$dbUser,'password_env'=>'CHAT_MYSQL_PASSWORD','shared_app_credentials'=>$shared],
+                    'redis'=>['enabled'=>true,'address'=>$redis['address'],'key_prefix'=>'bxchat:production:','password_env'=>$redis['password_ciphertext']!==''?'CHAT_REDIS_PASSWORD':''],
+                ],
+                'auth'=>['enabled'=>true,'public_keys'=>(object)$signing['public_keys']],
+                'conversations'=>['enabled'=>true],
+                'history'=>['enabled'=>true,'cursor_key_env'=>'CHAT_HISTORY_CURSOR_KEY'],
+                'socket'=>['enabled'=>true],
+                'messages'=>['enabled'=>true],
+                'operations'=>['gate_file'=>(string)$chat['recovery_gate_file'],'epoch'=>(string)$chat['recovery_epoch']],
+                'release'=>['staging'=>false,'file'=>$releasePath,'key_env'=>'CHAT_RELEASE_KEY'],
+                'safety'=>['enabled'=>true,'mode'=>'wechat','app_id'=>$appId,'credential_file'=>$credential,'rejection_directory'=>(string)($chat['safety_rejection_directory']??'')],
+            ];
+            $env=['CHAT_MYSQL_PASSWORD'=>$dbPassword,'CHAT_HISTORY_CURSOR_KEY'=>hash_hmac('sha256','bixuan-chat-history-cursor-v1:production',$appKey),
+                'CHAT_RELEASE_KEY'=>$releaseKey];
+            if ($redis['password_ciphertext']!=='') {
+                $env['CHAT_REDIS_PASSWORD']=$this->cipher->decrypt($redis['password_ciphertext'],self::REDIS_PASSWORD_CONTEXT);
+                if ($env['CHAT_REDIS_PASSWORD']==='') return ['missing'=>['REDIS_PASSWORD']];
+            }
+            return ['missing'=>[],'config'=>$config,'environment'=>$env,'release_file'=>$releasePath,'release_content'=>$releaseContent];
+        } finally {
+            if(is_string($rawKey)&&function_exists('sodium_memzero')) sodium_memzero($rawKey);
+        }
     }
 
     /** @param array<string,string> $values */

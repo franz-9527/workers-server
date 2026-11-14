@@ -5,7 +5,8 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 package=$(pwd -P)
 site=/www/wwwroot/worker
 chat=$site/chat
-state=/var/lib/bixuan-chat-prod
+state=$chat/bin/state
+legacy_state=/var/lib/bixuan-chat-prod
 php=/www/server/php/83/bin/php
 fail() { printf '%s\n' "$1" >&2; exit 2; }
 
@@ -15,8 +16,6 @@ fail() { printf '%s\n' "$1" >&2; exit 2; }
   fail '请将升级包解压到 /www/wwwroot/worker/chat/update，目录属主 root、权限 0700。'
 [[ $(realpath -e -- "$chat") == "$chat" && -x "$php" ]] || fail '正式站聊天目录或 PHP 8.3 CLI 不存在。'
 [[ $(stat -c '%U:%G:%a' -- "$chat") =~ ^(root|www):www:750$ ]] || fail '正式聊天目录应为 root:www 或 www:www，权限 0750。'
-[[ -d "$state" && ! -L "$state" && $(stat -c '%U:%G:%a' -- "$state") == www:www:700 ]] ||
-  fail '正式聊天状态目录应为 /var/lib/bixuan-chat-prod，www:www，权限 0700。'
 sha256sum -c SHA256SUMS.txt
 [[ -f deploy/release-public.key && ! -L deploy/release-public.key ]] || fail '升级包缺少正式发布公钥。'
 key_dir=/var/lib/bixuan-chat-release-key
@@ -58,6 +57,43 @@ if [[ "${1:-}" == --check-recovery ]]; then
     "$php" deploy/init-production-recovery.php "$mysqlbinlog" --check "$package/site/app/Infrastructure/Chat/ChatRecoveryCheckpoint.php"
   exit $?
 fi
+
+# Migrate the old runtime directory only after the signed package and PHP source checks pass.
+[[ ! -L "$legacy_state" ]] || fail '旧正式 Go 状态路径不能是符号链接。'
+[[ ! -L "$state" ]] || fail '正式 Go 状态目录不能是符号链接。'
+if [[ -e "$legacy_state" ]]; then
+  [[ -d "$legacy_state" && ! -L "$legacy_state" ]] || fail '旧正式 Go 状态路径不是安全目录，请人工核对。'
+  [[ ! -e "$state" ]] || fail '新旧 Go 状态目录同时存在，请先核对数据，禁止自动覆盖。'
+  [[ $(stat -c '%U:%G:%a' -- "$legacy_state") == www:www:700 ]] || fail '旧 Go 状态目录权限不符合迁移要求，未移动任何数据。'
+  [[ -z "$(find "$legacy_state" -type l -print -quit)" ]] || fail '旧 Go 状态目录含符号链接，拒绝自动迁移。'
+  [[ -z "$(find "$legacy_state" -mindepth 1 ! -path "$legacy_state/run.lock" -perm /0077 -print -quit)" ]] || fail '旧 Go 状态目录含对组/其他用户开放的文件，拒绝自动迁移。'
+  [[ ! -e "$legacy_state.migrated" ]] || fail '旧 Go 状态迁移备份已存在，请先人工核对。'
+  [[ ! -e "$legacy_state/run.lock" || -f "$legacy_state/run.lock" ]] || fail '旧 Go 运行锁不是普通文件，拒绝迁移。'
+  if [[ ! -e "$legacy_state/run.lock" ]]; then
+    runuser -u www -- bash -c 'umask 077; : >> "$1"' _ "$legacy_state/run.lock" || fail '无法创建旧 Go 运行锁。'
+  fi
+  chown www:www "$legacy_state/run.lock" || fail '无法规范旧 Go 运行锁属主。'
+  chmod 0600 "$legacy_state/run.lock" || fail '无法规范旧 Go 运行锁权限。'
+  { exec 9>>"$legacy_state/run.lock"; } || fail '无法打开旧 Go 运行锁。'
+  flock -n 9 || fail '旧 Go 进程仍在运行，请先在宝塔停止聊天项目后再迁移。'
+  install -d -m 0700 -o www -g www "$state"
+  if ! cp -a -- "$legacy_state/." "$state/"; then rm -rf -- "$state"; fail '旧 Go 状态迁移复制失败，原目录保持不变。'; fi
+  if ! chown -R www:www "$state"; then rm -rf -- "$state"; fail '迁移后的 Go 状态属主修复失败，原目录保持不变。'; fi
+  [[ -z "$(find "$state" -type l -print -quit)" && -z "$(find "$state" -perm /0077 -print -quit)" ]] || {
+    rm -rf -- "$state"; fail '迁移后的 Go 状态权限复核失败，原目录保持不变。';
+  }
+  if ! mv -- "$legacy_state" "$legacy_state.migrated"; then
+    rm -rf -- "$state"
+    fail '旧 Go 状态目录改名失败，已撤销新目录复制，原目录保持不变。'
+  fi
+  exec 9>&-
+  echo "CHAT_STATE_MIGRATED: $legacy_state -> $state"
+elif [[ ! -d "$state" ]]; then
+  install -d -m 0700 -o www -g www "$state"
+fi
+[[ -d "$state" && ! -L "$state" && $(stat -c '%U:%G:%a' -- "$state") == www:www:700 ]] ||
+  fail '正式 Go 状态目录应为 /www/wwwroot/worker/chat/bin/state，www:www，权限 0700。'
+
 
 # The panel launcher owns the state lock throughout its run.
 [[ ! -L "$state/run.lock" ]] || fail '正式运行锁不能是符号链接。'
@@ -133,9 +169,17 @@ done
 for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json; do
   replace "$f" "$chat/$f" 0640 root www
 done
-runuser -u www -- env CHAT_PROD_TEXT=0 "$php" "$chat/deploy/production-runtime.php" "$site" "$state"
-runuser -u www -- /bin/bash -c 'source "$1" && exec "$2" check-config --config "$3"' \
-  _ "$state/production.runtime.env" "$chat/bin/releases/$sha/chatd" "$state/production.runtime.json"
+runtime_status=0
+runuser -u www -- "$php" "$chat/deploy/production-runtime.php" "$site" "$state" "$sha" || runtime_status=$?
+(( runtime_status == 0 || runtime_status == 4 )) || fail '正式 Go 运行配置生成失败。'
+preflight_config="$state/production.runtime.json"
+preflight_text_env=''
+if (( runtime_status == 0 )) && [[ -s "$state/production.text.env" && -s "$state/production.text.json" ]]; then
+  preflight_config="$state/production.text.json"
+  preflight_text_env="$state/production.text.env"
+fi
+runuser -u www -- /bin/bash -c 'source "$1"; [[ ! -s "$2" ]] || source "$2"; exec "$3" check-config --config "$4"' \
+  _ "$state/production.runtime.env" "$preflight_text_env" "$chat/bin/releases/$sha/chatd" "$preflight_config"
 if [[ "${1:-}" == --init-recovery ]]; then
   for dir in /www/backup-control /www/backup-control/bixuan-chat "$control"; do
     [[ ! -L "$dir" ]] || fail '恢复控制目录不能使用符号链接。'

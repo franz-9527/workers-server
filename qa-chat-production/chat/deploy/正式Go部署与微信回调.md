@@ -1,10 +1,13 @@
 # 正式站 Go 部署与微信回调
 
-正式 PHP 继续使用 `/www/wwwroot/worker`，测试 PHP 继续使用 `/www/wwwroot/workers-test/server`。正式 Go 运行目录为 /www/wwwroot/worker/chat，宝塔以 www 运行，正式聊天使用正式站数据库的专用 MySQL 账号和独立的 Redis 命名空间。正式监听 `127.0.0.1:9501` / `127.0.0.1:9502`，测试保持 19501 / 19502。无需更改 PHP 的 open_basedir。
+正式 PHP 继续使用 `/www/wwwroot/worker`，测试 PHP 继续使用 `/www/wwwroot/workers-test/server`。正式 Go 运行目录为 /www/wwwroot/worker/chat，运行状态统一为 /www/wwwroot/worker/chat/bin/state（www:www、0700），宝塔以 www 运行，正式聊天优先使用正式站数据库的专用低权限 MySQL 账号和独立的 Redis 命名空间；当前托管配置生成器也允许回退复用 PHP 数据库连接，正式启用前应明确选择并审计权限。正式监听 `127.0.0.1:9501` / `127.0.0.1:9502`，测试保持 19501 / 19502。无需更改 PHP 的 open_basedir。
+
+> **2026-11-15 正式首次启用实现：** 正式站非 Git 发布、测试站 Git 部署；验收脚本已支持 text/text-images/full profile，正式文字启动自动生成 SHA/epoch 绑定的短效放行文件，Go 状态目录统一为 /www/wwwroot/worker/chat/bin/state。L1 不要求媒体回调，但仍要求真实微信文字内容安全、身份/订单授权和恢复门禁。代码提交不代表隔离测试或正式站启用已完成，操作顺序见[正式聊天首次启用与分级验收](../../docs/订单聊天/正式聊天首次启用与分级验收.md)。
+
 
 ## 通过宝塔部署正式 Go
 
-1. 在正式 PHP 后台确认已完成 2.7.6 升级。到「聊天管理 → 聊天设置 → Go 服务配置 → 微信媒体审核回调」保存微信消息推送 Token 和 EncodingAESKey。小程序 AppID 沿用正式后台的微信小程序设置。首次保存可先不勾选回调已核对。
+1. 在正式 PHP 后台确认已完成对应版本升级，AppID 和微信文字内容安全凭证正常。L1 文字聊天不要求预先配置微信音视频媒体审核回调；只有启用音视频审核时才配置 Token 和 EncodingAESKey。
 2. 在宝塔「网站 → worker.20m.cc → 配置文件」中合并以下规则。HTTP 入口跳转 HTTPS 或同样阻断静态目录。保存并重载 Nginx。
 
    ```nginx
@@ -18,9 +21,9 @@
    }
    ```
 
-3. 在宝塔文件管理器把预编译包解压至 `/www/wwwroot/worker/chat`，在面板终端运行包内首次安装步骤。目录归 `root:bxchat_prod`，权限 `0750`。PHP CLI 是启动器运行后台 PHP 脚本用的命令行程序，启动器自动查找 PHP 8.3.36 或更高版本。只有日志报 `CHAT_PRODUCTION_PHP_CLI_NOT_FOUND` 时，才在宝塔 Go 项目环境变量填写实际 `CHAT_PHP_BIN`。
-4. 在「网站 → Go 项目」添加正式项目 `chat`，程序路径 `/www/wwwroot/worker/chat/bin/chatd`，启动命令 `/bin/bash /www/wwwroot/worker/chat/deploy/bt-run.sh --production`，运行用户 `bxchat_prod`，端口 9501，关闭外网映射。
-5. 正式启动器从正式 PHP 后台读取 AppID、Token 和 EncodingAESKey，在私有状态目录生成回调配置和分发密钥。日志出现 `CHAT_PRODUCTION_CALLBACK_CONFIG_READY` 与 `CHAT_RUN_STARTED` 后，无签名回调 GET 应返回 403，配置文件和状态文件应返回 404。后台修改回调配置后，从宝塔重启正式 Go 项目。
+3. 在宝塔文件管理器把预编译包解压至 `/www/wwwroot/worker/chat`，在面板终端运行包内首次安装步骤。**当前代码要求目录属主为 `root:www` 或 `www:www`，权限 `0750`；启动器要求正式 Go 进程用户为 `www`，不是 `bxchat_prod`。** PHP CLI 是启动器运行后台 PHP 脚本用的命令行程序，启动器自动查找 PHP 8.3.36 或更高版本。只有日志报 `CHAT_PRODUCTION_PHP_CLI_NOT_FOUND` 时，才在宝塔 Go 项目环境变量填写实际 `CHAT_PHP_BIN`。
+4. 在「网站 → Go 项目」添加正式项目 `chat`，程序路径 `/www/wwwroot/worker/chat/bin/chatd`，启动命令 `/bin/bash /www/wwwroot/worker/chat/deploy/bt-run.sh --production`，**运行用户 `www`**，端口 9501，关闭外网映射。
+5. 正式启动器从 PHP 后台读取 AppID、身份签名、数据库/Redis、文字安全和恢复配置；L1 将媒体回调 relay 保持关闭。日志出现 `CHAT_PRODUCTION_RUNTIME_CONFIG_READY` 与 `CHAT_RUN_STARTED` 后，后台继续显示文字收发待放行，直到超级管理员初始化并通过 Go 业务就绪检查。状态文件和配置文件必须由 Nginx 拒绝外部访问；修改配置后从宝塔重启正式 Go 项目。
 
 已有手工 `chat.json` 的项目继续按原配置启动。正式自动模式可生成文字收发配置。启用及检查方法见下文。
 
@@ -28,7 +31,7 @@
 
 到小程序后台「开发 → 开发管理 → 消息推送配置」填写 `https://worker.20m.cc/chat/api/v1/av/callback`。选择安全模式，Token 和 EncodingAESKey 使用正式后台保存的同一组值，数据格式支持 JSON / XML。URL 验证通过说明微信能访问签名验证入口，处理媒体审核事件需完成下一节。
 
-同一个 AppID 使用正式站这一条推送地址。测试站「聊天设置 → Go 服务配置 → 微信媒体审核回调」选择「由正式站分发」，在宝塔文件管理器查看正式站 `chat/bin/state/wechat-relay.key`，填写其中的分发密钥，核对后保存并应用。测试站仍需要自己的媒体处理、存储及微信 access token 相关配置。测试站无需填写正式站的微信推送 Token 或 EncodingAESKey。
+同一个 AppID 使用正式站这一条推送地址。测试站「聊天设置 → Go 服务配置 → 微信媒体审核回调」选择「由正式站分发」，在宝塔文件管理器查看正式站当前 Go 状态目录 `/www/wwwroot/worker/chat/bin/state/wechat-relay.key`，填写其中的分发密钥，核对后保存并应用。测试站仍需要自己的媒体处理、存储及微信 access token 相关配置。测试站无需填写正式站的微信推送 Token 或 EncodingAESKey。
 
 正式站验签后先把审核回执保存到私有暂存目录。正式任务优先由正式 Go 认领，其他回执通过带签名的本机接口交给测试 Go。两个站点只写入自己数据库已登记的审核流水号，图片、音视频原文件、订单和身份信息均留在原站。两套 Go 必须在同一服务器，测试内部地址固定为 `127.0.0.1:19502`。回执先于任务入库或测试服务短时不可用时会补投，暂存最长一小时。过期记录见正式 Go 日志 `chat_media_relay_expired`；过期不会当作审核通过。
 
@@ -63,7 +66,7 @@ install -d -m 0700 -o root -g root /www/wwwroot/worker/chat/update
 bash /www/wwwroot/worker/chat/update/deploy/update-production.sh
 ```
 
-看到 `CHAT_DEPLOY_BUILT` 后启动 `chat`。升级包沿用已有启动命令和回执地址，保留 `/var/lib/bixuan-chat-prod` 中的回执、分发密钥和正式配置。2.7.6 数据库无需再升级。脚本将安装备份保存在 `chat/update-backup/previous`，失败时仅保留最近一次失败快照。成功后清理旧工具在 `/var/lib` 下创建的升级备份。
+看到 `CHAT_DEPLOY_BUILT` 后启动 `chat`。升级包沿用已有启动命令和回执地址，保留 `/www/wwwroot/worker/chat/bin/state` 中的回执、分发密钥和正式配置。2.7.6 数据库无需再升级。脚本将安装备份保存在 `chat/update-backup/previous`，失败时仅保留最近一次失败快照。成功后清理旧工具在 `/var/lib` 下创建的升级备份。
 
 ### 在后台更新 Go
 
@@ -81,16 +84,8 @@ bash /www/wwwroot/worker/chat/update/deploy/update-production.sh
 
 ### 放行正式文字收发
 
-在 `/var/lib/bixuan-chat-prod/production.local.env` 配置以下变量，文件属主为 `root:www`、权限 `0640`，敏感值用 shell 单引号引用。
+正式文字收发不再要求手工创建 `production.local.env`，也不需要填写 `CHAT_PROD_TEXT`、`CHAT_PROD_RELEASE_FILE` 或 `CHAT_RELEASE_KEY`。先在 workers-server 隔离测试仓完成准确 SHA 的 `--profile text` 验收，再在正式站「聊天管理 → 聊天设置 → 正式站首次启用」点击 **初始化文字聊天并应用**。后台会自动生成并加密保存正式 HMAC 放行密钥；启动器按当前二进制 SHA、正式环境、恢复 epoch 和 `text + governance` 能力生成短效签名文件，Go 启动时继续验证签名、环境、SHA、能力和有效期。
 
-| 变量 | 用途 |
-| --- | --- |
-| `CHAT_PROD_TEXT=1` | 请求启用正式文字 |
-| `CHAT_PROD_MYSQL_USER` | 可选独立 Go 账号。未填写账号和密码时复用 PHP 连接 |
-| `CHAT_MYSQL_PASSWORD` | 可选独立 Go 账号密码 |
-| `CHAT_PROD_RELEASE_FILE` | 与本次提交、正式环境和恢复代次匹配的签名放行文件绝对路径 |
-| `CHAT_RELEASE_KEY` | 放行文件的签名密钥 |
-
-启动器从正式 PHP 复用数据库地址、正式库名、Redis、签名公钥和微信配置。部署前按[恢复与联合放行](../../docs/订单聊天/宝塔部署、容量与运维.md#192-同环境恢复控制目录)完成恢复核验，PHP 配置启用 `chat.safety_credential_export_enabled`，正式站 Nginx 加入本目录示例中的业务和 WebSocket 路由。已有微信回执入口可以继续使用。若配置缺项，日志会输出 `CHAT_PRODUCTION_TEXT_PENDING` 和缺项。看到 `CHAT_PRODUCTION_TEXT_READY` 后核对内部 `/readyz`，再用正式小程序做两端收发。图片、语音、视频、通话和短信依原有发布流程逐项放行。
+可选 `CHAT_PROD_MYSQL_USER` 与 `CHAT_MYSQL_PASSWORD` 仅用于明确选择独立 Go MySQL 账号；两者均不填写时复用 PHP 已安装连接。L1 仍要求正式恢复门禁、PHP 身份签名、Redis、微信文字内容安全及 Go 数据库权限。看到 `CHAT_PRODUCTION_TEXT_READY` 后检查内部 `/readyz`，再用真实双端账号验证文字收发、历史补收、WSS重连和撤权。图片、通知、语音、视频、通话和短信仍按各自 profile/专项逐项放行。
 
 MySQL 5.7 网站账号查询 binlog 坐标遇到 1227 时，在可信终端执行 `bin/chat-recovery.php` 前，用环境变量 `CHAT_RECOVERY_DB_USER` 和 `CHAT_RECOVERY_DB_PASSWORD` 临时提供具备所需权限的维护账号。工具仍读取同一个正式数据库。运行完成后清除终端中的变量。
