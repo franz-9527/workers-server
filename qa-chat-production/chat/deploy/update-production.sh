@@ -16,6 +16,8 @@ fail() { printf '%s\n' "$1" >&2; exit 2; }
   fail '请将升级包解压到 /www/wwwroot/worker/chat/update，目录属主 root、权限 0700。'
 [[ $(realpath -e -- "$chat") == "$chat" && -x "$php" ]] || fail '正式站聊天目录或 PHP 8.3 CLI 不存在。'
 [[ $(stat -c '%U:%G:%a' -- "$chat") =~ ^(root|www):www:750$ ]] || fail '正式聊天目录应为 root:www 或 www:www，权限 0750。'
+[[ ! -L "$chat/bin" && -d "$chat/bin" && ! -L "$chat/bin/releases" && -d "$chat/bin/releases" ]] ||
+  fail '正式 Go bin 与 releases 必须是实际目录，不能使用符号链接。'
 sha256sum -c SHA256SUMS.txt
 [[ -f deploy/release-public.key && ! -L deploy/release-public.key ]] || fail '升级包缺少正式发布公钥。'
 key_dir=/var/lib/bixuan-chat-release-key

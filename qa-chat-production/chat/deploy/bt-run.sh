@@ -38,7 +38,7 @@ SERVE=''
 WORKER=''
 CREDENTIAL=''
 trap 'STOP=1' TERM INT HUP
-set_error(){ printf '%s\n' "$1" > "$STATE/.last-error.$" 2>/dev/null && mv -f "$STATE/.last-error.$" "$STATE/last-error" 2>/dev/null || true; }
+set_error(){ printf '%s\n' "$1" > "$STATE/.last-error.$$" 2>/dev/null && mv -f "$STATE/.last-error.$$" "$STATE/last-error" 2>/dev/null || true; }
 clear_error(){ rm -f -- "$STATE/last-error" 2>/dev/null || true; }
 runtime_request(){
   local value

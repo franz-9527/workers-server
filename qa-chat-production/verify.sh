@@ -96,6 +96,12 @@ go test ./internal/bootstrap ./internal/dependencies
 bash -n deploy/bt-run.sh
 bash -n deploy/bt-deploy.sh
 bash -n deploy/update-production.sh
+grep -Fq 'umask 077' deploy/bt-run.sh
+grep -Fq '.last-error.$' deploy/bt-run.sh
+! grep -Fq '.last-error.$"' deploy/bt-run.sh
+grep -Fq 'CHAT_DEPLOY_PRODUCTION_STATE_PERMISSIONS' deploy/bt-deploy.sh
+grep -Fq 'chmod 0600 "$legacy_state/run.lock"' deploy/update-production.sh
+grep -Fq '正式 Go bin 与 releases 必须是实际目录' deploy/update-production.sh
 go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o /tmp/chatqa ./cmd/chatd
 cd ..
 

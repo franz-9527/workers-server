@@ -4,7 +4,7 @@ c9d2e8c654fac590d6533b2dfaa9d6e31e3d1aaa  qa-chat-production/chat/build.sh
 ecd53d4d9b8d37dd714e8148a8e606a52801870f  qa-chat-production/chat/cmd/chatd/main.go
 fdfffaca8ef86a5d06fba7f68104f2ef7a8c49d0  qa-chat-production/chat/config.example.json
 648b933acdef323faa129f67e33af4020e11eced  qa-chat-production/chat/deploy/bt-deploy.sh
-c5ca02382e42d0dcd254a3be0892e0c6d2ab4450  qa-chat-production/chat/deploy/bt-run.sh
+9fe2125b7e47dfb8fb9574b0953da606519e1a61  qa-chat-production/chat/deploy/bt-run.sh
 e4128de6205e3afc17aac4faeb4bc73089799066  qa-chat-production/chat/deploy/bt-site.sh
 f2df583d79eec5afef44d875d1c3630515e383d0  qa-chat-production/chat/deploy/init-production-recovery.php
 9e59031770fdd33c2242ced2454b543440f461c3  qa-chat-production/chat/deploy/nginx.conf.example
@@ -14,7 +14,7 @@ e3397195f5260075a1c27eedcecd45ef6702e84c  qa-chat-production/chat/deploy/python3
 39fd9264339de1c6fe6ed589e6eb8b87a7fce038  qa-chat-production/chat/deploy/supervisor.conf.example
 69ee7a43890b728d0a50bbaadac2414ee2b2a26b  qa-chat-production/chat/deploy/test-bt-deploy.py
 b84777d5cbec70de5a0411da740d9b9f04d5688f  qa-chat-production/chat/deploy/test-runtime-integration.py
-9a6fe895d6175d18c90df40cefb73bae6a0f3eac  qa-chat-production/chat/deploy/update-production.sh
+1152fc2a825fa2eaac47e6f7fea0e7b6bf520015  qa-chat-production/chat/deploy/update-production.sh
 88ae5e6fa1be4988568863edcde91877e18e0e5a  qa-chat-production/chat/deploy/web-update.php
 62cc79fdcf2465a6bf163229efff03657ee71f98  qa-chat-production/chat/deploy/宝塔Git自动部署.md
 2a1120385c18f35bb3aae93a4242e865429daad0  qa-chat-production/chat/deploy/正式Go部署与微信回调.md
