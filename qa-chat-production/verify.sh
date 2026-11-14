@@ -132,7 +132,9 @@ echo "QA runtime state: $(sudo stat -c '%U:%G:%a' "$state")"
 echo "QA lock state: $(sudo stat -c '%U:%G:%a' "$state/run.lock")"
 echo "QA production status: $(sudo cat "$site/storage/private/chat-runtime-control/production-text-status" 2>/dev/null || echo missing)"
 sudo ls -la "$state"
+sudo ls -la "$legacy_state.migrated" || true
 sudo -u www php -r 'require $argv[1]; $direct=db()->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]); $helper=setting("chat.go_production_text_requested","0"); echo "Post-deploy request direct=".(string)$direct." helper=".(string)$helper."\n";' "$site/bootstrap.php"
+set -x
 test "$(sudo readlink "$site/chat/bin/current")" = "releases/$source_sha"
 test "$(sudo stat -c '%U:%G:%a' "$state")" = "www:www:700"
 test "$(sudo stat -c '%a' "$state/run.lock")" = "600"
@@ -143,6 +145,7 @@ test ! -e "$legacy_state"
 test ! -e "$state/production.local.env"
 test -s "$state/production.text.json"
 test -s "$state/production.release.json"
+set +x
 echo "Legacy state migration preserved private data and normalized run.lock"
 
 probe_config() {
