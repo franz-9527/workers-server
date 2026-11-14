@@ -85,7 +85,10 @@ if(empty($state["configured"])) $state=$signing->generate($config,1,"super_admin
 if(empty($state["configured"])||empty($state["public_keys"])) throw new RuntimeException("CHAT_QA_SIGNING_SETUP_FAILED");
 $runtime=new WorkerAdmin\Application\Chat\ChatGoRuntimeConfig($db,$cipher);
 $runtime->prepareProduction(1,"super_admin");
-echo "Managed PHP signing and production release key initialized\n";
+$direct=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_text_requested' LIMIT 1");
+$helper=setting("chat.go_production_text_requested","0");
+if((string)$direct!=="1"||(string)$helper!=="1") throw new RuntimeException("CHAT_QA_PRODUCTION_REQUEST_NOT_PERSISTED direct=".(string)$direct." helper=".(string)$helper);
+echo "Managed PHP signing and production release key initialized; request=".$helper."\n";
 ' "$site/bootstrap.php"
 
 cd chat
@@ -125,6 +128,11 @@ find . -type f ! -name SHA256SUMS.txt -printf "%P\0" | sort -z | xargs -0 sha256
 SH
 
 sudo bash "$site/chat/update/deploy/update-production.sh"
+echo "QA runtime state: $(sudo stat -c '%U:%G:%a' "$state")"
+echo "QA lock state: $(sudo stat -c '%U:%G:%a' "$state/run.lock")"
+echo "QA production status: $(sudo cat "$site/storage/private/chat-runtime-control/production-text-status" 2>/dev/null || echo missing)"
+sudo ls -la "$state"
+sudo -u www php -r 'require $argv[1]; $direct=db()->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=\'chat.go_production_text_requested\' LIMIT 1"); $helper=setting("chat.go_production_text_requested","0"); echo "Post-deploy request direct=".(string)$direct." helper=".(string)$helper."\n";' "$site/bootstrap.php"
 test "$(sudo readlink "$site/chat/bin/current")" = "releases/$source_sha"
 test "$(sudo stat -c '%U:%G:%a' "$state")" = "www:www:700"
 test "$(sudo stat -c '%a' "$state/run.lock")" = "600"
