@@ -226,13 +226,25 @@ for _ in $(seq 1 15); do
 done
 echo "Blocked recovery readiness HTTP=$blocked_http body=$(cat /tmp/chatqa-blocked.json 2>/dev/null || true)"
 test "$blocked" = 1
-test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)" = 404
-sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="blocked") exit(1);' "$site/bootstrap.php"
+callback_after_block=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)
+echo "Optional callback while recovery blocked HTTP=$callback_after_block"
+test "$callback_after_block" = 404
+php_gate_status=$(sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; echo WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production");' "$site/bootstrap.php")
+echo "PHP recovery gate status=$php_gate_status"
+test "$php_gate_status" = blocked
 sudo sed -i 's/"state":"blocked"/"state":"ready"/' "$gate"
 sudo chown root:www "$gate"
 sudo chmod 640 "$gate"
-for _ in $(seq 1 15); do if curl -fsS http://127.0.0.1:9502/readyz >/dev/null; then break; fi; sleep 1; done
-curl -fsS http://127.0.0.1:9502/readyz >/dev/null
+echo "Restored recovery gate: $(sudo cat "$gate")"
+restored=0
+restored_http=000
+for _ in $(seq 1 15); do
+  restored_http=$(curl -sS -o /tmp/chatqa-restored.json -w '%{http_code}' http://127.0.0.1:9502/readyz || true)
+  if [[ "$restored_http" == 200 ]]; then restored=1; break; fi
+  sleep 1
+done
+echo "Restored recovery readiness HTTP=$restored_http body=$(cat /tmp/chatqa-restored.json 2>/dev/null || true)"
+test "$restored" = 1
 echo 'Recovery blocks business routes without interrupting callback dispatch'
 
 cleanup_launcher
