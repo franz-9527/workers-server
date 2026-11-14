@@ -14,6 +14,21 @@ while read -r expected path; do
 done < SOURCE_MANIFEST
 echo "Testing workers source SHA: $source_sha"
 
+python3 tools/test_check_chat_release_profiles.py
+for profile in text text-images full; do
+  python3 tools/check-chat-release.py --template --profile "$profile" > "/tmp/chat-release-$profile.json"
+done
+python3 tools/check-chat-release.py --template > /tmp/chat-release-default.json
+python3 - <<'PY'
+import json
+expected={"text":["text","governance"],"text-images":["text","governance","images"],"full":["text","images","governance","reminders"]}
+for profile,caps in expected.items():
+    data=json.load(open(f"/tmp/chat-release-{profile}.json",encoding="utf-8"))
+    assert data["profile"]==profile and data["capabilities"]==caps, data
+assert json.load(open("/tmp/chat-release-default.json",encoding="utf-8"))["profile"]=="full"
+print("L1/L2/L3 templates and fail-closed profile tests passed")
+PY
+
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
 sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
 sudo chown www:www "$legacy_state"
