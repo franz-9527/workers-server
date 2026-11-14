@@ -15,25 +15,27 @@
 
 ## 使用边界
 
-- server/PHP、MySQL、数据库迁移、Go 聊天服务及 Redis 等需要隔离运行环境的测试可以使用本仓库。
-- 小程序 WXML/WXSS/JS、样式、文案和纯前端交互直接在 `workers` 验证，不复制到本仓库；服务端契约测试确需少量调用端夹具时，应单独说明依赖。
+- 本仓库只用于 franz-9527/workers 的隔离测试，不是正式源码仓库、集成分支、生产部署来源或代码回写来源。
+- **禁止在 franz-9527/workers 源码仓库工作区运行测试、构建、lint、数据库迁移或测试脚本。** 正式仓库只用于读取、审查、修改和提交源码。
+- PHP、Go、MySQL、Redis、数据库迁移及服务端集成测试在本仓库的隔离环境执行，使用本次准确 source SHA 的最小源码快照。
+- 小程序 UI、交互和微信原生能力通过测试站、测试小程序/测试号及微信开发者工具验证；不要把整套小程序源码复制到本仓库。确需服务端契约夹具时只同步最小必要文件。
 - 本仓库为公开仓库。只同步本次必需、可公开的最小源码和合成夹具；不得提交真实用户数据、生产配置、密钥、数据库备份或完整正式仓库归档。
-- 默认 `GITHUB_TOKEN` 不能直接 checkout 私有 `workers`。在有授权的开发环境准备最小快照，不为测试扩大令牌权限。
-- 复用现有 `main`，不为一次测试创建新分支。未经用户明确授权，不新建分支、不重写历史、不强制推送。
-- 本仓库不部署生产、不发行正式包，也不作为向 `workers` 回写代码的来源。
+- 默认 GITHUB_TOKEN 不能直接 checkout 私有 workers。只在有授权的开发环境准备最小快照，不为测试扩大令牌权限。
+- 复用现有 main，不为一次测试创建新分支。未经用户明确授权，不新建分支、不重写历史、不强制推送。
+- 本仓库不部署生产、不发行正式包，也不作为向 workers 回写代码的来源。
 
 ## 一次测试的完整流程
 
-1. 获取 `workers` 指定开发分支最新提交，确认被测内容、正式回归入口和所需依赖；开发改动仍在正式仓库完成。
-2. 优先在本地执行；必须使用独立 Runner/MySQL/Redis 环境时，才准备最小快照、合成夹具和临时 workflow。
-3. 临时输入统一放在 `.validation/`；记录来源仓库、完整源提交 SHA、文件清单/校验值、测试命令和运行时版本。检查可公开性后按具体路径 `git add -f`，禁止整仓强制添加。临时 workflow 使用 `temporary-*.yml`，在 `main` 按自身路径触发或手动执行。
-4. workflow 默认仅 `contents: read`，设置超时及按 workflow/ref 的 `concurrency`；普通测试启用 `cancel-in-progress: true`。测试只连接本次创建的隔离服务，禁止生产连接和真实短信、支付、微信通知等外部业务调用。
-5. PHP 新开发目标为 **8.3.36**，数据库兼容验证使用 **MySQL 5.7.44**；Go 版本读取被测 `go.mod`，Redis 版本按被测模块规范固定。旧 PHP 兼容测试须明确单独声明，不混作新目标验收。
-6. 检查 run → jobs → steps → logs。记录源提交 SHA、测试仓库提交 SHA、run URL、实际运行时版本、命令和结果；有 artifact 时显式设置 `retention-days: 7`。结果写入正式仓库相关交接记录或提交说明，临时日志只留 Actions；workflow 不自动提交日志和结果。
-7. 确认正式代码与回归已提交到 `workers` 指定分支、结果已交接且没有在执行/排队的依赖任务后，删除全部临时源码、夹具、压缩包、结果和 workflow。失败或中断也需记录结果并清理；仍需复测的输入必须标明负责人和待办，不作为长期基础设施留下。
-8. 暂存清理改动，执行 `python3 tools/check-clean-state.py` 和 `git diff --cached --check`，检查 diff 后用普通提交完成收尾，再核对远端 `main`。测试源码准备、必要修正和最终清理应各有明确目的，避免无意义空提交和细碎结果提交。
+1. 获取 workers 指定分支最新提交，确认准确 source SHA、被测文件清单、正式回归入口和所需依赖；开发改动仍在 workers 完成并提交。
+2. 禁止回到 workers 工作区运行测试。需要独立 Runner/MySQL/Redis 环境时，在本仓库准备最小快照、合成夹具和临时 workflow；不需要运行环境的静态审查不得伪装成测试通过。
+3. 临时输入统一放在 .validation/；记录来源仓库、完整源提交 SHA、文件清单/校验值、测试命令和运行时版本。检查可公开性后按具体路径 git add -f，禁止整仓强制添加。临时 workflow 使用 temporary-*.yml，放在 main 按自身路径触发或手动执行。
+4. workflow 默认仅 contents: read，设置超时及按 workflow/ref 的 concurrency；普通测试启用 cancel-in-progress: true。测试只连接本次创建的隔离服务，禁止生产连接和真实短信、支付、微信通知等外部业务调用。
+5. PHP 新开发目标为 8.3.36，数据库兼容验证使用 MySQL 5.7.44；Go 版本读取被测 go.mod，Redis 版本按被测模块规范固定。旧 PHP 兼容测试须明确单独声明，不混作新目标验收。
+6. 检查 run → jobs → steps → logs。记录 source SHA、测试仓库提交 SHA、run URL、实际运行时版本、命令和结果；有 artifact 时显式设置 retention-days: 7。结果写入正式仓库相关交接记录或提交说明，临时日志只留 Actions；workflow 不自动提交日志和结果。
+7. 确认正式代码与回归已提交到 workers 指定分支、结果已交接且没有在执行/排队的依赖任务后，删除全部临时源码、夹具、压缩包、结果和 workflow。失败或中断也需记录结果并清理；仍需复测的输入必须标明负责人和待办，不作为长期基础设施留下。
+8. 暂存清理改动，执行 python3 tools/check-clean-state.py 和 git diff --cached --check，检查 diff 后用普通提交完成收尾，再核对远端 main。测试源码准备、必要修正和最终清理应各有明确目的，避免无意义空提交和细碎结果提交。
 
-`.gitignore` 仅防误提交，不会删除已经跟踪的文件；收尾检查以 **Git 索引** 为准。因此必须先 `git add -A` 再检查，不能只删除本地文件就宣称远端已清理。
+.gitignore 仅防误提交，不会删除已经跟踪的文件；收尾检查以 Git 索引为准。因此必须先 git add -A 再检查，不能只删除本地文件就宣称远端已清理。
 
 ## 验证结果与保留规则
 
@@ -43,4 +45,4 @@
 - 定期清理仅删除超过 7 天且已完成、最近未更新的 runs 和超过 7 天的 artifacts，每类每次最多 100 条；不删除进行中任务、提交、分支、Tag 或 Release。删除记录不返还已消耗的 Actions 分钟。
 - 清理代码文件使用普通提交保留历史；历史敏感对象移除需另走平台敏感数据清除流程，普通删除提交不代表历史数据已移除。
 
-正式仓库规则入口：[`GitHub开发与仓库维护手册`](https://github.com/franz-9527/workers/blob/main/docs/GitHub开发与仓库维护手册.md)、[`持续集成与测试执行规范`](https://github.com/franz-9527/workers/blob/main/docs/持续集成与测试执行规范.md)。
+正式仓库规则入口：[`AI 长期项目治理与代码 Review 规范`](https://github.com/franz-9527/workers/blob/main/docs/AI长期项目治理与代码Review规范.md)、[`GitHub开发与仓库维护手册`](https://github.com/franz-9527/workers/blob/main/docs/GitHub开发与仓库维护手册.md)、[`持续集成与测试执行规范`](https://github.com/franz-9527/workers/blob/main/docs/持续集成与测试执行规范.md)。
