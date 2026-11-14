@@ -212,7 +212,7 @@ while (( STOP == 0 )); do
     fi
     [[ $(readlink "$BIN/current" 2>/dev/null || true) == "$TARGET" ]] || { CHANGED=1; echo 'CHAT_RUN_RELEASE_CHANGED'; break; }
     if (( STABLE >= 2 )) && [[ -n "$CANDIDATE" ]]; then
-      if healthy 9501 /livez 200 && healthy 9501 /chat/api/v1/av/callback 403 &&
+      if healthy 9501 /livez 200 &&
         { (( EXPECT_BUSINESS == 0 )) || healthy 9502 /readyz 200; }; then
         printf '%s\n' "$CANDIDATE" > "$STATE/go-web.active.tmp"
         if ! mv -f -- "$STATE/go-web.active.tmp" "$STATE/go-web.active"; then break; fi

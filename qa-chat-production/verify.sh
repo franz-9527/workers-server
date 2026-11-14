@@ -182,9 +182,13 @@ done
 echo "Go readiness HTTP=$ready_http body=$(cat /tmp/chatqa-ready.json 2>/dev/null || true)"
 sudo cat /tmp/chatqa-launch.log || true
 [[ $ready == 1 ]] || { echo 'QA_GO_READINESS_FAILED'; exit 1; }
+live_http=$(curl -sS -o /tmp/chatqa-live.txt -w '%{http_code}' http://127.0.0.1:9501/livez || true)
+echo "Go liveness HTTP=$live_http"
+test "$live_http" = 200
 callback_http=$(curl -sS -o /tmp/chatqa-callback.txt -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback || true)
-echo "Go callback unauthenticated HTTP=$callback_http"
-test "$callback_http" = 403
+echo "Optional media callback without L1 configuration HTTP=$callback_http"
+test "$callback_http" = 404
+! grep -q 'healthy 9501 /chat/api/v1/av/callback' chat/deploy/bt-run.sh
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) { fwrite(STDERR,"PHP_GO_BUSINESS_NOT_READY ".json_encode($s)."\n"); exit(1); } echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
 text_status=$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")
 echo "Go production text status=$text_status"
