@@ -92,7 +92,7 @@ echo "Managed PHP signing and production release key initialized; request=".$hel
 ' "$site/bootstrap.php"
 
 cd chat
-go test ./internal/bootstrap ./internal/dependencies
+go test ./...
 bash -n deploy/bt-run.sh
 bash -n deploy/bt-deploy.sh
 bash -n deploy/update-production.sh
