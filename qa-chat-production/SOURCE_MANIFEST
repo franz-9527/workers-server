@@ -1022,3 +1022,4 @@ aa03c88827b4f510584e0244c924b38eba2df0f8  qa-chat-production/server/app/Support/
 9610bb6433fd8c3750799734bf294afe375455ab  qa-chat-production/server/config/defaults.php
 df36e024b29d0cbdbdbfe373e0b5d75920e7d940  qa-chat-production/server/database/database.sql
 d7b80f3b4aff76baf8e8d79f6fd39a6c6ce1f802  qa-chat-production/server/views/admin/chat-settings.php
+18b2821c9e8ba4d5152799739926c65649634c2b  qa-chat-production/server/tests/chat_call_resource_contract.php
