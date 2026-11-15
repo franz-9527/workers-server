@@ -1,0 +1,22 @@
+name: Temporary platform order form regression
+on:
+  push:
+    paths:
+      - 'temporary-platform-order-form/**'
+      - '.github/workflows/temporary-platform-order-form.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: bash temporary-platform-order-form/verify.sh
