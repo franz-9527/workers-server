@@ -422,9 +422,9 @@ async function s13NativeTests() {
  assert.strictEqual(p.data.draft,'中文组字完成','later IME input remains the current draft')
  const good=p.sendText();await good;assert.strictEqual(f.manager.sent.text,'中文组字完成')
  p.inputText({detail:{value:'汉'.repeat(1500)}});assert(p.data.inputError);assert.strictEqual(p.data.draft.length,1500,'over-byte text remains editable')
- // Keyboard resizing uses the same pixel anchor, never a bottom command.
+ // Keyboard resizing follows the active reading mode: bottom stays pinned; historical reading restores its pixel anchor.
  p.currentTop=10;const before=p.data.scrollInto
- p.keyboardChange({detail:{height:240}});await settle();assert.strictEqual(p.data.keyboardHeight,240);assert.strictEqual(p.data.scrollInto,'')
+ p.keyboardChange({detail:{height:240}});await settle();assert.strictEqual(p.data.keyboardHeight,240);assert.strictEqual(p.data.scrollInto,'message-bottom','composer resize keeps an already-bottom view pinned')
  assert.notStrictEqual(before,undefined)
  // Leave and return from an external native page (including a future album).
  p.atBottom=false;p.returnPoint={id:'80',offset:-10,top:5};p.onHide();await settle();assert(p.resumePoint)
