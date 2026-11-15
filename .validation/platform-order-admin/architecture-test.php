@@ -27,7 +27,7 @@ passTest('measurement decorator no longer duplicates order_answers/common facts'
 $module=file_get_contents(__DIR__.'/source/PlatformOrderAdminModule.php');
 if(!is_string($module))failTest('admin module snapshot missing');
 foreach([
-    '$rules = is_array($form[\\'rules\\'] ?? null)',
+    "\$rules = is_array(\$form['rules'] ?? null)",
     'rule.action_type==="show"',
     'control.disabled=!visible||!!state.disabled',
     'answers[expected_visit_period]',
