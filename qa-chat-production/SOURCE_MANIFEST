@@ -1104,3 +1104,5 @@ ffb6db9ea4be72809cf701eb2fdda4322d2b7268  qa-chat-production/miniprogram/utils/W
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
 c217f42016242a0c84ad8ef5ef7cf4183fbf9f5a  qa-chat-production/tools/test_chat_s12_business_entry.js
 86e61631db8b3f86fc4586af234d9fffdf21fc51  qa-chat-production/tools/test_chat_s18_s20.js
+657e02ace6bd59accb68ac159c25297aab4dd953  qa-chat-production/server/assets/chat-image-review.js
+e2ea27f7936f7fef890f2023e8ed71d66293b81b  qa-chat-production/server/assets/chat-governance.js
