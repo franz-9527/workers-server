@@ -15,6 +15,7 @@ done < SOURCE_MANIFEST
 echo "Testing workers source SHA: $source_sha"
 
 python3 tools/test_check_chat_release_profiles.py
+python3 tools/test_check_chat_l1_real.py
 for profile in text text-images full; do
   python3 tools/check-chat-release.py --template --profile "$profile" > "/tmp/chat-release-$profile.json"
 done
