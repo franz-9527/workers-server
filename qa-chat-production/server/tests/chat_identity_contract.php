@@ -28,7 +28,7 @@ if (in_array(($argv[1] ?? ''), ['--issue-mini','--issue-admin','--logout-admin']
         'database'=>$database,'username'=>(string)getenv('CHAT_AUTH_TEST_MYSQL_USER'),
         'password'=>(string)getenv('CHAT_AUTH_TEST_MYSQL_PASSWORD'),'charset'=>'utf8mb4']);
     try {
-        $issuer = (new \WorkerAdmin\Foundation\ChatApplicationContainer($db))->credentials($config,'testing');
+        $issuer = new ChatCredentialIssuer($db,$config,'testing',new \WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher(),new \WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate(),static fn():array=>['ready'=>true,'reason'=>'isolated_identity_contract']);
         if ($argv[1] === '--issue-mini') {
             $result = $issuer->exchangeMini((string)getenv('CHAT_AUTH_TEST_LOGIN_TOKEN'));
         } else {
@@ -75,7 +75,7 @@ function rejected(callable $fn, int $status): void { try { $fn(); } catch (Runti
 $seed = random_bytes(32);
 putenv('CHAT_ACCESS_SEED='.base64_encode($seed));
 $db = new ChatIdentityFixtureDatabase();
-$issuer = (new \WorkerAdmin\Foundation\ChatApplicationContainer($db))->credentials($config,'testing');
+$issuer = new ChatCredentialIssuer($db,$config,'testing',new \WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher(),new \WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate(),static fn():array=>['ready'=>true,'reason'=>'isolated_identity_contract']);
 $result = $issuer->exchangeMini(str_repeat('a',64));
 $parts = explode('.', $result['access_token']);
 $decode = static function(string $s): string { return (string)base64_decode(strtr($s,'-_','+/')); };
@@ -151,7 +151,7 @@ if(getenv('CHAT_AUTH_TEST_INTEGRATION')==='1'){
         $login=str_repeat('c',64);
         $grantDb->execute("INSERT INTO login_sessions(user_id,token_hash,status,expires_at,created_at) VALUES(301,:hash,'active',UTC_TIMESTAMP()+INTERVAL 1 HOUR,UTC_TIMESTAMP())",['hash'=>hash('sha256',$login)]);
         putenv('CHAT_ACCESS_SEED='.base64_encode(random_bytes(32)));
-        $chat=new \WorkerAdmin\Foundation\ChatApplicationContainer($grantDb);$grants=$chat->auditors();$liveIssuer=$chat->credentials($config,'testing');
+        $chat=new \WorkerAdmin\Foundation\ChatApplicationContainer($grantDb);$grants=$chat->auditors();$liveIssuer=new ChatCredentialIssuer($grantDb,$config,'testing',new \WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher(),new \WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate(),static fn():array=>['ready'=>true,'reason'=>'isolated_identity_contract']);
         $input=['user_id'=>'301','reason'=>'隔离授权验证','enabled'=>'1'];
         rejected(static function()use($liveIssuer,$login):void{$liveIssuer->exchangeMini($login,true);},403);
         $grants->change($input,'99');$first=$grantDb->fetch('SELECT * FROM chat_mini_auditors WHERE user_id=301');

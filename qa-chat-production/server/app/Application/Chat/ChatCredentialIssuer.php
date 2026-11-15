@@ -16,12 +16,14 @@ final class ChatCredentialIssuer
     private Database $db;
     private array $config;
     private string $environment;
+    private ?\Closure $runtimeStatus;
 
-    public function __construct(Database $db, array $config, string $phpEnvironment,private PrivateValueCipher $cipher,private ChatRecoveryReadiness $recovery)
+    public function __construct(Database $db, array $config, string $phpEnvironment,private PrivateValueCipher $cipher,private ChatRecoveryReadiness $recovery,?\Closure $runtimeStatus=null)
     {
         $this->db = $db;
         $this->config = $config;
         $this->environment = ['testing'=>'test','development'=>'development','production'=>'production'][$phpEnvironment] ?? '';
+        $this->runtimeStatus=$runtimeStatus;
     }
 
     /** Availability is scoped to this session; demo identities never borrow the administrator's real chat. */
@@ -114,7 +116,7 @@ final class ChatCredentialIssuer
     {
         try{
             $this->assertEnabled();
-            $status=(new ChatGoRuntimeStatus($this->environment))->status();
+            $status=$this->goStatus();
             if(empty($status['ready']))return ['ready'=>false,'reason'=>(string)($status['reason']??'CHAT_GO_NOT_READY'),'go'=>$status];
             return ['ready'=>true,'reason'=>'ready','go'=>$status];
         }catch(\Throwable $e){
@@ -125,8 +127,17 @@ final class ChatCredentialIssuer
 
     private function assertGoReady():void
     {
-        $status=(new ChatGoRuntimeStatus($this->environment))->status();
+        $status=$this->goStatus();
         if(empty($status['ready']))throw new RuntimeException('CHAT_GO_NOT_READY',503);
+    }
+
+    private function goStatus():array
+    {
+        if($this->runtimeStatus!==null){
+            $status=($this->runtimeStatus)();
+            return is_array($status)?$status:['ready'=>false,'reason'=>'CHAT_GO_NOT_READY'];
+        }
+        return (new ChatGoRuntimeStatus($this->environment))->status();
     }
 
     private function assertEnabled(): void

@@ -96,6 +96,7 @@ func TestMySQL57RedisIntegration(t *testing.T) {
 	s.MySQL.Address = ma
 	s.MySQL.Database = database
 	s.MySQL.Username = user
+	s.MySQL.SharedAppCredentials = false
 	s.MySQL.MaxOpenServe = 2
 	s.Redis.Enabled = true
 	s.Redis.Address = ra
