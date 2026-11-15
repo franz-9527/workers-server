@@ -596,7 +596,7 @@ async function s16NativeImageTests(){
  p.onUnload()
  const w=read('miniprogram/subpackages/chat/conversation/index.wxml'),js=read('miniprogram/subpackages/chat/conversation/index.js')
  assert(w.includes('bindtap="sendImages"')&&w.includes('catchtap="previewImage"')&&w.includes('bindtap="saveImage"'))
- assert(js.includes("sizeType:['original']"));assert(!js.includes('compressImage('),'chat must not introduce lossy client compression')
+ assert.strictEqual((js.match(/sizeType:\['compressed'\]/g)||[]).length,2,'album selection and replacement default to WeChat compressed images');assert(!js.includes("sizeType:['original']"),'chat images must not default to original quality');assert(js.includes('3*1024*1024'),'chat image limit remains 3MB');assert(!js.includes('compressImage('),'chat must not add a second lossy compression pass')
  assert(!/setStorage|writeFileSync/.test(read('miniprogram/utils/ChatImages.js')),'no local archive of pending or rejected image selections')
  const selection=nativeConversation(),s=selection.inst
  selection.manager.cache=new Map([['9',{canSend:true}]])
