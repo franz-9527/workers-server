@@ -149,9 +149,9 @@ $runtime=new WorkerAdmin\Application\Chat\ChatGoRuntimeConfig($db,$cipher);
 $runtime->prepareProduction(1,"super_admin");
 $direct=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]);
 $helper=setting("chat.go_production_text_requested","0");
-$nonAv=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_non_av_requested' LIMIT 1");
-$reminders=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.reminders_enabled' LIMIT 1");
-$internal=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_internal_key_ciphertext' LIMIT 1");
+$nonAv=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_non_av_requested"]);
+$reminders=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.reminders_enabled"]);
+$internal=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_internal_key_ciphertext"]);
 if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="1"||$reminders!=="1"||$internal==="") throw new RuntimeException("CHAT_QA_PRODUCTION_NON_AV_REQUEST_NOT_PERSISTED");
 echo "Managed PHP signing, release/internal keys and non-AV request initialized\n";
 ' "$site/bootstrap.php"
