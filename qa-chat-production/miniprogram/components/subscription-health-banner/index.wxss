@@ -1,0 +1,10 @@
+:host{display:block;width:100%;flex-shrink:0}
+.subscription-hint{box-sizing:border-box;display:grid;grid-template-columns:28rpx minmax(0,1fr) auto;align-items:center;column-gap:10rpx;width:100%;margin:8rpx 0;padding:4rpx 16rpx;border-radius:10rpx;background:#f1f6f5;color:#72827e;font-size:24rpx;line-height:1.5}
+.subscription-hint-icon{display:block;color:#739b8f;font-size:26rpx;line-height:1.5}
+.subscription-hint-text{min-width:0;max-width:100%;height:auto;overflow:visible;white-space:normal;word-break:break-word;line-height:1.5}
+.subscription-hint-actions{display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;gap:4rpx;min-width:0}
+.subscription-hint-control{box-sizing:border-box;display:flex;flex-shrink:0;align-items:center;justify-content:center;min-height:32px;height:auto;margin:0;padding:4rpx 10rpx;color:#278a77;font-size:23rpx;line-height:1.5;text-align:center;white-space:nowrap}
+.subscription-hint-settings{border-left:1rpx solid #dce6e3;color:#7e9390;font-size:22rpx}
+.subscription-hint-control.is-pending{opacity:.55}
+.subscription-hint-hover{opacity:.7}
+@media(prefers-color-scheme:dark){.subscription-hint{background:#1b2825;color:#a3b9b1}.subscription-hint-icon{color:#7eaa9a}.subscription-hint-control{color:#87ceba}.subscription-hint-settings{color:#a3b9b1;border-color:#354d43}}

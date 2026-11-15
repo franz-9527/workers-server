@@ -19,12 +19,6 @@ jobs:
           sha=$(tr -d '\r\n' < qa-chat-production/SOURCE_SHA)
           [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        with:
-          repository: franz-9527/workers
-          ref: ${{ steps.source.outputs.sha }}
-          path: workers-source
-          persist-credentials: false
       - uses: actions/setup-go@v5
         with:
           go-version-file: qa-chat-production/chat/go.mod

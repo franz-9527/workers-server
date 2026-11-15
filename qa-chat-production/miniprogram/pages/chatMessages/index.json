@@ -1,0 +1,7 @@
+{
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "消息",
+  "navigationBarBackgroundColor": "@messageNavBackground",
+  "navigationBarTextStyle": "@messageNavTextStyle",
+  "backgroundColor": "#ededed"
+}

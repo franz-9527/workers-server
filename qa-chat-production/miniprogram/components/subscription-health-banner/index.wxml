@@ -1,0 +1,8 @@
+<view wx:if="{{active && health}}" class="subscription-hint" role="status" aria-live="polite">
+ <text class="cuIcon-weixin subscription-hint-icon" aria-hidden="true"></text>
+ <view class="subscription-hint-text">{{hintText}}</view>
+ <view class="subscription-hint-actions">
+  <view class="subscription-hint-control {{pending ? 'is-pending' : ''}}" role="button" aria-disabled="{{pending}}" aria-label="{{hintText + '，' + actionText}}" hover-class="subscription-hint-hover" bindtap="open">{{pending ? '处理中' : actionText}}</view>
+  <view wx:if="{{health.action === 'top_up'}}" class="subscription-hint-control subscription-hint-settings {{pending ? 'is-pending' : ''}}" role="button" aria-disabled="{{pending}}" aria-label="微信提醒设置" hover-class="subscription-hint-hover" bindtap="openSettings">设置</view>
+ </view>
+</view>
