@@ -1,0 +1,19 @@
+name: Temporary release retention regression
+on:
+  push:
+    paths:
+      - 'temporary-release-retention/**'
+      - '.github/workflows/temporary-release-retention.yml'
+permissions:
+  contents: read
+jobs:
+  retention:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact candidate
+        run: |
+          test "$(cat temporary-release-retention/SOURCE_SHA)" = "507ec186ca559d227c1bc5b55c2c0fa5de2a1f7e"
+      - name: Release retention tests
+        run: bash temporary-release-retention/test.sh
