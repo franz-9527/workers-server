@@ -19,7 +19,7 @@ $GLOBALS['platform_env']='production';
 $p=PlatformOrderCustomerAccountScope::linkableSql('u');
 ok(strpos($p,"wi.status='active'")!==false,'production still requires active WeChat identity');
 ok(strpos($p,'AND NOT')!==false,'production explicitly excludes demo identities');
-ok(strpos($p,' OR ')===false,'production does not OR demo actors into customer scope');
+ok(strpos($p,'AND NOT')!==false && strpos($p,'01K2DEMOV%WORKER%')!==false,'production wraps recognized demo identities in explicit exclusion');
 ok(PlatformOrderCustomerAccountScope::testingAllowsDemo()===false,'production reports demo disabled');
 
 $GLOBALS['platform_env']='testing';
