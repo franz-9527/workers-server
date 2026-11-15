@@ -639,7 +639,7 @@ async function u15NotificationThreadTests(){
  const api={contextRevision:()=>scope,request(route,method,body,query){
   calls.push({route,body,query})
   if(route==='orders.center')return Promise.resolve({data:{items:[],has_more:false,todo_count:0}})
-  if(route==='notifications.threads'){
+  if(route==='notifications.list'){
    if(delayedList){const d=delayedList;delayedList=null;return d.promise}
    if(query.cursor==='next')return Promise.resolve({data:{schema:2,items:[digest('worker:1',5)],has_more:false,next_cursor:'',range_cursor:'range',unread_count:50}})
    return Promise.resolve({data:{schema:2,items:[digest('user:1')],has_more:true,next_cursor:'next',range_cursor:'range',unread_count:50}})
@@ -662,9 +662,9 @@ async function u15NotificationThreadTests(){
  p.onPageScroll({scrollTop:320});p.selectMode({currentTarget:{dataset:{mode:'todo'}}});p.onPageScroll({scrollTop:70});p.selectMode({currentTarget:{dataset:{mode:'all'}}})
  assert.strictEqual(scrolls[scrolls.length-1],320,'tabs retain independent scroll positions')
  await p.load(false);assert.strictEqual(p.data.items.length,2,'thread continuation appends distinct receiver identity')
- const requestCount=calls.filter(c=>c.route==='notifications.threads').length
+ const requestCount=calls.filter(c=>c.route==='notifications.list').length
  p.onHide();p.onShow();await settle()
- assert.strictEqual(calls.filter(c=>c.route==='notifications.threads').length,requestCount,'return preserves loaded notification range')
+ assert.strictEqual(calls.filter(c=>c.route==='notifications.list').length,requestCount,'return preserves loaded notification range')
  assert.strictEqual(p.notificationCursor,'','completed list is not reopened from page one')
  const delayed=deferred();delayedList=delayed;const refreshing=p.load(true,true)
  p.toggleThread({currentTarget:{dataset:{index:0}}})
