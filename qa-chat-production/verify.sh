@@ -17,6 +17,8 @@ echo "Testing workers source SHA: $source_sha"
 python3 tools/test_check_chat_release_profiles.py
 python3 tools/test_check_chat_l1_real.py
 python3 tools/test_build_chat_l1_evidence.py
+python3 tools/test_check_chat_non_av_real.py
+python3 tools/test_build_chat_non_av_evidence.py
 for profile in text text-images full; do
   python3 tools/check-chat-release.py --template --profile "$profile" > "/tmp/chat-release-$profile.json"
 done
@@ -151,8 +153,10 @@ $direct=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting
 $helper=setting("chat.go_production_text_requested","0");
 $nonAv=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_non_av_requested"]);
 $reminders=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.reminders_enabled"]);
+$orderPolicy=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.order_policy_enabled"]);
+$collaboration=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.collaboration_enabled"]);
 $internal=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_internal_key_ciphertext"]);
-if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="1"||$reminders!=="1"||$internal==="") throw new RuntimeException("CHAT_QA_PRODUCTION_NON_AV_REQUEST_NOT_PERSISTED");
+if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="1"||$reminders!=="1"||$orderPolicy!=="1"||$collaboration!=="1"||$internal==="") throw new RuntimeException("CHAT_QA_PRODUCTION_NON_AV_REQUEST_NOT_PERSISTED");
 echo "Managed PHP signing, release/internal keys and non-AV request initialized\n";
 ' "$site/bootstrap.php"
 
@@ -377,13 +381,24 @@ print(f"L1 automation evidence written: {out} ({len(data['cases'])} cases)")
 PY
 
 SOURCE_SHA="$source_sha" QA_REPO_ROOT="$repo_root" python3 - <<'PY'
-import json, os, pathlib
+import importlib.util, json, os, pathlib, subprocess
+root=pathlib.Path.cwd()
+spec=importlib.util.spec_from_file_location("chat_release",root/"tools"/"check-chat-release.py")
+release=importlib.util.module_from_spec(spec);spec.loader.exec_module(release)
+run_id=os.environ.get("GITHUB_RUN_ID","").strip()
+server=os.environ.get("GITHUB_SERVER_URL","https://github.com").rstrip("/")
+repository=os.environ.get("GITHUB_REPOSITORY","franz-9527/workers-server").strip("/")
+run_reference=f"{server}/{repository}/actions/runs/{run_id}" if run_id else "workers-server/local-isolated-run"
 out=pathlib.Path(os.environ["QA_REPO_ROOT"])/"non-av-automation-evidence.json"
 data={
   "schema":1,
+  "profile":"non-av-automation",
   "revision":os.environ["SOURCE_SHA"],
   "environment":"isolated",
-  "scope":"non-av-automation",
+  "go_version":subprocess.check_output(["go","env","GOVERSION"],text=True).strip(),
+  "database_version":(root/"server"/"VERSION").read_text(encoding="utf-8").strip(),
+  "source_verified":True,
+  "run_reference":run_reference,
   "status":"automation_passed_real_acceptance_pending",
   "checks":{
     "source_manifest":True,
@@ -398,10 +413,15 @@ data={
     "reminders_automated":True,
     "paid_sms_policy_automated":True,
     "deployment_and_rollback":True,
+    "production_non_av":True,
+    "images_runtime":True,
+    "reminders_runtime":True,
     "recovery_gate":True
   },
+  "cases":list(release.CASES),
   "pending_real_acceptance":{
     "test_site_business_flows":True,
+    "collaboration_group":True,
     "ios_device":True,
     "android_device":True,
     "wechat_live_text_safety":True,
@@ -412,7 +432,7 @@ data={
   "production_business_retest":False
 }
 out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-print("Non-AV automation evidence written:",out)
+print("Non-AV automation evidence written:",out,len(data["cases"]),"cases")
 PY
 
 echo "Isolated production chat deployment verified for source SHA $source_sha"

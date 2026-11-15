@@ -1193,11 +1193,15 @@ f9ec174bd131da82cd2c7b7e923f45a76684a781  qa-chat-production/server/views/admin/
 942f933c35c7ba79de5e1499a8ba0b09f8a74eec  qa-chat-production/server/views/admin/orders/proxy-create.php
 575f7fe326f933dbee9ed04a81d7a2978b8994e2  qa-chat-production/server/views/admin/platform-orders.php
 5e7b42feb4bb375258a19572a8131037ba71429f  qa-chat-production/tools/build-chat-l1-evidence.py
+c05796e3a02486ffda64e010dae9cd24e2e330ff  qa-chat-production/tools/build-chat-non-av-evidence.py
 4b312f044a713053345adba490c661d8064800d3  qa-chat-production/tools/check-chat-l1-real.py
+769833d3ea91a451feffd4873a164fef00758cf4  qa-chat-production/tools/check-chat-non-av-real.py
 87ecdf84fb138e58ecfe37e6b9cb7e73b3f0dae6  qa-chat-production/tools/check-chat-release.py
 755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py
+8d3a49b5fc72d4c7f1b7500dee500a9e5632ed0b  qa-chat-production/tools/test_build_chat_non_av_evidence.py
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
 032fc189e83eb48f21385125180c2238296a1bcd  qa-chat-production/tools/test_chat_s12_business_entry.js
 86e61631db8b3f86fc4586af234d9fffdf21fc51  qa-chat-production/tools/test_chat_s18_s20.js
 438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
+2511c80468f709cf96946c396c22c9438a2b3f8a  qa-chat-production/tools/test_check_chat_non_av_real.py
 a014d5a4fd776fdf9a32c025b016c659d5b1032c  qa-chat-production/tools/test_check_chat_release_profiles.py
