@@ -8,9 +8,16 @@ SPEC = importlib.util.spec_from_file_location("chat_l1_real", ROOT / "tools" / "
 CHECK = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CHECK)
 REVISION = "a" * 40
+EPOCH = "b" * 64
 
 def ready():
     data = CHECK.template(REVISION)
+    data["runtime"].update(
+        running_sha=REVISION,
+        source_dirty=False,
+        recovery_epoch=EPOCH,
+        evidence="test-site-runtime-status",
+    )
     for row in data["devices"]:
         row.update(id=row["platform"] + "-real-1", passed=True, evidence="physical-device-run")
     data["ui"].update(
@@ -25,6 +32,16 @@ class L1RealEvidenceTests(unittest.TestCase):
     def test_ready_record_passes(self):
         self.assertEqual([], CHECK.validate(ready(), REVISION))
 
+    def test_runtime_must_match_exact_revision(self):
+        data = ready()
+        data["runtime"]["running_sha"] = "c" * 40
+        self.assertIn("runtime_binding", CHECK.validate(data, REVISION))
+
+    def test_runtime_requires_recovery_epoch(self):
+        data = ready()
+        data["runtime"]["recovery_epoch"] = ""
+        self.assertIn("runtime_binding", CHECK.validate(data, REVISION))
+
     def test_pending_check_blocks(self):
         data = ready()
         data["checks"]["wss_reconnect"]["status"] = "pending"
@@ -35,6 +52,11 @@ class L1RealEvidenceTests(unittest.TestCase):
         data["devices"][0]["physical"] = False
         self.assertIn("two_real_devices", CHECK.validate(data, REVISION))
 
+    def test_same_device_id_cannot_count_twice(self):
+        data = ready()
+        data["devices"][1]["id"] = data["devices"][0]["id"]
+        self.assertIn("two_real_devices", CHECK.validate(data, REVISION))
+
     def test_test_environment_is_mandatory(self):
         data = ready()
         data["environment"] = "production"
@@ -42,7 +64,7 @@ class L1RealEvidenceTests(unittest.TestCase):
 
     def test_revision_mismatch_blocks(self):
         data = ready()
-        self.assertIn("exact_revision", CHECK.validate(data, "b" * 40))
+        self.assertIn("exact_revision", CHECK.validate(data, "d" * 40))
 
     def test_short_evidence_blocks(self):
         data = ready()

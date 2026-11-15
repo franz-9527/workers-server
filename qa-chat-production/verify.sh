@@ -7,6 +7,10 @@ legacy_state=/var/lib/bixuan-chat-prod
 state=$site/chat/bin/state
 source_sha=$(tr -d '\r\n' < SOURCE_SHA)
 [[ "$source_sha" =~ ^[a-f0-9]{40}$ ]] || { echo 'QA_SOURCE_SHA_INVALID' >&2; exit 2; }
+source_checkout="$repo_root/workers-source"
+[[ -d "$source_checkout/.git" ]] || { echo 'QA_SOURCE_CHECKOUT_MISSING' >&2; exit 2; }
+[[ "$(git -C "$source_checkout" rev-parse HEAD)" == "$source_sha" ]] || { echo 'QA_SOURCE_CHECKOUT_SHA_MISMATCH' >&2; exit 2; }
+[[ -z "$(git -C "$source_checkout" status --porcelain)" ]] || { echo 'QA_SOURCE_CHECKOUT_DIRTY' >&2; exit 2; }
 while read -r expected path; do
   [[ "$expected" =~ ^[a-f0-9]{40}$ && -n "$path" ]] || { echo 'QA_SOURCE_MANIFEST_INVALID' >&2; exit 2; }
   actual=$(git -C "$repo_root" hash-object "$path")
@@ -16,6 +20,7 @@ echo "Testing workers source SHA: $source_sha"
 
 python3 tools/test_check_chat_release_profiles.py
 python3 tools/test_check_chat_l1_real.py
+python3 tools/test_build_chat_l1_evidence.py
 for profile in text text-images full; do
   python3 tools/check-chat-release.py --template --profile "$profile" > "/tmp/chat-release-$profile.json"
 done
@@ -29,6 +34,14 @@ for profile,caps in expected.items():
 assert json.load(open("/tmp/chat-release-default.json",encoding="utf-8"))["profile"]=="full"
 print("L1/L2/L3 templates and fail-closed profile tests passed")
 PY
+
+(
+  cd "$source_checkout"
+  node tools/test_chat_s11.js
+  node tools/test_chat_s12_business_entry.js
+  node tools/test_chat_s18_s20.js
+)
+echo "L1 source front-end regression suites passed"
 
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
 sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
@@ -108,7 +121,7 @@ echo "Managed PHP signing and production release key initialized; request=".$hel
 ' "$site/bootstrap.php"
 
 cd chat
-go test ./...
+go test -race ./...
 bash -n deploy/bt-run.sh
 bash -n deploy/bt-deploy.sh
 bash -n deploy/update-production.sh
@@ -267,4 +280,52 @@ echo 'Recovery gate blocks business readiness and restores; the unconfigured L1 
 cleanup_launcher
 trap - EXIT
 docker rm -f chatqa-redis chatqa-mysql >/dev/null
+
+SOURCE_SHA="$source_sha" QA_REPO_ROOT="$repo_root" python3 - <<'PY'
+import importlib.util
+import json
+import os
+import pathlib
+import subprocess
+
+root = pathlib.Path.cwd()
+spec = importlib.util.spec_from_file_location("chat_release", root / "tools" / "check-chat-release.py")
+release = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(release)
+
+run_id = os.environ.get("GITHUB_RUN_ID", "").strip()
+server = os.environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
+repository = os.environ.get("GITHUB_REPOSITORY", "franz-9527/workers-server").strip("/")
+run_reference = f"{server}/{repository}/actions/runs/{run_id}" if run_id else "workers-server/local-isolated-run"
+go_version = subprocess.check_output(["go", "env", "GOVERSION"], text=True).strip()
+
+data = {
+    "schema": 1,
+    "profile": "text-automation",
+    "revision": os.environ["SOURCE_SHA"],
+    "environment": "isolated",
+    "go_version": go_version,
+    "database_version": (root / "server" / "VERSION").read_text(encoding="utf-8").strip(),
+    "source_verified": True,
+    "run_reference": run_reference,
+    "checks": {
+        "release_profiles": True,
+        "go_tests": True,
+        "go_race": True,
+        "frontend_s11": True,
+        "frontend_s12": True,
+        "frontend_governance": True,
+        "mysql57": True,
+        "redis": True,
+        "production_upgrade": True,
+        "recovery_gate": True,
+        "source_clean": True,
+    },
+    "cases": list(release.TEXT_CASES),
+}
+out = pathlib.Path(os.environ["QA_REPO_ROOT"]) / "l1-automation-evidence.json"
+out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print(f"L1 automation evidence written: {out} ({len(data['cases'])} cases)")
+PY
+
 echo "Isolated production chat deployment verified for source SHA $source_sha"

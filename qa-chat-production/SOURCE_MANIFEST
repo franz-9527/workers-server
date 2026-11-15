@@ -1025,5 +1025,7 @@ df36e024b29d0cbdbdbfe373e0b5d75920e7d940  qa-chat-production/server/database/dat
 d7b80f3b4aff76baf8e8d79f6fd39a6c6ce1f802  qa-chat-production/server/views/admin/chat-settings.php
 87ecdf84fb138e58ecfe37e6b9cb7e73b3f0dae6  qa-chat-production/tools/check-chat-release.py
 a014d5a4fd776fdf9a32c025b016c659d5b1032c  qa-chat-production/tools/test_check_chat_release_profiles.py
-fd459c6aae9747516a4acff48c96895737225626  qa-chat-production/tools/check-chat-l1-real.py
-a07559e33f6ab1437dcc79b31d170a52f18483e3  qa-chat-production/tools/test_check_chat_l1_real.py
+4b312f044a713053345adba490c661d8064800d3  qa-chat-production/tools/check-chat-l1-real.py
+438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
+5e7b42feb4bb375258a19572a8131037ba71429f  qa-chat-production/tools/build-chat-l1-evidence.py
+755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py

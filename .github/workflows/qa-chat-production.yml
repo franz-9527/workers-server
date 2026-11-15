@@ -4,12 +4,27 @@ on:
     paths: ['qa-chat-production/**', '.github/workflows/qa-chat-production.yml']
 permissions:
   contents: read
+concurrency:
+  group: qa-chat-production-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   deployment:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - id: source
+        shell: bash
+        run: |
+          sha=$(tr -d '\r\n' < qa-chat-production/SOURCE_SHA)
+          [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers
+          ref: ${{ steps.source.outputs.sha }}
+          path: workers-source
+          persist-credentials: false
       - uses: actions/setup-go@v5
         with:
           go-version-file: qa-chat-production/chat/go.mod
@@ -20,3 +35,9 @@ jobs:
           extensions: pdo_mysql,sodium,mbstring,curl
           coverage: none
       - run: bash qa-chat-production/verify.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: l1-automation-evidence-${{ steps.source.outputs.sha }}
+          path: l1-automation-evidence.json
+          if-no-files-found: error
+          retention-days: 30

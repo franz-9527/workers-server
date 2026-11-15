@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the six real-device checks required before L1 text evidence can be merged."""
+"""Validate real-device and real-channel evidence for L1 text chat."""
 import argparse
 import json
 import pathlib
@@ -18,6 +18,9 @@ CHECKS = (
 def valid_revision(value):
     return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value) is not None
 
+def valid_epoch(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
 def evidence_text(row):
     value = row.get("evidence") if isinstance(row, dict) else None
     return isinstance(value, str) and 5 <= len(value.strip()) <= 512
@@ -30,6 +33,12 @@ def template(revision):
         "profile": "text-real",
         "revision": revision,
         "environment": "test",
+        "runtime": {
+            "running_sha": "",
+            "source_dirty": False,
+            "recovery_epoch": "",
+            "evidence": "",
+        },
         "devices": [
             {"id": "", "platform": "ios", "physical": True, "passed": False, "evidence": ""},
             {"id": "", "platform": "android", "physical": True, "passed": False, "evidence": ""},
@@ -60,6 +69,15 @@ def validate(data, revision):
     if not valid_revision(revision) or data.get("revision") != revision:
         missing.append("exact_revision")
 
+    runtime = data.get("runtime") if isinstance(data.get("runtime"), dict) else {}
+    if (
+        runtime.get("running_sha") != revision
+        or runtime.get("source_dirty") is not False
+        or not valid_epoch(runtime.get("recovery_epoch"))
+        or not evidence_text(runtime)
+    ):
+        missing.append("runtime_binding")
+
     devices = data.get("devices")
     if not isinstance(devices, list):
         devices = []
@@ -72,11 +90,18 @@ def validate(data, revision):
         and row.get("passed") is True
         and evidence_text(row)
     ]
-    if len(good_devices) < 2 or {"ios", "android"} - {row["platform"] for row in good_devices}:
+    if (
+        len(good_devices) < 2
+        or len({row["id"] for row in good_devices}) < 2
+        or {"ios", "android"} - {row["platform"] for row in good_devices}
+    ):
         missing.append("two_real_devices")
 
     ui = data.get("ui") if isinstance(data.get("ui"), dict) else {}
-    if not all(ui.get(name) is True for name in ("weak_network", "dark_mode", "large_text", "safe_area")) or not evidence_text(ui):
+    if (
+        not all(ui.get(name) is True for name in ("weak_network", "dark_mode", "large_text", "safe_area"))
+        or not evidence_text(ui)
+    ):
         missing.append("real_device_ui")
 
     checks = data.get("checks") if isinstance(data.get("checks"), dict) else {}
