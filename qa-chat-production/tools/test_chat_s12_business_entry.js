@@ -48,6 +48,7 @@ function banner(properties = {}) {
 function page() {
   let definition, summaryListener
   let user = { openid: 'a', mobile: '1' }, nextSummary = Promise.resolve({ todoCount: 0, unreadCount: 0 })
+  const app={globalData:{userInfo:user},ensureUserReady(){app.globalData.userInfo=user;return Promise.resolve(user)}}
   let chatRefreshes = 0, discoveries = 0
   const routes = [], actions = [], timers = new Map()
   let timerID = 0
@@ -65,13 +66,13 @@ function page() {
       if (name.endsWith('ChatInboxModel.js')) return require('../miniprogram/utils/ChatInboxModel.js')
       throw new Error(name)
     },
-    getApp() { return { ensureUserReady() { return Promise.resolve(user) } } },
+    getApp() { app.globalData.userInfo=user;return app },
     wx: { navigateTo(options) { routes.push(options.url) }, showActionSheet(options) { actions.push(options) }, stopPullDownRefresh() {} }
   })
   const inst = { data: Object.assign({}, definition.data), setData(patch) { Object.assign(this.data, patch) } }
   Object.entries(definition).filter(([, value]) => typeof value === 'function').forEach(([key, fn]) => { inst[key] = fn.bind(inst) })
   inst.onLoad()
-  return { inst, routes, actions, manager, timers, user(value) { user = value }, summary(value) { nextSummary = value },
+  return { inst, routes, actions, manager, timers, user(value) { user = value;app.globalData.userInfo=value }, summary(value) { nextSummary = value },
     emit(value) { summaryListener(value) }, chatRefreshes() { return chatRefreshes }, discoveries(){return discoveries} }
 }
 async function run() {
