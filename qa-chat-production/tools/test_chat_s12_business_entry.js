@@ -11,6 +11,12 @@ function nativeAV(wx={}) {
  new Function('module','require','wx',read('miniprogram/subpackages/chat/conversation/av.js'))(module,()=>require('../miniprogram/utils/ChatAV.js'),wx)
  return module.exports
 }
+function nativeExperience(wx={},setTimer=setTimeout,clearTimer=clearTimeout) {
+ const module={exports:{}}
+ const load=name=>require('../miniprogram/utils/'+String(name).split('/').pop())
+ new Function('module','require','wx','setTimeout','clearTimeout',read('miniprogram/subpackages/chat/conversation/experience.js'))(module,load,wx,setTimer,clearTimer)
+ return module.exports
+}
 const bannerSource = read('miniprogram/components/subscription-health-banner/index.js')
 const pageSource = read('miniprogram/pages/chatMessages/index.js')
 const settle = () => new Promise(resolve => setImmediate(resolve))
@@ -230,9 +236,10 @@ async function s12RemainderTests() {
 
  let definition,listen;const actions=[],copies=[],routes=[],focus=[]
  const manager={enabled:true,state:'http',epoch:1,active:'',io:{now:()=>Date.now()},subscribe(fn){listen=fn;return()=>{}},focus(id){this.active=id;focus.push(id)},schedulePoll(){},readTarget(){return null},draft(){return {text:'',revision:0}},attempts(){return []},unread(){return Promise.resolve({unread_count:0})},typing(){return Promise.resolve(false)}}
+ const detailWx={navigateTo:o=>routes.push(o.url),showActionSheet:o=>actions.push(o),setClipboardData:o=>copies.push(o.data),showModal(){},stopPullDownRefresh(){},getWindowInfo(){return {windowWidth:375,windowHeight:667}}}
  vm.runInNewContext(read('miniprogram/subpackages/chat/conversation/index.js'),{
-  Page(value){definition=value},require(name){if(name==='./sms.js')return require('../miniprogram/subpackages/chat/conversation/sms.js');if(name.endsWith('ChatPresentation.js'))return require('../miniprogram/utils/ChatPresentation.js');if(name==='./interaction.js')return require('../miniprogram/subpackages/chat/conversation/interaction.js');if(name==='./calls.js')return require('../miniprogram/subpackages/chat/conversation/calls.js');if(name==='./group.js')return require('../miniprogram/subpackages/chat/conversation/group.js');if(name==='./voice.js')return require('../miniprogram/subpackages/chat/conversation/voice.js');if(name==='./experience.js')return require('../miniprogram/subpackages/chat/conversation/experience.js');if(name==='./av.js')return nativeAV();return name.includes('ChatRuntime')?{get:()=>manager,refreshAvailability:()=>Promise.resolve()}:name.includes('ChatManager')?require('../miniprogram/utils/ChatManager.js'):model},
-  wx:{navigateTo:o=>routes.push(o.url),showActionSheet:o=>actions.push(o),setClipboardData:o=>copies.push(o.data),showModal(){},stopPullDownRefresh(){}}
+  Page(value){definition=value},require(name){if(name==='./sms.js')return require('../miniprogram/subpackages/chat/conversation/sms.js');if(name.endsWith('ChatPresentation.js'))return require('../miniprogram/utils/ChatPresentation.js');if(name==='./interaction.js')return require('../miniprogram/subpackages/chat/conversation/interaction.js');if(name==='./calls.js')return require('../miniprogram/subpackages/chat/conversation/calls.js');if(name==='./group.js')return require('../miniprogram/subpackages/chat/conversation/group.js');if(name==='./voice.js')return require('../miniprogram/subpackages/chat/conversation/voice.js');if(name==='./experience.js')return nativeExperience(detailWx);if(name==='./av.js')return nativeAV();return name.includes('ChatRuntime')?{get:()=>manager,refreshAvailability:()=>Promise.resolve()}:name.includes('ChatManager')?require('../miniprogram/utils/ChatManager.js'):model},
+  wx:detailWx
  })
  const detail={data:Object.assign({},definition.data),setData(p,done){Object.assign(this.data,p);if(done)done()}}
  Object.entries(definition).filter(([,v])=>typeof v==='function').forEach(([k,v])=>detail[k]=v.bind(detail))
@@ -243,8 +250,9 @@ async function s12RemainderTests() {
  assert(detail.data.messages[0].isMine && detail.data.messages[0].canCopy)
  detail.openOrder();assert.strictEqual(routes[0],'/pages/workerOrder/detail?id=ORD-9')
  detail.messageActions({currentTarget:{dataset:{id:'7'}}})
+ assert(detail.data.messageMenu.actions.some(a=>a.key==='copy'),'published text exposes copy in native menu')
  listen('conversation.page',{conversation_id:'9',page:Object.assign({},metadata,{messages:[Object.assign({},msg,{state:'recalled',state_version:'2',text:'must-not-copy'})]})})
- actions[0].success({tapIndex:0});assert.strictEqual(copies.length,0,'recall during action sheet blocks copy')
+ detail.runMessageAction({currentTarget:{dataset:{key:'copy'}}});assert.strictEqual(copies.length,0,'recall during native menu blocks copy')
  assert.strictEqual(detail.data.messages[0].body,'消息已撤回')
  listen('conversation.page',{conversation_id:'9',page:Object.assign({},metadata,{messages:[Object.assign({},msg,{message_id:'8',seq:'2',message_type:'future'})]})})
  assert(detail.data.messages[1].isPlaceholder && !detail.data.messages[1].canCopy)
@@ -317,7 +325,8 @@ function nativeConversation() {
   window(id,type,value){const job=deferred();requests.push({id,type,value,job});return job.promise},
   sendText(id,text,rev){this.sent={id,text,rev};return Promise.resolve()},retryText(){return Promise.resolve()}
  }
- const wx={hideKeyboard(){},navigateTo(){},stopPullDownRefresh(){},showModal(options){modals.push(options)},showActionSheet(options){actions.push(options)},
+ const setTimer=(fn,delay)=>{const id=++serial;timers.set(id,{fn,delay});return id},clearTimer=id=>timers.delete(id)
+ const wx={hideKeyboard(){},navigateTo(){},stopPullDownRefresh(){},showModal(options){modals.push(options)},showActionSheet(options){actions.push(options)},setClipboardData(){},getWindowInfo(){return {windowWidth:375,windowHeight:667}},
   createSelectorQuery(){
    const selectors=[]
    const query={in(){return query},select(s){selectors.push(s);return query},selectAll(s){selectors.push(s);return query},boundingClientRect(){return query},
@@ -330,8 +339,8 @@ function nativeConversation() {
   }
  }
  vm.runInNewContext(read('miniprogram/subpackages/chat/conversation/index.js'),{
-  Page(value){definition=value},require(name){if(name==='./sms.js')return require('../miniprogram/subpackages/chat/conversation/sms.js');if(name.endsWith('ChatPresentation.js'))return require('../miniprogram/utils/ChatPresentation.js');if(name==='./interaction.js')return require('../miniprogram/subpackages/chat/conversation/interaction.js');if(name==='./calls.js')return require('../miniprogram/subpackages/chat/conversation/calls.js');if(name==='./group.js')return require('../miniprogram/subpackages/chat/conversation/group.js');if(name==='./voice.js')return require('../miniprogram/subpackages/chat/conversation/voice.js');if(name==='./experience.js')return require('../miniprogram/subpackages/chat/conversation/experience.js');if(name==='./av.js')return nativeAV(wx);if(name.includes('ChatRuntime'))return {get:()=>manager,refreshAvailability:()=>Promise.resolve()};if(name.includes('ChatManager'))return require('../miniprogram/utils/ChatManager.js');return require('../miniprogram/utils/ChatInboxModel.js')},
-  wx,setTimeout(fn,delay){const id=++serial;timers.set(id,{fn,delay});return id},clearTimeout(id){timers.delete(id)},console
+  Page(value){definition=value},require(name){if(name==='./sms.js')return require('../miniprogram/subpackages/chat/conversation/sms.js');if(name.endsWith('ChatPresentation.js'))return require('../miniprogram/utils/ChatPresentation.js');if(name==='./interaction.js')return require('../miniprogram/subpackages/chat/conversation/interaction.js');if(name==='./calls.js')return require('../miniprogram/subpackages/chat/conversation/calls.js');if(name==='./group.js')return require('../miniprogram/subpackages/chat/conversation/group.js');if(name==='./voice.js')return require('../miniprogram/subpackages/chat/conversation/voice.js');if(name==='./experience.js')return nativeExperience(wx,setTimer,clearTimer);if(name==='./av.js')return nativeAV(wx);if(name.includes('ChatRuntime'))return {get:()=>manager,refreshAvailability:()=>Promise.resolve()};if(name.includes('ChatManager'))return require('../miniprogram/utils/ChatManager.js');return require('../miniprogram/utils/ChatInboxModel.js')},
+  wx,setTimeout:setTimer,clearTimeout:clearTimer,console
  })
  const inst={data:Object.assign({},definition.data),setData(p,done){Object.assign(this.data,p);if(done)done()}}
  Object.entries(definition).filter(([,v])=>typeof v==='function').forEach(([k,v])=>inst[k]=v.bind(inst))
@@ -551,10 +560,10 @@ async function s15NativeTests(){
  p.onUnload()
  const q=nativeConversation();q.emit('conversation.reset',{messages:[q.msg(7,{sender_id:'1',created_at:new Date(Date.now()-30000).toISOString()})]})
  q.inst.messageActions({currentTarget:{dataset:{id:'7'}}})
- assert(q.actions[0].itemList.includes('撤回'));assert(q.actions[0].itemList.includes('回复'))
+ const qMenu=q.inst.data.messageMenu.actions;assert(qMenu.some(a=>a.key==='recall'));assert(qMenu.some(a=>a.key==='reply'))
  let called=0;q.manager.recall=()=>{called++;return Promise.resolve()}
- q.inst.onHide();q.actions[0].success({tapIndex:q.actions[0].itemList.indexOf('撤回')})
- assert.strictEqual(called,0,'old action sheet cannot recall after hide');q.inst.onUnload()
+ q.inst.onHide();q.inst.runMessageAction({currentTarget:{dataset:{key:'recall'}}})
+ assert.strictEqual(called,0,'old native menu cannot recall after hide');q.inst.onUnload()
  const offscreen=nativeConversation(),hiddenTarget=offscreen.msg(5,{state:'recalled',state_version:'3',text:undefined})
  const visibleReply=offscreen.msg(21,{reply:{message_id:'5',state:'published',state_version:'1',text:'屏外引用原文'}})
  offscreen.emit('conversation.reset',{messages:[visibleReply]});offscreen.inst.mode='history';offscreen.inst.atBottom=false
@@ -576,9 +585,9 @@ async function s16NativeImageTests(){
  assert.strictEqual(p.views['7'].isImage,true);assert.strictEqual(p.views['7'].images.length,4)
  assert.strictEqual(p.views['7'].canCopy,false);assert.strictEqual(p.views['7'].imageCount,9)
  p.toggleImages({currentTarget:{dataset:{id:'7'}}});assert.strictEqual(p.views['7'].images.length,9)
- p.imageActions({currentTarget:{dataset:{message:'7',item:'8'}}});f.actions.at(-1).success({tapIndex:0});assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,'8')
+ p.imageActions({currentTarget:{dataset:{message:'7',item:'8'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));p.runMessageAction({currentTarget:{dataset:{key:'reply'}}});assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,'8')
  p.cancelReply();assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,undefined)
- p.messageActions({currentTarget:{dataset:{id:'7'}}});assert(f.actions.at(-1).itemList.includes('回复'));assert(f.actions.at(-1).itemList.includes('撤回'))
+ p.messageActions({currentTarget:{dataset:{id:'7'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));assert(p.data.messageMenu.actions.some(a=>a.key==='recall'))
  p.atBottom=false;p.currentTop=37;p.setData({largeImage:{messageId:'7',index:4,count:9,url:'https://private.invalid/a'}})
  p.closeImage();assert.strictEqual(p.currentTop,37,'closing a preview never jumps the reading position')
  f.emit('conversation.page',{changes:[{message:{...photo,state:'recalled',state_version:'2'}}]})
