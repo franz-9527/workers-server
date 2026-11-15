@@ -235,11 +235,20 @@ trait OrderDetailFullView
             && in_array((string)$order['quote_status'], ['waiting','quoting','collecting'], true)
             && in_array((string)($order['refund_status'] ?? 'none'), ['','none'], true)
             && empty($order['selected_quote_id']) && empty($order['assigned_worker_id']) && empty($order['current_assignment_id'])
+            && in_array((string)($order['refund_status'] ?? 'none'), ['','none'], true)
+            && !empty($order['quote_deadline_at']) && $this->isFutureUtc((string)$order['quote_deadline_at']);
+        $canAdminInvitePlatformOrder = $isAdmin && $isPlatformOrder && !$isMeasurement && !$refundInProgress && !$hasOpenDispute
+            && (string)$order['audit_status'] === 'approved' && (string)$order['publish_status'] === 'published'
+            && (string)$order['lifecycle_status'] === 'active' && (string)$order['payment_status'] === 'not_required'
+            && (int)$order['booking_fee_cents'] === 0 && $activeAssignmentCount === 0
+            && in_array((string)$order['quote_status'], ['waiting','quoting','collecting'], true)
+            && empty($order['selected_quote_id']) && empty($order['assigned_worker_id']) && empty($order['current_assignment_id'])
             && (empty($order['quote_deadline_at']) || $this->isFutureUtc((string)$order['quote_deadline_at']));
-        $canAdminInviteWorker = $isAdmin && !$isMeasurement && !$refundInProgress && !$hasOpenDispute
+        $canAdminInviteOrdinaryPlatformQuote = $isAdmin && !$isPlatformOrder && !$isMeasurement && !$refundInProgress && !$hasOpenDispute
             && (string)$order['audit_status'] === 'approved' && (string)$order['lifecycle_status'] === 'active'
             && (string)$order['payment_status'] === 'paid' && $activeAssignmentCount === 0
-            && ($isPlatformOrder || (!empty($order['selected_quote_id']) && $selectedQuoteType === 'platform'));
+            && !empty($order['selected_quote_id']) && $selectedQuoteType === 'platform';
+        $canAdminInviteWorker = $canAdminInvitePlatformOrder || $canAdminInviteOrdinaryPlatformQuote;
         if ($measurementLinkRow) {
             $canAdminShareOrdinary = false;
             $canAdminInviteWorker = false;

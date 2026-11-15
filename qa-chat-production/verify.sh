@@ -36,6 +36,23 @@ node tools/test_chat_s12_business_entry.js
 node tools/test_chat_s18_s20.js
 echo "L1 snapshot front-end regression suites passed"
 
+php server/tests/chat_collaboration_policy_contract.php
+php server/tests/chat_participant_contract.php
+php server/tests/chat_schema_contract.php
+php server/tests/chat_storage_contract.php
+php server/tests/chat_text_security_contract.php
+php server/tests/v250_platform_order_application.php
+php server/tests/v250_platform_order_smoke.php
+php server/tests/v250_public_demo_detail_boundary_regression.php
+php server/tests/v250_admin_workbench_read_split_regression.php
+php server/tests/v260_message_delivery_failure_policy.php
+php server/tests/v260_message_outbox_dispatch_policy.php
+php server/tests/v260_paid_sms_receipt_policy.php
+echo "Non-AV pure PHP contracts passed"
+
+python3 chat/deploy/test-bt-deploy.py . main
+echo "BaoTa Git deployment, rollback and release retention passed"
+
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
 sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
 sudo chown www:www "$legacy_state"
@@ -69,6 +86,15 @@ for _ in $(seq 1 45); do
 done
 [[ $ready == 1 ]]
 mysql() { docker exec -i chatqa-mysql mysql -h127.0.0.1 -uroot -pfixture "$@"; }
+
+export CHAT_AUTH_TEST_INTEGRATION=1
+export CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:3306
+export CHAT_INTEGRATION_ADMIN_PASSWORD=fixture
+export CHAT_AUTH_TEST_MYSQL_USER_HOST=%
+php server/tests/chat_policy_contract.php
+php server/tests/chat_reminder_contract.php
+php server/tests/chat_storage_contract.php
+echo "Non-AV MySQL authorization, revocation, reminder and storage contracts passed"
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
 mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()),('wechat.miniapp_secret','isolated-fixture-secret','string','wechat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value); INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(1,'fixture_admin','fixture-not-a-login-hash','super_admin','active',0,NOW(),NOW());"
@@ -319,6 +345,42 @@ data = {
 out = pathlib.Path(os.environ["QA_REPO_ROOT"]) / "l1-automation-evidence.json"
 out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"L1 automation evidence written: {out} ({len(data['cases'])} cases)")
+PY
+
+SOURCE_SHA="$source_sha" QA_REPO_ROOT="$repo_root" python3 - <<'PY'
+import json, os, pathlib
+out=pathlib.Path(os.environ["QA_REPO_ROOT"])/"non-av-automation-evidence.json"
+data={
+  "schema":1,
+  "revision":os.environ["SOURCE_SHA"],
+  "environment":"isolated",
+  "scope":"non-av-automation",
+  "status":"automation_passed_real_acceptance_pending",
+  "checks":{
+    "source_manifest":True,
+    "release_profiles":True,
+    "frontend_regressions":True,
+    "php_non_av_contracts":True,
+    "order_authorization_and_revocation":True,
+    "platform_order_and_demo_isolation":True,
+    "go_race_all_packages":True,
+    "images_automated":True,
+    "governance_automated":True,
+    "reminders_automated":True,
+    "paid_sms_policy_automated":True,
+    "deployment_and_rollback":True,
+    "recovery_gate":True
+  },
+  "pending_real_acceptance":{
+    "test_site_business_flows":True,
+    "ios_device":True,
+    "android_device":True,
+    "wechat_live_text_safety":True
+  },
+  "production_business_retest":False
+}
+out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+print("Non-AV automation evidence written:",out)
 PY
 
 echo "Isolated production chat deployment verified for source SHA $source_sha"

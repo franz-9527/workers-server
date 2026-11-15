@@ -38,10 +38,12 @@ final class PlatformOrderAdmin
     /** @param array<string,mixed> $input */
     public function create(array $input, int $adminId, array $operator = []): int
     {
+        if (isset($input['customer_ref']) && !is_scalar($input['customer_ref'])) throw new OrderOperationException('关联客户资料格式不正确。', 'PLATFORM_USER_NOT_FOUND', 422);
+        $customerRef = mb_substr(trim((string)($input['customer_ref'] ?? '')), 0, 80);
         $userId = max(0, (int)($input['user_id'] ?? 0));
         $rawCategoryIds = is_array($input['category_ids'] ?? null) ? $input['category_ids'] : [$input['category_id'] ?? 0];
         $categoryIds = array_values(array_unique(array_filter(array_map('intval', $rawCategoryIds), static fn(int $id): bool => $id > 0)));
-        $categoryIds = array_slice($categoryIds, 0, 6);
+        if (count($categoryIds) > 6) throw new OrderOperationException('一个订单最多选择 6 个类目。', 'TOO_MANY_CATEGORIES', 422);
         if (!$categoryIds) throw new OrderOperationException('请选择至少一个有效服务类目。', 'PLATFORM_CATEGORY_REQUIRED', 422);
         $answers = is_array($input['answers'] ?? null) ? $input['answers'] : [];
         $answers['category_ids'] = $categoryIds;
@@ -131,6 +133,7 @@ final class PlatformOrderAdmin
             'operator_channel'=>($operator['channel'] ?? '') === 'mini_admin' ? 'mini_admin' : 'web_admin',
             'operator_user_id'=>($operator['channel'] ?? '') === 'mini_admin' ? max(0, (int)($operator['user_id'] ?? 0)) : 0,
             'user_id'=>$userId,
+            'customer_ref'=>$customerRef,
             'customer_flow_mode'=>'platform_managed',
             'fulfillment_mode'=>$fulfillmentMode,
             'category_id'=>$categoryIds[0],

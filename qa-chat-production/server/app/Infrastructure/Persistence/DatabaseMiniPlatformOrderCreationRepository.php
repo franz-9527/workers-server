@@ -31,7 +31,8 @@ final class DatabaseMiniPlatformOrderCreationRepository implements MiniPlatformO
 
     public function customers(string $query): array
     {
-        $where = "u.status='active' AND EXISTS(SELECT 1 FROM wechat_identities wi WHERE wi.user_id=u.id AND wi.status='active')";
+        $demoSql = PlatformOrderCustomerAccountScope::demoSql('u');
+        $where = PlatformOrderCustomerAccountScope::linkableSql('u');
         $params = [];
         if (preg_match('/^1\d{10}$/D', $query) === 1) {
             $where .= ' AND u.mobile_hmac=:mobile';
@@ -41,7 +42,11 @@ final class DatabaseMiniPlatformOrderCreationRepository implements MiniPlatformO
             $params['name'] = '%' . strtr($query, ['\\'=>'\\\\','%'=>'\\%','_'=>'\\_']) . '%';
             $params['public_id'] = $query;
         }
-        return $this->db->fetchAll('SELECT u.public_id,u.nickname,u.mobile_masked FROM users u WHERE ' . $where . ' ORDER BY u.id DESC LIMIT 20', $params);
+        return $this->db->fetchAll(
+            'SELECT u.public_id,u.nickname,u.mobile_masked,CASE WHEN ' . $demoSql . " THEN 1 ELSE 0 END is_demo,"
+                . PlatformOrderCustomerAccountScope::roleSql('u') . ' account_role FROM users u WHERE ' . $where . ' ORDER BY is_demo DESC,u.id DESC LIMIT 20',
+            $params
+        );
     }
 
     public function create(array $input, int $operatorUserId, string $requestId): array
@@ -67,7 +72,8 @@ final class DatabaseMiniPlatformOrderCreationRepository implements MiniPlatformO
             }
             $input['user_id'] = 0;
             if ($ref !== '') {
-                $user = $db->fetch("SELECT u.id FROM users u WHERE BINARY u.public_id=BINARY :ref AND u.status='active' AND EXISTS(SELECT 1 FROM wechat_identities wi WHERE wi.user_id=u.id AND wi.status='active') LIMIT 1", ['ref'=>$ref]);
+                $scope = PlatformOrderCustomerAccountScope::linkableSql('u');
+                $user = $db->fetch("SELECT u.id FROM users u WHERE BINARY u.public_id=BINARY :ref AND " . $scope . " LIMIT 1", ['ref'=>$ref]);
                 if (!$user) throw new OrderOperationException('关联客户已不可用，请重新选择或使用待绑定客户。', 'PLATFORM_USER_NOT_FOUND', 422);
                 $input['user_id'] = (int)$user['id'];
             }

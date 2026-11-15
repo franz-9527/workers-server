@@ -25,7 +25,7 @@ final class SubscriptionQuotaStore
             $status=(string)($pref['authorization_status']??'');
             $currentTemplate=(string)($scene['template_id']??'');
             $savedTemplate=(string)($pref['template_id']??'');
-            $changed=$sceneKey==='reviewResult' && ($savedTemplate!==$currentTemplate || ($pref['subscription_type']??$type)!==$type);
+            $changed=in_array($sceneKey,['reviewResult','chat_unread'],true) && ($savedTemplate!==$currentTemplate || ($pref['subscription_type']??$type)!==$type);
             if ($changed) $status='template_changed';
             $remaining=$type==='one_time' ? ($changed ? 0 : max(0,(int)($pref['remaining_count']??0))) : null;
             $result[$sceneKey]=array_merge($pref,[

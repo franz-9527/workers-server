@@ -1,0 +1,12 @@
+{
+  "navigationStyle": "custom",
+  "backgroundColor": "#f4f7f8",
+  "backgroundTextStyle": "dark",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "fullscreen-nav": "/components/fullscreen-nav/index",
+    "measurement-order-detail": "/components/measurement-order-detail/index",
+    "admin-order-operations": "/components/admin-order-operations/index",
+    "admin-worker-assignment": "/components/admin-worker-assignment/index"
+  }
+}

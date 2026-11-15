@@ -27,8 +27,9 @@ final class DatabasePlatformOrderAdminRepository implements PlatformOrderAdminRe
 
     public function dashboard(): array
     {
+        $environmentScope = PlatformOrderCustomerAccountScope::testingAllowsDemo() ? '' : ' AND o.is_demo=0';
         $rows = $this->db->fetchAll(
-            "SELECT o.id,o.public_no,o.title,o.category_name_snapshot,o.city,o.district,o.address_summary,o.lat,o.lng,
+            "SELECT o.id,o.public_no,o.title,o.category_name_snapshot,o.city,o.district,o.address_summary,o.lat,o.lng,o.is_demo,
                     o.payment_status,o.audit_status,o.publish_status,o.quote_status,o.assignment_status,o.fulfillment_status,o.lifecycle_status,
                     o.workflow_profile,o.dispatch_mode,o.booking_fee_cents,o.expected_fee_type,o.expected_fee_cents,o.final_amount_cents,o.selected_quote_id,
                     o.assigned_worker_id,o.current_assignment_id,o.quote_deadline_at,o.created_at,o.updated_at,u.nickname,u.mobile_masked,u.status customer_user_status,
@@ -42,7 +43,7 @@ final class DatabasePlatformOrderAdminRepository implements PlatformOrderAdminRe
              INNER JOIN users u ON u.id=o.user_id
              LEFT JOIN order_measurement_states ms ON ms.order_id=o.id
              LEFT JOIN worker_profiles w ON w.id=o.assigned_worker_id
-             WHERE o.order_source_type='platform'
+             WHERE o.order_source_type='platform'" . $environmentScope . "
              ORDER BY o.id DESC LIMIT 100"
         );
 
@@ -102,11 +103,34 @@ final class DatabasePlatformOrderAdminRepository implements PlatformOrderAdminRe
         if ((string)($command['customer_flow_mode'] ?? '') !== 'platform_managed') {
             throw new OrderOperationException('平台承接单只允许平台托管模式。', 'PLATFORM_CUSTOMER_FLOW_INVALID', 422);
         }
+        $customerRef = trim((string)($command['customer_ref'] ?? ''));
         $requestedUserId = (int)($command['user_id'] ?? 0);
-        if ($requestedUserId > 0) {
-            $user = $this->db->fetch("SELECT id,nickname,status FROM users WHERE id=:id AND status='active' LIMIT 1", ['id'=>$requestedUserId]);
+        $isDemo = 0;
+        if ($customerRef !== '') {
+            $scope = PlatformOrderCustomerAccountScope::linkableSql('u');
+            $demoSql = PlatformOrderCustomerAccountScope::demoSql('u');
+            $user = $this->db->fetch(
+                "SELECT u.id,u.nickname,u.status,CASE WHEN " . $demoSql . " THEN 1 ELSE 0 END is_demo
+                 FROM users u
+                 WHERE BINARY u.public_id=BINARY :ref AND " . $scope . "
+                 LIMIT 1",
+                ['ref'=>$customerRef]
+            );
+            if (!$user) throw new OrderOperationException('关联客户已不可用，请重新搜索选择或使用未绑定客户。', 'PLATFORM_USER_NOT_FOUND', 422);
+            $userId = (int)$user['id'];
+            $isDemo = !empty($user['is_demo']) ? 1 : 0;
+        } elseif ($requestedUserId > 0) {
+            // 兼容旧后台提交；新页面只提交公开 customer_ref，不再信任浏览器传入内部用户 ID。
+            $scope = PlatformOrderCustomerAccountScope::linkableSql('u');
+            $demoSql = PlatformOrderCustomerAccountScope::demoSql('u');
+            $user = $this->db->fetch(
+                "SELECT u.id,u.nickname,u.status,CASE WHEN " . $demoSql . " THEN 1 ELSE 0 END is_demo
+                 FROM users u WHERE u.id=:id AND " . $scope . " LIMIT 1",
+                ['id'=>$requestedUserId]
+            );
             if (!$user) throw new OrderOperationException('选择的客户账号不存在或不可用。', 'PLATFORM_USER_NOT_FOUND', 422);
             $userId = (int)$user['id'];
+            $isDemo = !empty($user['is_demo']) ? 1 : 0;
         } else {
             $userId = $this->ensureUnboundCustomerUser();
         }
@@ -139,17 +163,18 @@ final class DatabasePlatformOrderAdminRepository implements PlatformOrderAdminRe
         $measureFirst = (string)($command['fulfillment_mode'] ?? 'direct_install') === 'measure_then_install';
         $externalPrepayment = max(0, (int)($command['external_prepayment_cents'] ?? 0));
 
-        return $this->db->transaction(function (Database $db) use ($command,$userId,$category,$schemaVersionId,$province,$city,$district,$detailAddress,$fullAddress,$baseMobile,$maskedMobile,$expectedFeeType,$expectedFeeCents,$measureFirst,$adminId,$lat,$lng,$locationSource,$mapPointName,$mapPointAddress,$externalPrepayment): int {
+        return $this->db->transaction(function (Database $db) use ($command,$userId,$isDemo,$category,$schemaVersionId,$province,$city,$district,$detailAddress,$fullAddress,$baseMobile,$maskedMobile,$expectedFeeType,$expectedFeeCents,$measureFirst,$adminId,$lat,$lng,$locationSource,$mapPointName,$mapPointAddress,$externalPrepayment): int {
             $orderId = 0;
             for ($attempt = 0; $attempt < 10; $attempt++) {
                 $publicNo = \order_business_no((string)($category['order_code'] ?? 'QT'));
                 try {
                     $orderId = $db->insert(
-                        "INSERT INTO orders(public_no,user_id,form_schema_version_id,workflow_profile,dispatch_mode,expected_fee_type,expected_fee_cents,category_id,category_name_snapshot,category_names_snapshot,title,description,city,district,address_summary,address_ciphertext,address_hmac,lat,lng,contact_name_masked,contact_name_ciphertext,contact_mobile_masked,contact_mobile_ciphertext,contact_mobile_hmac,owner_mobile_base_hmac,order_source_type,audit_status,publish_status,quote_status,assignment_status,fulfillment_status,payment_status,refund_status,dispute_status,lifecycle_status,final_amount_cents,booking_fee_cents,commission_rate_bp,commission_min_cents,quote_deadline_at,version,created_at,updated_at)
-                         VALUES(:public_no,:user_id,:schema_version_id,'construction',:dispatch_mode,:expected_fee_type,:expected_fee_cents,:category_id,:category_name,:category_name,:title,:description,:city,:district,:address_summary,:address_ciphertext,:address_hmac,:lat,:lng,:contact_name_masked,:contact_name_ciphertext,:contact_mobile_masked,:contact_mobile_ciphertext,:contact_mobile_hmac,:owner_hmac,'platform','pending','hidden','waiting','unassigned','not_started','not_required','none','none','active',:customer_total,0,0,0,NULL,1,UTC_TIMESTAMP(),UTC_TIMESTAMP())",
+                        "INSERT INTO orders(public_no,user_id,form_schema_version_id,workflow_profile,dispatch_mode,expected_fee_type,expected_fee_cents,category_id,category_name_snapshot,category_names_snapshot,title,description,city,district,address_summary,address_ciphertext,address_hmac,lat,lng,contact_name_masked,contact_name_ciphertext,contact_mobile_masked,contact_mobile_ciphertext,contact_mobile_hmac,owner_mobile_base_hmac,order_source_type,is_demo,audit_status,publish_status,quote_status,assignment_status,fulfillment_status,payment_status,refund_status,dispute_status,lifecycle_status,final_amount_cents,booking_fee_cents,commission_rate_bp,commission_min_cents,quote_deadline_at,version,created_at,updated_at)
+                         VALUES(:public_no,:user_id,:schema_version_id,'construction',:dispatch_mode,:expected_fee_type,:expected_fee_cents,:category_id,:category_name,:category_name,:title,:description,:city,:district,:address_summary,:address_ciphertext,:address_hmac,:lat,:lng,:contact_name_masked,:contact_name_ciphertext,:contact_mobile_masked,:contact_mobile_ciphertext,:contact_mobile_hmac,:owner_hmac,'platform',:is_demo,'pending','hidden','waiting','unassigned','not_started','not_required','none','none','active',:customer_total,0,0,0,NULL,1,UTC_TIMESTAMP(),UTC_TIMESTAMP())",
                         [
                             'public_no'=>$publicNo,
                             'user_id'=>$userId,
+                            'is_demo'=>$isDemo,
                             'schema_version_id'=>$schemaVersionId,
                             'dispatch_mode'=>$command['dispatch_mode'],
                             'expected_fee_type'=>$expectedFeeType,

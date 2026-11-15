@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix="chat git deployment ") as work:
     chat=root/"chat";bin=chat/"bin";state=bin/"state"
     installed=root/"server/config/installed.php";installed.parent.mkdir(parents=True)
     installed.write_text("<?php return ['app'=>['env'=>'testing'],'marker'=>'private-fixture'];")
-    env=os.environ.copy();env.update(CHAT_PHP_BIN=shutil.which("php"),CHAT_GO_BIN=shutil.which("go"),CHAT_RUN_USER=getpass.getuser())
+    env=os.environ.copy();env.update(CHAT_PHP_BIN=shutil.which("php"),CHAT_GO_BIN=shutil.which("go"),CHAT_RUN_USER=getpass.getuser(),CHAT_CONFIG_MANUAL="1")
     def cmd(*args,good=True):
         r=subprocess.run(args,cwd=root,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=180)
         if good and r.returncode:raise AssertionError(str(args)+"\n"+r.stdout)
@@ -32,6 +32,10 @@ with tempfile.TemporaryDirectory(prefix="chat git deployment ") as work:
     git("init","-b",branch);git("config","user.name","Synthetic fixture");git("config","user.email","fixture@example.invalid")
     git("add","chat");git("commit","-m","isolated deployment fixture")
     first=git("rev-parse","HEAD")
+    initial_config=json.loads((chat/"config.example.json").read_text())
+    initial_config["env"]="test"
+    initial_config["dependencies"]["redis"]["key_prefix"]="bxchat:test:"
+    (chat/"chat.json").write_text(json.dumps(initial_config))
     deploy=lambda good=True:cmd("bash","chat/deploy/bt-deploy.sh",good=good)
     r=deploy();check("CHAT_DEPLOY_BUILT:" in r.stdout,"first Git checkout builds Linux executable")
     check(json.loads((chat/"chat.json").read_text())["env"]=="test","first config is test only")
@@ -56,7 +60,19 @@ with tempfile.TemporaryDirectory(prefix="chat git deployment ") as work:
         check(urllib.request.urlopen("http://"+config["http"]["listen"]+"/livez",timeout=3).status==200,"real HTTP listener lives")
         dup=cmd("bash",str(chat/"deploy/bt-run.sh"),good=False)
         check(dup.returncode==2 and "CHAT_RUN_ALREADY_STARTED" in dup.stdout,"duplicate panel start cannot own a second pair")
+        fake_releases=[]
+        old_mtime=time.time()-10000
+        for index in range(7):
+            fake_sha=f"{index+1:040x}"
+            fake_dir=bin/"releases"/fake_sha;fake_dir.mkdir();(fake_dir/"marker").write_text("old release")
+            os.utime(fake_dir,(old_mtime+index,old_mtime+index));fake_releases.append(fake_dir)
+        manual_dir=bin/"releases"/"manual-note";manual_dir.mkdir()
         r=deploy();check("CHAT_DEPLOY_RUNNING:" in r.stdout and processes()==old,"same commit is reproducible and does not restart pair")
+        sha_dirs=[p for p in (bin/"releases").iterdir() if p.is_dir() and len(p.name)==40 and all(c in "0123456789abcdef" for c in p.name)]
+        check((bin/"releases"/first).is_dir(),"release retention preserves current deployed running version")
+        check(len(sha_dirs)==5,"test release retention keeps five recent SHA directories when active pointers overlap")
+        check(all(not path.exists() for path in fake_releases[:3]) and all(path.exists() for path in fake_releases[3:]),"old SHA releases are pruned only after running target confirmation")
+        check(manual_dir.is_dir(),"release retention never deletes non-SHA directories")
         with open(bin/"deploy.lock","w") as lock:
             fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);r=deploy(False)
             check(r.returncode!=0 and "CHAT_DEPLOY_BUSY" in r.stdout,"concurrent deploy is rejected")

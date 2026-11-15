@@ -203,14 +203,24 @@ final class DatabaseOrderDetailRepository implements OrderDetailRepository
                 && empty($order['selected_quote_id']) && empty($order['assigned_worker_id']) && empty($order['current_assignment_id'])) return;
             throw new OrderOperationException('该订单已关联测量单，仅原测量师傅可查看', 'MEASUREMENT_WORKER_BOUND', 403);
         }
+        $platformPublicQuote = $workerId > 0
+            && (string)($order['order_source_type'] ?? 'consumer') === 'platform'
+            && (string)$order['payment_status'] === 'not_required'
+            && (int)($order['booking_fee_cents'] ?? 0) === 0
+            && (bool)$this->db->fetchValue(
+                "SELECT id FROM order_platform_terms WHERE order_id=:order_id AND customer_flow_mode='platform_managed' LIMIT 1",
+                ['order_id'=>$order['id']]
+            );
+        $ordinaryPublicQuote = (string)($order['order_source_type'] ?? 'consumer') !== 'platform'
+            && (string)$order['payment_status'] === 'paid';
         if ((string)$order['audit_status'] === 'approved'
             && (string)$order['publish_status'] === 'published'
-            && (string)$order['payment_status'] === 'paid'
+            && ($ordinaryPublicQuote || $platformPublicQuote)
             && in_array((string)$order['quote_status'], ['waiting','quoting','collecting'], true)
             && (string)$order['lifecycle_status'] === 'active'
             && empty($order['selected_quote_id']) && empty($order['assigned_worker_id']) && empty($order['current_assignment_id'])
             && in_array((string)($order['refund_status'] ?? 'none'), ['','none'], true)
-            && (empty($order['quote_deadline_at']) || $this->isFutureUtc((string)$order['quote_deadline_at']))) return;
+            && !empty($order['quote_deadline_at']) && $this->isFutureUtc((string)$order['quote_deadline_at'])) return;
         throw new OrderOperationException('你无权查看该订单', 'FORBIDDEN', 403);
     }
 

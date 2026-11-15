@@ -10,7 +10,7 @@ concurrency:
 jobs:
   deployment:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - id: source
@@ -31,7 +31,9 @@ jobs:
       - run: bash qa-chat-production/verify.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: l1-automation-evidence-${{ steps.source.outputs.sha }}
-          path: l1-automation-evidence.json
+          name: chat-non-av-automation-${{ steps.source.outputs.sha }}
+          path: |
+            l1-automation-evidence.json
+            non-av-automation-evidence.json
           if-no-files-found: error
           retention-days: 30

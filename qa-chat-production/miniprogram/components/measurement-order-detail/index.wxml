@@ -1,0 +1,137 @@
+<!-- V2.2.9：测量成果作为原订单详情中的注入模块，只负责图片成果、确认、结算与后续施工入口。 -->
+<platform-order-pricing wx:if="{{!loading && showPlatformCustomerPricing && platformPricing}}" order-id="{{id}}" pricing="{{platformPricing}}" order-state="{{order}}" viewer-mode="{{platformViewerMode}}"></platform-order-pricing>
+<view class="measurement-module" wx:if="{{!loading && measurement}}">
+  <view class="module-card">
+    <view class="module-head">
+      <view>
+        <view class="module-title">{{measurement.platform_stage && order.workflow_profile !== 'measurement' ? '前置测量成果' : '测量成果'}}</view>
+        <view class="module-subtitle">{{measurement.platform_stage && order.workflow_profile !== 'measurement' ? '测量成果已锁定，以下图片只读保留，供核价和后续施工复核' : '测量数据以图片为准，可上传手写测量单、现场照或标注图'}}</view>
+      </view>
+      <text class="module-state">{{measurement.platform_stage && order.workflow_profile !== 'measurement' ? '只读' : (measurement.result_status === 'editing' ? '编辑中' : (measurement.result_status === 'submitted' ? '待确认' : (measurement.result_status === 'accepted' ? '已确认' : measurement.result_status)))}}</text>
+    </view>
+
+    <view wx:if="{{measurement.result_status === 'submitted'}}" class="module-tip">师傅已提交测量成果。用户确认前可以要求补测；确认后整份成果锁定。</view>
+    <view wx:if="{{measurement.result_status === 'accepted' && !(measurement.platform_stage && order.workflow_profile !== 'measurement')}}" class="module-tip success">成果已确认并锁定，后续施工只引用这些图片，不复制测量数据。</view>
+    <view wx:if="{{measurement.platform_stage && order.workflow_profile !== 'measurement'}}" class="module-tip success">本单已从测量阶段进入施工衔接。测量图片继续保留在同一订单中，不再允许修改。</view>
+
+    <view id="measurement-media-card" class="space-list">
+      <view wx:for="{{spaces}}" wx:key="id" class="space-card">
+        <view class="space-head">
+          <text>{{item.name}}</text>
+          <button wx:if="{{actions.can_edit}}" class="text-button" data-id="{{item.id}}" bindtap="editSpace">改名</button>
+        </view>
+
+        <view class="media-list">
+          <view wx:for="{{item.media}}" wx:for-item="file" wx:key="id" class="media-item">
+            <image src="{{file.url}}" mode="aspectFill" data-space="{{item.id}}" data-url="{{file.url}}" bindtap="preview"></image>
+            <view class="media-label">{{file.purpose_text}}</view>
+            <button wx:if="{{actions.can_edit && file.purpose === 'measurement_photo'}}" class="annotate-button" data-space="{{item.id}}" data-url="{{file.url}}" bindtap="annotateExisting">标注此图</button>
+            <text wx:if="{{actions.can_edit}}" class="media-delete" data-space="{{item.id}}" data-id="{{file.id}}" bindtap="deleteMedia">×</text>
+          </view>
+        </view>
+
+        <view wx:if="{{item.local_annotations.length}}" class="local-box">
+          <view class="local-title">本地待上传标注 <text>{{item.local_annotations.length}}</text></view>
+          <view wx:for="{{item.local_annotations}}" wx:for-item="local" wx:key="id" class="local-item">
+            <image src="{{local.path}}" mode="aspectFill" data-local="{{local.id}}" bindtap="previewLocalAnnotation"></image>
+            <view class="local-copy">
+              <view class="local-name">仅保存在本机，尚未上传</view>
+              <view class="local-actions">
+                <button data-local="{{local.id}}" bindtap="editLocalAnnotation">继续编辑</button>
+                <button data-local="{{local.id}}" bindtap="saveLocalAnnotationToAlbum">存相册</button>
+                <button class="primary-mini" data-local="{{local.id}}" bindtap="uploadLocalAnnotation">上传到订单</button>
+                <button class="danger-mini" data-local="{{local.id}}" bindtap="discardLocalAnnotation">删除本地</button>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{actions.can_edit}}" class="media-actions">
+          <button data-space="{{item.id}}" data-purpose="measurement_sheet" bindtap="choosePhoto">手写测量单</button>
+          <button data-space="{{item.id}}" data-purpose="measurement_photo" bindtap="choosePhoto">现场照片</button>
+          <button data-space="{{item.id}}" data-purpose="measurement_annotated" bindtap="choosePhoto">拍照并标注</button>
+        </view>
+      </view>
+
+      <view wx:if="{{!spaces.length}}" class="empty-state">还没有测量空间和成果图片</view>
+      <button wx:if="{{actions.can_edit}}" class="outline-button" bindtap="addSpace">+ 添加测量空间</button>
+      <view wx:if="{{uploadLabel}}" class="upload-progress">{{uploadLabel}} {{uploadPercent}}%</view>
+    </view>
+
+    <view wx:if="{{actions.can_submit || actions.can_rework || actions.can_accept}}" class="result-actions">
+      <button wx:if="{{actions.can_submit}}" class="primary-button" bindtap="submitMeasurement">提交测量成果</button>
+      <button wx:if="{{actions.can_rework}}" class="outline-button" bindtap="requestRework">要求补测</button>
+      <button wx:if="{{actions.can_accept}}" class="primary-button" bindtap="acceptMeasurement">确认测量成果</button>
+    </view>
+  </view>
+
+  <!-- V2.5.0：平台测量后的核价属于平台托管决策，管理员核价完成即生效，不再要求客户小程序二次确认。 -->
+  <view wx:if="{{pricingReview && pricingReview.status !== 'waiting_measurement'}}" class="module-card pricing-review-card">
+    <view class="module-head">
+      <view>
+        <view class="module-title">测量后施工核价</view>
+        <view class="module-subtitle">平台依据已锁定的测量成果核定施工价格。核价记录保留原价与变化，平台确认后直接进入施工预约。</view>
+      </view>
+      <text class="module-state">{{pricingReview.status_text}}</text>
+    </view>
+
+    <view wx:if="{{pricingReview.status === 'pending'}}" class="module-tip">测量成果已确认，正在等待平台完成施工核价。师傅暂不能预约施工。</view>
+    <button wx:if="{{canReviewPlatformPricing}}" class="primary-button" bindtap="openPlatformPricingReview">核定施工价格</button>
+
+    <block wx:if="{{pricingReview.status === 'confirmed'}}">
+      <view class="pricing-summary">
+        <view class="pricing-cell"><text>测量前约定</text><strong>{{pricingReview.old_total_text}}</strong></view>
+        <view class="pricing-arrow">→</view>
+        <view class="pricing-cell emphasized"><text>核价后总价</text><strong>{{pricingReview.new_total_text}}</strong></view>
+      </view>
+      <view class="settlement-row"><text>{{pricingReview.delta_label}}</text><text class="price-delta {{pricingReview.delta_type}}">{{pricingReview.delta_text}}</text></view>
+      <view wx:if="{{pricingReview.reviewed_at}}" class="settlement-row"><text>平台核价时间</text><text>{{pricingReview.reviewed_at}}</text></view>
+      <view wx:if="{{pricingReview.confirmed_at}}" class="settlement-row"><text>生效时间</text><text>{{pricingReview.confirmed_at}}</text></view>
+      <view wx:if="{{pricingReview.note}}" class="module-tip">核价说明：{{pricingReview.note}}</view>
+
+      <view wx:if="{{pricingReview.changed_items.length}}" class="pricing-items">
+        <view class="pricing-items-title">测量后数量变化</view>
+        <view wx:for="{{pricingReview.changed_items}}" wx:key="sort_order" class="pricing-item">
+          <view class="pricing-item-head"><text>{{item.description}}</text><text>{{item.old_quantity}}{{item.unit}} → {{item.new_quantity}}{{item.unit}}</text></view>
+          <view class="pricing-item-amount">{{item.old_amount_text}} → {{item.new_amount_text}}</view>
+        </view>
+      </view>
+
+      <view class="module-tip success">平台核价已生效。测量成果继续只读保留，师傅现在可以预约施工。</view>
+    </block>
+  </view>
+
+  <view wx:if="{{measurement.settlement_status === 'frozen' || measurement.settlement_status === 'released'}}" class="module-card">
+    <view class="module-title">测量费结算</view>
+    <view class="settlement-row"><text>状态</text><text>{{measurement.settlement_status === 'frozen' ? '冻结中' : '已解冻'}}</text></view>
+    <view wx:if="{{measurement.hold_until}}" class="settlement-row"><text>冻结/关联有效期</text><text>{{measurement.hold_until}}</text></view>
+    <view wx:if="{{measurement.max_hold_until && measurement.settlement_status === 'frozen'}}" class="settlement-row"><text>最长可延期至</text><text>{{measurement.max_hold_until}}</text></view>
+    <block wx:if="{{settlement}}">
+      <view class="settlement-row"><text>测量成交额</text><text>{{settlement.gross_text}}</text></view>
+      <view class="settlement-row"><text>平台服务费</text><text>{{settlement.fee_text}}</text></view>
+      <view class="settlement-row"><text>师傅净收入</text><text>{{settlement.net_text}}</text></view>
+      <view wx:if="{{settlement.settled_at}}" class="settlement-row"><text>实际解冻时间</text><text>{{settlement.settled_at}}</text></view>
+    </block>
+    <view wx:if="{{measurement.hold_extension}}" class="module-tip">
+      延期申请：{{measurement.hold_extension.status === 'pending' ? '等待管理员审核' : (measurement.hold_extension.status === 'approved' ? '已批准' : (measurement.hold_extension.status === 'expired' ? '已失效' : '未批准'))}}
+      <text wx:if="{{measurement.hold_extension.requested_hold_until}}"> · 申请至 {{measurement.hold_extension.requested_hold_until}}</text>
+      <text wx:if="{{measurement.hold_extension.review_note}}"> · {{measurement.hold_extension.review_note}}</text>
+    </view>
+    <view wx:if="{{measurement.settlement_status === 'frozen' && !linkedConstruction}}" class="module-tip">冻结有效期内可创建一次关联施工单。施工预约费支付成功后才正式占用一对一关联资格；测量费抵扣默认 0 元，由原测量师傅在施工报价时与用户协商。</view>
+    <view wx:if="{{measurement.settlement_status === 'released' && !linkedConstruction}}" class="module-tip">冻结期已结束，本测量单不再创建优惠关联施工；仍可正常新下普通施工单。</view>
+    <button wx:if="{{actions.can_request_hold_extension}}" class="outline-button" bindtap="requestHoldExtension">申请延长冻结期</button>
+    <view wx:if="{{actions.can_review_hold_extension}}" class="result-actions">
+      <button class="outline-button" data-decision="rejected" bindtap="reviewHoldExtension">驳回延期</button>
+      <button class="primary-button" data-decision="approved" bindtap="reviewHoldExtension">批准延期</button>
+    </view>
+    <button wx:if="{{actions.can_create_construction}}" class="primary-button" bindtap="createConstruction">下施工单并关联本测量</button>
+  </view>
+
+  <view wx:if="{{linkedConstruction}}" class="module-card">
+    <view class="module-title">已关联施工订单</view>
+    <view class="settlement-row"><text>施工订单</text><text>{{linkedConstruction.order_id}}</text></view>
+    <view class="module-tip">这是一对一关联。后续施工沿用原订单系统；如原测量师傅无法继续施工，请通过客服/争议流程处理。</view>
+  </view>
+</view>
+<view wx:elif="{{loading}}" class="module-loading">正在加载测量成果…</view>
+<view wx:elif="{{errorText}}" class="module-error">{{errorText}}</view>

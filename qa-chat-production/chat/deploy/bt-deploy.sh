@@ -10,6 +10,7 @@ ROOT=$(git -C "$CHAT" rev-parse --show-toplevel)
 if [[ -f "$CHAT/deploy.local.env" ]]; then set -a; source "$CHAT/deploy.local.env"; set +a; fi
 PHP_BIN=${CHAT_PHP_BIN:-/www/server/php/83/bin/php}
 source "$CHAT/deploy/bt-site.sh"
+source "$CHAT/deploy/release-retention.sh"
 chat_site "${1:-}" "$#"
 RUN_USER=${CHAT_RUN_USER:-www}
 BIN="$CHAT/bin"
@@ -123,6 +124,7 @@ printf '%s\n' "$SHA" > "$BIN/deployed-sha"
 if [[ -e "$STATE/run.lock" ]] && ! flock -n "$STATE/run.lock" true; then
   for ((i=0;i<60;i++)); do
     if [[ $(cat "$STATE/running-sha" 2>/dev/null || true) == "$SHA" ]]; then
+      chat_prune_test_releases "$CHAT_SITE" "$BIN" "$STATE" "$SHA"
       echo "CHAT_DEPLOY_RUNNING: $SHA"; exit 0
     fi
     sleep 1

@@ -7,6 +7,7 @@ namespace WorkerAdmin\Foundation;
 use WorkerAdmin\Application\Admin\MiniAdminOrderOperations;
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Infrastructure\Persistence\DatabaseMiniAdminOrderRepository;
+use WorkerAdmin\Infrastructure\Persistence\DatabasePlatformOrderAdminRepository;
 
 final class MiniAdminOrderComposition
 {
@@ -17,7 +18,11 @@ final class MiniAdminOrderComposition
         return [
             'actors'=>$container->apiActorResolver(),
             'operations'=>new MiniAdminOrderOperations(
-                new DatabaseMiniAdminOrderRepository($db,(string)\app_config('app.timezone','Asia/Shanghai')),
+                new DatabaseMiniAdminOrderRepository(
+                    $db,
+                    (string)\app_config('app.timezone','Asia/Shanghai'),
+                    new DatabasePlatformOrderAdminRepository($db,$container->privateCipher())
+                ),
                 $settings,
                 (string)\app_config('app.timezone','Asia/Shanghai')
             ),

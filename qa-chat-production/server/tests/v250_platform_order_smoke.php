@@ -1,0 +1,195 @@
+<?php
+
+declare(strict_types=1);
+
+$root=dirname(__DIR__,2);
+function readRepoFile(string $root,string $relative):string{$path=$root.DIRECTORY_SEPARATOR.str_replace('/',DIRECTORY_SEPARATOR,$relative);$c=@file_get_contents($path);if(!is_string($c)){fwrite(STDERR,"[FAIL] 无法读取 {$relative}\n");exit(1);}return $c;}
+function pass(string $label):void{fwrite(STDOUT,"[PASS] {$label}\n");}
+function failSmoke(string $label,string $detail=''):void{fwrite(STDERR,"[FAIL] {$label}".($detail!==''?"\n{$detail}":'')."\n");exit(1);}
+function expectContains(string $haystack,string $needle,string $label):void{if(strpos($haystack,$needle)===false)failSmoke($label,"缺少：{$needle}");pass($label);}
+function expectNotContains(string $haystack,string $needle,string $label):void{if(strpos($haystack,$needle)!==false)failSmoke($label,"不应存在：{$needle}");pass($label);}
+function expectSame($actual,$expected,string $label):void{if($actual!==$expected)failSmoke($label,'expected='.var_export($expected,true).' actual='.var_export($actual,true));pass($label);}
+
+$migration=readRepoFile($root,'server/database/upgrades/2.5.0.sql');
+$adminApp=readRepoFile($root,'server/app/Application/Order/PlatformOrderAdmin.php');
+$adminRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabasePlatformOrderAdminRepository.php');
+$miniPlatformRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseMiniPlatformOrderCreationRepository.php');
+$customerScope=readRepoFile($root,'server/app/Infrastructure/Persistence/PlatformOrderCustomerAccountScope.php');
+$repairGuard=readRepoFile($root,'server/app/Infrastructure/Persistence/RepairGuardedPlatformOrderAdminRepository.php');
+$adminModule=readRepoFile($root,'server/app/Http/Admin/Modules/PlatformOrderAdminModule.php');
+$adminView=readRepoFile($root,'server/views/admin/platform-orders.php');
+$adminCss=readRepoFile($root,'server/assets/admin.css');
+$platformCommon=readRepoFile($root,'server/app/Infrastructure/Persistence/PlatformOrderCommonFactsWriter.php');
+$platformMeasure=readRepoFile($root,'server/app/Infrastructure/Persistence/MeasurementAwarePlatformOrderAdminRepository.php');
+$mediaRules=readRepoFile($root,'server/app/Infrastructure/Persistence/OrderFormMediaRules.php');
+$orderSubmissionLifecycle=readRepoFile($root,'server/app/Infrastructure/Persistence/OrderSubmissionLifecycleOperations.php');
+$verifier=readRepoFile($root,'server/app/Infrastructure/Persistence/PlatformOrderBookingPaymentVerifier.php');
+$settlementWriter=readRepoFile($root,'server/app/Infrastructure/Persistence/PlatformOrderSettlementWriter.php');
+$pricingReview=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabasePlatformOrderPricingReviewRepository.php');
+$pricingReadiness=readRepoFile($root,'server/app/Infrastructure/Persistence/PlatformOrderPricingReviewReadiness.php');
+$autoPublish=readRepoFile($root,'server/app/Infrastructure/Scheduling/PlatformOrderAutoPublishTask.php');
+$platformPricing=readRepoFile($root,'miniprogram/components/platform-order-pricing/index.js');
+$platformSettlement=readRepoFile($root,'miniprogram/components/platform-order-settlement/index.js');
+$measurementComponent=readRepoFile($root,'miniprogram/components/measurement-order-detail/index.js');
+$measurementView=readRepoFile($root,'miniprogram/components/measurement-order-detail/index.wxml');
+$pricingApi=readRepoFile($root,'server/app/Http/Api/Modules/PlatformOrderPricingReviewApiModule.php');
+$legacyApi=readRepoFile($root,'server/app/Http/Api/Modules/LegacyApiModule.php');
+$paymentApi=readRepoFile($root,'server/app/Http/Api/Modules/PaymentCreationApiModule.php');
+$webAdminOrder=readRepoFile($root,'server/app/Application/Order/WebAdminOrder.php');
+$webComposition=readRepoFile($root,'server/app/Foundation/WebAdminOrderComposition.php');
+$orderAdminRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseAdminOrderRepository.php');
+$orderAdminModule=readRepoFile($root,'server/app/Http/Admin/Modules/OrderAdminModule.php');
+$proxyView=readRepoFile($root,'server/views/admin/orders/proxy-create.php');
+$orderApi=readRepoFile($root,'miniprogram/utils/OrderApi.js');
+$adminWrite=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseAdminOrderWriteStore.php');
+$quotePolicy=readRepoFile($root,'server/app/Domain/Order/QuotePolicy.php');
+$dealRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseOrderDealRepository.php');
+$dealQuote=readRepoFile($root,'server/app/Infrastructure/Persistence/OrderDealQuoteOperations.php');
+$dealAssignment=readRepoFile($root,'server/app/Infrastructure/Persistence/OrderDealAssignmentOperations.php');
+$invitationRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseOrderInvitationRepository.php');
+$pricingRepo=readRepoFile($root,'server/app/Infrastructure/Persistence/DatabaseOrderPricingRepository.php');
+$settlementPolicy=readRepoFile($root,'server/app/Domain/Order/PlatformOrderSettlementPolicy.php');
+
+// 平台托管边界与资金口径。
+expectContains($migration,'CREATE TABLE IF NOT EXISTS `order_platform_terms`','平台承接单继续复用统一 orders + 专属条款表');
+expectContains($migration,'CREATE TABLE IF NOT EXISTS `order_pricing_items`','平台结构化计价明细存在');
+expectContains($migration,"('platform_order.worker_balance_freeze_days','0'",'平台余额冻结天数默认 0');
+expectContains($adminApp,"'customer_flow_mode'=>'platform_managed'",'平台创建用例固定托管模式');
+expectContains($adminApp,"'external_prepayment_cents'=>",'平台创建命令使用外部预付款字段');
+expectNotContains($adminApp,"['platform_managed','miniapp_booking']",'平台创建用例不再接受 miniapp_booking 枚举');
+expectContains($adminRepo,"BINARY s.schema_key=BINARY 'order_submit'",'平台承接单只绑定普通 order_submit 发布版本');
+expectContains($adminRepo,"VALUES(:order_id,'platform_managed'",'平台条款固定写 platform_managed');
+expectContains($adminRepo,'booking_paid_cents','平台条款保存外部已收预付款');
+expectContains($repairGuard,"payment_status='not_required'",'平台托管新单不再伪装普通线上预约费已支付');
+expectNotContains($autoPublish,"o.payment_status = 'paid'",'平台自动发布不再以 payment_status 作为资金证明');
+expectContains($verifier,"business_type IN ('order_booking','booking_fee')",'平台资金核验检测普通微信预约费串线');
+expectContains($verifier,'PLATFORM_BOOKING_UNEXPECTED_PAYMENT','平台微信预约费串线有明确错误码');
+expectContains($settlementWriter,"(int)(\$terms['booking_paid_cents'] ?? 0)",'平台结算只读取平台专属外部预付款');
+expectNotContains($settlementWriter,"(int)\$order['booking_fee_cents']",'平台结算不再读取普通预约费字段');
+expectContains($quotePolicy,"order_source_type'] ?? 'consumer') !== 'platform'",'普通/商家订单才依赖线上 paid 作为报价门槛');
+
+// 后台代下单与平台承接单共享施工事实：Form Schema、多类目、地图、联系人。
+expectContains($adminApp,"'category_ids'=>\$categoryIds",'平台承接单接收普通订单同款多类目');
+expectContains($adminApp,"'answers'=>\$answers",'平台承接单携带共享动态表单答案');
+expectContains($adminApp,"'TOO_MANY_CATEGORIES'",'平台承接单超过六类目明确拒绝而不是静默截断');
+expectNotContains($adminApp,'array_slice($categoryIds, 0, 6)','平台应用层不再静默截断超量类目');
+expectContains($adminApp,"preg_match('/^1\\d{10}(?:(?:-|转)\\d{1,10})?$/u'",'平台联系人支持普通订单同款虚拟号格式');
+expectContains($repairGuard,'DELETE FROM order_categories','平台创建后重建完整多类目关系');
+expectContains($repairGuard,'category_names_snapshot=:names','平台 orders 保存全部类目名称快照');
+expectContains($repairGuard,'PlatformOrderCommonFactsWriter','平台动态施工事实实际接入共享写入器');
+expectContains($repairGuard,'$this->db->transaction','平台共享事实校验与基础建单处于同一外层事务');
+expectContains($platformCommon,'INSERT INTO order_answers','平台承接单实际写入动态 order_answers');
+expectContains($platformCommon,'quantity_text=:quantity','平台承接单同步数量/面积普通快照');
+expectContains($platformCommon,'expected_visit_at=:expected','平台承接单同步期望上门普通快照');
+expectContains($adminModule,"\$data['categories'] = \$data['entryForm']['categories']",'平台后台类目直接采用普通 order_submit 返回集合');
+expectContains($adminModule,'submission()->form','平台后台读取与代下单相同的 order_submit 表单');
+expectContains($adminModule,'sharedFormFieldsScript','平台后台渲染共享动态业务字段');
+expectContains($adminModule,"'platform-orders.customers'=>'customers'",'平台后台提供受权限保护的客户搜索路由');
+expectContains($adminModule,'miniPlatformOrderCreation()->customers','平台后台客户搜索复用统一安全客户查询');
+expectContains($adminModule,"\$rules = is_array(\$form['rules'] ?? null)",'平台后台动态字段同步读取 order_submit 条件规则');
+expectContains($adminModule,'rule.action_type==="show"','平台后台 show 规则目标默认隐藏并按触发值显示');
+expectContains($adminModule,'type==="date_range"','平台后台支持动态日期范围组件的双日期值');
+expectContains($adminModule,'answers[expected_visit_period]','平台后台期望上门日期同步提供时间段，避免日期存在但时段缺失');
+expectContains($adminModule,'control.disabled=!visible||!!state.disabled','平台后台隐藏或禁用字段不会误提交');
+expectContains($repairGuard,'$this->commonFacts->write(','平台公共施工事实只由外层保护仓储写入');
+expectNotContains($platformMeasure,'alignCommonFacts(','测量装饰器不再重复重写平台公共施工事实');
+expectNotContains($platformMeasure,'PlatformOrderCommonFactsWriter','测量装饰器不再重复写 order_answers');
+expectContains($adminView,'name="category_ids[]"','平台页面支持最多六项多类目');
+expectContains($adminView,'name="customer_ref"','平台页面关联客户提交公开编号而不是内部用户ID');
+expectContains($adminView,'platform-customer-search','平台页面提供客户账号搜索选择器');
+expectContains($adminView,'admin-modal admin-modal--xl','平台新增弹窗使用已存在的大尺寸模态规范');
+expectNotContains($adminView,'admin-modal__dialog--wide','平台新增弹窗不再依赖不存在的 wide 样式');
+expectContains($adminView,'id="platform-map-lat"','平台页面提供腾讯地图纬度');
+expectContains($adminView,'id="platform-map-lng"','平台页面提供腾讯地图经度');
+expectContains($adminView,'name="province"','平台页面拆分省市区地址');
+expectContains($adminView,'locationPicker','平台后台使用腾讯 locpicker');
+expectNotContains($adminView,'miniapp_booking','平台后台 UI 不再暴露 miniapp_booking');
+expectContains($adminCss,'#platform-order-form .admin-grid--5','平台计价明细具有真实五列布局并可响应式收缩');
+expectContains($adminCss,'.admin-search-picker__results','平台客户搜索结果使用统一后台浮层样式');
+expectContains($adminRepo,"'GCJ-02'",'平台地址表明确保存 GCJ-02 坐标系');
+expectContains($adminRepo,'BINARY u.public_id=BINARY :ref','平台后台按公开客户编号重新解析账号');
+expectContains($customerScope,"demo.actor_user_public_id",'平台关联账号明确识别配置中的演示用户');
+expectContains($customerScope,"01K2DEMOV%WORKER%",'平台关联账号兼容稳定演示师傅主档');
+expectContains($customerScope,"EXISTS(SELECT 1 FROM wechat_identities",'真实关联账号仍要求有效微信身份');
+expectContains($miniPlatformRepo,'PlatformOrderCustomerAccountScope::linkableSql','Web/小程序平台开单复用同一关联账号范围');
+expectContains($adminRepo,"'is_demo'=>\$isDemo",'关联演示账号时平台订单写入演示数据域');
+expectContains($adminRepo,'order_source_type,is_demo,audit_status','平台订单持久层显式写入 is_demo 边界');
+expectContains($adminView,"customer.is_demo?'演示账号':'真实账号'",'后台客户搜索结果标识真实/演示账号');
+expectContains($adminView,'演示域订单 · 不进入真实自动发布','演示平台单不误提示生产自动发布');
+expectContains($customerScope,"wi.status='active'",'平台真实关联账号仍只接受有效微信身份');
+expectContains($customerScope,'TestingEnvironmentPolicy::active()','平台演示账号仅由统一 testing 环境策略放行');
+expectContains($customerScope,'AND NOT {$demo}','production 明确排除演示主档，即使误绑定微信身份也不可关联');
+expectContains($adminRepo,"' AND o.is_demo=0'",'production 平台承接单列表不混入演示订单');
+expectContains($adminRepo,'WHERE u.id=:id AND " . $scope','旧 user_id 兼容入口同样执行环境账号范围');
+expectContains($adminView,'正式站仅允许关联真实、有效微信身份客户','正式站后台明确提示只关联真实客户');
+expectContains($adminRepo,"\$this->cipher->encrypt(\$fullAddress, 'order-address')",'平台完整地址按省市区+详情统一加密');
+
+// 普通代下单必须走正常 OrderSubmission，不允许旧后台旁路。
+expectContains($webAdminOrder,'$this->submission->create($actor,$body)','普通代下单创建直接复用 OrderSubmission');
+expectNotContains($webAdminOrder,'$this->orders->create($input','普通代下单不再调用旧固定字段 create 旁路');
+expectContains($webComposition,'$container->submission()','Web 代下单组合根复用订单域 submission');
+expectContains($orderAdminRepo,'wechat_identities wi','代下单只允许有有效微信身份的客户');
+expectContains($orderAdminRepo,"empty(\$row['mobile_masked'])",'代下单客户必须已授权手机号');
+expectContains($orderAdminModule,'orders.proxy-create','后台订单管理提供独立统一代下单入口');
+expectContains($proxyView,'name="address[lat]"','代下单保存地图纬度');
+expectContains($proxyView,'name="address[lng]"','代下单保存地图经度');
+expectContains($proxyView,'locationPicker','代下单同样使用腾讯 locpicker');
+expectContains($proxyView,'name="answers[category_ids][]"','代下单沿用普通多类目数据结构');
+expectContains($proxyView,'当前已发布 动态下单表单','代下单页面明确复用当前普通表单');
+expectContains($proxyView,"in_array(\$type,['wechat_address','address','map','image_upload','image'],true)",'代下单动态表单避免重复地址/图片组件');
+expectContains($webAdminOrder,"unset(\$input['approve_now'], \$input['publish_now'])",'普通代下单应用层丢弃旧立即审核/发布参数');
+expectContains($webAdminOrder,"payment_status'] ?? '') !== 'paid'",'普通代下单未真实支付禁止审核/公开');
+expectNotContains($adminWrite,'approve_now','旧写仓储没有创建即审核参数');
+expectNotContains($adminWrite,'publish_now','旧写仓储没有创建即公开参数');
+
+// 客户本人确认协议 -> normal finalize -> 微信预约费，不能由管理员代确认。
+expectContains($paymentApi,"'ORDER_FINALIZE_REQUIRED'",'预约费准入输出稳定 finalize-required 业务码');
+expectContains($orderApi,'finalizeProxyDraftBeforePayment','代下单客户首次支付前本人完成确认与 finalize');
+expectContains($orderApi,"request('forms.order'",'客户确认前重新读取当前平台规则');
+expectContains($orderApi,"request('orders.finalize'",'客户确认复用普通 finalize API');
+expectContains($orderApi,"error.code === 'ORDER_FINALIZE_REQUIRED'",'前端只依据稳定业务码触发代下单确认链');
+expectNotContains($orderApi,"indexOf('请先完整提交订单资料和必传图片')",'前端不依赖中文错误文案判断业务流程');
+
+// 图片、自动发布与平台成交仍保持既有安全边界。
+expectContains($mediaRules,"'product'=>'material_images'",'普通/平台图片规则统一使用 material_images');
+expectContains($orderSubmissionLifecycle,'OrderFormMediaRules::rule','普通订单 finalize 复用统一图片规则');
+expectContains($autoPublish,"customer_flow_mode='platform_managed'",'自动发布只扫描托管平台单');
+expectContains($autoPublish,'o.booking_fee_cents=0','自动发布拒绝残留普通预约费字段');
+expectContains($autoPublish,'PlatformOrderBookingPaymentVerifier','自动发布仍执行托管资金复核');
+expectContains($dealRepo,'PlatformOrderBookingPaymentVerifier','平台报价/抢单最终资格重新核验托管资金');
+expectContains($dealQuote,'$externalPrepayment','平台工费报价按外部预付款计算负差额');
+expectContains($dealAssignment,'$externalPrepayment','平台一口价抢单按外部预付款计算结算边界');
+expectContains($invitationRepo,'PlatformOrderBookingPaymentVerifier','平台邀请领取事务内重新核验托管资金');
+expectContains($pricingRepo,'PlatformOrderBookingPaymentVerifier','平台实际用量重算事务内核验托管资金');
+expectContains($adminRepo,'PLATFORM_ALREADY_PUBLISHED','重复发布不能刷新报价期限');
+expectContains($adminRepo,'PLATFORM_QUOTE_DEADLINE_PASSED','报价与邀请受截止时间保护');
+
+// 平台测量后核价只保留托管自动生效链。
+expectContains($pricingReview,"customer_flow_mode='platform_managed'",'平台测量核价固定托管模式');
+expectContains($pricingReview,"confirmation_mode'=>'platform_managed_auto'",'平台核价完成自动形成生效事实');
+expectContains($pricingReview,"requires_customer_confirmation'=>false",'平台核价不再等待客户小程序确认');
+expectContains($pricingReadiness,"business_type IN ('order_booking','booking_fee')",'核价 readiness 同样拦截微信预约费串线');
+expectNotContains($pricingApi,'platform.pricing.confirm','API 不再暴露客户核价确认路由');
+expectNotContains($legacyApi,"'platform.pricing.confirm'",'退役客户确认路由回归 NOT_FOUND');
+expectNotContains($measurementComponent,'platform.pricing.confirm','小程序测量组件不再调用客户核价确认');
+expectNotContains($measurementView,'awaiting_customer_confirmation','小程序测量详情不再展示等待客户确认状态');
+expectNotContains($platformPricing,'miniapp_booking','平台客户价格组件不再分支到小程序预约模式');
+expectNotContains($platformSettlement,'miniapp_booking','平台内部结算组件不再分支到小程序预约模式');
+
+expectSame(is_file($root.'/server/app/Controllers/PlatformOrderAdminController.php'),false,'平台承接单未回退旧 Controller');
+expectSame(is_file($root.'/server/app/Controllers/PlatformOrderFinanceAdminController.php'),false,'平台财务未新增旧 Controller');
+expectNotContains($adminModule,'WorkerAdmin\\Controllers\\','平台 Http 模块不依赖旧 Controller');
+expectNotContains($adminModule,'SELECT ','平台 Http 模块不内嵌 SQL');
+
+require_once $root.'/server/app/Domain/Order/OrderOperationException.php';
+require_once $root.'/server/app/Domain/Order/PlatformOrderSettlementPolicy.php';
+$policy=new \WorkerAdmin\Domain\Order\PlatformOrderSettlementPolicy();
+$workerCollect=$policy->settlement(100000,70000,5000,\WorkerAdmin\Domain\Order\PlatformOrderSettlementPolicy::MODE_WORKER_COLLECT);
+expectSame($workerCollect['booking_paid_cents'],5000,'外部预付款 50 元进入平台结算快照');
+expectSame($workerCollect['customer_tail_cents'],95000,'客户现场剩余 950 元');
+expectSame($workerCollect['platform_receivable_cents'],25000,'师傅代收模式平台收入款 250 元');
+$balance=$policy->settlement(100000,70000,5000,\WorkerAdmin\Domain\Order\PlatformOrderSettlementPolicy::MODE_PLATFORM_BALANCE);
+expectSame($balance['platform_receivable_cents'],95000,'平台余额模式现场剩余全部归平台');
+expectSame($balance['worker_balance_credit_cents'],70000,'平台余额模式工费全额进入师傅余额');
+
+echo "\nV2.5.0 proxy/platform unified entry smoke: OK\n";

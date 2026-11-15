@@ -9,6 +9,7 @@ use DateTimeZone;
 use RuntimeException;
 use Throwable;
 use WorkerAdmin\Contracts\MiniAdminOrderRepository;
+use WorkerAdmin\Contracts\PlatformOrderAdminRepository;
 use WorkerAdmin\Core\Database;
 use WorkerAdmin\Domain\Admin\MiniAdminOperationException;
 use WorkerAdmin\Services\MiniProgramCodeService;
@@ -19,10 +20,11 @@ final class DatabaseMiniAdminOrderRepository implements MiniAdminOrderRepository
 {
     private Database $db;
     private string $timezone;
+    private ?PlatformOrderAdminRepository $platformOrders;
 
-    public function __construct(Database $db,string $timezone='Asia/Shanghai')
+    public function __construct(Database $db,string $timezone='Asia/Shanghai',?PlatformOrderAdminRepository $platformOrders=null)
     {
-        $this->db=$db;$this->timezone=$timezone;
+        $this->db=$db;$this->timezone=$timezone;$this->platformOrders=$platformOrders;
     }
 
     public function findOrder(string $publicNo): array
@@ -129,7 +131,21 @@ final class DatabaseMiniAdminOrderRepository implements MiniAdminOrderRepository
 
     public function createShare(array $actor,array $order,array $command): array
     {
-        $type=(string)$command['share_type'];$validDays=(int)$command['valid_days'];$expiresAt=gmdate('Y-m-d H:i:s',time()+$validDays*86400);$plainToken=rtrim(strtr(base64_encode(random_bytes($type==='ordinary'?24:32)),'+/','-_'),'=');
+        $type=(string)$command['share_type'];$validDays=(int)$command['valid_days'];
+        if($type==='worker_invite'&&(string)($order['order_source_type']??'consumer')==='platform'){
+            if(!$this->platformOrders)throw new MiniAdminOperationException('平台承接单邀请能力未就绪','PLATFORM_INVITE_UNAVAILABLE',503);
+            $result=$this->platformOrders->createInvite((int)$order['id'],(int)($actor['user_id']??0),$validDays);
+            $plainToken=(string)($result['token']??'');
+            if($plainToken==='')throw new RuntimeException('平台承接单邀请令牌生成失败',500);
+            $path='/pages/workerOrder/detail?invite='.rawurlencode($plainToken);
+            $codeData='';$codeError='';
+            try{$codeData=(new MiniProgramCodeService())->generate((int)$order['id'],'worker_invite',$path)['data_uri'];}catch(Throwable $exception){$codeError=$exception->getMessage();}
+            return ['ok'=>true,'message'=>'平台承接单邀请师傅分享已生成','data'=>[
+                'share_type'=>'worker_invite','path'=>$path,'code_data_uri'=>$codeData,'code_error'=>$codeError,
+                'expires_at'=>$this->localTime((string)($result['expires_at']??'')),'platform_order'=>true,
+            ]];
+        }
+        $expiresAt=gmdate('Y-m-d H:i:s',time()+$validDays*86400);$plainToken=rtrim(strtr(base64_encode(random_bytes($type==='ordinary'?24:32)),'+/','-_'),'=');
         $result=$this->db->transaction(function(Database $db)use($actor,$order,$type,$expiresAt,$plainToken,$command):array{
             $locked=$db->fetch('SELECT * FROM orders WHERE id=:id FOR UPDATE',['id'=>$order['id']]);
             if(!$locked||$locked['audit_status']!=='approved'||$locked['lifecycle_status']!=='active')throw new RuntimeException('只有审核通过且进行中的订单可以分享',409);
