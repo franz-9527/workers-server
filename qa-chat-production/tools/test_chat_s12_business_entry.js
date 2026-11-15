@@ -536,13 +536,17 @@ async function s14InboxTests() {
 
  let tabDefinition
  vm.runInNewContext(read('miniprogram/custom-tab-bar/index.js'),{Component(v){tabDefinition=v},require(){return state},wx:{},console})
- const tab={setData(patch){this.data=patch}}
- tabDefinition.methods.applyNotificationBadge.call(tab,{messageBadgeCount:9,todoCount:100,unreadCount:900,attentionKnown:true})
- assert.strictEqual(tab.data.notificationBadgeText,'9','combined attention replaces old todo override')
- tabDefinition.methods.applyNotificationBadge.call(tab,{messageBadgeCount:126,attentionKnown:true})
+ const tab={data:{notificationBadgeCount:0,notificationBadgeText:'',notificationBadgeDot:false},setData(patch){Object.assign(this.data,patch)}}
+ tabDefinition.methods.applyNotificationBadge.call(tab,{messageNumberCount:9,ordinaryUnread:true})
+ assert.strictEqual(tab.data.notificationBadgeText,'9','number badge uses actionable orders plus chat unread')
+ assert.strictEqual(tab.data.notificationBadgeDot,false,'numeric badge suppresses the ordinary-notification dot')
+ tabDefinition.methods.applyNotificationBadge.call(tab,{messageNumberCount:126,ordinaryUnread:false})
  assert.strictEqual(tab.data.notificationBadgeText,'99+')
- tabDefinition.methods.applyNotificationBadge.call(tab,{todoCount:3,attentionKnown:false})
- assert.strictEqual(tab.data.notificationBadgeText,'·','legacy PHP counts are never a fabricated deduplicated total')
+ tabDefinition.methods.applyNotificationBadge.call(tab,{messageNumberCount:0,ordinaryUnread:true})
+ assert.strictEqual(tab.data.notificationBadgeText,'')
+ assert.strictEqual(tab.data.notificationBadgeDot,true,'ordinary notification unread uses a dot when there is no numeric badge')
+ tabDefinition.methods.applyNotificationBadge.call(tab,{messageNumberCount:0,ordinaryUnread:false})
+ assert.strictEqual(tab.data.notificationBadgeDot,false)
  console.log('S14 bounded filters and pagination, field CAS/multidevice recovery, C+B+S isolation, failures, identity, gate and foreground lifecycle: OK')
 }
 
