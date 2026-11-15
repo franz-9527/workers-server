@@ -372,7 +372,7 @@ function nativeConversation() {
 }
 async function s13NativeTests() {
  const source=read('miniprogram/subpackages/chat/conversation/index.wxml')
- assert(source.includes('confirm-type="return"') && !/bindconfirm=/.test(source),'IME return cannot send')
+ assert(source.includes('confirm-type="send"') && source.includes('bindconfirm="sendText"') && source.includes('confirm-hold="{{true}}"'),'IME send key uses the explicit text send handler')
  assert(source.includes('scroll-into-view="{{scrollInto}}"') && source.includes('bindscrolltoupper="loadEarlier"'))
  const f=nativeConversation(),p=f.inst
  f.emit('conversation.reset',{messages:[f.msg(50),f.msg(51)],history_cursor:'before50'})
