@@ -198,10 +198,17 @@ func TestMySQLAuthorityAndPHPIssuer(t *testing.T) {
 	execute("GRANT SELECT,INSERT,UPDATE ON `" + database + "`.chat_admin_sessions TO '" + phpUser + "'@'" + fixtureHost + "'")
 	sessionID, _ := randomID()
 	sessionDir := t.TempDir()
+	adminEnv := make([]string, 0, len(cmd.Env)+4)
+	for _, value := range cmd.Env {
+		if strings.HasPrefix(value, "CHAT_AUTH_TEST_MYSQL_USER=") || strings.HasPrefix(value, "CHAT_AUTH_TEST_MYSQL_PASSWORD=") {
+			continue
+		}
+		adminEnv = append(adminEnv, value)
+	}
 	issueAdmin := func(mode string) string {
 		t.Helper()
 		command := exec.CommandContext(ctx, php, path, mode)
-		command.Env = append(cmd.Env, "CHAT_AUTH_TEST_MYSQL_USER="+phpUser, "CHAT_AUTH_TEST_MYSQL_PASSWORD="+phpPassword, "CHAT_AUTH_TEST_SESSION_DIR="+sessionDir, "CHAT_AUTH_TEST_SESSION_ID="+sessionID)
+		command.Env = append(adminEnv, "CHAT_AUTH_TEST_MYSQL_USER="+phpUser, "CHAT_AUTH_TEST_MYSQL_PASSWORD="+phpPassword, "CHAT_AUTH_TEST_SESSION_DIR="+sessionDir, "CHAT_AUTH_TEST_SESSION_ID="+sessionID)
 		data, err := command.Output()
 		if err != nil {
 			t.Fatal("PHP admin operation failed")

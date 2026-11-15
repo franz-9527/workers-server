@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 $site='/www/wwwroot/worker';
 $installed=$site.'/config/installed.php';
-$deadline=microtime(true)+120;
+$deadline=microtime(true)+900;
 while(!is_file($installed)){
     if(microtime(true)>$deadline){fwrite(STDERR,"QA_NON_AV_SEED_TIMEOUT installed\n");exit(2);}
     usleep(200000);

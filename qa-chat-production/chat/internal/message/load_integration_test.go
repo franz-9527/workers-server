@@ -98,7 +98,9 @@ func TestMySQLRedisS23MixedLoad(t *testing.T) {
 				if err != nil {
 					t.Fatal("ticket", err)
 				}
-				ws, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/chat/ws", nil)
+				headers := http.Header{}
+				headers.Set("X-Real-IP", fmt.Sprintf("10.20.%d.%d", i/250, i%250+1))
+				ws, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/chat/ws", headers)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -116,7 +118,9 @@ func TestMySQLRedisS23MixedLoad(t *testing.T) {
 			}
 			// Verify the hard connection cap rather than relying on unbounded goroutines.
 			if profile.connections == 300 {
-				extra, _, e := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/chat/ws", nil)
+				headers := http.Header{}
+				headers.Set("X-Real-IP", "10.21.0.1")
+				extra, _, e := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/chat/ws", headers)
 				if e == nil {
 					extra.Close()
 					t.Fatal("connection 301 admitted")

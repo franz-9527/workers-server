@@ -83,7 +83,7 @@ func (f AuditFilter) messageSQL(alias string) (string, []any) {
 	where := "m.conversation_id=" + alias + ".id AND m.seq>" + alias + ".sync_floor_seq AND m.seq<=" + alias + ".last_seq AND m.state IN ('published','recalled') AND (m.message_type IN ('image','image_album') OR m.retention_mode='permanent' OR m.expires_at>UTC_TIMESTAMP(6)) AND m.created_at>=? AND m.created_at<?"
 	args := []any{from, to}
 	if f.Query != "" {
-		where += " AND m.message_type='text' AND LOCATE(?,m.text_body)>0"
+		where += " AND m.state='published' AND m.message_type='text' AND LOCATE(?,m.text_body)>0"
 		args = append(args, f.Query)
 	}
 	if f.Kind == "image" {
