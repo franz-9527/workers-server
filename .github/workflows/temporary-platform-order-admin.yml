@@ -27,6 +27,7 @@ jobs:
           php -l .validation/platform-order-admin/source/PlatformOrderAdminModule.php
           php -l .validation/platform-order-admin/source/MeasurementAwarePlatformOrderAdminRepository.php
           php -l .validation/platform-order-admin/source/PlatformOrderAdminCreateSnapshot.php
+          php -l .validation/platform-order-admin/source/v250_platform_order_smoke.php
           php -l .validation/platform-order-admin/generate.php
           php -l .validation/platform-order-admin/architecture-test.php
           php .validation/platform-order-admin/generate.php
