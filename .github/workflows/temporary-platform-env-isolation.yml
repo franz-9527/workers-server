@@ -1,0 +1,19 @@
+name: Temporary platform environment isolation
+on:
+  push:
+    paths:
+      - 'temporary-platform-env-isolation/**'
+      - '.github/workflows/temporary-platform-env-isolation.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - run: bash temporary-platform-env-isolation/verify.sh
