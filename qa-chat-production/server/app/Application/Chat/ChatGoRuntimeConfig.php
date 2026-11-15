@@ -52,6 +52,7 @@ final class ChatGoRuntimeConfig
         $root=ChatRuntimePaths::managedRoot();
         $messageReady=$environment==='test'&&$root!==null&&!empty($signing['configured'])&&$redis['enabled']&&$chatEnabled&&$schemaReady&&$operationsConfigured&&$this->validAppId($appId);
         $caps=$this->capabilities($environment,$messageReady,false,$root);
+        $safetyMode=$messageReady&&!empty($caps['wechat_credential_file'])?'wechat':($messageReady?'local':($environment==='production'?'release_required':'disabled'));
         $messageMissing=[];
         if ($environment==='test' && $root===null) $messageMissing[]='本站未找到可读取的 Go 自动部署目录';
         foreach(['聊天总开关未开放'=>$chatEnabled,'PHP 签名未就绪，请生成签名或检查 sodium/加密配置'=>!empty($signing['configured']),'Redis 尚未启用'=>$redis['enabled'],'聊天数据表缺失，请完成后台升级'=>$schemaReady,($operationsConfigured?'恢复门禁已配置，尚未通过核验或 PHP 无法读取':'恢复门禁配置不完整')=>$operationsReady,'小程序 AppID 尚未配置'=>$this->validAppId($appId)] as $label=>$ready)if(!$ready)$messageMissing[]=$label;
@@ -78,7 +79,7 @@ final class ChatGoRuntimeConfig
             'production_non_av_requested'=>$environment==='production'&&(string)\setting('chat.go_production_non_av_requested','0')==='1',
             'message_app_id_configured'=>$this->validAppId($appId),
             'messages_enabled'=>$messageReady,'message_missing'=>$messageMissing,'message_recovery_default'=>$environment==='test'&&empty($chat['recovery_gate_file'])&&empty($chat['recovery_epoch']),
-            'safety_mode'=>$messageReady?'local':($environment==='production'?'release_required':'disabled'),
+            'safety_mode'=>$safetyMode,
         ],$caps);
     }
 
@@ -116,6 +117,7 @@ final class ChatGoRuntimeConfig
             'COLLABORATION_GATE'=>'订单协作群门禁尚未开放',
             'REMINDERS_GATE'=>'聊天订阅提醒尚未开放',
             'REMINDERS_TEMPLATE'=>'聊天消息微信订阅模板尚未完整配置并同步',
+            'REMINDERS_SCHEMA'=>'聊天提醒数据表不完整',
             'REMINDERS_ENDPOINT'=>'聊天提醒内部端点配置不可用',
             'REMINDERS_PREFLIGHT'=>'聊天提醒 PHP 门禁或内部签名检查未通过',
             'CONFIG_ERROR'=>'正式 Go 配置生成失败',
@@ -261,6 +263,7 @@ final class ChatGoRuntimeConfig
             $this->upsert('chat.enabled','1','聊天总开关',$admin);
             $this->upsert('chat.order_policy_enabled','1','订单聊天授权门禁',$admin);
             $this->upsert('chat.collaboration_enabled','1','订单协作群门禁',$admin);
+            $this->upsert('chat.reminders_enabled','1','聊天订阅提醒开关',$admin);
             $this->upsert(self::REDIS_ENABLED_KEY,'1','Go 聊天 Redis 开关',$admin);
         });
     }
@@ -321,6 +324,7 @@ final class ChatGoRuntimeConfig
                 }
             }
             $this->ensureProductionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT,'正式聊天内部提醒签名密钥密文，仅服务端使用',$admin,'正式聊天内部提醒签名密钥');
+            $this->upsert('chat.enabled','1','聊天总开关',$admin);
             $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
             $this->upsert('chat.go_production_non_av_requested','1','正式非音视频聊天请求',$admin);
             $this->upsert('chat.order_policy_enabled','1','订单聊天授权门禁',$admin);
@@ -450,9 +454,10 @@ final class ChatGoRuntimeConfig
 
         $credentialFile=(string)($caps['wechat_credential_file']??'');
         $rejectionDirectory=(string)($caps['wechat_rejection_directory']??'');
+        $wechatSafety=$messages&&$credentialFile!=='';
         $base['safety']=[
             'enabled'=>$messages,
-            'mode'=>$messages?'local':'',
+            'mode'=>$wechatSafety?'wechat':($messages?'local':''),
             'app_id'=>$messages?$appId:'',
             'credential_file'=>$credentialFile,
             'rejection_directory'=>$credentialFile!==''?$rejectionDirectory:'',
@@ -497,7 +502,7 @@ final class ChatGoRuntimeConfig
         $callsEndpoint=(string)($caps['calls_php_endpoint']??'');
         $internalKeyId=(string)($chat['internal_key_id']??'chat-internal-v1');
         $base['reminders']=[
-            'enabled'=>false,
+            'enabled'=>$messages&&$this->remindersEnabled()&&!empty($caps['internal_key'])&&$siteUrl!=='',
             'php_endpoint'=>$siteUrl!==''?$siteUrl.'/chat-internal.php':'',
             'key_id'=>$internalKeyId,'key_env'=>'CHAT_INTERNAL_KEY',
             'paid_sms_enabled'=>!empty($caps['sms_bridge_enabled']),
@@ -548,7 +553,7 @@ final class ChatGoRuntimeConfig
             'conversations'=>$auth,'history'=>$auth,'socket'=>$auth&&$redis['enabled'],'messages'=>$messages,
             'images'=>!empty($caps['images_enabled']),'audio'=>!empty($caps['av_enabled']),'video'=>!empty($caps['av_enabled']),
             'paid_sms'=>!empty($caps['sms_bridge_enabled']),'calls'=>!empty($caps['calls_enabled']),'calls_recovery_only'=>!empty($caps['calls_recovery_only']),
-            'safety_mode'=>$messages?'local':'disabled','chat_enabled'=>$chatEnabled,
+            'reminders'=>!empty($base['reminders']['enabled']),'safety_mode'=>$wechatSafety?'wechat':($messages?'local':'disabled'),'chat_enabled'=>$chatEnabled,
             'message_schema_ready'=>$schemaReady,'operations_configured'=>$operationsConfigured,
         ]];
     }
@@ -653,7 +658,8 @@ final class ChatGoRuntimeConfig
         if($internal==='')$missing[]='INTERNAL_KEY';
         if(\app_config('chat.order_policy_enabled',false)!==true)$missing[]='ORDER_POLICY_GATE';
         if(\app_config('chat.collaboration_enabled',false)!==true)$missing[]='COLLABORATION_GATE';
-        if(!filter_var(\setting('chat.reminders_enabled',false),FILTER_VALIDATE_BOOLEAN))$missing[]='REMINDERS_GATE';
+        if(!$this->remindersEnabled())$missing[]='REMINDERS_GATE';
+        if(!$this->tablesReady(['chat_reminder_events','chat_reminder_clusters','chat_reminder_budgets','chat_reminder_intents','chat_reminder_receipts','chat_internal_nonces','message_outbox']))$missing[]='REMINDERS_SCHEMA';
         $templates=\setting('wechat.subscribe_template_ids',[]);
         $chatTemplate=is_array($templates)?($templates['chat_unread']??[]):[];
         $requiredMap=['sender_name'=>'thing1','notice_text'=>'thing2','time'=>'time3','message_type'=>'thing4','chat_info'=>'thing5'];
@@ -845,7 +851,7 @@ final class ChatGoRuntimeConfig
             'asr_public_root'=>$states['audio']['enabled']?$asrPublicRoot:'','asr_public_origin'=>$states['audio']['enabled']?$asrPublicOrigin:'','asr_public_ready'=>$asrPublicReady,
             'asr_profile'=>$asr['asr_profile'],'asr_configured'=>$asrReady,'asr_missing'=>$asrReady?[]:[$asr['asr_profile']==='disabled'?'服务端语音识别已停用':'腾讯云一句话识别 SecretId / SecretKey 未配置、无法解密或引擎配置无效'],'wechat_secret_configured'=>$secret!=='','av_prerequisites_ready'=>!$avMissing,
             'wechat_credential_ready'=>$credentialFile!=='','av_enabled'=>$states['audio']['enabled'],'av_temp_root'=>$states['audio']['enabled']?$avTemp:'',
-            'wechat_credential_file'=>$states['audio']['enabled']?$credentialFile:'','wechat_rejection_directory'=>$states['audio']['enabled']?$rejectionDirectory:'',
+            'wechat_credential_file'=>$requested&&$messages?$credentialFile:'','wechat_rejection_directory'=>$requested&&$messages?$rejectionDirectory:'',
             'callback_verification_enabled'=>$requested&&$messages&&$callback['configured'],
             'callback_configured'=>$callback['configured'],'callback_verified'=>$callback['verified'],'callback_url'=>$callback['url'],
             'callback_mode'=>$callback['mode'],'callback_relay_configured'=>$callback['relay_configured'],
@@ -1045,6 +1051,11 @@ final class ChatGoRuntimeConfig
     {
         $value=$this->db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.enabled' LIMIT 1");
         return $value!==null&&$value!==false&&(string)$value==='1';
+    }
+    private function remindersEnabled():bool
+    {
+        $value=$this->db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.reminders_enabled' LIMIT 1");
+        return $value!==null&&$value!==false&&filter_var((string)$value,FILTER_VALIDATE_BOOLEAN);
     }
     private function messageSchemaReady():bool{return $this->tablesReady(['chat_conversations','chat_members','chat_member_intervals','chat_member_reads','chat_user_preferences','chat_preference_accounts','chat_send_intents','chat_messages','chat_message_changes','chat_event_receipts','chat_text_checks','chat_risk_events','chat_restrictions','chat_image_items','chat_governance_audit','chat_cases','chat_audit_accounts','chat_audit_snapshots','chat_audit_snapshot_items']);}
     private function tablesReady(array $required):bool

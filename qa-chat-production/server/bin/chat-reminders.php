@@ -20,7 +20,7 @@ require dirname(__DIR__).'/bootstrap.php';
 try{
     $recoveryEnvironment=['testing'=>'test','development'=>'development','production'=>'production'][(string)app_config('app.env','production')]??'';
     \WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::assertReady((array)app_config('chat',[]),$recoveryEnvironment);
-    if(!is_installed()||upgrade_required()||!filter_var(setting('chat.reminders_enabled',app_config('chat.reminders_enabled',false)),FILTER_VALIDATE_BOOLEAN))throw new RuntimeException('closed');
+    if(!is_installed()||upgrade_required()||!filter_var(setting('chat.enabled',false),FILTER_VALIDATE_BOOLEAN)||!filter_var(setting('chat.reminders_enabled',app_config('chat.reminders_enabled',false)),FILTER_VALIDATE_BOOLEAN))throw new RuntimeException('closed');
     $auth=\WorkerAdmin\Infrastructure\Messaging\ChatInternalAuth::configured(db());
     if($args===['--check']){fwrite(STDOUT,"CHAT_REMINDERS_READY\n");exit;}
     $shared=new \WorkerAdmin\Foundation\ApplicationContainer(db());

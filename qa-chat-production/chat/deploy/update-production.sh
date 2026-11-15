@@ -37,11 +37,12 @@ old=$(readlink -- "$chat/bin/current")
 [[ ! -e "$chat/chat.json" ]] || fail '发现手动 chat.json。保留现有配置，请先核对手动配置的升级方式。'
 "$php" -r '$c=require $argv[1];exit(($c["app"]["env"]??"")==="production"?0:2);' "$site/config/installed.php" ||
   fail '目标站点未确认为正式环境。'
-for f in deploy/production-runtime.php deploy/init-production-recovery.php deploy/web-update.php site/bootstrap.php site/app/Application/Chat/ChatGoUpdate.php site/app/Application/Chat/ChatRuntimePaths.php site/app/Application/Chat/ChatRuntimeControl.php site/app/Http/Admin/Modules/ChatSettingsAdminModule.php site/views/admin/chat-settings.php site/app/Infrastructure/Chat/ChatRecoveryGate.php site/app/Infrastructure/Chat/ChatRecoveryCheckpoint.php site/app/Application/Chat/ChatGoRuntimeConfig.php site/app/Application/Chat/ChatGoRuntimeStatus.php site/app/Infrastructure/Messaging/ChatInternalAuth.php site/chat-internal.php site/bin/chat-reminders.php site/bin/chat-recovery.php; do
+for f in deploy/production-runtime.php deploy/init-production-recovery.php deploy/web-update.php site/bootstrap.php site/app/Application/Chat/ChatGoUpdate.php site/app/Application/Chat/ChatRuntimePaths.php site/app/Application/Chat/ChatRuntimeControl.php site/app/Http/Admin/Modules/ChatSettingsAdminModule.php site/views/admin/chat-settings.php site/app/Infrastructure/Chat/ChatRecoveryGate.php site/app/Infrastructure/Chat/ChatRecoveryCheckpoint.php site/app/Application/Chat/ChatGoRuntimeConfig.php site/app/Application/Chat/ChatGoRuntimeStatus.php site/bin/chat-recovery.php site/app/Infrastructure/Messaging/ChatInternalAuth.php site/chat-internal.php site/bin/chat-reminders.php site/bin/chat-images.php; do
   "$php" -l "$f"
 done
 /bin/bash -n deploy/bt-run.sh
 /bin/bash -n deploy/bt-site.sh
+python3 -m py_compile helpers/preflight.py helpers/images/inspect.py
 # Initialize the recovery baseline only on explicit first-deployment requests.
 if [[ "${1:-}" =~ ^--(init|check)-recovery$ ]]; then
   control=/www/backup-control/bixuan-chat/production
@@ -118,10 +119,10 @@ replace() {
   install -m "$mode" -o "$owner" -g "$group" -- "$source" "$staged"
   mv -fT -- "$staged" "$target"
 }
-for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json; do
+for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json helpers/preflight.py helpers/images/inspect.py; do
   if [[ -f "$chat/$f" ]]; then cp -a --parents -- "$chat/$f" "$backup"; fi
 done
-for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-recovery.php; do
+for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-images.php; do
   if [[ -f "$site/$f" ]]; then cp -a --parents -- "$site/$f" "$backup"; fi
 done
 if [[ -f "$chat/bin/deployed-sha" ]]; then cp -a --parents -- "$chat/bin/deployed-sha" "$backup"; fi
@@ -138,11 +139,11 @@ rollback() {
   trap - EXIT
   set +e
   local f target
-  for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-recovery.php; do
+  for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-images.php; do
     target="$site/$f"
     if [[ -f "$backup$target" ]]; then cp -aT -- "$backup$target" "$target"; else rm -f -- "$target"; fi
   done
-  for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json; do
+  for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json helpers/preflight.py helpers/images/inspect.py; do
     target="$chat/$f"
     if [[ -f "$backup$target" ]]; then cp -aT -- "$backup$target" "$target"; else rm -f -- "$target"; fi
   done
@@ -160,7 +161,7 @@ rollback() {
   exit "$status"
 }
 trap rollback EXIT
-for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-recovery.php; do
+for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-images.php; do
   if [[ -f "$site/$f" ]]; then
     read -r mode owner group < <(stat -c '%a %U %G' -- "$site/$f")
   else
@@ -168,7 +169,7 @@ for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Cha
   fi
   replace "site/$f" "$site/$f" "$mode" "$owner" "$group"
 done
-for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json; do
+for f in deploy/bt-run.sh deploy/bt-site.sh deploy/production-runtime.php deploy/web-update.php deploy/release-public.key chat.production.example.json helpers/preflight.py helpers/images/inspect.py; do
   replace "$f" "$chat/$f" 0640 root www
 done
 runtime_status=0

@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace WorkerAdmin\Infrastructure\Messaging;
 use RuntimeException;
 use WorkerAdmin\Core\Database;
+use WorkerAdmin\Infrastructure\Security\GlobalPrivateValueCipher;
 /** Internal shared key is independent of access-token signing and channel keys. */
 final class ChatInternalAuth
 {
@@ -19,10 +20,18 @@ final class ChatInternalAuth
         if(preg_match('/^CHAT_[A-Z0-9_]{1,60}$/D',$name)!==1)throw new RuntimeException('CHAT_INTERNAL_CONFIG');
         $encoded=getenv($name);$key=is_string($encoded)?base64_decode($encoded,true):false;
         if(!is_string($key)||strlen($key)!==32||base64_encode($key)!==$encoded){
-            if($env==='production')throw new RuntimeException('CHAT_INTERNAL_CONFIG');
-            $appKey=(string)\app_config('app.key','');
-            if($appKey==='')throw new RuntimeException('CHAT_INTERNAL_CONFIG');
-            $key=hash_hmac('sha256','bixuan-chat-internal-v1:'.$env,$appKey,true);
+            if($env==='production'){
+                $stored=(string)($db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_internal_key_ciphertext' LIMIT 1")?:'');
+                if($stored==='')throw new RuntimeException('CHAT_INTERNAL_CONFIG');
+                try{$encoded=(new GlobalPrivateValueCipher())->decrypt($stored,'chat-go-production-internal-key-v1');}
+                catch(\Throwable $error){throw new RuntimeException('CHAT_INTERNAL_CONFIG');}
+                $key=base64_decode($encoded,true);
+                if(!is_string($key)||strlen($key)!==32||base64_encode($key)!==$encoded)throw new RuntimeException('CHAT_INTERNAL_CONFIG');
+            }else{
+                $appKey=(string)\app_config('app.key','');
+                if($appKey==='')throw new RuntimeException('CHAT_INTERNAL_CONFIG');
+                $key=hash_hmac('sha256','bixuan-chat-internal-v1:'.$env,$appKey,true);
+            }
         }
         return new self($db,$env,(string)\app_config('chat.internal_key_id',''),$key);
     }

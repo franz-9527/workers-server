@@ -187,15 +187,17 @@ update=$1
 sources=$2
 site=$3
 cd "$update"
-mkdir -p deploy payload site
+mkdir -p deploy payload site helpers/images
 for f in bt-run.sh bt-site.sh production-runtime.php init-production-recovery.php update-production.sh web-update.php; do
   cp "$sources/chat/deploy/$f" "deploy/$f"
 done
 cp "$sources/chat/chat.production.example.json" .
-for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-recovery.php; do
+for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-images.php bin/chat-recovery.php; do
   mkdir -p "site/$(dirname "$f")"
   cp "$sources/server/$f" "site/$f"
 done
+cp "$sources/chat/helpers/preflight.py" helpers/preflight.py
+cp "$sources/chat/helpers/images/inspect.py" helpers/images/inspect.py
 cp /tmp/chatqa payload/chatd
 /tmp/chatqa version > payload/version.json
 printf '%032d' 0 | base64 > deploy/release-public.key
@@ -222,6 +224,8 @@ sudo test -s "$state/production.text.json"
 sudo test -s "$state/production.release.json"
 sudo -u www "$php" -r '$c=json_decode(file_get_contents($argv[1]),true,64,JSON_THROW_ON_ERROR); if(empty($c["images"]["enabled"])||empty($c["reminders"]["enabled"])||!empty($c["reminders"]["paid_sms_enabled"])||!empty($c["av"]["enabled"])||!empty($c["calls"]["enabled"])) exit(2); echo "Production non-AV config enables images/reminders and keeps AV/calls/paid SMS closed\n";' "$state/production.text.json"
 sudo -u www "$php" -r '$r=json_decode(file_get_contents($argv[1]),true,16,JSON_THROW_ON_ERROR);$p=json_decode(base64_decode($r["payload"],true),true,16,JSON_THROW_ON_ERROR);$want=["text","images","governance","reminders"];if(($p["capabilities"]??[])!==$want)exit(2);echo "Production release capabilities are exact non-AV set\n";' "$state/production.release.json"
+sudo -u www "$php" "$site/bin/chat-reminders.php" --check
+echo "Managed internal HMAC is readable by ordinary production PHP without sourcing Go runtime env"
 sudo -u www bash -c 'source "$1"; [[ ${CHAT_PROD_NON_AV:-0} == 1 && -n ${CHAT_INTERNAL_KEY:-} && -n ${CHAT_QINIU_ACCESS_KEY:-} && -n ${CHAT_QINIU_SECRET_KEY:-} ]]' _ "$state/production.text.env"
 sudo -u www bash -c 'source "$1"; exec "$2" "$3" --check' _ "$state/production.text.env" "$php" "$site/bin/chat-reminders.php"
 set +x

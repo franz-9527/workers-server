@@ -82,10 +82,15 @@ bash /www/wwwroot/worker/chat/update/deploy/update-production.sh
 
 若宝塔为 PHP 启用了 open_basedir，在正式站现有允许列表中追加 `/www/backup-control/bixuan-chat/production/` 并重载 PHP 8.3，使 PHP 与 Go 能读取同一个门禁。保留其他允许目录。控制目录、基线及恢复密钥应另行备份，后续继续归档 binlog。维护密钥存于控制目录的 root 专用 `initial-identity.json`，正常运行不读取该密钥。
 
-### 放行正式文字收发
+### 放行正式非音视频聊天
 
-正式文字收发不再要求手工创建 `production.local.env`，也不需要填写 `CHAT_PROD_TEXT`、`CHAT_PROD_RELEASE_FILE` 或 `CHAT_RELEASE_KEY`。先在 workers-server 隔离测试仓完成准确 SHA 的 `--profile text` 验收，再在正式站「聊天管理 → 聊天设置 → 正式站首次启用」点击 **初始化文字聊天并应用**。后台会自动生成并加密保存正式 HMAC 放行密钥；启动器按当前二进制 SHA、正式环境、恢复 epoch 和 `text + governance` 能力生成短效签名文件，Go 启动时继续验证签名、环境、SHA、能力和有效期。
+正式站不再承担业务验收。先在 workers-server 隔离测试仓与 test.20m.cc 对准确 SHA 完成非音视频完整验收（订单聊天、协作群、文字、图片、治理、免费订阅提醒、授权/撤权、风控、恢复与回退），最终发布证据使用既有 `--profile full` 的基础 capability：`text + images + governance + reminders`。语音消息、ASR、视频消息、实时通话和付费短信不包含在该集合内。
 
-可选 `CHAT_PROD_MYSQL_USER` 与 `CHAT_MYSQL_PASSWORD` 仅用于明确选择独立 Go MySQL 账号；两者均不填写时复用 PHP 已安装连接。L1 仍要求正式恢复门禁、PHP 身份签名、Redis、微信文字内容安全及 Go 数据库权限。看到 `CHAT_PRODUCTION_TEXT_READY` 后检查内部 `/readyz`，再用真实双端账号验证文字收发、历史补收、WSS重连和撤权。图片、通知、语音、视频、通话和短信仍按各自 profile/专项逐项放行。
+验收通过后，在正式站「聊天管理 → 聊天设置 → 正式站首次启用」点击 **初始化非音视频聊天并应用**。后台自动生成并加密保存正式 release HMAC 与内部提醒 HMAC；启动器按当前二进制 SHA、正式环境、恢复 epoch 和上述 capability 生成短效签名文件，并自动托管免费提醒进程。无需手工创建 `production.local.env`，也无需填写 `CHAT_PROD_TEXT`、`CHAT_PROD_RELEASE_FILE`、`CHAT_RELEASE_KEY` 或 `CHAT_INTERNAL_KEY`。
 
-MySQL 5.7 网站账号查询 binlog 坐标遇到 1227 时，在可信终端执行 `bin/chat-recovery.php` 前，用环境变量 `CHAT_RECOVERY_DB_USER` 和 `CHAT_RECOVERY_DB_PASSWORD` 临时提供具备所需权限的维护账号。工具仍读取同一个正式数据库。运行完成后清除终端中的变量。
+图片复用后台七牛配置；公开 HTTP 回源模式仍通过本站 HTTPS 媒体代理提供给小程序，不要求为了聊天单独购买七牛 HTTPS。正式放行前会检查图片表、PHP CLI/GD、Pillow、zxing-cpp、图片辅助脚本和私有临时目录，缺项时 fail closed。免费订阅提醒走内部 HMAC，并允许同机 `127.0.0.1:9502` 回环 HTTP；非回环 HTTP 仍拒绝。
+
+看到 `CHAT_PRODUCTION_NON_AV_READY` 后只做无副作用检查：核对 deployed/running/current SHA、内部 `/readyz` HTTP 200 和后台“恢复核验已通过 / 正式收发已就绪”。**不再在正式站创建测试用户、测试订单、测试会话或发送测试消息。**
+
+可选 `CHAT_PROD_MYSQL_USER` 与 `CHAT_MYSQL_PASSWORD` 仅用于明确选择独立 Go MySQL 账号；两者均不填写时复用 PHP 已安装连接。
+

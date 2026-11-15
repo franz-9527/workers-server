@@ -4,7 +4,7 @@ c9d2e8c654fac590d6533b2dfaa9d6e31e3d1aaa  qa-chat-production/chat/build.sh
 ecd53d4d9b8d37dd714e8148a8e606a52801870f  qa-chat-production/chat/cmd/chatd/main.go
 fdfffaca8ef86a5d06fba7f68104f2ef7a8c49d0  qa-chat-production/chat/config.example.json
 f5513e16683bd1cf9397f2b3086f7706a78beee7  qa-chat-production/chat/deploy/bt-deploy.sh
-2797175ae7b5da8b76cf3507a0c58db482990b5f  qa-chat-production/chat/deploy/bt-run.sh
+7f514f1c3b6b1d75791c08c2c4304df677893e30  qa-chat-production/chat/deploy/bt-run.sh
 e4128de6205e3afc17aac4faeb4bc73089799066  qa-chat-production/chat/deploy/bt-site.sh
 f2df583d79eec5afef44d875d1c3630515e383d0  qa-chat-production/chat/deploy/init-production-recovery.php
 9e59031770fdd33c2242ced2454b543440f461c3  qa-chat-production/chat/deploy/nginx.conf.example
@@ -15,10 +15,10 @@ a55565d84c978493ccad8207e6ba633ad6f422ab  qa-chat-production/chat/deploy/release
 39fd9264339de1c6fe6ed589e6eb8b87a7fce038  qa-chat-production/chat/deploy/supervisor.conf.example
 956902d8d9a97f6d243622863eb3ac3119364a9b  qa-chat-production/chat/deploy/test-bt-deploy.py
 b84777d5cbec70de5a0411da740d9b9f04d5688f  qa-chat-production/chat/deploy/test-runtime-integration.py
-57de1bc0f9f5500c94799a2f94cbf893ecacdeb2  qa-chat-production/chat/deploy/update-production.sh
+33829d59a318989089308b49853e08521dd1a0b8  qa-chat-production/chat/deploy/update-production.sh
 88ae5e6fa1be4988568863edcde91877e18e0e5a  qa-chat-production/chat/deploy/web-update.php
 7580e5b492aab158c2912bbb2df65400336be8e9  qa-chat-production/chat/deploy/宝塔Git自动部署.md
-2a1120385c18f35bb3aae93a4242e865429daad0  qa-chat-production/chat/deploy/正式Go部署与微信回调.md
+eaf6d8223c8217abc71d577780bb2965f25e5b48  qa-chat-production/chat/deploy/正式Go部署与微信回调.md
 ca6dd29c79cf3698ec091197fce296e27e913b3a  qa-chat-production/chat/deploy/首次启用与故障核对.md
 8dc36f75eedc1439c5957dc300db64cfe5ef5c7c  qa-chat-production/chat/docs/media-automatic-review.md
 9e5d6b33a9a9fd732dcd518a1e8a8a3c7af2deba  qa-chat-production/chat/go.mod
@@ -362,7 +362,7 @@ a3fd3a3634bacc00de2f9c5c12e81ca2a51c35a2  qa-chat-production/server/app/Applicat
 a6624538e23653a857be2de87db27a260c0feaf1  qa-chat-production/server/app/Application/Chat/ChatCollaboration.php
 d40678a05d05d53a9febfefa1e90bf4f28d74e04  qa-chat-production/server/app/Application/Chat/ChatCollaborationAdmin.php
 0b27e1bd85416272292c194603871e898e5518de  qa-chat-production/server/app/Application/Chat/ChatCredentialIssuer.php
-78b925381694affc24471f56fb8c34b477db7bff  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeConfig.php
+eb3e915f0b567a2aae85432c967f7bee533bd3e0  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeConfig.php
 373ed2dcb97c14bf5031a9bd9562a8f4e591af1d  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeStatus.php
 2f3b5d9a59b8f0dca956abd896c48fe161b8e48b  qa-chat-production/server/app/Application/Chat/ChatGoUpdate.php
 146c71e76926646461324224a6c4f499efdfa93e  qa-chat-production/server/app/Application/Chat/ChatMediaCallbackSettings.php
@@ -813,7 +813,7 @@ c3acee8ad4cab50ae26b2f357c5b3e175418a146  qa-chat-production/server/app/Infrastr
 b1645c45fa0815ad16215bbcf888f6704e588d85  qa-chat-production/server/app/Infrastructure/External/WorkerRuntimeConfigurationAdapter.php
 dcead1a863c6af2cad6fb3102fff31cf626f57bc  qa-chat-production/server/app/Infrastructure/Media/LegacyAdminReviewMediaStorage.php
 81d4971283cb37bc6121ab013e7b2e670597e71a  qa-chat-production/server/app/Infrastructure/Media/LegacyImageOptimizer.php
-94458b91327e8096488a9664709716b56b08704d  qa-chat-production/server/app/Infrastructure/Messaging/ChatInternalAuth.php
+caef956d518e093046d0689407b68e360150ed2b  qa-chat-production/server/app/Infrastructure/Messaging/ChatInternalAuth.php
 c16780da118d2bf9f1f4ba8158b413437b3bb420  qa-chat-production/server/app/Infrastructure/Messaging/ChatReminderTemplate.php
 2504413ec6dc88f3d3214f626e2b4ba831d55fab  qa-chat-production/server/app/Infrastructure/Messaging/ConfiguredChatInternalGateway.php
 21297bfbf500d83c9df7addfc4ba8ae3c324e1a8  qa-chat-production/server/app/Infrastructure/Messaging/DatabaseAdminOrderEventRepository.php
@@ -1112,9 +1112,9 @@ e2ea27f7936f7fef890f2023e8ed71d66293b81b  qa-chat-production/server/assets/chat-
 11db008ba21e959c2e64f3c9f6ddad3f2b3f5478  qa-chat-production/server/bin/chat-credentials.php
 8ac922945b0a74c92d3fe2c7687e173bd0bb2e10  qa-chat-production/server/bin/chat-images.php
 7a89c96cc398439d4536976e09c1fe8821c0d6fd  qa-chat-production/server/bin/chat-recovery.php
-1db5fe2bc0ac8b60a5008dd46e60799759fdcea4  qa-chat-production/server/bin/chat-reminders.php
+2c08d82ccfdf91298aaae243fc6d1bf5b67ce1b7  qa-chat-production/server/bin/chat-reminders.php
 23dc768d3ca80ab5fb7df063f51c0cda3cb5f146  qa-chat-production/server/bootstrap.php
-2b9f305b91cd8d04764e3ec509b1064f5b03b7dc  qa-chat-production/server/chat-internal.php
+e1b0b238fd161cdce381e833b2b09a7cf09eabdf  qa-chat-production/server/chat-internal.php
 9610bb6433fd8c3750799734bf294afe375455ab  qa-chat-production/server/config/defaults.php
 df36e024b29d0cbdbdbfe373e0b5d75920e7d940  qa-chat-production/server/database/database.sql
 f47983ecf015a807642bca020be61e93d8214f1f  qa-chat-production/server/database/upgrades/1.0.0.sql

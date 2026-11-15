@@ -5,7 +5,7 @@ header('Content-Type: application/json');header('Cache-Control: no-store');heade
 try{
     $recoveryEnvironment=['testing'=>'test','development'=>'development','production'=>'production'][(string)app_config('app.env','production')]??'';
     \WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::assertReady((array)app_config('chat',[]),$recoveryEnvironment);
-    if(!is_installed()||upgrade_required()||!filter_var(setting('chat.reminders_enabled',app_config('chat.reminders_enabled',false)),FILTER_VALIDATE_BOOLEAN))throw new RuntimeException('closed');
+    if(!is_installed()||upgrade_required()||!filter_var(setting('chat.enabled',false),FILTER_VALIDATE_BOOLEAN)||!filter_var(setting('chat.reminders_enabled',app_config('chat.reminders_enabled',false)),FILTER_VALIDATE_BOOLEAN))throw new RuntimeException('closed');
     if(($_SERVER['REQUEST_METHOD']??'')!=='POST'||($_SERVER['REQUEST_URI']??'')!=='/chat-internal.php'||strtolower(trim(explode(';',(string)($_SERVER['CONTENT_TYPE']??''))[0]))!=='application/json')throw new RuntimeException('request');
     $raw=file_get_contents('php://input',false,null,0,8193);if(!is_string($raw)||strlen($raw)>8192)throw new RuntimeException('body');
     $headers=[];foreach(['environment','key-id','timestamp','nonce','signature'] as $key)$headers[$key]=(string)($_SERVER['HTTP_X_CHAT_'.strtoupper(str_replace('-','_',$key))]??'');

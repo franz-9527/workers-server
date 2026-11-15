@@ -121,7 +121,7 @@ while (( STOP == 0 )); do
   CONFIG="$STATE/chat.runtime.json"
   if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" && ${CHAT_CONFIG_MANUAL:-0} != 1 && ! -f "$CHAT/chat.json" ]]; then
     CONFIG="$STATE/production.runtime.json"
-    unset CHAT_PROD_TEXT CHAT_PROD_NON_AV CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY
+    unset CHAT_PROD_TEXT CHAT_PROD_NON_AV CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY CHAT_INTERNAL_KEY CHAT_QINIU_ACCESS_KEY CHAT_QINIU_SECRET_KEY CHAT_MEDIA_PROXY_KEY
     if [[ -f "$STATE/production.local.env" ]]; then
       set -a
       source "$STATE/production.local.env"
@@ -214,7 +214,9 @@ while (( STOP == 0 )); do
   EXPECT_BUSINESS=0
   [[ "$CONFIG" != "$STATE/production.text.json" ]] || EXPECT_BUSINESS=1
   while (( STOP == 0 )); do
-    if ! kill -0 "$SERVE" 2>/dev/null || ! kill -0 "$WORKER" 2>/dev/null || { [[ "$NEEDS_REMINDER" == 1 ]] && ! kill -0 "$REMINDER" 2>/dev/null; }; then
+    if ! kill -0 "$SERVE" 2>/dev/null || ! kill -0 "$WORKER" 2>/dev/null \
+      || { [[ "$NEEDS_CREDENTIAL" == 1 ]] && ! kill -0 "$CREDENTIAL" 2>/dev/null; } \
+      || { [[ "$NEEDS_REMINDER" == 1 ]] && ! kill -0 "$REMINDER" 2>/dev/null; }; then
       set_error 'CHAT_RUN_CHILD_EXITED'; echo 'CHAT_RUN_CHILD_EXITED: restarting managed chat processes'; break
     fi
     [[ $(readlink "$BIN/current" 2>/dev/null || true) == "$TARGET" ]] || { CHANGED=1; echo 'CHAT_RUN_RELEASE_CHANGED'; break; }
