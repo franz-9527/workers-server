@@ -153,7 +153,7 @@ c79aecee8f04aed867d4363a5b9c27888d924dd1  qa-chat-production/chat/internal/messa
 bebb63c057da2e4ea3530c71c03e42bf8aa76c55  qa-chat-production/chat/internal/message/http_integration_test.go
 a2dd56ab86cb42d7b39da260e24c32a2c5663140  qa-chat-production/chat/internal/message/http.go
 39f07d39f7164f35d4ca0ed0d3e2e967d961aefe  qa-chat-production/chat/internal/message/json_response.go
-a68cb27c0a9f030d10d3cc22eda5aaf95997355c  qa-chat-production/chat/internal/message/load_integration_test.go
+1a4603fc03c5c71a54b208734b2cf693d045e1c1  qa-chat-production/chat/internal/message/load_integration_test.go
 43703a604caba7a9dace11682cf8bd0eff21670f  qa-chat-production/chat/internal/message/media_automatic_test.go
 3a492ee9cc271aca8fa63f739b46bf1904ef1f4c  qa-chat-production/chat/internal/message/media_automatic.go
 31288af8ebe4bc40507f3dc8e439acfff0d7b8e1  qa-chat-production/chat/internal/message/media_cleanup.go
@@ -192,7 +192,7 @@ defec095e3644d7c90407a61b0064133ca1e6db0  qa-chat-production/chat/internal/messa
 5648f9a26482e04afed42afd1e98785e2ccc57dc  qa-chat-production/chat/internal/message/s09_test.go
 d7b92cc308c9a3aac85b1338b783c93c6cf3e46c  qa-chat-production/chat/internal/message/sandbox_cleanup.go
 212b66c2dd6dea2a910763f74fbd376c31fa9ed7  qa-chat-production/chat/internal/message/service_test.go
-dfd861f33da4e2749a08289233855613a167c576  qa-chat-production/chat/internal/message/service.go
+d073fbeeb48b0f24a64f7296c5f4a6b4b3cf48ad  qa-chat-production/chat/internal/message/service.go
 dc15fb824755603dba12320236bc7dfcfed45e7d  qa-chat-production/chat/internal/message/socket_integration_test.go
 5764604225705793762cd39cc74b67fd5b7635e2  qa-chat-production/chat/internal/message/socket_test.go
 c87fdea65a16f8100606ff61f16aebde50f8f615  qa-chat-production/chat/internal/message/socket.go
@@ -1170,7 +1170,7 @@ b051069d81be986eb9245b6252e0b7012793608d  qa-chat-production/server/tests/chat_c
 6a33319d146a0e2a691ee09ce00781c825c40e4e  qa-chat-production/server/tests/chat_closure_contract.php
 07820aa9301e8b4aab31b4d6b8b4e74e76e9031f  qa-chat-production/server/tests/chat_collaboration_fixture.php
 79c3f78a1e33f47af93c938551ca8786d6fa96e3  qa-chat-production/server/tests/chat_collaboration_policy_contract.php
-e7fbab2a649af482a924a651225f14673aa41386  qa-chat-production/server/tests/chat_identity_contract.php
+6a6a042f1c80061c2ce410b70ccb7d127c134511  qa-chat-production/server/tests/chat_identity_contract.php
 229c0c1fcf39b82b1d3cd6c3349e7fe5579a3ae1  qa-chat-production/server/tests/chat_migration_fixture.php
 afbd267351a43792319f5218bf88316c77e0e9eb  qa-chat-production/server/tests/chat_participant_contract.php
 bdc4a299e3d69defc5d123257f86f9330fdd26ab  qa-chat-production/server/tests/chat_platform_contract.php

@@ -45,7 +45,11 @@ if (in_array(($argv[1] ?? ''), ['--issue-mini','--issue-admin','--logout-admin']
             }
         }
         echo json_encode($result, JSON_THROW_ON_ERROR);
-    } catch (Throwable $error) { fwrite(STDERR, "fixture exchange failed\n"); exit(1); }
+    } catch (Throwable $error) {
+        $message=preg_replace('/[^A-Za-z0-9_:\x{4e00}-\x{9fff} .-]+/u','?',(string)$error->getMessage());
+        fwrite(STDERR,"fixture exchange failed: ".substr((string)$message,0,160)."\n");
+        exit(1);
+    }
     exit;
 }
 

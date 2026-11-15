@@ -94,25 +94,6 @@ func NewService(db *sql.DB, c *conversation.Store, safety ports.Safety, timeout 
 }
 func validID(id ports.ID) bool   { return id.Valid() && id != "0" }
 func validClient(id string) bool { return clientPattern.MatchString(id) }
-func validateClientAction(id string, now time.Time) error {
-	match := clientPattern.FindStringSubmatch(id)
-	if match == nil {
-		return ports.ErrInvalid
-	}
-	created, err := strconv.ParseInt(match[1], 10, 64)
-	if err != nil {
-		return ports.ErrInvalid
-	}
-	at := time.Unix(created, 0).UTC()
-	now = now.UTC()
-	if at.After(now.Add(30 * time.Second)) {
-		return ports.ErrInvalid
-	}
-	if !now.Before(at.Add(ActionWindow)) {
-		return ErrExpired
-	}
-	return nil
-}
 func actionDeadline(now time.Time) time.Time { return now.UTC().Add(ActionWindow) }
 func fingerprint(r Request) (string, error) {
 	if len(r.Items) > 0 || r.Revision != 0 || r.ClientTranscript != "" || r.ClientASRProvider != "" || r.ReplyItem != "" && (!validID(r.ReplyItem) || r.ReplyTo == "") || (r.ReplyTo != "" && !validID(r.ReplyTo)) || (r.EditedFrom != "" && !validID(r.EditedFrom)) || !validID(r.ConversationID) || !validClient(r.ClientMessageID) || r.MessageType != "text" || !utf8.ValidString(r.Text) || len(r.Text) > 4000 || utf8.RuneCountInString(r.Text) > 2000 || strings.TrimSpace(r.Text) == "" || strings.ContainsRune(r.Text, 0) {
@@ -227,11 +208,8 @@ func (s *Service) lookup(ctx context.Context, tx *sql.Tx, p ports.Principal, con
 // Query uses read authority, never send authority or the ban gate. An accepted
 // action remains confirmable by its legitimate author after a send ban/closure.
 func (s *Service) Query(ctx context.Context, p ports.Principal, id ports.ID, client string) (Result, error) {
-	if !validID(id) {
+	if !validID(id) || !validClient(client) {
 		return Result{}, ports.ErrInvalid
-	}
-	if e := validateClientAction(client, time.Now()); e != nil {
-		return Result{}, e
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
@@ -261,9 +239,6 @@ func (s *Service) Query(ctx context.Context, p ports.Principal, id ports.ID, cli
 }
 
 func (s *Service) Send(ctx context.Context, p ports.Principal, r Request) (Result, error) {
-	if e := validateClientAction(r.ClientMessageID, time.Now()); e != nil {
-		return Result{}, e
-	}
 	if r.MessageType == "audio" || r.MessageType == "video" {
 		if s.av == nil {
 			return Result{}, ErrMedia

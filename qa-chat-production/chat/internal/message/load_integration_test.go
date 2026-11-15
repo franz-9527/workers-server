@@ -116,14 +116,28 @@ func TestMySQLRedisS23MixedLoad(t *testing.T) {
 					t.Fatal("authenticated connection", response)
 				}
 			}
-			// Verify the hard connection cap rather than relying on unbounded goroutines.
+			// The HTTP upgrade is intentionally cheap and may succeed before identity.
+			// The hard 300-client cap is enforced when the first auth frame reserves
+			// an authenticated slot, so verify rejection at that protocol boundary.
 			if profile.connections == 300 {
+				extraTicket, _, e := identity.IssueTicket(ctx, token)
+				if e != nil {
+					t.Fatal("extra ticket", e)
+				}
 				headers := http.Header{}
 				headers.Set("X-Real-IP", "10.21.0.1")
 				extra, _, e := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http")+"/chat/ws", headers)
-				if e == nil {
-					extra.Close()
-					t.Fatal("connection 301 admitted")
+				if e != nil {
+					t.Fatal("connection 301 handshake", e)
+				}
+				defer extra.Close()
+				_ = extra.SetReadDeadline(time.Now().Add(2 * time.Second))
+				if e = extra.WriteJSON(map[string]any{"protocol_version": 1, "request_id": "load-extra-auth", "type": "auth", "payload": map[string]string{"ticket": extraTicket}}); e != nil {
+					t.Fatal("connection 301 auth write", e)
+				}
+				var response struct{ Type string `json:"type"` }
+				if e = extra.ReadJSON(&response); e == nil && response.Type == "auth.ok" {
+					t.Fatal("connection 301 authenticated")
 				}
 			}
 			var mu sync.Mutex
