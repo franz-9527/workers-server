@@ -30,20 +30,37 @@ const scene = (key, remaining = 3, extra = {}) => Object.assign({ key, available
 const status = (items, extra = {}) => Object.assign({ items, supported: true, globalEnabled: true, mainSwitch: true }, extra)
 function banner(properties = {}) {
   let definition
-  const requests = [], routes = []
-  let response = Promise.resolve(status([]))
+  const requests = [], routes = [], toasts = []
+  let response = Promise.resolve(null), revision = 1
+  const subscribe = {
+    getSubscriptionHealth(force, options) { requests.push({ kind: 'health', force, options }); return response },
+    requestSubscriptionScenes(keys, options) { requests.push({ kind: 'scenes', keys, options }); return Promise.resolve({ status: 'ok', acceptedCount: keys.length }) },
+    requestImportantTopUp(options) { requests.push({ kind: 'top_up', options }); return Promise.resolve({ status: 'ok', acceptedCount: 1 }) }
+  }
   vm.runInNewContext(bannerSource, {
     Component(value) { definition = value }, console: { warn() {} },
-    require(name) {if(name==='./sms.js')return require('../miniprogram/subpackages/chat/conversation/sms.js');if(name.endsWith('ChatPresentation.js'))return require('../miniprogram/utils/ChatPresentation.js');if(name==='./interaction.js')return require('../miniprogram/subpackages/chat/conversation/interaction.js');if(name==='./calls.js')return require('../miniprogram/subpackages/chat/conversation/calls.js');
-      assert(name.endsWith('SubscribeMessageUtils.js'))
-      return { getSubscriptionSettings(force, options) { requests.push({ force, options }); return response } }
+    require(name) {
+      if (name.endsWith('SubscribeMessageUtils.js')) return subscribe
+      if (name.endsWith('OrderApi.js')) return { contextRevision: () => revision }
+      throw Error('unexpected banner dependency ' + name)
     },
-    wx: { navigateTo(options) { routes.push(options.url) }, showToast() {} }
+    wx: { navigateTo(options) { routes.push(options.url) }, showToast(options) { toasts.push(options) } },
+    Date, Promise
   })
-  const inst = { properties: Object.assign({}, ...Object.entries(definition.properties).map(([key, value]) => ({ [key]: value.value })), properties),
-    data: Object.assign({}, definition.data), setData(patch, callback) { Object.assign(this.data, patch); if (callback) callback() } }
+  const inst = {
+    properties: Object.assign({}, ...Object.entries(definition.properties).map(([key, value]) => ({ [key]: value.value })), properties),
+    data: Object.assign({}, definition.data),
+    setData(patch, callback) { Object.assign(this.data, patch); if (callback) callback() }
+  }
   Object.entries(definition.methods).forEach(([key, fn]) => { inst[key] = fn.bind(inst) })
-  return { inst, definition, requests, routes, result(value) { response = Promise.resolve(value) }, response(value) { response = value } }
+  definition.lifetimes.attached.call(inst)
+  inst._visible = true
+  return {
+    inst, definition, requests, routes, toasts,
+    result(value) { response = Promise.resolve(value) },
+    response(value) { response = value },
+    revision(value) { revision = value }
+  }
 }
 function page() {
   let definition, summaryListener
@@ -99,54 +116,52 @@ async function run() {
   assert(mine.includes('messageTodoCount') && mine.includes('notificationUnreadCount'))
   assert(!mine.includes('mine-message-summary'), 'summary moved; menu retained')
 
-  const f = banner({ audience: 'all', compact: true })
-  for (const [items, title, options] of [
-    [[scene('order_progress', 0)], '通知提醒次数不足'],
-    [[scene('order_fee_change', 0)], '通知提醒次数不足'],
-    [[scene('order_progress'), scene('order_fee_change', 1)], '通知提醒次数偏低'],
-    [[scene('order_fee_change', 0, { rejected: true })], '部分重要通知未开启'],
-    [[scene('order_progress', 3, { subscription_type: 'long_term', needs_authorization: true })], '通知提醒次数不足'],
-    [[scene('order_progress')], '微信通知未开启', { mainSwitch: false }],
-    [[scene('order_progress')], '微信订阅提醒暂不可用', { globalEnabled: false }],
-    [[scene('order_progress')], '当前微信不支持订阅消息', { supported: false }]
-  ]) {
-    f.result(status(items, options)); await f.inst.refreshHealth()
-    assert.strictEqual(f.inst.data.title, title)
-    assert.strictEqual(f.inst.data.visible, true)
-  }
-  f.result(status([scene('order_progress'), scene('order_fee_change'), scene('reviewResult', 0)]))
-  await f.inst.refreshHealth()
-  assert.strictEqual(f.inst.data.visible, false, 'healthy scenes take no space; onboarding stays separate')
-  assert(f.requests.every(r => r.force && !r.options.includeApplication), 'daily status uses PHP role filtering')
-  f.inst.openNotificationSettings()
-  assert.strictEqual(f.routes[0], '/subpackages/account/settings/index?section=notifications', 'both roles remain available')
+  const f = banner({ audience: 'account', active: true })
+  f.result({ action: 'top_up', code: 'insufficient', subscription_type: 'one_time', scene_keys: ['order_progress'] })
+  await f.inst.refresh(true)
+  assert.strictEqual(f.inst.data.hintText, '微信提醒次数不足')
+  assert.strictEqual(f.inst.data.actionText, '续收提醒')
+  assert.strictEqual(f.requests[0].kind, 'health')
+  assert.strictEqual(f.requests[0].force, true)
+  assert.strictEqual(f.requests[0].options.audience, '', 'account audience delegates role filtering to PHP')
+  f.inst.openSettings()
+  assert.strictEqual(f.routes[0], '/subpackages/account/settings/index?section=notifications')
 
   const late = deferred()
   f.response(late.promise)
-  const first = f.inst.refreshHealth(), duplicate = f.inst.refreshHealth()
-  assert.strictEqual(first, duplicate, 'attached/show share one pending read')
+  f.inst._updatedAt = 0
+  const first = f.inst.refresh(true), duplicate = f.inst.refresh(true)
+  assert.strictEqual(first, duplicate, 'one in-flight health read is shared')
   f.inst.properties.active = false
-  f.definition.observers.active.call(f.inst, false)
+  await f.inst.refresh()
   const before = f.requests.length
-  await f.inst.refreshHealth()
-  assert.strictEqual(f.requests.length, before, 'hidden page does not fetch')
-  late.resolve(status([scene('order_fee_change', 0)])); await first
-  assert.strictEqual(f.inst.data.visible, false, 'late hidden response cannot restore warning')
+  await f.inst.refresh()
+  assert.strictEqual(f.requests.length, before, 'inactive inbox does not fetch')
+  late.resolve({ action: 'top_up', code: 'insufficient', subscription_type: 'one_time', scene_keys: ['order_fee_change'] })
+  await first
+  assert.strictEqual(f.inst.data.health, null, 'late inactive response cannot restore warning')
+
   f.inst.properties.active = true
   f.response(Promise.reject(new Error('offline')))
-  await f.inst.refreshHealth()
-  assert.strictEqual(f.inst.data.title, '通知状态暂未更新', 'failure is not a healthy empty state')
-  const detached = deferred(); f.response(detached.promise)
-  const pending = f.inst.refreshHealth()
+  await f.inst.refresh(true)
+  assert.strictEqual(f.inst.data.health, null, 'failed health read is not treated as a healthy snapshot')
+  assert.strictEqual(f.inst.data.hintText, '')
+
+  const detached = deferred()
+  f.response(detached.promise)
+  const pending = f.inst.refresh(true)
   f.definition.lifetimes.detached.call(f.inst)
-  detached.resolve(status([scene('order_fee_change', 0)])); await pending
-  assert.strictEqual(f.inst.data.title, '通知状态暂未更新', 'detached responses are discarded')
+  detached.resolve({ action: 'top_up', code: 'insufficient', subscription_type: 'one_time', scene_keys: ['order_fee_change'] })
+  await pending
+  assert.strictEqual(f.inst.data.health, null, 'detached responses are discarded')
 
-  const old = banner({ audience: 'worker_application', reviewPending: true })
-  old.result(status([scene('reviewResult', 0)])); await old.inst.refreshHealth()
-  assert.strictEqual(old.inst.data.notices.length, 2, 'review swiper remains available')
-  assert.strictEqual(old.requests[0].options.includeApplication, true)
-
+  const application = banner({ audience: 'worker_application', active: true })
+  application.result({ action: 'top_up', code: 'insufficient', subscription_type: 'one_time', scene_keys: ['reviewResult'] })
+  await application.inst.refresh(true)
+  assert.strictEqual(application.inst.data.hintText, '审核微信提醒次数不足')
+  await application.inst.open()
+  const sceneRequest = application.requests.find(row => row.kind === 'scenes')
+  assert(sceneRequest && sceneRequest.options.includeApplication === true, 'worker application top-up keeps application scope')
   const p = page()
   p.inst.onShow(); await settle()
   assert(p.inst.data.summaryReady && p.inst.data.pageVisible)
