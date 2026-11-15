@@ -362,7 +362,7 @@ a3fd3a3634bacc00de2f9c5c12e81ca2a51c35a2  qa-chat-production/server/app/Applicat
 a6624538e23653a857be2de87db27a260c0feaf1  qa-chat-production/server/app/Application/Chat/ChatCollaboration.php
 d40678a05d05d53a9febfefa1e90bf4f28d74e04  qa-chat-production/server/app/Application/Chat/ChatCollaborationAdmin.php
 0b27e1bd85416272292c194603871e898e5518de  qa-chat-production/server/app/Application/Chat/ChatCredentialIssuer.php
-cf6260931eebf16c876543a7d5df4d9f0817b049  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeConfig.php
+78b925381694affc24471f56fb8c34b477db7bff  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeConfig.php
 373ed2dcb97c14bf5031a9bd9562a8f4e591af1d  qa-chat-production/server/app/Application/Chat/ChatGoRuntimeStatus.php
 2f3b5d9a59b8f0dca956abd896c48fe161b8e48b  qa-chat-production/server/app/Application/Chat/ChatGoUpdate.php
 146c71e76926646461324224a6c4f499efdfa93e  qa-chat-production/server/app/Application/Chat/ChatMediaCallbackSettings.php
@@ -1113,7 +1113,7 @@ e2ea27f7936f7fef890f2023e8ed71d66293b81b  qa-chat-production/server/assets/chat-
 8ac922945b0a74c92d3fe2c7687e173bd0bb2e10  qa-chat-production/server/bin/chat-images.php
 7a89c96cc398439d4536976e09c1fe8821c0d6fd  qa-chat-production/server/bin/chat-recovery.php
 1db5fe2bc0ac8b60a5008dd46e60799759fdcea4  qa-chat-production/server/bin/chat-reminders.php
-8c44d718da632f0c1fc38324f34fe9dae1949179  qa-chat-production/server/bootstrap.php
+23dc768d3ca80ab5fb7df063f51c0cda3cb5f146  qa-chat-production/server/bootstrap.php
 2b9f305b91cd8d04764e3ec509b1064f5b03b7dc  qa-chat-production/server/chat-internal.php
 9610bb6433fd8c3750799734bf294afe375455ab  qa-chat-production/server/config/defaults.php
 df36e024b29d0cbdbdbfe373e0b5d75920e7d940  qa-chat-production/server/database/database.sql
@@ -1189,7 +1189,7 @@ e5433b7e90345279e810a08e6f1d673e1eb04a0e  qa-chat-production/server/tests/v250_t
 aec53a3a83e52078c7be18743c9a0d5680ef7b34  qa-chat-production/server/tests/v260_message_outbox_dispatch_policy.php
 b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_paid_sms_receipt_policy.php
 49cdd668e1c82b32c9adc54b07e5c52757e6b93a  qa-chat-production/server/VERSION
-e2a341a7b13a74d7ad5a28e2ea16f364af748e96  qa-chat-production/server/views/admin/chat-settings.php
+f9ec174bd131da82cd2c7b7e923f45a76684a781  qa-chat-production/server/views/admin/chat-settings.php
 942f933c35c7ba79de5e1499a8ba0b09f8a74eec  qa-chat-production/server/views/admin/orders/proxy-create.php
 575f7fe326f933dbee9ed04a81d7a2978b8994e2  qa-chat-production/server/views/admin/platform-orders.php
 5e7b42feb4bb375258a19572a8131037ba71429f  qa-chat-production/tools/build-chat-l1-evidence.py

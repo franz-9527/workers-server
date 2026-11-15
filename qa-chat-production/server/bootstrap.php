@@ -54,6 +54,33 @@ $versionFile = WORKER_BASE_PATH . '/VERSION';
 $codeVersion = is_file($versionFile) ? trim((string) file_get_contents($versionFile)) : '';
 $configuredVersion = (string) ($installed['app']['version'] ?? $installed['version'] ?? '');
 $hasInstalledConfig = !empty($installed['installed']);
+
+// Chat business gates are runtime release controls, not permanent installed.php edits.
+// A row is authoritative only when it exists; absent rows preserve explicit installed
+// configuration for backward compatibility. Database failure keeps the existing
+// fail-closed defaults and never opens chat by accident.
+if ($hasInstalledConfig) {
+    try {
+        $runtimeGateDb = db();
+        if ($runtimeGateDb->tableExists('system_settings')) {
+            $runtimeGateRows = $runtimeGateDb->fetchAll(
+                "SELECT setting_key,setting_value FROM system_settings
+                 WHERE setting_key IN ('chat.order_policy_enabled','chat.collaboration_enabled')"
+            );
+            foreach ($runtimeGateRows as $runtimeGateRow) {
+                $runtimeGateKey = (string) ($runtimeGateRow['setting_key'] ?? '');
+                $runtimeGateValue = filter_var((string) ($runtimeGateRow['setting_value'] ?? ''), FILTER_VALIDATE_BOOLEAN);
+                if ($runtimeGateKey === 'chat.order_policy_enabled') {
+                    $GLOBALS['worker_admin_config']['chat']['order_policy_enabled'] = $runtimeGateValue;
+                } elseif ($runtimeGateKey === 'chat.collaboration_enabled') {
+                    $GLOBALS['worker_admin_config']['chat']['collaboration_enabled'] = $runtimeGateValue;
+                }
+            }
+        }
+    } catch (Throwable $runtimeGateError) {
+        // Keep static/default fail-closed values when the database is unavailable.
+    }
+}
 $databaseVersion = '';
 $databaseVersionKnown = false;
 if ($hasInstalledConfig && $codeVersion !== '') {

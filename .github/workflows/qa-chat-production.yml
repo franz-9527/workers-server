@@ -32,7 +32,15 @@ jobs:
           extensions: pdo_mysql,sodium,mbstring,curl,gd
           coverage: none
       - run: python3 -m pip install --disable-pip-version-check Pillow==13.0.0 zxing-cpp==3.1.1
-      - run: bash qa-chat-production/verify.sh
+      - shell: bash
+        run: |
+          set -euo pipefail
+          php qa-chat-production/seed-non-av.php &
+          seed_pid=$!
+          trap 'kill "$seed_pid" 2>/dev/null || true' EXIT
+          bash qa-chat-production/verify.sh
+          wait "$seed_pid"
+          trap - EXIT
         env:
           CHAT_INTEGRATION: '1'
           CHAT_AUTH_TEST_PHP: /usr/bin/php

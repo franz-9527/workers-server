@@ -6,7 +6,7 @@
 
 <?php if(($goRuntime['environment']??'')==='production'): ?>
 <section class="admin-card admin-mb-3"><div class="admin-card__header"><strong>正式站首次启用</strong><span class="admin-badge admin-badge--info"><?= !empty($goStatus['business_ready'])?'正式聊天运行中':(!empty($goStatus['callback_only_ready'])?'微信回执运行中':'等待启动') ?></span></div><div class="admin-card__body">
-<p>初始化会生成并加密保存 PHP↔Go 身份密钥、正式短效放行密钥与内部提醒签名密钥，并请求启用已在测试站验收通过的非音视频能力：文字、图片、治理和免费订阅提醒。语音消息、ASR、视频消息、实时通话及付费短信继续关闭。请先在 workers-server 与 test.20m.cc 完成当前 SHA 的非音视频完整验收，再执行此操作；正式站不再创建测试订单或测试消息。</p>
+<p>初始化会生成并加密保存 PHP↔Go 身份密钥、正式短效放行密钥与内部提醒签名密钥，并请求启用已在测试站验收通过的非音视频能力：订单聊天、协作群、文字、图片、治理和免费订阅提醒。语音消息、ASR、视频消息、实时通话及付费短信继续关闭。请先在 workers-server 与 test.20m.cc 完成当前 SHA 的非音视频完整验收，再执行此操作；正式站不再创建测试订单或测试消息。</p>
 <ul><li>恢复核验：<?= e(['ready'=>'已通过','unconfigured'=>'尚未建立基线','unreadable'=>'PHP 无法读取门禁文件，请检查正式站 open_basedir 和文件权限','blocked'=>'当前处于恢复维护状态','invalid'=>'门禁文件或恢复代次校验失败'][$goRuntime['message_recovery_status']??'']??'待检查') ?></li><li>正式收发：<?= !empty($goStatus['business_ready'])?'已就绪':'待通过正式放行及连接检查' ?></li><li>非音视频放行：<?= !empty($goRuntime['production_non_av_requested'])?'已请求应用':'尚未请求' ?></li></ul>
 <?php if(empty($goStatus['business_ready'])&&!empty($goRuntime['production_text_status'])): ?>
 <ul><?php foreach($goRuntime['production_text_status'] as $missing): ?><li><?= e($missing) ?></li><?php endforeach; ?></ul>

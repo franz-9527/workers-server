@@ -112,7 +112,10 @@ final class ChatGoRuntimeConfig
             'IMAGES_SCHEMA'=>'聊天图片数据表不完整',
             'IMAGES_PREFLIGHT'=>'聊天图片处理依赖未通过检查',
             'IMAGES_STATE'=>'聊天图片私有临时目录不可用',
+            'ORDER_POLICY_GATE'=>'订单聊天授权门禁尚未开放',
+            'COLLABORATION_GATE'=>'订单协作群门禁尚未开放',
             'REMINDERS_GATE'=>'聊天订阅提醒尚未开放',
+            'REMINDERS_TEMPLATE'=>'聊天消息微信订阅模板尚未完整配置并同步',
             'REMINDERS_ENDPOINT'=>'聊天提醒内部端点配置不可用',
             'REMINDERS_PREFLIGHT'=>'聊天提醒 PHP 门禁或内部签名检查未通过',
             'CONFIG_ERROR'=>'正式 Go 配置生成失败',
@@ -256,6 +259,8 @@ final class ChatGoRuntimeConfig
             $actor=$this->db->fetch("SELECT role FROM admin_users WHERE id=:id AND status IN ('active','1') AND must_change_password=0 FOR UPDATE",['id'=>$admin]);
             if(!$actor||$actor['role']!==$role||$role!=='super_admin')throw new RuntimeException('仅超级管理员可初始化测试聊天。');
             $this->upsert('chat.enabled','1','聊天总开关',$admin);
+            $this->upsert('chat.order_policy_enabled','1','订单聊天授权门禁',$admin);
+            $this->upsert('chat.collaboration_enabled','1','订单协作群门禁',$admin);
             $this->upsert(self::REDIS_ENABLED_KEY,'1','Go 聊天 Redis 开关',$admin);
         });
     }
@@ -318,6 +323,8 @@ final class ChatGoRuntimeConfig
             $this->ensureProductionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT,'正式聊天内部提醒签名密钥密文，仅服务端使用',$admin,'正式聊天内部提醒签名密钥');
             $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
             $this->upsert('chat.go_production_non_av_requested','1','正式非音视频聊天请求',$admin);
+            $this->upsert('chat.order_policy_enabled','1','订单聊天授权门禁',$admin);
+            $this->upsert('chat.collaboration_enabled','1','订单协作群门禁',$admin);
             $this->upsert('chat.reminders_enabled','1','聊天订阅提醒开关',$admin);
         });
     }
@@ -644,7 +651,19 @@ final class ChatGoRuntimeConfig
         if($temp===''||!$this->ensurePrivateDirectory($temp))$missing[]='IMAGES_STATE';
         $internal=$this->productionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT);
         if($internal==='')$missing[]='INTERNAL_KEY';
+        if(\app_config('chat.order_policy_enabled',false)!==true)$missing[]='ORDER_POLICY_GATE';
+        if(\app_config('chat.collaboration_enabled',false)!==true)$missing[]='COLLABORATION_GATE';
         if(!filter_var(\setting('chat.reminders_enabled',false),FILTER_VALIDATE_BOOLEAN))$missing[]='REMINDERS_GATE';
+        $templates=\setting('wechat.subscribe_template_ids',[]);
+        $chatTemplate=is_array($templates)?($templates['chat_unread']??[]):[];
+        $requiredMap=['sender_name'=>'thing1','notice_text'=>'thing2','time'=>'time3','message_type'=>'thing4','chat_info'=>'thing5'];
+        $templateReady=filter_var(\setting('wechat.subscribe_enabled',false),FILTER_VALIDATE_BOOLEAN)
+            &&is_array($chatTemplate)
+            &&trim((string)($chatTemplate['template_id']??''))!==''
+            &&hash_equals((string)($chatTemplate['template_id']??''),(string)($chatTemplate['synced_template_id']??''))
+            &&is_array($chatTemplate['field_map']??null);
+        if($templateReady)foreach($requiredMap as $field=>$keyword)if((string)($chatTemplate['field_map'][$field]??'')!==$keyword){$templateReady=false;break;}
+        if(!$templateReady)$missing[]='REMINDERS_TEMPLATE';
         $site=$this->siteUrl();
         if($site===''||!@is_file(\base_path('chat-internal.php'))||!@is_readable(\base_path('chat-internal.php'))
             ||!@is_file(\base_path('bin/chat-reminders.php'))||!@is_readable(\base_path('bin/chat-reminders.php')))$missing[]='REMINDERS_ENDPOINT';
