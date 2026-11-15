@@ -304,7 +304,7 @@ async function s12RemainderTests() {
    assert(['mine','worker'].includes(query.kind),'unsupported invited request removed')
    return Promise.resolve({data:{items:query.page===1?firstItems:[firstItems[19],{id:'O-21',todo_action:'确认接单'}],has_more:query.page===1,todo_count:21}})
   }
-  if(route==='notifications.threads')return Promise.resolve({data:{schema:2,items:afterRead?[{id:'new',thread_key:'single:new',is_thread:false,title:'新通知',unread_count:1,thread_count:1,created_at:'2026-10-23 10:00'}]:[{id:'n2',thread_key:'user:1',is_thread:true,title:'进度',order_no:'O-1',detail_page:'user',unread_count:2,thread_count:2,thread_cursor:'records'}],unread_count:afterRead?1:2,has_more:false,range_cursor:afterRead?'new-range':'n2-range'}})
+  if(route==='notifications.list')return Promise.resolve({data:{schema:2,items:afterRead?[{id:'new',thread_key:'single:new',is_thread:false,title:'新通知',unread_count:1,thread_count:1,created_at:'2026-10-23 10:00'}]:[{id:'n2',thread_key:'user:1',is_thread:true,title:'进度',order_no:'O-1',detail_page:'user',unread_count:2,thread_count:2,thread_cursor:'records'}],unread_count:afterRead?1:2,has_more:false,range_cursor:afterRead?'new-range':'n2-range'}})
   if(route==='notifications.read_all')return new Promise(resolve=>{readDone=()=>{afterRead=true;resolve({ok:true})}})
   throw Error(route)
  }}
