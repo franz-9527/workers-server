@@ -23,11 +23,15 @@ jobs:
         with:
           go-version-file: qa-chat-production/chat/go.mod
           cache-dependency-path: qa-chat-production/chat/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3.36'
-          extensions: pdo_mysql,sodium,mbstring,curl
+          extensions: pdo_mysql,sodium,mbstring,curl,gd
           coverage: none
+      - run: python3 -m pip install --disable-pip-version-check Pillow==13.0.0 zxing-cpp==3.1.1
       - run: bash qa-chat-production/verify.sh
       - uses: actions/upload-artifact@v4
         with:

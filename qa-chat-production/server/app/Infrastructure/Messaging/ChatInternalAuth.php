@@ -51,16 +51,12 @@ final class ChatInternalAuth
     private function origin():string
     {
         $origin=rtrim((string)\app_config('chat.internal_go_origin',''),'/');
-        if($origin===''&&$this->env!=='production')$origin='http://127.0.0.1:19502';
+        if($origin==='')$origin=$this->env==='production'?'http://127.0.0.1:9502':'http://127.0.0.1:19502';
         $url=parse_url($origin);
         if(!$url||empty($url['host'])||isset($url['user'])||isset($url['pass'])||isset($url['query'])||isset($url['fragment'])||!empty($url['path']))throw new RuntimeException('CHAT_INTERNAL_CONFIG');
-        $scheme=(string)($url['scheme']??'');
-        if($this->env==='production'){
-            if($scheme!=='https')throw new RuntimeException('CHAT_INTERNAL_CONFIG');
-        }else{
-            $host=strtolower((string)$url['host']);
-            if($scheme!=='https'&&!($scheme==='http'&&in_array($host,['127.0.0.1','::1'],true)))throw new RuntimeException('CHAT_INTERNAL_CONFIG');
-        }
+        $scheme=(string)($url['scheme']??'');$host=strtolower((string)$url['host']);
+        $loopback=in_array($host,['127.0.0.1','::1'],true);
+        if($scheme!=='https'&&!($scheme==='http'&&$loopback))throw new RuntimeException('CHAT_INTERNAL_CONFIG');
         return $origin;
     }
     private function curlProtocol(string $origin):int

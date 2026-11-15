@@ -98,6 +98,20 @@ echo "Non-AV MySQL authorization, revocation, reminder and storage contracts pas
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
 mysql chat_fixture -e "INSERT INTO schema_migrations(version,migration_name,checksum_sha256,status,applied_at) VALUES ('$(tr -d '\r\n' < server/VERSION)','fixture',REPEAT('0',64),'success',NOW()); INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES ('wechat.miniapp_appid','wxfixture','string','wechat',0,NOW(),NOW()),('chat.enabled','1','string','chat',0,NOW(),NOW()),('wechat.miniapp_secret','isolated-fixture-secret','string','wechat',0,NOW(),NOW()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value); INSERT INTO admin_users(id,username,password_hash,role,status,must_change_password,created_at,updated_at) VALUES(1,'fixture_admin','fixture-not-a-login-hash','super_admin','active',0,NOW(),NOW());"
+python_bin=$(command -v python3)
+mysql chat_fixture -e "INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES
+('media.storage_disk','qiniu','string','storage',0,NOW(),NOW()),
+('qiniu.enabled','1','bool','storage',0,NOW(),NOW()),
+('qiniu.private_bucket','0','bool','storage',0,NOW(),NOW()),
+('qiniu.access_key','fixture-access-key','string','storage',0,NOW(),NOW()),
+('qiniu.secret_key','fixture-secret-key','string','storage',0,NOW(),NOW()),
+('qiniu.bucket','fixture-bucket','string','storage',0,NOW(),NOW()),
+('qiniu.domain','http://media.example.com','string','storage',0,NOW(),NOW()),
+('qiniu.path_prefix','worker','string','storage',0,NOW(),NOW()),
+('qiniu.prefix.chat','chat','string','storage',0,NOW(),NOW()),
+('chat.go_python_binary','$python_bin','string','chat',0,NOW(),NOW())
+ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value),value_type=VALUES(value_type);"
+
 version=$(tr -d '\r\n' < server/VERSION)
 sudo tee "$site/config/installed.php" >/dev/null <<PHP
 <?php
@@ -135,8 +149,11 @@ $runtime=new WorkerAdmin\Application\Chat\ChatGoRuntimeConfig($db,$cipher);
 $runtime->prepareProduction(1,"super_admin");
 $direct=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]);
 $helper=setting("chat.go_production_text_requested","0");
-if((string)$direct!=="1"||(string)$helper!=="1") throw new RuntimeException("CHAT_QA_PRODUCTION_REQUEST_NOT_PERSISTED direct=".(string)$direct." helper=".(string)$helper);
-echo "Managed PHP signing and production release key initialized; request=".$helper."\n";
+$nonAv=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_non_av_requested' LIMIT 1");
+$reminders=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.reminders_enabled' LIMIT 1");
+$internal=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key='chat.go_production_internal_key_ciphertext' LIMIT 1");
+if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="1"||$reminders!=="1"||$internal==="") throw new RuntimeException("CHAT_QA_PRODUCTION_NON_AV_REQUEST_NOT_PERSISTED");
+echo "Managed PHP signing, release/internal keys and non-AV request initialized\n";
 ' "$site/bootstrap.php"
 
 cd chat
@@ -171,7 +188,7 @@ for f in bt-run.sh bt-site.sh production-runtime.php init-production-recovery.ph
   cp "$sources/chat/deploy/$f" "deploy/$f"
 done
 cp "$sources/chat/chat.production.example.json" .
-for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php bin/chat-recovery.php; do
+for f in bootstrap.php app/Application/Chat/ChatGoUpdate.php app/Application/Chat/ChatRuntimePaths.php app/Application/Chat/ChatRuntimeControl.php app/Http/Admin/Modules/ChatSettingsAdminModule.php views/admin/chat-settings.php app/Infrastructure/Chat/ChatRecoveryGate.php app/Infrastructure/Chat/ChatRecoveryCheckpoint.php app/Application/Chat/ChatGoRuntimeConfig.php app/Application/Chat/ChatGoRuntimeStatus.php app/Infrastructure/Messaging/ChatInternalAuth.php chat-internal.php bin/chat-reminders.php bin/chat-recovery.php; do
   mkdir -p "site/$(dirname "$f")"
   cp "$sources/server/$f" "site/$f"
 done
@@ -199,6 +216,10 @@ sudo test ! -e "$legacy_state"
 sudo test ! -e "$state/production.local.env"
 sudo test -s "$state/production.text.json"
 sudo test -s "$state/production.release.json"
+sudo -u www "$php" -r '$c=json_decode(file_get_contents($argv[1]),true,64,JSON_THROW_ON_ERROR); if(empty($c["images"]["enabled"])||empty($c["reminders"]["enabled"])||!empty($c["reminders"]["paid_sms_enabled"])||!empty($c["av"]["enabled"])||!empty($c["calls"]["enabled"])) exit(2); echo "Production non-AV config enables images/reminders and keeps AV/calls/paid SMS closed\n";' "$state/production.text.json"
+sudo -u www "$php" -r '$r=json_decode(file_get_contents($argv[1]),true,16,JSON_THROW_ON_ERROR);$p=json_decode(base64_decode($r["payload"],true),true,16,JSON_THROW_ON_ERROR);$want=["text","images","governance","reminders"];if(($p["capabilities"]??[])!==$want)exit(2);echo "Production release capabilities are exact non-AV set\n";' "$state/production.release.json"
+sudo -u www bash -c 'source "$1"; [[ ${CHAT_PROD_NON_AV:-0} == 1 && -n ${CHAT_INTERNAL_KEY:-} && -n ${CHAT_QINIU_ACCESS_KEY:-} && -n ${CHAT_QINIU_SECRET_KEY:-} ]]' _ "$state/production.text.env"
+sudo -u www bash -c 'source "$1"; exec "$2" "$3" --check' _ "$state/production.text.env" "$php" "$site/bin/chat-reminders.php"
 set +x
 echo "Legacy state migration preserved private data and normalized run.lock"
 
@@ -245,8 +266,13 @@ test "$callback_http" = 404
 ! grep -q 'healthy 9501 /chat/api/v1/av/callback' chat/deploy/bt-run.sh
 sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) { fwrite(STDERR,"PHP_GO_BUSINESS_NOT_READY ".json_encode($s)."\n"); exit(1); } echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
 text_status=$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")
-echo "Go production text status=$text_status"
+echo "Go production non-AV status=$text_status"
 test "$text_status" = READY
+grep -q 'CHAT_PRODUCTION_NON_AV_READY' /tmp/chatqa-launch.log
+read -r serve_pid worker_pid credential_pid reminder_pid < "$state/processes"
+test -n "$reminder_pid"
+sudo kill -0 "$reminder_pid"
+echo "Managed reminder loop is running: pid=$reminder_pid"
 
 # A second BaoTa launcher must fail immediately on the same exclusive lock.
 second_log=$(mktemp)
@@ -337,6 +363,9 @@ data = {
         "mysql57": True,
         "redis": True,
         "production_upgrade": True,
+        "production_non_av": True,
+        "images_runtime": True,
+        "reminders_runtime": True,
         "recovery_gate": True,
         "source_clean": True,
     },
@@ -375,7 +404,10 @@ data={
     "test_site_business_flows":True,
     "ios_device":True,
     "android_device":True,
-    "wechat_live_text_safety":True
+    "wechat_live_text_safety":True,
+    "qiniu_live_image_flow":True,
+    "wechat_live_subscription_reminder":True,
+    "full_profile_capacity_on_test_host":True
   },
   "production_business_retest":False
 }

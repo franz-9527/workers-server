@@ -32,6 +32,8 @@ final class ChatGoRuntimeConfig
     private const CALLS_ENDPOINT_KEY='chat.go_calls_php_endpoint';
     private const PRODUCTION_RELEASE_KEY='chat.go_production_release_key_ciphertext';
     private const PRODUCTION_RELEASE_KEY_CONTEXT='chat-go-production-release-key-v1';
+    private const PRODUCTION_INTERNAL_KEY='chat.go_production_internal_key_ciphertext';
+    private const PRODUCTION_INTERNAL_KEY_CONTEXT='chat-go-production-internal-key-v1';
 
     public function __construct(private Database $db,private PrivateValueCipher $cipher){}
 
@@ -73,6 +75,7 @@ final class ChatGoRuntimeConfig
             'message_operations_configured'=>$operationsReady,
             'message_recovery_status'=>$recoveryStatus,
             'production_text_status'=>$environment==='production'?$this->productionTextStatus():[],
+            'production_non_av_requested'=>$environment==='production'&&(string)\setting('chat.go_production_non_av_requested','0')==='1',
             'message_app_id_configured'=>$this->validAppId($appId),
             'messages_enabled'=>$messageReady,'message_missing'=>$messageMissing,'message_recovery_default'=>$environment==='test'&&empty($chat['recovery_gate_file'])&&empty($chat['recovery_epoch']),
             'safety_mode'=>$messageReady?'local':($environment==='production'?'release_required':'disabled'),
@@ -104,6 +107,14 @@ final class ChatGoRuntimeConfig
             'WECHAT_CREDENTIAL'=>'微信内容安全凭证刷新失败',
             'MYSQL_ACCOUNT'=>'正式 MySQL 连接配置不完整',
             'APP_KEY'=>'站点加密配置不完整',
+            'INTERNAL_KEY'=>'聊天内部提醒签名密钥尚未初始化',
+            'IMAGES_STORAGE'=>'聊天图片存储配置未就绪',
+            'IMAGES_SCHEMA'=>'聊天图片数据表不完整',
+            'IMAGES_PREFLIGHT'=>'聊天图片处理依赖未通过检查',
+            'IMAGES_STATE'=>'聊天图片私有临时目录不可用',
+            'REMINDERS_GATE'=>'聊天订阅提醒尚未开放',
+            'REMINDERS_ENDPOINT'=>'聊天提醒内部端点配置不可用',
+            'REMINDERS_PREFLIGHT'=>'聊天提醒 PHP 门禁或内部签名检查未通过',
             'CONFIG_ERROR'=>'正式 Go 配置生成失败',
             'GO_PREFLIGHT'=>'Go 启动前检查未通过，请查看 Go 项目日志',
         ];
@@ -304,7 +315,10 @@ final class ChatGoRuntimeConfig
                     if(is_string($key)&&function_exists('sodium_memzero')) sodium_memzero($key);
                 }
             }
+            $this->ensureProductionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT,'正式聊天内部提醒签名密钥密文，仅服务端使用',$admin,'正式聊天内部提醒签名密钥');
             $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
+            $this->upsert('chat.go_production_non_av_requested','1','正式非音视频聊天请求',$admin);
+            $this->upsert('chat.reminders_enabled','1','聊天订阅提醒开关',$admin);
         });
     }
 
@@ -607,6 +621,65 @@ final class ChatGoRuntimeConfig
         } finally {
             if(is_string($rawKey)&&function_exists('sodium_memzero')) sodium_memzero($rawKey);
         }
+    }
+
+    /** Build the tested production non-AV release: text + images + governance + free reminders. */
+    public function productionNonAv(array $signing,string $appId,string $revision):array
+    {
+        $base=$this->productionText($signing,$appId,$revision);
+        if(!empty($base['missing']))return $base;
+        $missing=[];$state=ChatRuntimePaths::goStateDirectory();$root=ChatRuntimePaths::managedRoot();
+        $q=$this->qiniu();
+        if(empty($q['ready']))$missing[]='IMAGES_STORAGE';
+        if(!$this->tablesReady(['chat_image_uploads','chat_image_bundles','chat_image_items','chat_image_audit','chat_image_objects','chat_image_reports']))$missing[]='IMAGES_SCHEMA';
+        $tools=$this->goSettings();$php=ChatMediaPreflight::phpBinary();
+        $python=(string)($tools[self::PYTHON_KEY]??'/usr/bin/python3');
+        $ffmpeg=(string)($tools[self::FFMPEG_KEY]??'/usr/bin/ffmpeg');
+        $ffprobe=(string)($tools[self::FFPROBE_KEY]??'/usr/bin/ffprobe');
+        $preflight=$root===null?[]:(new ChatMediaPreflight())->inspect($root,$php,$python,$ffmpeg,$ffprobe,true);
+        if(empty($preflight['php_cli'])||empty($preflight['php_gd'])||empty($preflight['pillow'])||empty($preflight['zxing'])
+            ||$root===null||!@is_file(\base_path('bin/chat-images.php'))||!@is_readable(\base_path('bin/chat-images.php'))
+            ||!@is_file($root.'/chat/helpers/images/inspect.py')||!@is_readable($root.'/chat/helpers/images/inspect.py'))$missing[]='IMAGES_PREFLIGHT';
+        $temp=is_string($state)&&$state!==''?$state.'/tmp/images':'';
+        if($temp===''||!$this->ensurePrivateDirectory($temp))$missing[]='IMAGES_STATE';
+        $internal=$this->productionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT);
+        if($internal==='')$missing[]='INTERNAL_KEY';
+        if(!filter_var(\setting('chat.reminders_enabled',false),FILTER_VALIDATE_BOOLEAN))$missing[]='REMINDERS_GATE';
+        $site=$this->siteUrl();
+        if($site===''||!@is_file(\base_path('chat-internal.php'))||!@is_readable(\base_path('chat-internal.php'))
+            ||!@is_file(\base_path('bin/chat-reminders.php'))||!@is_readable(\base_path('bin/chat-reminders.php')))$missing[]='REMINDERS_ENDPOINT';
+        if($missing)return ['missing'=>array_values(array_unique($missing))];
+
+        $base['config']['images']=[
+            'enabled'=>true,'mode'=>'automatic','private_bucket'=>!empty($q['private']),
+            'namespace'=>(string)$q['namespace'],'proxy_origin'=>(string)$q['proxy_origin'],'proxy_key_env'=>'CHAT_MEDIA_PROXY_KEY',
+            'bucket'=>(string)$q['bucket'],'access_key_env'=>'CHAT_QINIU_ACCESS_KEY','secret_key_env'=>'CHAT_QINIU_SECRET_KEY',
+            'download_origin'=>(string)$q['download_origin'],'upload_origin'=>(string)$q['upload_origin'],
+            'php_binary'=>$php,'python_binary'=>$python,'php_script'=>\base_path('bin/chat-images.php'),
+            'python_script'=>$root.'/chat/helpers/images/inspect.py','temp_root'=>$temp,'max_file_bytes'=>3145728,'max_long_edge_px'=>1600,
+        ];
+        $base['config']['reminders']=[
+            'enabled'=>true,'php_endpoint'=>$site.'/chat-internal.php',
+            'key_id'=>(string)\app_config('chat.internal_key_id','chat-internal-v1'),'key_env'=>'CHAT_INTERNAL_KEY','paid_sms_enabled'=>false,
+        ];
+        $base['environment']['CHAT_QINIU_ACCESS_KEY']=(string)$q['access_key'];
+        $base['environment']['CHAT_QINIU_SECRET_KEY']=(string)$q['secret_key'];
+        if((string)$q['proxy_origin']!==''){
+            $appKey=(string)\app_config('app.key','');
+            $base['environment']['CHAT_MEDIA_PROXY_KEY']=base64_encode(hash_hmac('sha256','bixuan-chat-media-proxy-v1:production',$appKey,true));
+        }
+        $base['environment']['CHAT_INTERNAL_KEY']=$internal;
+
+        $encoded=(string)($base['environment']['CHAT_RELEASE_KEY']??'');$raw=base64_decode($encoded,true);
+        if(!is_string($raw)||strlen($raw)!==32||base64_encode($raw)!==$encoded)return ['missing'=>['RELEASE_KEY']];
+        try{
+            $chat=(array)\app_config('chat',[]);
+            $body=json_encode(['schema'=>1,'environment'=>'production','epoch'=>(string)$chat['recovery_epoch'],
+                'revision'=>$revision,'expires_at'=>time()+86390,'capabilities'=>['text','images','governance','reminders']],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
+            $base['release_content']=json_encode(['payload'=>base64_encode($body),'mac'=>hash_hmac('sha256',$body,$raw)],
+                JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n";
+        }finally{if(function_exists('sodium_memzero'))sodium_memzero($raw);}
+        return $base;
     }
 
     /** @param array<string,string> $values */
@@ -1008,6 +1081,40 @@ final class ChatGoRuntimeConfig
     {
         $raw=@file_get_contents($path);if(!is_string($raw)||strlen($raw)>65536)return [];$decoded=json_decode($raw,true);return is_array($decoded)?$decoded:[];
     }
+    private function ensureProductionKey(string $settingKey,string $context,string $description,int $admin,string $label):void
+    {
+        $this->db->execute("INSERT IGNORE INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,description,updated_by,created_at,updated_at)
+            VALUES(:key,'','string','chat',0,:description,:admin,UTC_TIMESTAMP(),UTC_TIMESTAMP())",
+            ['key'=>$settingKey,'description'=>$description,'admin'=>$admin]);
+        $row=$this->db->fetch("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1 FOR UPDATE",['key'=>$settingKey]);
+        $stored=(string)($row['setting_value']??'');
+        if($stored===''){
+            $raw=random_bytes(32);$encoded=base64_encode($raw);if(function_exists('sodium_memzero'))sodium_memzero($raw);
+            try{
+                $ciphertext=$this->cipher->encrypt($encoded,$context);
+                $valid=is_string($ciphertext)&&$ciphertext!==''&&!hash_equals($encoded,$ciphertext);
+            }finally{if(function_exists('sodium_memzero'))sodium_memzero($encoded);}
+            if(empty($valid))throw new RuntimeException($label.'加密失败，未初始化。');
+            $this->upsert($settingKey,$ciphertext,$description,$admin);return;
+        }
+        $encoded='';
+        try{$encoded=$this->cipher->decrypt($stored,$context);$raw=base64_decode($encoded,true);
+            if(!is_string($raw)||strlen($raw)!==32||base64_encode($raw)!==$encoded)throw new RuntimeException($label.'损坏，请勿覆盖现有密钥。');
+        }catch(RuntimeException $e){throw $e;}catch(\Throwable $e){throw new RuntimeException($label.'无法解密，请先检查站点 app.key。');}
+        finally{if(is_string($encoded)&&function_exists('sodium_memzero'))sodium_memzero($encoded);if(isset($raw)&&is_string($raw)&&function_exists('sodium_memzero'))sodium_memzero($raw);}
+    }
+
+    private function productionKey(string $settingKey,string $context):string
+    {
+        $stored=(string)($this->db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",['key'=>$settingKey])?:'');
+        if($stored==='')return '';
+        try{$encoded=$this->cipher->decrypt($stored,$context);$raw=base64_decode($encoded,true);
+            if(!is_string($raw)||strlen($raw)!==32||base64_encode($raw)!==$encoded)return '';
+            return $encoded;
+        }catch(\Throwable $e){return '';}
+        finally{if(isset($raw)&&is_string($raw)&&function_exists('sodium_memzero'))sodium_memzero($raw);}
+    }
+
     private function upsert(string $key,string $value,string $description,int $admin):void
     {
         $this->db->execute("INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,description,updated_by,created_at,updated_at)

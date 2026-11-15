@@ -50,7 +50,9 @@ try {
     $write($state."/production.runtime.json", json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
     echo "CHAT_PRODUCTION_RUNTIME_CONFIG_READY\n";
 
-    $requested = (string) setting("chat.go_production_text_requested", "0") === "1";
+    $textRequested = (string) setting("chat.go_production_text_requested", "0") === "1";
+    $nonAvRequested = (string) setting("chat.go_production_non_av_requested", "0") === "1";
+    $requested = $textRequested || $nonAvRequested;
     $control = $root."/storage/private/chat-runtime-control";
     if (!is_link($control) && (is_dir($control) || @mkdir($control, 0700, true))) {
         $report = static function (array $codes) use ($control, $write): void {
@@ -64,10 +66,11 @@ try {
     if ($requested) {
         try {
             $signing = (new ChatSigningKeyManager($db, $cipher))->status((array) app_config("chat", []));
-            $text = (new ChatGoRuntimeConfig($db, $cipher))->productionText($signing, $appId, $revision);
+            $runtime = new ChatGoRuntimeConfig($db, $cipher);
+            $text = $nonAvRequested ? $runtime->productionNonAv($signing, $appId, $revision) : $runtime->productionText($signing, $appId, $revision);
             if ($text["missing"]) {
                 $report($text["missing"]);
-                fwrite(STDERR, "CHAT_PRODUCTION_TEXT_PENDING: ".implode(", ", $text["missing"])."\n");
+                fwrite(STDERR, ($nonAvRequested ? "CHAT_PRODUCTION_NON_AV_PENDING: " : "CHAT_PRODUCTION_TEXT_PENDING: ").implode(", ", $text["missing"])."\n");
                 exit(4);
             }
             foreach ($text["config"] as $section => $values) {
@@ -80,7 +83,8 @@ try {
                 $config->{$section} = array_replace($original, $values);
             }
             $write($text["release_file"], $text["release_content"]);
-            $write($state."/production.text.env", ChatGoRuntimeConfig::environmentFile($text["environment"] + ["CHAT_PROD_TEXT" => "1"]));
+            $flags=["CHAT_PROD_TEXT"=>"1"];if($nonAvRequested)$flags["CHAT_PROD_NON_AV"]="1";
+            $write($state."/production.text.env", ChatGoRuntimeConfig::environmentFile($text["environment"] + $flags));
             $write($state."/production.text.json", json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
         } catch (Throwable $e) {
             $report(["CONFIG_ERROR"]);

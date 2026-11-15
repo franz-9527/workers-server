@@ -37,6 +37,7 @@ STOP=0
 SERVE=''
 WORKER=''
 CREDENTIAL=''
+REMINDER=''
 trap 'STOP=1' TERM INT HUP
 set_error(){ printf '%s\n' "$1" > "$STATE/.last-error.$$" 2>/dev/null && mv -f "$STATE/.last-error.$$" "$STATE/last-error" 2>/dev/null || true; }
 clear_error(){ rm -f -- "$STATE/last-error" 2>/dev/null || true; }
@@ -49,17 +50,17 @@ clear_status(){ rm -f -- "$STATE/running-sha" "$STATE/processes"; }
 stop_pair(){
   clear_status
   local pid n alive
-  for pid in "$SERVE" "$WORKER" "$CREDENTIAL"; do [[ -z "$pid" ]] || kill -TERM "$pid" 2>/dev/null || true; done
+  for pid in "$SERVE" "$WORKER" "$CREDENTIAL" "$REMINDER"; do [[ -z "$pid" ]] || kill -TERM "$pid" 2>/dev/null || true; done
   for ((n=0;n<45;n++)); do
     alive=0
-    for pid in "$SERVE" "$WORKER" "$CREDENTIAL"; do if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then alive=1; fi; done
+    for pid in "$SERVE" "$WORKER" "$CREDENTIAL" "$REMINDER"; do if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then alive=1; fi; done
     (( alive == 1 )) || break
     sleep 1
   done
-  for pid in "$SERVE" "$WORKER" "$CREDENTIAL"; do
+  for pid in "$SERVE" "$WORKER" "$CREDENTIAL" "$REMINDER"; do
     if [[ -n "$pid" ]]; then kill -KILL "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
   done
-  SERVE=''; WORKER=''; CREDENTIAL=''
+  SERVE=''; WORKER=''; CREDENTIAL=''; REMINDER=''
 }
 web_active(){
   local sha
@@ -120,7 +121,7 @@ while (( STOP == 0 )); do
   CONFIG="$STATE/chat.runtime.json"
   if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" && ${CHAT_CONFIG_MANUAL:-0} != 1 && ! -f "$CHAT/chat.json" ]]; then
     CONFIG="$STATE/production.runtime.json"
-    unset CHAT_PROD_TEXT CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY
+    unset CHAT_PROD_TEXT CHAT_PROD_NON_AV CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY
     if [[ -f "$STATE/production.local.env" ]]; then
       set -a
       source "$STATE/production.local.env"
@@ -145,12 +146,13 @@ while (( STOP == 0 )); do
         echo 'CHAT_PRODUCTION_TEXT_PENDING: WECHAT_CREDENTIAL'
       elif (
         source "$STATE/production.text.env" &&
-          "$EXE" check-config --config "$STATE/production.text.json" --probe
+          "$EXE" check-config --config "$STATE/production.text.json" --probe &&
+          { [[ ${CHAT_PROD_NON_AV:-0} != 1 ]] || "$PHP_BIN" "$PHP_ROOT/bin/chat-reminders.php" --check >/dev/null; }
       ); then
         source "$STATE/production.text.env" || { sleep 10; continue; }
         CONFIG="$STATE/production.text.json"
         printf '%s\n' READY > "$RELOAD_STATE/production-text-status"
-        echo 'CHAT_PRODUCTION_TEXT_READY'
+        if [[ ${CHAT_PROD_NON_AV:-0} == 1 ]]; then echo 'CHAT_PRODUCTION_NON_AV_READY'; else echo 'CHAT_PRODUCTION_TEXT_READY'; fi
       else
         printf '%s\n' GO_PREFLIGHT > "$RELOAD_STATE/production-text-status"
         echo 'CHAT_PRODUCTION_TEXT_PENDING: GO_PREFLIGHT'
@@ -201,14 +203,19 @@ while (( STOP == 0 )); do
     ) &
     CREDENTIAL=$!
   fi
-  printf '%s %s %s\n' "$SERVE" "$WORKER" "$CREDENTIAL" > "$STATE/processes"
+  NEEDS_REMINDER=$("$PHP_BIN" -r '$c=json_decode(file_get_contents($argv[1]),true,64,JSON_THROW_ON_ERROR);echo !empty($c["reminders"]["enabled"])?"1":"0";' "$CONFIG" 2>/dev/null || echo 0)
+  if [[ "$NEEDS_REMINDER" == 1 ]]; then
+    (exec 8>&-; exec "$PHP_BIN" "$PHP_ROOT/bin/chat-reminders.php" --loop) &
+    REMINDER=$!
+  fi
+  printf '%s %s %s %s\n' "$SERVE" "$WORKER" "$CREDENTIAL" "$REMINDER" > "$STATE/processes"
   STABLE=0
   CHANGED=0
   EXPECT_BUSINESS=0
   [[ "$CONFIG" != "$STATE/production.text.json" ]] || EXPECT_BUSINESS=1
   while (( STOP == 0 )); do
-    if ! kill -0 "$SERVE" 2>/dev/null || ! kill -0 "$WORKER" 2>/dev/null; then
-      set_error 'CHAT_RUN_CHILD_EXITED'; echo 'CHAT_RUN_CHILD_EXITED: restarting pair'; break
+    if ! kill -0 "$SERVE" 2>/dev/null || ! kill -0 "$WORKER" 2>/dev/null || { [[ "$NEEDS_REMINDER" == 1 ]] && ! kill -0 "$REMINDER" 2>/dev/null; }; then
+      set_error 'CHAT_RUN_CHILD_EXITED'; echo 'CHAT_RUN_CHILD_EXITED: restarting managed chat processes'; break
     fi
     [[ $(readlink "$BIN/current" 2>/dev/null || true) == "$TARGET" ]] || { CHANGED=1; echo 'CHAT_RUN_RELEASE_CHANGED'; break; }
     if (( STABLE >= 2 )) && [[ -n "$CANDIDATE" ]]; then
