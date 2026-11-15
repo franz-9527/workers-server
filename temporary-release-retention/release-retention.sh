@@ -25,7 +25,7 @@ chat_prune_test_releases(){
 
   while IFS=' ' read -r _ sha; do
     [[ "$sha" =~ ^[a-f0-9]{40}$ ]] && keep["$sha"]=1
-  done < <(find "$release_root" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' 2>/dev/null | sort -nr | awk 'NR<=5{print}')
+  done < <(find "$release_root" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' 2>/dev/null | sort -nr | awk '$2 ~ /^[0-9a-f]{40}$/ && kept < 5 {print; kept++}')
 
   for dir in "$release_root"/*; do
     [[ -d "$dir" && ! -L "$dir" ]] || continue
