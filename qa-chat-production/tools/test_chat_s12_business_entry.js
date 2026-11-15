@@ -417,10 +417,10 @@ async function s13NativeTests() {
  p.inputText({detail:{value:'已有草稿'}});p.fillDraft('替换内容')
  assert.strictEqual(f.modals.length,1);p.inputText({detail:{value:'确认框期间的新输入'}});f.modals[0].success({confirm:true})
  assert.strictEqual(p.data.draft,'确认框期间的新输入','confirmation cannot overwrite an intervening edit')
- const send=p.sendText();p.inputText({detail:{value:'中文组字完成'}});f.expire(80);await send
- assert.strictEqual(f.manager.sent,undefined,'IME flush changes cancel that send tap')
- assert.strictEqual(p.data.draft,'中文组字完成')
- const good=p.sendText();f.expire(80);await good;assert.strictEqual(f.manager.sent.text,'中文组字完成')
+ const send=p.sendText();p.inputText({detail:{value:'中文组字完成'}});await send
+ assert.strictEqual(f.manager.sent.text,'确认框期间的新输入','send freezes the tapped draft snapshot')
+ assert.strictEqual(p.data.draft,'中文组字完成','later IME input remains the current draft')
+ const good=p.sendText();await good;assert.strictEqual(f.manager.sent.text,'中文组字完成')
  p.inputText({detail:{value:'汉'.repeat(1500)}});assert(p.data.inputError);assert.strictEqual(p.data.draft.length,1500,'over-byte text remains editable')
  // Keyboard resizing uses the same pixel anchor, never a bottom command.
  p.currentTop=10;const before=p.data.scrollInto
