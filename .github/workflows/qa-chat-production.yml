@@ -33,6 +33,11 @@ jobs:
           coverage: none
       - run: python3 -m pip install --disable-pip-version-check Pillow==13.0.0 zxing-cpp==3.1.1
       - run: bash qa-chat-production/verify.sh
+        env:
+          CHAT_INTEGRATION: '1'
+          CHAT_AUTH_TEST_PHP: /usr/bin/php
+          CHAT_INTEGRATION_REDIS_ADDR: 127.0.0.1:6379
+          CHAT_AUTH_TEST_REDIS_ADDRESS: 127.0.0.1:6379
       - uses: actions/upload-artifact@v4
         with:
           name: chat-non-av-automation-${{ steps.source.outputs.sha }}
