@@ -218,8 +218,8 @@ func TestMySQL57RedisIntegration(t *testing.T) {
 		testProcessReadiness(t, binary, s)
 	}
 	exec("GRANT UPDATE ON `" + database + "`.orders TO '" + user + "'@'" + fixtureHost + "'")
-	if got := r.Refresh(ctx); got.InfrastructureReady || got.MySQL.Code != "CHAT_DATABASE_CONTRACT_INVALID" {
-		t.Fatal("overprivileged account reported ready")
+	if got := r.Refresh(ctx); got.InfrastructureReady || got.MySQL.Code != "CHAT_DATABASE_GRANTS_INVALID" {
+		t.Fatalf("overprivileged account did not fail the grant contract: %#v", got)
 	}
 }
 

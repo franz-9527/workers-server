@@ -81,7 +81,7 @@ func newFixture(t *testing.T) *fixtureDB {
 	f.user = user
 	f.exec("CREATE USER '" + user + "'@'" + fixtureHost + "' IDENTIFIED BY 's05-fixture-only'")
 	t.Cleanup(func() { root.Exec("DROP USER IF EXISTS '" + user + "'@'" + fixtureHost + "'") })
-	for _, table := range []string{"users", "login_sessions", "chat_policy_guards", "chat_business_events", "chat_staff_authority_versions"} {
+	for _, table := range []string{"system_settings", "users", "login_sessions", "chat_policy_guards", "chat_business_events", "chat_staff_authority_versions"} {
 		f.exec("GRANT SELECT ON `" + name + "`." + table + " TO '" + user + "'@'" + fixtureHost + "'")
 	}
 	for _, table := range []string{"chat_conversations", "chat_members", "chat_member_intervals", "chat_event_receipts"} {

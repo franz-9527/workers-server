@@ -13,7 +13,7 @@ function chatPlatformSeed(Database $db): void
         $db->execute("INSERT INTO users(id,public_id,status,created_at,updated_at) VALUES(:id,:public,:status,UTC_TIMESTAMP(),UTC_TIMESTAMP())",['id'=>$id,'public'=>public_id(),'status'=>$status]);
     }
     $db->execute("INSERT INTO worker_profiles(id,user_id,public_id,display_name,verification_status,created_at,updated_at) VALUES(30,10202,:public,'测试师傅','approved',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['public'=>public_id()]);
-    foreach(['wechat.miniapp_appid'=>'chat-platform-app','wechat.admin_openids'=>'["PlatformStaff"]'] as $key=>$value){
+    foreach(['chat.enabled'=>'1','wechat.miniapp_appid'=>'chat-platform-app','wechat.admin_openids'=>'["PlatformStaff"]'] as $key=>$value){
         $db->execute("INSERT INTO system_settings(setting_key,setting_value,value_type,created_at,updated_at)
             VALUES(:key,:value,'string',UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value),value_type='string'",['key'=>$key,'value'=>$value]);
     }

@@ -161,6 +161,9 @@ echo "Managed PHP signing, release/internal keys and non-AV request initialized\
 ' "$site/bootstrap.php"
 
 cd chat
+mkdir -p bin
+go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o bin/chatd ./cmd/chatd
+export CHAT_INTEGRATION_CHATD_BIN="$PWD/bin/chatd"
 go test -race ./...
 bash -n deploy/bt-run.sh
 bash -n deploy/bt-deploy.sh
