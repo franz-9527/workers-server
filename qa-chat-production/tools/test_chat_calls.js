@@ -152,7 +152,7 @@ test('request time is deducted from remaining media authorization',async()=>{
 })
 function callPage(calls,clock=()=>1000,Media=class{async stop(){}},api={}){
  let definition,listener;const timers=[]
- const manager={epoch:1,enabled:true,calls,io:{now:clock},live:()=>true,subscribe(fn){listener=fn;return()=>{}}}
+ const manager={epoch:1,identityEpoch:1,enabled:true,calls,io:{now:clock},live:()=>true,subscribe(fn){listener=fn;return()=>{}}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../miniprogram/subpackages/chat/call/index.js'),'utf8'),{
   require(name){if(name.includes('ChatRuntime'))return{get:()=>manager};if(name==='./media.js')return{CallMedia:Media};return require('../miniprogram/utils/ChatCalls.js')},
   Page(o){definition=o},wx:api,setTimeout(fn,delay){timers.push({fn,delay});return timers.length},clearTimeout(){},Date,console
@@ -172,6 +172,34 @@ test('native WeChat call media survives page hide and exits only when the call p
  const f=callPage(calls);f.page.media={stop:async()=>{stops++}}
  f.page.onHide();f.emit('calls.suspend',{});await new Promise(setImmediate);assert.equal(ends,0);assert.equal(stops,0)
  f.page.onUnload();await new Promise(setImmediate);assert.equal(ends,1);assert.equal(stops,1)
+})
+test('foreground recovery rebinds the transport epoch but an identity reset keeps the old page fenced',()=>{
+ const calls={current:{...base,state:'ringing'},actorID:'11',status:async()=>calls.current,poll:async()=>calls.current}
+ const f=callPage(calls);f.page.onHide();f.manager.epoch=2;f.page.onShow()
+ assert.equal(f.page.pageEpoch,2);assert.equal(f.page.pageIdentityEpoch,1);assert.notEqual(f.page.data.status,'通话已暂停')
+ f.page.onHide();f.manager.epoch=3;f.manager.identityEpoch=2;f.page.onShow()
+ assert.equal(f.page.pageEpoch,2);assert.equal(f.page.data.status,'通话已暂停')
+})
+test('native media callbacks remain valid after a foreground transport epoch change for the same account and call',async()=>{
+ let events,ready=0
+ class NativeMedia{constructor(_api,_paint,e){events=e}async start(){}async stop(){}async renew(){}async initiate(){}}
+ const calls={current:{...base,state:'active',provider:'wechat'},actorID:'11',
+  prepare:async()=>({provider:'wechat',expires_at:160,remaining_ms:50000,received_at_ms:1000}),
+  action:async name=>{if(name==='ready')ready++;return calls.current}}
+ const f=callPage(calls,()=>1000,NativeMedia)
+ await f.page.startMedia(calls.current,f.page.life,f.manager.epoch)
+ f.page.onHide();f.emit('calls.suspend',{});f.manager.epoch=2;f.page.pageEpoch=2;f.page.visible=true
+ events.ready();await new Promise(setImmediate);assert.equal(ready,1)
+})
+test('foreground recovery renews preserved media when the local authorization deadline was cleared',async()=>{
+ let prepares=0,renews=0
+ const calls={current:{...base,state:'active',provider:'wechat'},actorID:'11',
+  status:async()=>calls.current,action:async()=>calls.current,
+  prepare:async()=>{prepares++;return{provider:'wechat',expires_at:160,remaining_ms:50000,received_at_ms:1000}}}
+ const f=callPage(calls,()=>1000)
+ f.page.media={renew:async()=>{renews++},initiate:async()=>{},stop:async()=>{}}
+ f.page.deadline=null;await f.page.tick()
+ assert.equal(prepares,1);assert.equal(renews,1);assert.ok(f.page.deadline)
 })
 test('an old call page cannot hang up a newly accepted call when hidden',async()=>{
  let ends=0;const calls={current:{...base,state:'ended'},actorID:'11',action:async()=>{ends++}}

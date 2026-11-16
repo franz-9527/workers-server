@@ -8,11 +8,11 @@ Page({
   this.historyID=options?.view==='history'?String(options.conversation_id||''):'';this.setData({historyPage:!!this.historyID});this.historyCursor='';
   if(this.historyID&&typeof wx.setNavigationBarTitle==='function')wx.setNavigationBarTitle({title:'通话记录'});
   if(!this.historyID&&typeof wx.setNavigationBarColor==='function')wx.setNavigationBarColor({frontColor:'#ffffff',backgroundColor:'#242c32'});
-  this.manager=Runtime.get();this.calls=this.manager.calls;this.visible=false;this.life=0;this.media=null;this.grantedUntil=0;this.ending=false;this.callID=String(options?.call_id||this.calls.current?.call_id||'');this.pageEpoch=this.manager.epoch;this.profileKey='';this.people={}
+  this.manager=Runtime.get();this.calls=this.manager.calls;this.visible=false;this.life=0;this.media=null;this.grantedUntil=0;this.ending=false;this.callID=String(options?.call_id||this.calls.current?.call_id||'');this.pageEpoch=this.manager.epoch;this.pageIdentityEpoch=this.manager.identityEpoch;this.profileKey='';this.people={}
   this.unsubscribe=this.manager.subscribe((type,value)=>{
    if(type==='reset'){this.people={};this.profileKey='';this.stopMedia();this.life++;this.clearTimers();this.setData({call:null,peerName:'订单通话',peerAvatar:'/images/chat-user.svg',canAccept:false,canHangup:false,notice:'通话已暂停，请重新进入',localURL:'',remoteURL:''});return}
    if(type==='calls.suspend'){
-    const keepNative=this.owns()&&this.calls.current?.provider==='wechat'&&!terminal.has(this.calls.current.state)
+    const keepNative=this.sameCall()&&this.calls.current?.provider==='wechat'&&!terminal.has(this.calls.current.state)
     this.life++;this.clearTimers();if(!keepNative)this.stopMedia();return
    }
    if(this.visible&&type==='calls.changed')this.render(value)
@@ -21,18 +21,19 @@ Page({
  onShow(){
   this.visible=true;this.life++
   if(this.historyID){if(!this.historyLoaded)this.loadHistory();return}
-  if(this.pageEpoch!==this.manager.epoch||!this.manager.enabled){this.setData({status:'通话已暂停',canAccept:false,canHangup:false});return}
-  this.tick()
+  if(this.pageIdentityEpoch!==this.manager.identityEpoch||!this.manager.enabled){this.setData({status:'通话已暂停',canAccept:false,canHangup:false});return}
+  this.pageEpoch=this.manager.epoch;this.tick()
  },
- owns(){return !this.historyID&&this.pageEpoch===this.manager.epoch&&!!this.calls.current&&(!this.callID||this.callID===this.calls.current.call_id)},
+ sameCall(){return !this.historyID&&this.pageIdentityEpoch===this.manager.identityEpoch&&!!this.calls.current&&(!this.callID||this.callID===this.calls.current.call_id)},
+ owns(){return this.sameCall()&&this.pageEpoch===this.manager.epoch},
  onHide(){
   this.visible=false;this.life++;this.people={};this.profileKey='';this.clearTimers()
-  const keepNative=this.owns()&&this.calls.current?.provider==='wechat'&&!terminal.has(this.calls.current.state)
+  const keepNative=this.sameCall()&&this.calls.current?.provider==='wechat'&&!terminal.has(this.calls.current.state)
   if(!keepNative)this.stopMedia()
   this.setData({peerName:'订单通话',peerAvatar:'/images/chat-user.svg'})
  },
  onUnload(){
-  const shouldEnd=this.owns()&&!terminal.has(this.calls.current.state)
+  const shouldEnd=this.sameCall()&&!terminal.has(this.calls.current.state)
   this.visible=false;this.life++;this.clearTimers();this.stopMedia()
   if(shouldEnd)this.calls.action('end').catch(()=>{})
   if(this.unsubscribe)this.unsubscribe()
@@ -59,7 +60,7 @@ Page({
     await this.calls.action('pulse')
     const updated=this.calls.current
     if(!this.owns()){this.stopMedia();return}
-    if(this.media&&updated.authorized_until>this.grantedUntil+5)await this.renew(life,epoch)
+    if(this.media&&(!this.deadline||updated.authorized_until>this.grantedUntil+5))await this.renew(life,epoch)
     if(this.media)await this.media.initiate(updated)
    }
   }catch(error){if(life===this.life){this.setData({notice:message(error)});if(this.owns()&&['CHAT_UNAUTHORIZED','CHAT_PERMISSION_DENIED'].includes(error.code)){this.stopMedia();this.calls.action('end').catch(()=>{})}}}
@@ -106,9 +107,10 @@ Page({
    if(this.people[call.caller_id])grant.caller={...grant.caller,nickname:this.people[call.caller_id].displayName}
    if(this.people[call.callee_id])grant.listener={...grant.listener,nickname:this.people[call.callee_id].displayName}
   }
-  const attempt=this.calls.current.attempt_epoch
-  const current=()=>this.visible&&!this.ending&&this.owns()&&this.calls.current.attempt_epoch===attempt&&life===this.life&&epoch===this.manager.epoch
-  const engine=new CallMedia(wx,patch=>{if(current())this.setData(patch)},{
+  const attempt=this.calls.current.attempt_epoch,identityEpoch=this.pageIdentityEpoch,native=grant.provider==='wechat'
+  let engine
+  const current=()=>this.visible&&!this.ending&&this.sameCall()&&this.calls.current.attempt_epoch===attempt&&this.media===engine&&(native?identityEpoch===this.manager.identityEpoch:life===this.life&&epoch===this.manager.epoch)
+  engine=new CallMedia(wx,patch=>{if(current())this.setData(patch)},{
    prepared:()=>{if(current())this.calls.action('prepared').catch(()=>{})},
    ready:()=>{if(current())this.calls.action('ready').catch(()=>{})},
    end:()=>{if(current())this.hangup()},
