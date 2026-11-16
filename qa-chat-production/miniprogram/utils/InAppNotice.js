@@ -3,17 +3,19 @@ const NotificationState=require('./NotificationState.js')
 const ChatRuntime=require('./ChatRuntime.js')
 const OrderApi=require('./OrderApi.js')
 const Identity=require('./ChatIdentity.js')
+const CallSound=require('./CallSound.js')
 let started=false,foreground=false,context=-1,serial=0,currentPage=null,route='',pageOptions={},current=null,timer=null
 let queue=[],seen=new Map(),chatBaseline=new Map(),chatReady=false,businessBaseline=null,listeners=[]
 let incomingCall=null,callSerial=0,callListeners=[],callOpening='',callAlerted='',callIdentityKey='',callIdentityPending=''
 const DISPLAY_MS=10000
 const now=()=>Date.now(),revision=()=>OrderApi.contextRevision?OrderApi.contextRevision():0
-function visibleCall(){return foreground&&currentPage&&!/subpackages\/chat\/call\//.test(route)&&incomingCall?{...incomingCall}:null}
+function conversationSurface(){return route==='subpackages/chat/conversation/index'&&incomingCall&&String(pageOptions.conversation_id||'')===incomingCall.conversationId}
+function visibleCall(){return foreground&&currentPage&&!/subpackages\/chat\/call\//.test(route)&&!conversationSurface()&&incomingCall?{...incomingCall}:null}
 function nativeSurface(){return /^subpackages\/web\/(view|h5)\/index$/.test(route)}
 function notify(){listeners.slice().forEach(fn=>fn(current?{...current}:null))}
 function notifyCall(){const value=visibleCall();callListeners.slice().forEach(fn=>fn(value?{...value}:null))}
 function clearTimer(){if(timer)clearTimeout(timer);timer=null}
-function resetCall(){const id=incomingCall?.callId||'';callSerial++;incomingCall=null;callIdentityKey='';callIdentityPending='';callAlerted='';if(callOpening===id)callOpening='';notifyCall()}
+function resetCall(){const id=incomingCall?.callId||'';callSerial++;incomingCall=null;callIdentityKey='';callIdentityPending='';callAlerted='';CallSound.clear(id);if(callOpening===id)callOpening='';notifyCall()}
 function checkContext(){const value=revision();if(value===context)return;context=value;serial++;clearTimer();queue=[];seen.clear();chatBaseline.clear();chatReady=false;businessBaseline=null;current=null;resetCall();notify()}
 function suppress(item){
  if(!foreground||!currentPage)return true
@@ -82,10 +84,12 @@ function setIncoming(view,alert=false){
   media:view.media==='video'?'video':'audio',peerName:same?incomingCall.peerName:'订单成员',peerAvatar:same?incomingCall.peerAvatar:(Identity.avatars?.user||'/images/chat-user.svg'),
   busy:same&&incomingCall.busy===true
  }
- notifyCall()
+ notifyCall();CallSound.sync(view,actor)
  if(alert&&callAlerted!==id){callAlerted=id;if(typeof wx.vibrateShort==='function')try{wx.vibrateShort({type:'medium'})}catch(_){}}
  if(profileKey&&callIdentityKey!==profileKey&&callIdentityPending!==profileKey){callIdentityPending=profileKey;loadCallIdentity(view,token,profileKey)}
- if(nativeSurface()&&visibleCall())navigateCall(id)
+ // The matching conversation uses an immersive incoming-call screen; other
+ // foreground pages keep the compact card.
+ if((conversationSurface()||nativeSurface())&&foreground&&currentPage)navigateCall(id)
 }
 function clearIncoming(id=''){
  if(id&&incomingCall?.callId!==String(id))return
@@ -116,7 +120,7 @@ function chats(type,payload){
  if(!payload?.has_more)chatReady=true
 }
 function start(){if(started)return;started=true;checkContext();NotificationState.subscribe(business,false);ChatRuntime.get().subscribe(chats)}
-function show(owner,nextRoute,options={}){start();checkContext();currentPage=owner;route=nextRoute||'';pageOptions=options;if(current&&suppress(current))advance();else if(!current&&!incomingCall)advance();if(foreground){NotificationState.refresh({maxAge:10000}).catch(()=>{})}notify();notifyCall()}
+function show(owner,nextRoute,options={}){start();checkContext();currentPage=owner;route=nextRoute||'';pageOptions=options;if(current&&suppress(current))advance();else if(!current&&!incomingCall)advance();if(foreground){NotificationState.refresh({maxAge:10000}).catch(()=>{});if(incomingCall&&conversationSurface())navigateCall(incomingCall.callId)}notify();notifyCall()}
 function hide(owner){if(currentPage!==owner)return;currentPage=null;clearTimer();queue=[];current=null;notify();notifyCall()}
 function setForeground(value){start();checkContext();foreground=value===true;if(!foreground){clearTimer();queue=[];current=null;resetCall();notify()}else if(currentPage){NotificationState.refresh({maxAge:10000}).catch(()=>{});notifyCall()}}
 function dismiss(){checkContext();advance()}

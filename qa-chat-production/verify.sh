@@ -38,6 +38,7 @@ node tools/test_chat_s12_business_entry.js
 node tools/test_chat_s18_s20.js
 node tools/test_chat_notice_recovery.js
 node tools/test_chat_calls.js
+node tools/test_chat_call_media_ux.js
 echo "L1 snapshot front-end regression suites passed"
 
 php server/tests/chat_collaboration_policy_contract.php

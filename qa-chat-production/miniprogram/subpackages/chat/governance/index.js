@@ -1,5 +1,6 @@
 const Runtime=require('../../../utils/ChatRuntime.js')
 const {validID}=require('../../../utils/ChatInboxModel.js')
+const Presentation=require('../../../utils/ChatPresentation.js')
 Page({
  data:{enabled:false,busy:false,error:'',status:null,cases:[],hasMore:false,reason:'',target:null,report:null,diagnostic:''},
  onLoad(options){this.options=options||{};this.life=0;this.manager=Runtime.get();this.stop=this.manager.subscribe(type=>{if(type==='reset'){this.life++;this.erase();this.setData({error:'身份已变化，请重新进入'})}})},

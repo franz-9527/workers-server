@@ -56,11 +56,8 @@ func (s *Service) Available(ctx context.Context, p ports.Principal, q Request) (
 	if !direct {
 		return map[string]any{"audio": false, "video": false, "reason": "仅单聊支持通话", "peers": []ports.ID{}}, nil
 	}
-	selectPool := s.selectPool
-	if ports.SandboxPrincipal(p) {
-		selectPool = func(ctx context.Context, media Media, exclude ...Provider) (Pool, Settings, error) {
-			return s.selectSandboxPool(ctx, media)
-		}
+	selectPool := func(ctx context.Context, media Media, exclude ...Provider) (Pool, Settings, error) {
+		return s.selectRequestPool(ctx, p, q, media, exclude...)
 	}
 	_, _, audio := selectPool(ctx, Audio)
 	_, _, video := selectPool(ctx, Video)

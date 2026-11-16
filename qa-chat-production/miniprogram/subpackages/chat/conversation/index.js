@@ -143,7 +143,7 @@ Page({
    const person=message.sender?InboxModel.identities.attribution(message.sender,profile):profile
    const orderCard=text?require('../../../utils/ChatOrderCard.js').parse(message.text):null
    this.views[id]={orderCard,senderId:String(message.sender_id),displayName:person?.displayName||'成员',avatarPath:person?.avatarPath||InboxModel.identities.avatars.user,messageId:id,seq:String(message.seq),raw:message,state:message.state,stateVersion:String(message.state_version),body:text?(typeof message.text==='string'?message.text:'云端文字已清理，本机暂无缓存'):InboxModel.previewText(message),safetyNote:text&&message.safety_notice==='masked'?'部分内容涉及私人联系方式，已自动屏蔽':'',
-    isPlaceholder:!text&&!image&&!av&&!call,isCall:call,callVideo:call&&message.system_event.media==='video',callText:call?InboxModel.callText(message,String(page.viewer_actor_id||'')):'',isAV:av,isAudio:av&&message.message_type==='audio',heard:!!message.av?.heard,duration:Math.ceil((message.av?.duration_ms||0)/1000),bubbleWidth:av?Math.min(540,Math.max(320+Math.ceil((message.av?.duration_ms||0)/1000)*4,Array.from(String(message.av?.transcript||"")).length*26+48)):0,transcript:av?String(message.av?.transcript||''):'',isText:text,canCopy:text&&typeof message.text==='string',isImage:image,imageCount:image?(message.images||[]).length:0,imageExpanded:!!this.expandedImages[id],images:image?(message.images||[]).slice(0,this.expandedImages[id]?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||''})):[],isMine:String(message.sender_id)===String(page.viewer_actor_id||''),createdAt:String(message.created_at||''),
+    isPlaceholder:!text&&!image&&!av&&!call,isCall:call,callVideo:call&&message.system_event.media==='video',callText:call?InboxModel.callText(message,String(page.viewer_actor_id||'')):'',isAV:av,isAudio:av&&message.message_type==='audio',heard:!!message.av?.heard,duration:Math.ceil((message.av?.duration_ms||0)/1000),bubbleWidth:av?Math.min(540,Math.max(320+Math.ceil((message.av?.duration_ms||0)/1000)*4,Array.from(String(message.av?.transcript||"")).length*26+48)):0,transcript:av?String(message.av?.transcript||''):'',isText:text,canCopy:text&&typeof message.text==='string',isImage:image,imageCount:image?(message.images||[]).length:0,imageExpanded:!!this.expandedImages[id],images:image?(message.images||[]).slice(0,this.expandedImages[id]?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||this.manager.images?.cachedURL(this.id,id,v.item_id,true)||''})):[],isMine:String(message.sender_id)===String(page.viewer_actor_id||''),createdAt:String(message.created_at||''),
     reply:message.reply||null,editedFrom:message.edited_from||null,canReedit:message.state==='recalled'&&typeof this.manager.editableRecall==='function'&&!!this.manager.editableRecall(this.id,id)}
   })
   for(const row of Object.values(this.views)){
@@ -489,10 +489,8 @@ Page({
   if(this.imagePoll)clearTimeout(this.imagePoll);this.imagePoll=null
   if(this.imageObserver)this.imageObserver.disconnect();this.imageObserver=null
   if(this.imageExpiry)clearTimeout(this.imageExpiry);this.imageExpiry=null
+  // Page hide stops observation only; published media remains warm in the account cache.
   this.manager.images?.setVisible(this.id,[])
-  this.imageURLs={};for(const key of this.manager.images?.urls?.keys()||[])if(key.startsWith(this.id+':'))this.manager.images.urls.delete(key)
-  for(const row of Object.values(this.views||{}))if(row.isImage)row.images=row.images.map(i=>({...i,url:''}))
-  this.setData({messages:this.data.messages.map(v=>this.views[v.messageId]||v)})
  },
  chooseImages(event){
   if(!this.visible||!this.data.canSend||!this.manager.images)return
@@ -571,7 +569,7 @@ Page({
  toggleImages(event){
   const id=String(event.currentTarget.dataset.id||''),row=this.views[id];if(!row?.isImage)return
   this.expandedImages[id]=!this.expandedImages[id]
-  row.imageExpanded=!!this.expandedImages[id];row.images=(row.raw.images||[]).slice(0,row.imageExpanded?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||''}))
+  row.imageExpanded=!!this.expandedImages[id];row.images=(row.raw.images||[]).slice(0,row.imageExpanded?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||this.manager.images?.cachedURL(this.id,id,v.item_id,true)||''}))
   this.setData({messages:this.data.messages.map(v=>v.messageId===id?row:v)},()=>this.observeImages())
  },
  observeImages(){

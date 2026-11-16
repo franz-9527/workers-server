@@ -110,7 +110,7 @@ class TestPeer {
   m.focus(this.cid);await m.reconcile();if(!m.cache.has(this.cid))await m.reconcile()
   this.actions.disabled=false
   const target=this.identity.members.find(member=>String(member.wire_id)!==String(initial.actor_id));if(target)this.node.querySelector('[data-call-peer]').value=String(target.wire_id)
-  try{this.callAvailability=await m.calls.call('availability',{conversation_id:this.cid})}catch(e){this.callAvailability={audio:false,video:false,reason:e.code||'CALL_unavailable',peers:[]}}
+  try{this.callAvailability=await m.calls.call('availability',{conversation_id:this.cid,client_surface:'web_test'})}catch(e){this.callAvailability={audio:false,video:false,reason:e.code||'CALL_unavailable',peers:[]}}
   this.paintCall()
   this.tell(initial.moderation_ready?'已接入真实链路；可与另一端或小程序收发':'已接入；尚无可用于微信审核的真实小程序身份，请先用后台配置的小程序管理员登录一次')
   this.callTimer=setInterval(()=>this.tick().catch(e=>this.tell(message(e))),3000)
@@ -214,7 +214,7 @@ class TestPeer {
   this.require();const peer=this.node.querySelector('[data-call-peer]').value
   if(!peer||peer===this.manager.calls.actorID)throw Error('请选择另一位成员')
   let availability
-  try{availability=await this.manager.calls.call('availability',{conversation_id:this.cid})}catch(e){availability={audio:false,video:false,reason:e.code||'CALL_unavailable',peers:[]}}
+  try{availability=await this.manager.calls.call('availability',{conversation_id:this.cid,client_surface:'web_test'})}catch(e){availability={audio:false,video:false,reason:e.code||'CALL_unavailable',peers:[]}}
   this.callAvailability=availability;this.paintCall()
   if(availability?.[media]!==true){
    const code=String(availability?.reason||'CALL_unavailable')

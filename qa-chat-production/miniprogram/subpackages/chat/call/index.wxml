@@ -1,0 +1,35 @@
+<view class="call-page {{historyPage ? 'call-history-page chat-settings-page' : ''}} {{canAccept ? 'is-incoming' : ''}}">
+ <block wx:if="{{historyPage}}">
+  <scroll-view class="call-history-scroll" scroll-y>
+    <view wx:if="{{notice}}" class="chat-feedback is-error"><text>{{notice}}</text></view>
+    <view class="chat-section">
+      <view class="chat-section-header"><text class="chat-section-title">本次会话的通话</text><text class="chat-section-counter">{{history.length}} 条</text></view>
+      <view wx:for="{{history}}" wx:key="call_id" class="chat-line call-history-row">
+        <view class="call-history-mark" aria-hidden="true">{{item.media === 'video' ? '视' : '语'}}</view>
+        <view class="chat-line-copy"><text class="chat-line-title">{{item.media === 'video' ? '视频通话' : '语音通话'}} · {{item.label}}</text><text class="chat-line-desc">{{item.time}}</text></view>
+      </view>
+      <view wx:if="{{historyLoading}}" class="chat-empty">正在读取通话记录…</view><view wx:elif="{{!history.length && !notice}}" class="chat-empty">暂无通话记录</view>
+      <button wx:if="{{hasMoreHistory}}" class="chat-text-action call-history-more" bindtap="loadHistory">查看更多</button>
+    </view>
+  </scroll-view>
+ </block>
+ <block wx:else>
+  <view class="call-person"><image class="call-avatar" src="{{peerAvatar}}" mode="aspectFill"/><view class="call-title">{{peerName}}</view><view class="call-kind">{{video?'视频通话':'语音通话'}}</view></view>
+  <view class="call-status" aria-live="polite">{{status}}</view>
+  <view wx:if="{{notice}}" class="call-notice">{{notice}}</view>
+  <view wx:if="{{isNative && call && canHangup}}" class="call-hint">微信原生通话 · 接通后可在系统通话窗口控制</view>
+  <view wx:if="{{!isNative}}" class="call-stage {{video ? 'is-video' : 'is-audio'}}">
+   <live-player wx:if="{{remoteURL}}" id="call-player" src="{{remoteURL}}" mode="RTC" autoplay sound-mode="{{speaker?'speaker':'ear'}}" orientation="vertical" object-fit="contain" bindstatechange="playerState" bindnetstatus="playerNet" />
+   <live-pusher wx:if="{{localURL}}" id="call-pusher" class="{{video?'local-video':'audio-pusher'}}" url="{{localURL}}" mode="RTC" autopush enable-camera="{{video}}" enable-mic="{{!muted}}" muted="{{muted}}" beauty="0" whiteness="0" aspect="9:16" min-bitrate="200" max-bitrate="1000" video-width="480" video-height="640" bindstatechange="pusherState" bindnetstatus="pusherNet" />
+  </view>
+  <view wx:if="{{!canHangup}}" class="call-finished-actions"><button class="call-return" bindtap="back">返回会话</button></view>
+  <view wx:else class="call-controls {{canAccept ? 'incoming-controls' : ''}}">
+   <button wx:if="{{canAccept}}" class="call-control hangup" bindtap="reject" disabled="{{busy}}" aria-label="拒绝通话"><view class="call-control-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>拒绝</text></button>
+   <button wx:if="{{canAccept}}" class="call-control accept" bindtap="accept" disabled="{{busy}}" aria-label="接听通话"><view class="call-control-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>接听</text></button>
+   <button wx:if="{{!canAccept && !isNative}}" class="call-control {{muted ? 'is-selected' : ''}}" bindtap="mute" aria-label="{{muted ? '取消静音' : '静音'}}" aria-pressed="{{muted}}"><view class="call-control-icon"><text class="chat-icon chat-icon-mic" aria-hidden="true"></text></view><text>{{muted?'取消静音':'静音'}}</text></button>
+   <button wx:if="{{!canAccept && !isNative}}" class="call-control {{speaker ? 'is-selected' : ''}}" bindtap="speaker" aria-label="{{speaker ? '切换听筒' : '切换扬声器'}}"><view class="call-control-icon"><text class="chat-icon chat-icon-speaker" aria-hidden="true"></text></view><text>{{speaker?'扬声器':'听筒'}}</text></button>
+   <button wx:if="{{!canAccept && video && !isNative}}" class="call-control" bindtap="switchCamera" aria-label="切换摄像头"><view class="call-control-icon"><text class="chat-icon chat-icon-switch" aria-hidden="true"></text></view><text>翻转</text></button>
+   <button wx:if="{{!canAccept}}" class="call-control hangup" bindtap="hangup" aria-label="挂断通话"><view class="call-control-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>挂断</text></button>
+  </view>
+ </block>
+</view>

@@ -49,11 +49,7 @@ func (s *Service) Create(ctx context.Context, p ports.Principal, q Request) (Vie
 	}
 	var pool Pool
 	var settings Settings
-	if ports.SandboxPrincipal(p) {
-		pool, settings, e = s.selectSandboxPool(ctx, q.Media)
-	} else {
-		pool, settings, e = s.selectPool(ctx, q.Media)
-	}
+	pool, settings, e = s.selectRequestPool(ctx, p, q, q.Media)
 	if e != nil {
 		return result, e
 	}

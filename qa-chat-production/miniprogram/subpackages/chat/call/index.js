@@ -1,6 +1,8 @@
 const Runtime=require('../../../utils/ChatRuntime.js')
 const {CallMedia}=require('./media.js')
 const {terminal,callMessage}=require('../../../utils/ChatCalls.js')
+const Presentation=require('../../../utils/ChatPresentation.js')
+const CallSound=require('../../../utils/CallSound.js')
 const labels={ringing:'等待接听',preparing:'正在准备通话',connecting:'正在连接',active:'通话中',stopping:'正在确认通话结束',rejected:'对方已拒接',cancelled:'已取消',missed:'未接听',ended:'通话已结束',failed:'未能建立通话'}
 Page({
  data:{peerName:'订单通话',peerAvatar:'/images/chat-user.svg',call:null,status:'正在读取通话',notice:'',busy:false,localURL:'',remoteURL:'',rotation:0,muted:false,speaker:true,video:false,canAccept:false,canHangup:false,isNative:false,history:[],historyPage:false,historyLoading:false,hasMoreHistory:false},
@@ -41,7 +43,7 @@ Page({
   if(shouldEnd)this.calls.action('end').catch(()=>{})
   if(this.unsubscribe)this.unsubscribe()
  },
- clearTimers(){if(this.timer)clearTimeout(this.timer);if(this.deadline)clearTimeout(this.deadline);this.timer=null;this.deadline=null},
+ clearTimers(){if(this.timer)clearTimeout(this.timer);if(this.deadline)clearTimeout(this.deadline);if(this.finishTimer)clearTimeout(this.finishTimer);this.timer=null;this.deadline=null;this.finishTimer=null},
  stopMedia(){if(this.media){this.media.stop().catch(()=>{});this.media=null}this.setData({localURL:'',remoteURL:''});if(this.deadline)clearTimeout(this.deadline);this.deadline=null},
  async tick(){
   if(this.ticking)return;this.ticking=true;if(this.timer)clearTimeout(this.timer);this.timer=null
@@ -73,7 +75,13 @@ Page({
   if(!call)return
   if(this.callID&&this.callID!==call.call_id){this.stopMedia();this.setData({canAccept:false,canHangup:false});return}
   this.setData({call,status:labels[call.state]||'通话状态更新中',video:call.media==='video',isNative:call.provider==='wechat',canAccept:call.state==='ringing'&&call.callee_id===this.calls.actorID,canHangup:!terminal.has(call.state)&&call.state!=='stopping'})
-  if(terminal.has(call.state)||call.state==='stopping')this.stopMedia()
+  CallSound.sync(call,this.calls.actorID)
+  if(terminal.has(call.state)){
+   this.stopMedia()
+   if(typeof this.manager.schedulePoll==='function')this.manager.schedulePoll(0)
+   if(typeof this.manager.refreshAccount==='function')this.manager.refreshAccount()
+   if(this.visible&&!this.finishTimer)this.finishTimer=setTimeout(()=>{this.finishTimer=null;if(this.visible&&this.sameCall()&&terminal.has(this.calls.current?.state))this.back()},850)
+  }else if(call.state==='stopping')this.stopMedia()
   else this.loadProfiles(call)
  },
  async loadProfiles(call){
@@ -124,6 +132,13 @@ Page({
  },
  async renew(life,epoch){const grant=await this.calls.prepare();if(!this.media||this.ending||!this.owns()||life!==this.life||epoch!==this.manager.epoch)return;const engine=this.media;await engine.renew(grant);if(this.media===engine&&this.owns()&&life===this.life&&epoch===this.manager.epoch)this.arm(grant,this.calls.current)},
  async accept(){if(this.data.busy||!this.owns())return;this.setData({busy:true});try{await this.calls.action('accept');await this.tick()}catch(error){this.setData({notice:message(error)})}finally{this.setData({busy:false})}},
+ async reject(){
+  if(this.data.busy||!this.owns()||!this.data.canAccept)return
+  this.setData({busy:true})
+  try{await this.calls.action('reject');this.render(this.calls.current)}
+  catch(error){this.setData({notice:message(error)})}
+  finally{this.setData({busy:false})}
+ },
  async hangup(){
   if(!this.owns())return
   this.ending=true;this.stopMedia()
@@ -135,7 +150,7 @@ Page({
   try{const q={conversation_id:this.historyID};if(this.historyCursor)q.before_id=this.historyCursor
    const rows=await this.manager.http('calls.history',q,epoch)
    if(!this.visible||life!==this.life||epoch!==this.manager.epoch)return
-   const items=rows.map(row=>({...row,label:labels[row.state]||'通话状态更新中',time:new Date(row.created_at*1000).toLocaleString()}))
+   const items=rows.map(row=>({...row,label:labels[row.state]||'通话状态更新中',time:Presentation.fullTimeLabel(row.created_at*1000)}))
    this.historyLoaded=true
    this.setData({history:[...this.data.history,...items],hasMoreHistory:rows.length===20,status:'通话记录'});if(rows.length)this.historyCursor=rows[rows.length-1].call_id
   }catch(_){if(this.visible&&life===this.life)this.setData({notice:'暂时无法读取通话记录'})}finally{this.historyBusy=false;if(this.visible&&life===this.life)this.setData({historyLoading:false})}
@@ -147,6 +162,6 @@ Page({
  playerState(event){if(this.media)this.media.player(event)},
  pusherNet(event){if(this.media)this.media.net(event,'pusher')},
  playerNet(event){if(this.media)this.media.net(event,'player')},
- back(){wx.navigateBack({delta:1})}
+ back(){CallSound.clear(this.callID);wx.navigateBack({delta:1})}
 })
 function message(error){return callMessage(error)}

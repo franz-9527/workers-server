@@ -129,6 +129,7 @@ type Request struct {
 	Revision       ports.ID `json:"revision,omitempty"`
 	Media          Media    `json:"media,omitempty"`
 	Before         ports.ID `json:"before_id,omitempty"`
+	ClientSurface  string   `json:"client_surface,omitempty"`
 }
 type Service struct {
 	db        *sql.DB
@@ -291,6 +292,15 @@ func (s *Service) selectPool(ctx context.Context, media Media, exclude ...Provid
 }
 func (s *Service) selectSandboxPool(ctx context.Context, media Media) (Pool, Settings, error) {
 	return s.selectAvailablePool(ctx, media, Shengwang, Wechat)
+}
+func (s *Service) selectRequestPool(ctx context.Context, p ports.Principal, q Request, media Media, exclude ...Provider) (Pool, Settings, error) {
+	if q.ClientSurface == "" {
+		return s.selectPool(ctx, media, exclude...)
+	}
+	if q.ClientSurface == "web_test" && ports.SandboxPrincipal(p) {
+		return s.selectSandboxPool(ctx, media)
+	}
+	return Pool{}, Settings{}, ErrInvalid
 }
 func (s *Service) selectAvailablePool(ctx context.Context, media Media, required Provider, exclude ...Provider) (Pool, Settings, error) {
 	a, e := s.broker.Availability(ctx)

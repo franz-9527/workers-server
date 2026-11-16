@@ -121,18 +121,28 @@ class ChatImages {
   if(!a)return b;if(!b)return a
   const x=String(a.state_version||'0'),y=String(b.state_version||'0');return x.length>y.length||x.length===y.length&&x>=y?a:b
  }
+ key(id,message,item,thumbnail,stateVersion){return [id,message,item,thumbnail?'thumb':'main',String(stateVersion||'')].join(':')}
+ cachedURL(id,message,item,thumbnail=false){
+  const m=this.manager,view=this.view(id,message)
+  if(!view||view.state!=='published'||!view.images?.some(i=>i.item_id===item))return ''
+  const known=this.urls.get(this.key(id,message,item,thumbnail,view.state_version))
+  return known&&known.until>m.io.now()?known.url:''
+ }
  async url(id,message,item,thumbnail) {
-  const m=this.manager,epoch=m.epoch,generation=this.generation,key=[id,message,item,thumbnail?'thumb':'main'].join(':')
+  const m=this.manager,epoch=m.epoch,generation=this.generation
   const model=m.cache.get(id),view=this.view(id,message)
   if(!view||view.state!=='published'||!view.images?.some(i=>i.item_id===item))throw fail('CHAT_MEDIA_UNAVAILABLE')
+  const key=this.key(id,message,item,thumbnail,view.state_version),known=this.urls.get(key)
+  if(known&&known.until>m.io.now())return known.url
   if(m.disk?.scope&&model?.capabilities?.cache){
    const current=()=>m.live(epoch)&&this.live(epoch,generation,id)&&m.cache.get(id)===model&&this.view(id,message)?.state==='published'&&String(this.view(id,message)?.state_version)===String(view.state_version)
-   return m.disk.file({conversation_id:id,message_id:message,item_id:item,state_version:String(view.state_version),kind:'image',variant:thumbnail?'thumb':'main'},
+   const url=await m.disk.file({conversation_id:id,message_id:message,item_id:item,state_version:String(view.state_version),kind:'image',variant:thumbnail?'thumb':'main'},
     ()=>m.http('media.url',{conversation_id:id,message_id:message,item_id:item,thumbnail},epoch),current)
+   if(current())this.urls.set(key,{url,until:Number.MAX_SAFE_INTEGER,local:true})
+   return url
   }
-  const known=this.urls.get(key);if(known&&known.until>m.io.now())return known.url
   const result=await m.http('media.url',{conversation_id:id,message_id:message,item_id:item,thumbnail},epoch)
-  if(!this.live(epoch,generation,id)||m.cache.get(id)!==model||this.view(id,message)?.state!=='published')throw fail('CHAT_MEDIA_UNAVAILABLE')
+  if(!this.live(epoch,generation,id)||m.cache.get(id)!==model||this.view(id,message)?.state!=='published'||String(this.view(id,message)?.state_version)!==String(view.state_version))throw fail('CHAT_MEDIA_UNAVAILABLE')
   if(result.cloud_available===false)throw fail('CHAT_MEDIA_CLOUD_EXPIRED')
   if(!/^https:\/\//.test(result.url||'')||Number(result.expires_at)*1000<=m.io.now())throw fail('CHAT_INVALID_RESPONSE')
   this.urls.set(key,{url:result.url,until:Math.min(Number(result.expires_at)*1000,m.io.now()+50000)});return result.url

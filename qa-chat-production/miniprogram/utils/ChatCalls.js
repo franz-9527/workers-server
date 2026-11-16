@@ -28,6 +28,14 @@ class ChatCalls{
    merged.authorized_until=Math.max(previous.authorized_until||0,view.authorized_until||0);merged.prepared_count=Math.max(previous.prepared_count||0,view.prepared_count||0)
   }
   this.current=merged;this.manager.emit('calls.changed',{...merged})
+  const becameTerminal=terminal.has(merged.state)&&(!previous||previous.call_id!==merged.call_id||previous.state!==merged.state)
+  if(becameTerminal){
+   this.incoming=''
+   // Terminal system_event is persisted with the server transition. Pull it now
+   // so rejected/missed/ended appears without leaving and re-entering the chat.
+   if(typeof this.manager.schedulePoll==='function')this.manager.schedulePoll(0)
+   if(typeof this.manager.refreshAccount==='function')this.manager.refreshAccount()
+  }
  }
  async create(conversation,peer,media){
   const key=[conversation,peer,media].join(':')

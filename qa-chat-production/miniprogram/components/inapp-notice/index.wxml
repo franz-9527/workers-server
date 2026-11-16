@@ -3,11 +3,11 @@
     <image class="incoming-call-avatar" src="{{call.peerAvatar}}" mode="aspectFill"/>
     <view class="incoming-call-copy">
       <text class="incoming-call-name">{{call.peerName}}</text>
-      <view class="incoming-call-kind"><view class="incoming-call-pulse"></view><text>{{call.media === 'video' ? '视频通话' : '语音通话'}} · 正在呼叫你</text></view>
+      <view class="incoming-call-kind"><view class="incoming-call-pulse"></view><text>{{call.media === 'video' ? '视频通话来电' : '语音通话来电'}}</text></view>
     </view>
   </view>
   <view class="incoming-call-actions">
-    <button class="incoming-call-action reject" data-action="reject" catchtap="callAction" disabled="{{callBusy}}" aria-label="拒接通话"><view class="incoming-call-action-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>拒接</text></button>
+    <button class="incoming-call-action reject" data-action="reject" catchtap="callAction" disabled="{{callBusy}}" aria-label="拒绝通话"><view class="incoming-call-action-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>拒绝</text></button>
     <button class="incoming-call-action accept" data-action="accept" catchtap="callAction" disabled="{{callBusy}}" aria-label="接听通话"><view class="incoming-call-action-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>接听</text></button>
   </view>
 </view>
