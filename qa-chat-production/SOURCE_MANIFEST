@@ -327,7 +327,7 @@ e6c29b26933ce31b839bb063b9ff2a3fd126dd88  qa-chat-production/miniprogram/subpack
 bd8302923bf2ea29f6ba9390ab749e3476ff3fe9  qa-chat-production/miniprogram/subpackages/chat/conversation/interaction.js
 4dfdec38c3f243b3199972a6c9af46545605a99e  qa-chat-production/miniprogram/subpackages/chat/conversation/sms.js
 00b0a07bb90473b1ed92c23a174fa4f023e64218  qa-chat-production/miniprogram/subpackages/chat/conversation/voice.js
-0dec4ff66424c28680caddda8529d0df36ffbe02  qa-chat-production/miniprogram/subpackages/chat/governance/index.js
+78155e8692575ce29ce3442eefc97fa9786ec270  qa-chat-production/miniprogram/subpackages/chat/governance/index.js
 0efaa48762cee6ae03a69806c681239479abb1fc  qa-chat-production/miniprogram/subpackages/chat/group/index.js
 6370d1636378e6536261fd1d9e5d865e1e182e5a  qa-chat-production/miniprogram/subpackages/web/h5/index.wxml
 8d87a028246677b183dce4eb9b31ed746271d62b  qa-chat-production/miniprogram/subpackages/web/view/index.wxml

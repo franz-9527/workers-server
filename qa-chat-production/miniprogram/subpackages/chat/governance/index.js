@@ -19,7 +19,7 @@ Page({
    this.after=page.next_after
    const kinds={review:'内容复核',report:'消息举报',appeal:'本人申诉'},states={pending:'等待处理',confirm:'问题已确认',correct:'已纠正／申诉通过',dismiss:'已处理／未支持',block:'消息已屏蔽',expired:'保留期结束'}
    const items=page.items.map(row=>({...row,kindLabel:kinds[row.kind]||'治理事项',stateLabel:states[row.state]||'状态待核对'}))
-   this.setData({status:{...status,untilLabel:status.blocked_until?new Date(status.blocked_until).toLocaleString():''},cases:(more?[...this.data.cases,...items]:items).slice(-100),hasMore:page.has_more})
+   this.setData({status:{...status,untilLabel:status.blocked_until?Presentation.fullTimeLabel(status.blocked_until):''},cases:(more?[...this.data.cases,...items]:items).slice(-100),hasMore:page.has_more})
    const o=this.options
    if(!more&&o.message_id&&validID(o.message_id)&&validID(o.conversation_id))this.setData({report:{conversation_id:o.conversation_id,message_id:o.message_id,...(validID(o.item_id)?{item_id:o.item_id}:{})}})
    if(!more&&o.client_message_id&&validID(o.conversation_id)){
