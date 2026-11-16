@@ -66,7 +66,7 @@ def ready_evidence(profile):
             "private_storage": True, "upload_download": True, "pre_publish_review": True,
             "recall_and_expiry": True, "simulated": False,
         })
-    if profile == "full":
+    if profile in ("full", "selected"):
         evidence["capacity"].update({
             "environment": "target_host", "connections": [30, 100, 300],
             "history_sizes": [1000, 10000, 100000], "mixed_order_media_notifications": True,
@@ -88,6 +88,27 @@ def ready_evidence(profile):
             "status": "passed", "revision": REVISION, "evidence": "full-channel-run",
             "simulated": False, "private_media_expiry": True, "platform_safety": True,
             "subscription_receipts": True, "field_images_reviewed": True, "manual_wait_reviewed": True,
+        })
+    if profile == "selected":
+        evidence["channels"].update({"actual_asr_contract": True, "audio_callback_crypto": True,
+                                     "full_clip_review": True, "retained_frames": True})
+        evidence["devices"].update({"microphone_permissions": True, "local_cache_after_cloud_expiry": True})
+        evidence["calls"].update({
+            "status": "passed", "revision": REVISION, "evidence": "real-audio-call-run",
+            "two_real_devices": True, "wechat_real_audio": True, "shengwang_real_audio": True,
+            "weak_network": True, "background_cleanup": True, "microphone_permissions": True,
+            "mutual_exclusion": True, "business_revocation": True, "provider_fallback": True,
+            "unknown_media_retained": True, "shared_quota_race": True, "verified_entitlements": True,
+            "free_boundary_hard_stop": True, "cycle_rollover": True, "supplier_reconciliation": True,
+            "crash_recovery": True, "no_recording": True, "no_wallet_charge": True,
+            "publish_privilege_enforced": True, "metering_upper_bound_verified": True,
+            "simulated": False, "default_closed": True,
+        })
+        evidence["paid_sms"].update({
+            "status": "passed", "revision": REVISION, "evidence": "real-paid-sms-run",
+            "approved_template": True, "real_delivery_receipt": True, "wallet_idempotency": True,
+            "read_revocation_suppression": True, "no_body_disclosure": True, "rate_limit_race": True,
+            "recharge_return": True, "recovery_no_resend": True, "simulated": False, "default_closed": True,
         })
     return evidence
 
@@ -154,6 +175,25 @@ class ReleaseProfileTests(unittest.TestCase):
         evidence["capabilities"].append("audio")
         evidence["cases"].pop("AV05")
         self.assertIn("AV05", self.validate(evidence, "full"))
+
+    def test_selected_profile_allows_messages_and_audio_calls_but_not_video_calls(self):
+        evidence = ready_evidence("selected")
+        self.assertEqual([], self.validate(evidence, "selected"))
+        self.assertNotIn("video_calls", evidence["capabilities"])
+        evidence["capabilities"].append("video_calls")
+        failures = self.validate(evidence, "selected")
+        self.assertIn("profile_capabilities", failures)
+        self.assertIn("calls_real_video", failures)
+
+    def test_selected_profile_requires_real_asr_audio_calls_and_paid_sms(self):
+        evidence = ready_evidence("selected")
+        evidence["channels"]["actual_asr_contract"] = False
+        evidence["calls"]["shengwang_real_audio"] = False
+        evidence["paid_sms"]["real_delivery_receipt"] = False
+        failures = self.validate(evidence, "selected")
+        self.assertIn("actual_av_channels", failures)
+        self.assertIn("calls_real_audio", failures)
+        self.assertIn("paid_sms_real_delivery_receipt", failures)
 
     def test_profile_mismatch_fails_closed(self):
         evidence = ready_evidence("text")

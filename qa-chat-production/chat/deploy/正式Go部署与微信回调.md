@@ -1,13 +1,13 @@
 # 正式站 Go 部署与微信回调
 
-正式 PHP 继续使用 `/www/wwwroot/worker`，测试 PHP 继续使用 `/www/wwwroot/workers-test/server`。正式 Go 运行目录为 /www/wwwroot/worker/chat，运行状态统一为 /www/wwwroot/worker/chat/bin/state（www:www、0700），宝塔以 www 运行，正式聊天优先使用正式站数据库的专用低权限 MySQL 账号和独立的 Redis 命名空间；当前托管配置生成器也允许回退复用 PHP 数据库连接，正式启用前应明确选择并审计权限。正式监听 `127.0.0.1:9501` / `127.0.0.1:9502`，测试保持 19501 / 19502。无需更改 PHP 的 open_basedir。
+正式 PHP 继续使用 `/www/wwwroot/worker`，测试 PHP 继续使用 `/www/wwwroot/workers-test/server`。正式 Go 运行目录为 `/www/wwwroot/worker/chat`，运行状态统一为 `/www/wwwroot/worker/chat/bin/state`（www:www、0700），宝塔以 www 运行。正式聊天优先使用专用低权限 MySQL 账号和独立 Redis 命名空间；托管配置也允许显式回退复用 PHP 数据库连接。专用模式必须通过精确授权检查，额外业务写权限会以 `CHAT_DATABASE_GRANTS_INVALID` 阻断；共享模式必须在运行配置中保留 `shared_app_credentials=true` 并人工审计，不能表述成专用低权限已通过。正式监听 `127.0.0.1:9501` / `127.0.0.1:9502`，测试保持 19501 / 19502。无需更改 PHP 的 open_basedir。
 
-> **2026-11-15 正式首次启用实现：** 正式站非 Git 发布、测试站 Git 部署；验收脚本已支持 text/text-images/full profile，正式文字启动自动生成 SHA/epoch 绑定的短效放行文件，Go 状态目录统一为 /www/wwwroot/worker/chat/bin/state。L1 不要求媒体回调，但仍要求真实微信文字内容安全、身份/订单授权和恢复门禁。代码提交不代表隔离测试或正式站启用已完成，操作顺序见[正式聊天首次启用与分级验收](../../docs/订单聊天/正式聊天首次启用与分级验收.md)。
+> **2026-11-16 non-AV 首次启用边界（核对至 `af16c467...`）：** 正式站非 Git 发布、测试站 Git 部署；正式基础 capability 固定为 `text + images + governance + reminders`，短效放行绑定准确 SHA/epoch，Go 状态目录统一为 `/www/wwwroot/worker/chat/bin/state`。语音、视频、实时通话和付费短信继续关闭。所有业务验收在测试站完成，正式站只做无副作用健康检查；代码提交不代表自动化、真机、真实渠道或正式启用已经通过。
 
 
 ## 通过宝塔部署正式 Go
 
-1. 在正式 PHP 后台确认已完成对应版本升级，AppID 和微信文字内容安全凭证正常。L1 文字聊天不要求预先配置微信音视频媒体审核回调；只有启用音视频审核时才配置 Token 和 EncodingAESKey。
+1. 在正式 PHP 后台确认已完成对应版本升级，AppID、微信文字内容安全、七牛图片与免费订阅提醒配置正常。non-AV 不要求预先配置微信音视频媒体审核回调；只有启用音视频审核时才配置 Token 和 EncodingAESKey。
 2. 在宝塔「网站 → worker.20m.cc → 配置文件」中合并以下规则。HTTP 入口跳转 HTTPS 或同样阻断静态目录。保存并重载 Nginx。
 
    ```nginx
@@ -23,9 +23,9 @@
 
 3. 在宝塔文件管理器把预编译包解压至 `/www/wwwroot/worker/chat`，在面板终端运行包内首次安装步骤。**当前代码要求目录属主为 `root:www` 或 `www:www`，权限 `0750`；启动器要求正式 Go 进程用户为 `www`，不是 `bxchat_prod`。** PHP CLI 是启动器运行后台 PHP 脚本用的命令行程序，启动器自动查找 PHP 8.3.36 或更高版本。只有日志报 `CHAT_PRODUCTION_PHP_CLI_NOT_FOUND` 时，才在宝塔 Go 项目环境变量填写实际 `CHAT_PHP_BIN`。
 4. 在「网站 → Go 项目」添加正式项目 `chat`，程序路径 `/www/wwwroot/worker/chat/bin/chatd`，启动命令 `/bin/bash /www/wwwroot/worker/chat/deploy/bt-run.sh --production`，**运行用户 `www`**，端口 9501，关闭外网映射。
-5. 正式启动器从 PHP 后台读取 AppID、身份签名、数据库/Redis、文字安全和恢复配置；L1 将媒体回调 relay 保持关闭。日志出现 `CHAT_PRODUCTION_RUNTIME_CONFIG_READY` 与 `CHAT_RUN_STARTED` 后，后台继续显示文字收发待放行，直到超级管理员初始化并通过 Go 业务就绪检查。状态文件和配置文件必须由 Nginx 拒绝外部访问；修改配置后从宝塔重启正式 Go 项目。
+5. 正式启动器从 PHP 后台读取 AppID、身份签名、数据库/Redis、内容安全、媒体、ASR、提醒、短信、实时语音和恢复配置。日志须先出现 `CHAT_PRODUCTION_RUNTIME_CONFIG_READY` 与 `CHAT_RUN_STARTED`，超级管理员初始化后还须出现 `CHAT_PRODUCTION_SELECTED_READY`。视频通话配置必须为关闭。状态文件和配置文件必须由 Nginx 拒绝外部访问；修改配置后从宝塔重启正式 Go 项目。
 
-已有手工 `chat.json` 的项目继续按原配置启动。正式自动模式可生成文字收发配置。启用及检查方法见下文。
+已有手工 `chat.json` 的项目继续按原配置启动。正式自动模式可生成托管的 non-AV 运行配置；旧“仅文字”请求只用于兼容，不作为本轮正式放行目标。启用及检查方法见下文。
 
 ## 微信后台填写正式地址
 
@@ -82,15 +82,14 @@ bash /www/wwwroot/worker/chat/update/deploy/update-production.sh
 
 若宝塔为 PHP 启用了 open_basedir，在正式站现有允许列表中追加 `/www/backup-control/bixuan-chat/production/` 并重载 PHP 8.3，使 PHP 与 Go 能读取同一个门禁。保留其他允许目录。控制目录、基线及恢复密钥应另行备份，后续继续归档 binlog。维护密钥存于控制目录的 root 专用 `initial-identity.json`，正常运行不读取该密钥。
 
-### 放行正式非音视频聊天
+### 放行正式选定聊天能力
 
-正式站不再承担业务验收。先在 workers-server 隔离测试仓与 test.20m.cc 对准确 SHA 完成非音视频完整验收（订单聊天、协作群、文字、图片、治理、免费订阅提醒、授权/撤权、风控、恢复与回退），最终发布证据使用既有 `--profile full` 的基础 capability：`text + images + governance + reminders`。语音消息、ASR、视频消息、实时通话和付费短信不包含在该集合内。
+正式站不再承担业务验收。先在 workers-server 与 test.20m.cc 对准确 SHA 完成本轮完整验收。最终证据使用 `--profile selected`，capability 精确为 `text + images + governance + reminders + audio + asr + video + calls + paid_sms`；`calls` 仅为实时语音，`video_calls` 不得出现。
 
-验收通过后，在正式站「聊天管理 → 聊天设置 → 正式站首次启用」点击 **初始化非音视频聊天并应用**。后台自动生成并加密保存正式 release HMAC 与内部提醒 HMAC；启动器按当前二进制 SHA、正式环境、恢复 epoch 和上述 capability 生成短效签名文件，并自动托管免费提醒进程。无需手工创建 `production.local.env`，也无需填写 `CHAT_PROD_TEXT`、`CHAT_PROD_RELEASE_FILE`、`CHAT_RELEASE_KEY` 或 `CHAT_INTERNAL_KEY`。
+验收通过后，在正式站点击 **初始化选定聊天能力并应用**。后台生成并加密保存正式 release HMAC 与内部提醒 HMAC，固定 `audio_enabled=true`、`video_enabled=false`，并按当前二进制 SHA、正式环境、恢复 epoch 和上述 capability 生成短效签名文件。无需手工创建 `production.local.env` 或填写 release/internal 密钥。
 
 图片复用后台七牛配置；公开 HTTP 回源模式仍通过本站 HTTPS 媒体代理提供给小程序，不要求为了聊天单独购买七牛 HTTPS。正式放行前会检查图片表、PHP CLI/GD、Pillow、zxing-cpp、图片辅助脚本和私有临时目录，缺项时 fail closed。免费订阅提醒走内部 HMAC，并允许同机 `127.0.0.1:9502` 回环 HTTP；非回环 HTTP 仍拒绝。
 
-看到 `CHAT_PRODUCTION_NON_AV_READY` 后只做无副作用检查：核对 deployed/running/current SHA、内部 `/readyz` HTTP 200 和后台“恢复核验已通过 / 正式收发已就绪”。**不再在正式站创建测试用户、测试订单、测试会话或发送测试消息。**
+看到 `CHAT_PRODUCTION_SELECTED_READY` 后只做无副作用检查：核对 deployed/running/current SHA、内部 `/readyz` HTTP 200、后台“恢复核验已通过 / 正式收发已就绪”，并确认视频通话关闭。**不在正式站创建测试用户、订单、会话，不发送测试消息、短信或拨打测试电话。**
 
 可选 `CHAT_PROD_MYSQL_USER` 与 `CHAT_MYSQL_PASSWORD` 仅用于明确选择独立 Go MySQL 账号；两者均不填写时复用 PHP 已安装连接。
-

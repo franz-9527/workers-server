@@ -13,7 +13,12 @@ TEXT_CASES=([f"C{i:02}" for i in list(range(1,8))+list(range(10,14))+[15]+list(r
 IMAGE_CASES=([f"C{i:02}" for i in [8,9,14]+list(range(25,34))+[43,45,46]]
              +[f"I{i:02}" for i in range(1,9)]
              +[f"AUD{i:02}" for i in (3,4,8,9)])
-PROFILE_CAPABILITIES={"text":["text","governance"],"text-images":["text","governance","images"],"full":["text","images","governance","reminders"]}
+PROFILE_CAPABILITIES={
+    "text":["text","governance"],
+    "text-images":["text","governance","images"],
+    "full":["text","images","governance","reminders"],
+    "selected":["text","images","governance","reminders","audio","asr","video","calls","paid_sms"],
+}
 TEXT_AREAS=("automation","devices","deployment","recovery")
 
 def expected_database_version():
@@ -68,7 +73,7 @@ def validate(e,revision,profile=None):
             and all(x.get("physical") is True and x.get("passed") is True for x in devices),"two_real_devices")
     require(d.get("weak_network") is True and d.get("large_text") is True and d.get("dark_mode") is True
             and d.get("safe_area") is True,"device_ui")
-    if profile in ("text-images","full"):
+    if profile in ("text-images","full","selected"):
         require(d.get("album_permissions") is True,"album_permissions")
     deploy=obj(e.get("deployment"))
     require(deploy.get("actual_sha")==revision and deploy.get("source_dirty") is False
@@ -94,7 +99,7 @@ def validate(e,revision,profile=None):
                 and image.get("private_storage") is True and image.get("upload_download") is True
                 and image.get("pre_publish_review") is True and image.get("recall_and_expiry") is True
                 and image.get("simulated") is False,"image_acceptance")
-    if profile=="full":
+    if profile in ("full","selected"):
         c=obj(e.get("capacity"))
         require(c.get("environment")=="target_host" and c.get("connections")==[30,100,300]
                 and c.get("history_sizes")==[1000,10000,100000]
@@ -125,10 +130,10 @@ def validate(e,revision,profile=None):
     caps=e.get("capabilities",PROFILE_CAPABILITIES["full"])
     valid_caps=isinstance(caps,list) and all(isinstance(x,str) for x in caps)
     caps_set=set(caps) if valid_caps else set()
-    allowed_caps={"text","images","governance","reminders","audio","video","calls","paid_sms"}
+    allowed_caps={"text","images","governance","reminders","audio","asr","video","calls","video_calls","paid_sms"}
     require(valid_caps and len(caps)==len(caps_set) and caps_set<=allowed_caps
             and set(PROFILE_CAPABILITIES[profile])<=caps_set,"capabilities")
-    if profile in ("text","text-images"):
+    if profile in ("text","text-images","selected"):
         require(caps==PROFILE_CAPABILITIES[profile],"profile_capabilities")
     if isinstance(caps,list) and ("audio" in caps or "video" in caps):
         required={5,6,8,9,11,12,13,14,15,16,18,19,20}
@@ -143,13 +148,19 @@ def validate(e,revision,profile=None):
     if isinstance(caps,list) and "calls" in caps:
         call=obj(e.get("calls"))
         require(call.get("status")=="passed" and call.get("revision")==revision and has_evidence(call),"calls_evidence")
-        for key in ("two_real_devices","wechat_real_media","shengwang_real_media","weak_network","background_cleanup",
-                    "microphone_camera_permissions","mutual_exclusion","business_revocation","provider_fallback",
+        for key in ("two_real_devices","weak_network","background_cleanup",
+                    "mutual_exclusion","business_revocation","provider_fallback",
                     "unknown_media_retained","shared_quota_race","verified_entitlements","free_boundary_hard_stop",
                     "cycle_rollover","supplier_reconciliation","crash_recovery","no_recording","no_wallet_charge",
                     "publish_privilege_enforced","metering_upper_bound_verified"):
             require(call.get(key) is True,"calls_"+key)
+        require(call.get("microphone_permissions") is True,"calls_microphone_permissions")
+        require(call.get("wechat_real_audio") is True and call.get("shengwang_real_audio") is True,"calls_real_audio")
         require(call.get("simulated") is False and call.get("default_closed") is True,"calls_real_channels")
+    if isinstance(caps,list) and "video_calls" in caps:
+        call=obj(e.get("calls"))
+        require(call.get("camera_permissions") is True and call.get("wechat_real_video") is True
+                and call.get("shengwang_real_video") is True,"calls_real_video")
     if isinstance(caps,list) and "paid_sms" in caps:
         sms=obj(e.get("paid_sms"))
         require(sms.get("status")=="passed" and sms.get("revision")==revision and has_evidence(sms),"paid_sms_evidence")
@@ -171,7 +182,7 @@ def template(profile="full"):
     if profile=="text-images":
         e["image_acceptance"]={"status":"pending","revision":"","evidence":"","private_storage":False,
                                "upload_download":False,"pre_publish_review":False,"recall_and_expiry":False,"simulated":False}
-    if profile=="full":
+    if profile in ("full","selected"):
         e["capacity"].update(environment="target_host",connections=[],history_sizes=[],mixed_order_media_notifications=False,
                              baseline_order_p95_ms=0,mixed_order_p95_ms=0,headroom_percent=0,authenticated_limit=300,
                              over_limit_upgrade_completed=False,over_limit_auth_ok=None)
@@ -186,7 +197,7 @@ def template(profile="full"):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--evidence");p.add_argument("--revision");p.add_argument("--template",action="store_true")
-    p.add_argument("--profile",choices=("text","text-images","full"),default="full")
+    p.add_argument("--profile",choices=("text","text-images","full","selected"),default="full")
     a=p.parse_args()
     if a.template: print(json.dumps(template(a.profile),ensure_ascii=False,indent=2));return 0
     if not a.evidence or not a.revision: p.error("--evidence and --revision are required")

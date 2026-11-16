@@ -14,7 +14,7 @@ final class ChatSmsReminders
  public function __construct(private Database $db,private UserWalletManager $wallet,private MobileNumberProtection $mobile,private PrivateValueCipher $cipher,private \Closure $eligible,private string $key,private SettingsProvider $settings) {}
  public function enabled():bool {
   $testing=(string)\app_config('app.env','production')==='testing';
-  $gate=(new ChatReleaseSettings($this->db))->enabled()&&\app_config('chat.sms_reminders_enabled',false)===true;
+  $gate=(new ChatReleaseSettings($this->db))->enabled()&&filter_var(\setting('chat.sms_reminders_enabled',\app_config('chat.sms_reminders_enabled',false)),FILTER_VALIDATE_BOOLEAN);
   return $gate&&ChatSmsProviderReadiness::inspect(fn(string $key,$default)=>$this->settings->get($key,$default),$testing)['ready'];
  }
  public function template():string {

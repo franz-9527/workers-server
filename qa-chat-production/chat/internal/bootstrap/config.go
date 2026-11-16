@@ -201,8 +201,13 @@ func (c Config) validate() *Fault {
 	if c.Calls.Validate() != nil || c.Calls.Enabled && (!c.Messages.Enabled || !c.Dependencies.Redis.Enabled) {
 		return configFault("CHAT_CALLS_INVALID", "通话配置或组合依赖不完整")
 	}
-	if c.Calls.Enabled && !(c.Environment == "test" && c.Release.Staging) && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "calls") {
-		return configFault("CHAT_CALLS_NOT_READY", "通话联合验收未完成")
+	if c.Calls.Enabled && !(c.Environment == "test" && c.Release.Staging) {
+		if c.Calls.AudioEnabled && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "calls") {
+			return configFault("CHAT_CALLS_NOT_READY", "实时语音联合验收未完成")
+		}
+		if c.Calls.VideoEnabled && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "video_calls") {
+			return configFault("CHAT_VIDEO_CALLS_NOT_READY", "视频通话未获独立放行")
+		}
 	}
 	if c.Environment == "production" && (c.Images.Enabled && !c.Images.Private || c.AV.Enabled && !c.AV.Private) {
 		return configFault("CHAT_AV_NOT_READY", "正式站公开媒体须单独发布审核")
@@ -239,6 +244,9 @@ func (c Config) validate() *Fault {
 	}
 	if c.AV.Enabled && !(c.Environment == "test" && c.Release.Staging) && (c.AV.Audio && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "audio") || c.AV.Video && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "video")) {
 		return configFault("CHAT_AV_NOT_READY", "音视频联合验收未完成")
+	}
+	if c.AV.Enabled && c.AV.Audio && c.AV.ASR.Provider != "" && !(c.Environment == "test" && c.Release.Staging) && !c.Release.Verify(c.Environment, c.Operations.Epoch, sourceRevision, sourceDirty, "asr") {
+		return configFault("CHAT_ASR_NOT_READY", "语音识别联合验收未完成")
 	}
 	if c.Images.Enabled && !c.Messages.Enabled {
 		return configFault("CHAT_IMAGES_NOT_READY", "图片必须依附完整消息用例")

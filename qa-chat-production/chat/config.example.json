@@ -140,6 +140,8 @@
   },
   "calls": {
     "enabled": false,
+	"audio_enabled": false,
+	"video_enabled": false,
     "php_endpoint": "https://example.invalid/chat-calls.php",
     "key_id": "chat-internal-v1",
     "key_env": "CHAT_INTERNAL_KEY",

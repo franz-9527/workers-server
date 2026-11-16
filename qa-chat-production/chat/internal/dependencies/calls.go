@@ -24,6 +24,8 @@ import (
 type CallsConfig struct {
 	PublishPrivilegesVerified bool   `json:"publish_privileges_verified"`
 	Enabled                   bool   `json:"enabled"`
+	AudioEnabled              bool   `json:"audio_enabled"`
+	VideoEnabled              bool   `json:"video_enabled"`
 	PHPEndpoint               string `json:"php_endpoint"`
 	KeyID                     string `json:"key_id"`
 	KeyEnv                    string `json:"key_env"`
@@ -35,7 +37,13 @@ type CallsConfig struct {
 
 func (c CallsConfig) Validate() error {
 	if !c.Enabled {
+		if c.AudioEnabled || c.VideoEnabled {
+			return ports.ErrInvalid
+		}
 		return nil
+	}
+	if !c.AudioEnabled && !c.VideoEnabled {
+		return ports.ErrInvalid
 	}
 	u, e := url.Parse(c.PHPEndpoint)
 	if e != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || (u.Path != "/chat-calls.php" && u.Path != "/chat-call-bridge.php") || u.RawQuery != "" || u.Fragment != "" || !secretName.MatchString(c.KeyEnv) || !regexp.MustCompile("^[a-z0-9_-]{1,32}$").MatchString(c.KeyID) {
@@ -141,7 +149,7 @@ func (r *Runtime) EnableCalls(c CallsConfig) error {
 	if e != nil {
 		return e
 	}
-	service, e := calls.NewService(r.sql, authority, broker, provider)
+	service, e := calls.NewService(r.sql, authority, broker, provider, c.AudioEnabled, c.VideoEnabled)
 	if e != nil {
 		return e
 	}

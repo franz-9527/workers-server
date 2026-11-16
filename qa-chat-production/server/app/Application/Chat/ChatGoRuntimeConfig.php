@@ -77,6 +77,7 @@ final class ChatGoRuntimeConfig
             'message_recovery_status'=>$recoveryStatus,
             'production_text_status'=>$environment==='production'?$this->productionTextStatus():[],
             'production_non_av_requested'=>$environment==='production'&&(string)\setting('chat.go_production_non_av_requested','0')==='1',
+            'production_selected_requested'=>$environment==='production'&&(string)\setting('chat.go_production_selected_requested','0')==='1',
             'message_app_id_configured'=>$this->validAppId($appId),
             'messages_enabled'=>$messageReady,'message_missing'=>$messageMissing,'message_recovery_default'=>$environment==='test'&&empty($chat['recovery_gate_file'])&&empty($chat['recovery_epoch']),
             'safety_mode'=>$safetyMode,
@@ -120,6 +121,14 @@ final class ChatGoRuntimeConfig
             'REMINDERS_SCHEMA'=>'聊天提醒数据表不完整',
             'REMINDERS_ENDPOINT'=>'聊天提醒内部端点配置不可用',
             'REMINDERS_PREFLIGHT'=>'聊天提醒 PHP 门禁或内部签名检查未通过',
+            'AV_STORAGE'=>'音视频消息存储配置未就绪',
+            'AV_SCHEMA'=>'音视频消息数据表不完整',
+            'AV_PREFLIGHT'=>'音视频消息处理依赖未通过检查',
+            'AV_CALLBACK'=>'音视频消息回调未就绪',
+            'ASR'=>'腾讯云语音识别配置未就绪',
+            'PAID_SMS'=>'付费短信通道未就绪',
+            'CALLS_AUDIO'=>'实时语音通话资源或密钥未就绪',
+            'CALLS_VIDEO_POLICY'=>'视频通话必须保持关闭',
             'CONFIG_ERROR'=>'正式 Go 配置生成失败',
             'GO_PREFLIGHT'=>'Go 启动前检查未通过，请查看 Go 项目日志',
         ];
@@ -326,10 +335,22 @@ final class ChatGoRuntimeConfig
             $this->ensureProductionKey(self::PRODUCTION_INTERNAL_KEY,self::PRODUCTION_INTERNAL_KEY_CONTEXT,'正式聊天内部提醒签名密钥密文，仅服务端使用',$admin,'正式聊天内部提醒签名密钥');
             $this->upsert('chat.enabled','1','聊天总开关',$admin);
             $this->upsert('chat.go_production_text_requested','1','正式文字聊天请求',$admin);
-            $this->upsert('chat.go_production_non_av_requested','1','正式非音视频聊天请求',$admin);
+            $this->upsert('chat.go_production_non_av_requested','0','旧版正式非音视频聊天请求',$admin);
+            $this->upsert('chat.go_production_selected_requested','1','正式聊天选定能力请求（不含视频通话）',$admin);
             $this->upsert('chat.order_policy_enabled','1','订单聊天授权门禁',$admin);
             $this->upsert('chat.collaboration_enabled','1','订单协作群门禁',$admin);
             $this->upsert('chat.reminders_enabled','1','聊天订阅提醒开关',$admin);
+            $this->upsert('chat.sms_reminders_enabled','1','聊天付费短信提醒开关',$admin);
+            $this->upsert('chat.calls_enabled','1','聊天实时语音入口开关',$admin);
+            $site=$this->siteUrl();
+            if($site!=='')$this->upsert(self::CALLS_ENDPOINT_KEY,$site.'/chat-calls.php','Go 通话 PHP 私有端点',$admin);
+            if($this->tablesReady(['chat_call_settings'])){
+                $settings=(new ChatCallResources($this->db))->settings(true);
+                $config=(array)$settings['config'];
+                $config['enabled']=true;$config['audio_enabled']=true;$config['video_enabled']=false;
+                $this->db->execute('UPDATE chat_call_settings SET revision=revision+1,config_json=:json,updated_at=UTC_TIMESTAMP(6) WHERE id=1',
+                    ['json'=>json_encode($config,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)]);
+            }
         });
     }
 
@@ -509,6 +530,8 @@ final class ChatGoRuntimeConfig
         ];
         $base['calls']=[
             'enabled'=>!empty($caps['calls_bridge_enabled']),
+            'audio_enabled'=>!empty($caps['calls_enabled']),
+            'video_enabled'=>!empty($caps['calls_enabled']),
             'php_endpoint'=>$callsEndpoint,
             'key_id'=>$internalKeyId,'key_env'=>'CHAT_INTERNAL_KEY',
             'shengwang_app_id'=>'','certificate_env'=>'CHAT_SHENGWANG_CERTIFICATE',
@@ -707,6 +730,82 @@ final class ChatGoRuntimeConfig
         return $base;
     }
 
+    /** Build the selected production release. Video messages are enabled; video calls are not. */
+    public function productionSelected(array $signing,string $appId,string $revision):array
+    {
+        $base=$this->productionNonAv($signing,$appId,$revision);
+        if(!empty($base['missing']))return $base;
+        $root=ChatRuntimePaths::managedRoot();
+        $caps=$this->capabilities('production',true,true,$root,true);
+        $missing=[];
+        if(empty($caps['qiniu_ready']))$missing[]='AV_STORAGE';
+        if(empty($caps['av_schema_ready']))$missing[]='AV_SCHEMA';
+        if(empty($caps['av_tools_ready']))$missing[]='AV_PREFLIGHT';
+        if(empty($caps['av_enabled'])||empty($caps['av_prerequisites_ready']))$missing[]='AV_CALLBACK';
+        if(empty($caps['asr_configured']))$missing[]='ASR';
+        if(empty($caps['sms_bridge_enabled'])||empty($caps['sms_provider_ready'])||empty($caps['sms_schema_ready']))$missing[]='PAID_SMS';
+        $audioProvider=false;
+        foreach((array)($caps['calls_providers']??[]) as $provider){
+            if(!empty($provider['pool_ready'])&&!empty($provider['audio'])){$audioProvider=true;break;}
+        }
+        if(empty($caps['calls_enabled'])||empty($caps['calls_bridge_enabled'])||!$audioProvider)$missing[]='CALLS_AUDIO';
+        try{
+            $callSettings=(new ChatCallResources($this->db))->settings()['config'];
+            if(empty($callSettings['audio_enabled'])||!empty($callSettings['video_enabled']))$missing[]='CALLS_VIDEO_POLICY';
+            $credentials=(new ChatCallCredentials($this->db,$this->cipher))->runtime();
+        }catch(\Throwable $e){$credentials=[];$missing[]='CALLS_AUDIO';}
+        if($missing)return ['missing'=>array_values(array_unique($missing))];
+
+        $q=(array)$caps['qiniu'];$chat=(array)\app_config('chat',[]);
+        $keyId=(string)($chat['internal_key_id']??'chat-internal-v1');
+        $base['config']['retention']=['enabled'=>true,'body_days'=>365,'evidence_days'=>30,'change_days'=>90,'batch'=>20];
+        $base['config']['av']=[
+            'callback_verification'=>false,
+            'callback_app_id'=>'',
+            'callback_relay'=>['mode'=>($caps['callback_mode']??'')==='relay'?'receive':'','key_env'=>'CHAT_MEDIA_RELAY_KEY','spool'=>''],
+            'enabled'=>true,'audio'=>true,'video'=>true,
+            'python_binary'=>(string)$caps['python_binary'],'python_script'=>$root.'/chat/helpers/media/inspect.py',
+            'ffmpeg_binary'=>(string)$caps['ffmpeg_binary'],'ffprobe_binary'=>(string)$caps['ffprobe_binary'],
+            'temp_root'=>(string)$caps['av_temp_root'],'bucket'=>(string)$q['bucket'],'private_bucket'=>!empty($q['private']),
+            'namespace'=>(string)$q['namespace'],'proxy_origin'=>(string)$q['proxy_origin'],'proxy_key_env'=>'CHAT_MEDIA_PROXY_KEY',
+            'download_origin'=>(string)$q['download_origin'],'upload_origin'=>(string)$q['upload_origin'],
+            'access_key_env'=>'CHAT_QINIU_ACCESS_KEY','secret_key_env'=>'CHAT_QINIU_SECRET_KEY',
+            'asr'=>['provider'=>'tencent_cloud','api_name'=>'SentenceRecognition','data_encoding'=>'json','engine'=>(string)$caps['tencent_asr_engine']],
+            'asr_secret_id_env'=>'CHAT_TENCENT_ASR_SECRET_ID','asr_secret_key_env'=>'CHAT_TENCENT_ASR_SECRET_KEY',
+            'asr_public_root'=>'','asr_public_origin'=>'','asr_public_ttl_seconds'=>0,'daily_asr_budget'=>200,
+            'callback_token_env'=>'CHAT_WECHAT_CALLBACK_TOKEN','callback_key_env'=>'CHAT_WECHAT_CALLBACK_AES_KEY',
+        ];
+        $base['config']['reminders']['paid_sms_enabled']=true;
+        $base['config']['calls']=[
+            'enabled'=>true,'audio_enabled'=>true,'video_enabled'=>false,
+            'php_endpoint'=>(string)$caps['calls_php_endpoint'],'key_id'=>$keyId,'key_env'=>'CHAT_INTERNAL_KEY',
+            'shengwang_app_id'=>(string)($credentials['app_id']??''),'certificate_env'=>'CHAT_SHENGWANG_CERTIFICATE',
+            'customer_id_env'=>'CHAT_SHENGWANG_CUSTOMER_ID','customer_secret_env'=>'CHAT_SHENGWANG_CUSTOMER_SECRET',
+            'publish_privileges_verified'=>($credentials['publish_privileges_verified']??false)===true,
+        ];
+        $base['environment']['CHAT_TENCENT_ASR_SECRET_ID']=(string)$caps['tencent_asr_secret_id'];
+        $base['environment']['CHAT_TENCENT_ASR_SECRET_KEY']=(string)$caps['tencent_asr_secret_key'];
+        if(($caps['callback_mode']??'')==='relay')$base['environment']['CHAT_MEDIA_RELAY_KEY']=(string)$caps['callback_relay_key'];
+        else{
+            $base['environment']['CHAT_WECHAT_CALLBACK_TOKEN']=(string)$caps['callback_token'];
+            $base['environment']['CHAT_WECHAT_CALLBACK_AES_KEY']=(string)$caps['callback_aes_key'];
+        }
+        $base['environment']['CHAT_SHENGWANG_CERTIFICATE']=(string)($credentials['certificate']??'');
+        $base['environment']['CHAT_SHENGWANG_CUSTOMER_ID']=(string)($credentials['customer_id']??'');
+        $base['environment']['CHAT_SHENGWANG_CUSTOMER_SECRET']=(string)($credentials['customer_secret']??'');
+
+        $encoded=(string)($base['environment']['CHAT_RELEASE_KEY']??'');$raw=base64_decode($encoded,true);
+        if(!is_string($raw)||strlen($raw)!==32||base64_encode($raw)!==$encoded)return ['missing'=>['RELEASE_KEY']];
+        try{
+            $body=json_encode(['schema'=>1,'environment'=>'production','epoch'=>(string)$chat['recovery_epoch'],
+                'revision'=>$revision,'expires_at'=>time()+86390,
+                'capabilities'=>['text','images','governance','reminders','audio','asr','video','calls','paid_sms']],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
+            $base['release_content']=json_encode(['payload'=>base64_encode($body),'mac'=>hash_hmac('sha256',$body,$raw)],
+                JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n";
+        }finally{if(function_exists('sodium_memzero'))sodium_memzero($raw);}
+        return $base;
+    }
+
     /** @param array<string,string> $values */
     public static function environmentFile(array $values):string
     {
@@ -718,10 +817,10 @@ final class ChatGoRuntimeConfig
         return implode("\n",$lines)."\n";
     }
 
-    private function capabilities(string $environment,bool $messages,bool $prepare,?string $root):array
+    private function capabilities(string $environment,bool $messages,bool $prepare,?string $root,bool $forceRequested=false):array
     {
         $tools=$this->goSettings();
-        $requested=$environment==='test';
+        $requested=$environment==='test'||$forceRequested;
         $python=$tools[self::PYTHON_KEY]??'/usr/bin/python3';
         $ffmpeg=$tools[self::FFMPEG_KEY]??'/usr/bin/ffmpeg';
         $ffprobe=$tools[self::FFPROBE_KEY]??'/usr/bin/ffprobe';
@@ -797,11 +896,11 @@ final class ChatGoRuntimeConfig
 
         $asrPublicRoot=\base_path('uploads/chat-asr');$site=$this->siteUrl();
         $asrPublicOrigin=$site!==''?$site.'/uploads/chat-asr':'';
-        if($requested&&$prepare)$asrPublicReady=$this->ensurePublicDirectory($asrPublicRoot);
-        elseif($requested)$asrPublicReady=$this->publicDirectory($asrPublicRoot);
+        if($environment==='test'&&$requested&&$prepare)$asrPublicReady=$this->ensurePublicDirectory($asrPublicRoot);
+        elseif($environment==='test'&&$requested)$asrPublicReady=$this->publicDirectory($asrPublicRoot);
         else$asrPublicReady=false;
-        if($requested&&$asrPublicOrigin==='')$avMissing[]='ASR 网站临时源需要配置本站 HTTPS 地址';
-        if($requested&&!$asrPublicReady)$avMissing[]='ASR 网站临时源目录不可写、是符号链接或权限不安全';
+        if($environment==='test'&&$requested&&$asrPublicOrigin==='')$avMissing[]='ASR 网站临时源需要配置本站 HTTPS 地址';
+        if($environment==='test'&&$requested&&!$asrPublicReady)$avMissing[]='ASR 网站临时源目录不可写、是符号链接或权限不安全';
 
         $appId=trim((string)\setting('wechat.miniapp_appid',''));$secret=trim((string)\setting('wechat.miniapp_secret',''));
         $asrReady=$asr['asr_profile']==='tencent_sentence'&&$asrApi==='SentenceRecognition'&&$asrEncoding==='json'&&in_array($asrEngine,['16k_zh_dialect','16k_zh','16k_zh-PY','16k_yue'],true)&&$tencentId!==''&&$tencentKey!==''&&!$tencentCredentialError;
@@ -848,7 +947,7 @@ final class ChatGoRuntimeConfig
             'av_tools_ready'=>$avTools,'av_schema_ready'=>$avSchema,'asr_api_name'=>$asrApi,'asr_data_encoding'=>$asrEncoding,'tencent_asr_engine'=>$asrEngine,
             'tencent_asr_secret_id'=>$asrReady?$tencentId:'','tencent_asr_secret_key'=>$asrReady?$tencentKey:'',
             'tencent_asr_secret_id_configured'=>$asr['tencent_asr_secret_id_configured'],'tencent_asr_secret_key_configured'=>$asr['tencent_asr_secret_key_configured'],
-            'asr_public_root'=>$states['audio']['enabled']?$asrPublicRoot:'','asr_public_origin'=>$states['audio']['enabled']?$asrPublicOrigin:'','asr_public_ready'=>$asrPublicReady,
+            'asr_public_root'=>$environment==='test'&&$states['audio']['enabled']?$asrPublicRoot:'','asr_public_origin'=>$environment==='test'&&$states['audio']['enabled']?$asrPublicOrigin:'','asr_public_ready'=>$asrPublicReady,
             'asr_profile'=>$asr['asr_profile'],'asr_configured'=>$asrReady,'asr_missing'=>$asrReady?[]:[$asr['asr_profile']==='disabled'?'服务端语音识别已停用':'腾讯云一句话识别 SecretId / SecretKey 未配置、无法解密或引擎配置无效'],'wechat_secret_configured'=>$secret!=='','av_prerequisites_ready'=>!$avMissing,
             'wechat_credential_ready'=>$credentialFile!=='','av_enabled'=>$states['audio']['enabled'],'av_temp_root'=>$states['audio']['enabled']?$avTemp:'',
             'wechat_credential_file'=>$requested&&$messages?$credentialFile:'','wechat_rejection_directory'=>$requested&&$messages?$rejectionDirectory:'',
@@ -901,7 +1000,8 @@ final class ChatGoRuntimeConfig
             if(!$shengwang)$missing[]='声网 AppID、App Certificate、REST Customer ID/Secret 或发布权限确认未就绪';
             $resources=new ChatCallResources($this->db,null,$this->environment()==='test');$settings=$resources->settings()['config'];
             if(empty($settings['enabled']))$missing[]='通话总开关尚未开放，请在音视频通话的功能与密钥中保存设置';
-            if(empty($settings['audio_enabled'])&&empty($settings['video_enabled']))$missing[]='语音和视频通话均已关闭';
+            if(empty($settings['audio_enabled']))$missing[]='实时语音通话尚未开放';
+            if($this->environment()==='production'&&!empty($settings['video_enabled']))$missing[]='视频通话必须保持关闭，本次发布不含视频通话能力';
             foreach($this->db->fetchAll('SELECT * FROM chat_call_resource_pools ORDER BY id DESC') as $row){
                 $provider=(string)$row['provider'];if(!in_array($provider,['wechat','shengwang'],true))continue;
                 $profile=json_decode((string)$row['meter_json'],true,32,JSON_THROW_ON_ERROR);
@@ -927,8 +1027,8 @@ final class ChatGoRuntimeConfig
                         $mediaReady[$media]=!empty($settings[$media.'_enabled'])&&in_array($provider,$priority,true)
                             &&$costs[$media]>0&&(int)$decision['available_units']>=$costs[$media];
                     }
-                    if(!$mediaReady['audio']&&!$mediaReady['video'])$poolMissing[]=$poolLabel.'当前路由未选择此通道，或额度不足以覆盖双端安全通话窗口';
-                    if(!empty($settings['enabled'])&&($mediaReady['audio']||$mediaReady['video'])){
+                    if(!$mediaReady['audio'])$poolMissing[]=$poolLabel.'实时语音路由未选择此通道，或额度不足以覆盖双端安全通话窗口';
+                    if(!empty($settings['enabled'])&&!empty($settings['audio_enabled'])&&($this->environment()!=='production'||empty($settings['video_enabled']))&&$mediaReady['audio']){
                         $providers[$provider]=['configured'=>true,'pool_ready'=>true]+$mediaReady;$valid=true;
                     }
                 }catch(\Throwable $e){$missing[]='通话资源池的音视频计量参数不完整或无效';}

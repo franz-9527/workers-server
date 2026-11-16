@@ -134,13 +134,22 @@ type Service struct {
 	guard    Authority
 	broker   Broker
 	provider MediaProvider
+	audio    bool
+	video    bool
 }
 
-func NewService(db *sql.DB, g Authority, b Broker, p MediaProvider) (*Service, error) {
-	if db == nil || g == nil || b == nil || p == nil {
+func NewService(db *sql.DB, g Authority, b Broker, p MediaProvider, media ...bool) (*Service, error) {
+	audio, video := true, true
+	if len(media) != 0 {
+		if len(media) != 2 {
+			return nil, ErrInvalid
+		}
+		audio, video = media[0], media[1]
+	}
+	if db == nil || g == nil || b == nil || p == nil || !audio && !video {
 		return nil, ErrInvalid
 	}
-	return &Service{db, g, b, p}, nil
+	return &Service{db: db, guard: g, broker: b, provider: p, audio: audio, video: video}, nil
 }
 func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})

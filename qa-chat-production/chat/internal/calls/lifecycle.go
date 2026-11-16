@@ -19,6 +19,9 @@ func (s *Service) Create(ctx context.Context, p ports.Principal, q Request) (Vie
 	if !positive(q.ConversationID) || !positive(q.PeerID) || p.ActorID == q.PeerID || !opPattern.MatchString(q.Operation) || !instancePattern.MatchString(q.Instance) || (q.Media != Audio && q.Media != Video) {
 		return result, ErrInvalid
 	}
+	if q.Media == Audio && !s.audio || q.Media == Video && !s.video {
+		return result, ErrUnavailable
+	}
 	hash := operation("create", q)
 	var replay *View
 	e := s.tx(ctx, func(tx *sql.Tx) error {

@@ -19,18 +19,18 @@ python3 tools/test_check_chat_l1_real.py
 python3 tools/test_build_chat_l1_evidence.py
 python3 tools/test_check_chat_non_av_real.py
 python3 tools/test_build_chat_non_av_evidence.py
-for profile in text text-images full; do
+for profile in text text-images full selected; do
   python3 tools/check-chat-release.py --template --profile "$profile" > "/tmp/chat-release-$profile.json"
 done
 python3 tools/check-chat-release.py --template > /tmp/chat-release-default.json
 python3 - <<'PY'
 import json
-expected={"text":["text","governance"],"text-images":["text","governance","images"],"full":["text","images","governance","reminders"]}
+expected={"text":["text","governance"],"text-images":["text","governance","images"],"full":["text","images","governance","reminders"],"selected":["text","images","governance","reminders","audio","asr","video","calls","paid_sms"]}
 for profile,caps in expected.items():
     data=json.load(open(f"/tmp/chat-release-{profile}.json",encoding="utf-8"))
     assert data["profile"]==profile and data["capabilities"]==caps, data
 assert json.load(open("/tmp/chat-release-default.json",encoding="utf-8"))["profile"]=="full"
-print("L1/L2/L3 templates and fail-closed profile tests passed")
+print("L1/L2/L3/selected templates and fail-closed profile tests passed")
 PY
 
 node tools/test_chat_s11.js
@@ -153,13 +153,22 @@ $runtime->prepareProduction(1,"super_admin");
 $direct=$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]);
 $helper=setting("chat.go_production_text_requested","0");
 $nonAv=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_non_av_requested"]);
+$selected=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_selected_requested"]);
 $reminders=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.reminders_enabled"]);
+$sms=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.sms_reminders_enabled"]);
+$calls=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.calls_enabled"]);
 $orderPolicy=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.order_policy_enabled"]);
 $collaboration=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.collaboration_enabled"]);
 $internal=(string)$db->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_internal_key_ciphertext"]);
-if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="1"||$reminders!=="1"||$orderPolicy!=="1"||$collaboration!=="1"||$internal==="") throw new RuntimeException("CHAT_QA_PRODUCTION_NON_AV_REQUEST_NOT_PERSISTED");
-echo "Managed PHP signing, release/internal keys and non-AV request initialized\n";
+$callConfig=json_decode((string)$db->fetchValue("SELECT config_json FROM chat_call_settings WHERE id=1"),true,32,JSON_THROW_ON_ERROR);
+if((string)$direct!=="1"||(string)$helper!=="1"||$nonAv!=="0"||$selected!=="1"||$reminders!=="1"||$sms!=="1"||$calls!=="1"||$orderPolicy!=="1"||$collaboration!=="1"||$internal===""||empty($callConfig["audio_enabled"])||!empty($callConfig["video_enabled"])) throw new RuntimeException("CHAT_QA_PRODUCTION_SELECTED_REQUEST_NOT_PERSISTED");
+echo "Managed PHP signing, selected capability request and audio-only call policy initialized\n";
 ' "$site/bootstrap.php"
+
+# The isolated host has no real ASR/SMS/call-provider credentials. Verify the
+# selected request remains fail-closed, then exercise the historical non-AV
+# runtime path for deployment/rollback coverage without claiming real channels.
+mysql chat_fixture -e "UPDATE system_settings SET setting_value='0' WHERE setting_key='chat.go_production_selected_requested'; UPDATE system_settings SET setting_value='1' WHERE setting_key='chat.go_production_non_av_requested';"
 
 cd chat
 mkdir -p bin
@@ -450,6 +459,53 @@ missing=builder.validate_auto(data,os.environ["SOURCE_SHA"])
 if missing:raise RuntimeError("non-AV automation evidence invalid: "+",".join(missing))
 out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
 print("Non-AV schema 2 automation evidence written:",out,len(data["cases"]),"cases")
+PY
+
+SOURCE_SHA="$source_sha" QA_REPO_ROOT="$repo_root" python3 - <<'PY'
+import json, os, pathlib, subprocess
+root=pathlib.Path.cwd()
+run_id=os.environ.get("GITHUB_RUN_ID","").strip()
+server=os.environ.get("GITHUB_SERVER_URL","https://github.com").rstrip("/")
+repository=os.environ.get("GITHUB_REPOSITORY","franz-9527/workers-server").strip("/")
+run_reference=f"{server}/{repository}/actions/runs/{run_id}" if run_id else "workers-server/local-isolated-run"
+data={
+  "schema":1,
+  "profile":"selected-automation",
+  "revision":os.environ["SOURCE_SHA"],
+  "capabilities":["text","images","governance","reminders","audio","asr","video","calls","paid_sms"],
+  "excluded_capabilities":["video_calls"],
+  "environment":"isolated",
+  "go_version":subprocess.check_output(["go","env","GOVERSION"],text=True).strip(),
+  "database_version":(root/"server"/"VERSION").read_text(encoding="utf-8").strip(),
+  "source_verified":True,
+  "run_reference":run_reference,
+  "status":"automation_passed_real_acceptance_pending",
+  "checks":{
+    "release_profile_selected":True,
+    "go_tests_and_race":True,
+    "audio_only_call_policy":True,
+    "video_call_release_gate":True,
+    "php_selected_request_policy":True,
+    "legacy_non_av_deployment_and_rollback":True,
+    "recovery_gate":True
+  },
+  "pending_real_acceptance":{
+    "test_site_business_flows":True,
+    "ios_device":True,
+    "android_device":True,
+    "wechat_live_media_safety":True,
+    "qiniu_live_media":True,
+    "tencent_live_asr":True,
+    "wechat_live_audio_call":True,
+    "shengwang_live_audio_call":True,
+    "aliyun_paid_sms":True,
+    "target_host_capacity":True
+  },
+  "production_deployment_executed":False
+}
+out=pathlib.Path(os.environ["QA_REPO_ROOT"])/"selected-automation-evidence.json"
+out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+print("Selected-capability automation evidence written:",out)
 PY
 
 echo "Isolated production chat deployment verified for source SHA $source_sha"

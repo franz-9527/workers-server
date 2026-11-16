@@ -6,14 +6,14 @@
 
 <?php if(($goRuntime['environment']??'')==='production'): ?>
 <section class="admin-card admin-mb-3"><div class="admin-card__header"><strong>正式站首次启用</strong><span class="admin-badge admin-badge--info"><?= !empty($goStatus['business_ready'])?'正式聊天运行中':(!empty($goStatus['callback_only_ready'])?'微信回执运行中':'等待启动') ?></span></div><div class="admin-card__body">
-<p>初始化会生成并加密保存 PHP↔Go 身份密钥、正式短效放行密钥与内部提醒签名密钥，并请求启用已在测试站验收通过的非音视频能力：订单聊天、协作群、文字、图片、治理和免费订阅提醒。语音消息、ASR、视频消息、实时通话及付费短信继续关闭。请先在 workers-server 与 test.20m.cc 完成当前 SHA 的非音视频完整验收，再执行此操作；正式站不再创建测试订单或测试消息。</p>
-<ul><li>恢复核验：<?= e(['ready'=>'已通过','unconfigured'=>'尚未建立基线','unreadable'=>'PHP 无法读取门禁文件，请检查正式站 open_basedir 和文件权限','blocked'=>'当前处于恢复维护状态','invalid'=>'门禁文件或恢复代次校验失败'][$goRuntime['message_recovery_status']??'']??'待检查') ?></li><li>正式收发：<?= !empty($goStatus['business_ready'])?'已就绪':'待通过正式放行及连接检查' ?></li><li>非音视频放行：<?= !empty($goRuntime['production_non_av_requested'])?'已请求应用':'尚未请求' ?></li></ul>
+<p>初始化会生成并加密保存 PHP↔Go 身份密钥、正式短效放行密钥与内部提醒签名密钥，并请求启用已在测试站验收通过的选定能力：文字、图片、治理、免费订阅提醒、语音消息、ASR、视频消息、实时语音和付费短信。视频通话保持关闭，并由 PHP 与 Go 两层拒绝。请先在 workers-server 与 test.20m.cc 完成当前 SHA 的完整验收；正式站不创建测试订单或测试消息。</p>
+<ul><li>恢复核验：<?= e(['ready'=>'已通过','unconfigured'=>'尚未建立基线','unreadable'=>'PHP 无法读取门禁文件，请检查正式站 open_basedir 和文件权限','blocked'=>'当前处于恢复维护状态','invalid'=>'门禁文件或恢复代次校验失败'][$goRuntime['message_recovery_status']??'']??'待检查') ?></li><li>正式收发：<?= !empty($goStatus['business_ready'])?'已就绪':'待通过正式放行及连接检查' ?></li><li>选定能力放行：<?= !empty($goRuntime['production_selected_requested'])?'已请求应用':'尚未请求' ?></li><li>视频通话：保持关闭</li></ul>
 <?php if(empty($goStatus['business_ready'])&&!empty($goRuntime['production_text_status'])): ?>
 <ul><?php foreach($goRuntime['production_text_status'] as $missing): ?><li><?= e($missing) ?></li><?php endforeach; ?></ul>
 <?php endif; ?>
 <?php if(empty($goRuntime['message_operations_configured'])): ?><p class="admin-text-muted">首次核验使用具备读取 binlog 权限的 MySQL 维护账号。它的密码是该 MySQL 账号的密码，日常升级无需填写。</p><?php endif; ?>
 <?php if($canManage): ?><div class="admin-inline-actions">
-<form method="post" action="<?= e(admin_url('chat.settings')) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="prepare_production"><button class="admin-btn admin-btn--primary">初始化非音视频聊天并应用</button></form>
+<form method="post" action="<?= e(admin_url('chat.settings')) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="prepare_production"><button class="admin-btn admin-btn--primary">初始化选定聊天能力并应用</button></form>
 <form method="post" action="<?= e(admin_url('chat.settings')) ?>"><?= csrf()->input() ?><input type="hidden" name="_action" value="apply_runtime"><button class="admin-btn">应用已保存配置 / 重新检查</button></form>
 <a class="admin-btn" href="<?= e(admin_url('chat.settings')) ?>">刷新状态</a></div><?php endif; ?>
 </div></section>

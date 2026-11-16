@@ -48,9 +48,10 @@ jobs:
           CHAT_AUTH_TEST_REDIS_ADDRESS: 127.0.0.1:6379
       - uses: actions/upload-artifact@v4
         with:
-          name: chat-non-av-automation-${{ steps.source.outputs.sha }}
+          name: chat-selected-automation-${{ steps.source.outputs.sha }}
           path: |
             l1-automation-evidence.json
             non-av-automation-evidence.json
+            selected-automation-evidence.json
           if-no-files-found: error
           retention-days: 30

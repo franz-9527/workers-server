@@ -121,7 +121,7 @@ while (( STOP == 0 )); do
   CONFIG="$STATE/chat.runtime.json"
   if [[ "$CHAT_SITE" == production && "$ROOT" == "$PHP_ROOT" && ${CHAT_CONFIG_MANUAL:-0} != 1 && ! -f "$CHAT/chat.json" ]]; then
     CONFIG="$STATE/production.runtime.json"
-    unset CHAT_PROD_TEXT CHAT_PROD_NON_AV CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY CHAT_INTERNAL_KEY CHAT_QINIU_ACCESS_KEY CHAT_QINIU_SECRET_KEY CHAT_MEDIA_PROXY_KEY
+    unset CHAT_PROD_TEXT CHAT_PROD_NON_AV CHAT_PROD_SELECTED CHAT_PROD_MYSQL_USER CHAT_MYSQL_PASSWORD CHAT_PROD_RELEASE_FILE CHAT_RELEASE_KEY CHAT_REDIS_PASSWORD CHAT_HISTORY_CURSOR_KEY CHAT_INTERNAL_KEY CHAT_QINIU_ACCESS_KEY CHAT_QINIU_SECRET_KEY CHAT_MEDIA_PROXY_KEY CHAT_MEDIA_RELAY_KEY CHAT_WECHAT_CALLBACK_TOKEN CHAT_WECHAT_CALLBACK_AES_KEY CHAT_TENCENT_ASR_SECRET_ID CHAT_TENCENT_ASR_SECRET_KEY CHAT_SHENGWANG_CERTIFICATE CHAT_SHENGWANG_CUSTOMER_ID CHAT_SHENGWANG_CUSTOMER_SECRET
     if [[ -f "$STATE/production.local.env" ]]; then
       set -a
       source "$STATE/production.local.env"
@@ -147,12 +147,12 @@ while (( STOP == 0 )); do
       elif (
         source "$STATE/production.text.env" &&
           "$EXE" check-config --config "$STATE/production.text.json" --probe &&
-          { [[ ${CHAT_PROD_NON_AV:-0} != 1 ]] || "$PHP_BIN" "$PHP_ROOT/bin/chat-reminders.php" --check >/dev/null; }
+          { [[ ${CHAT_PROD_NON_AV:-0} != 1 && ${CHAT_PROD_SELECTED:-0} != 1 ]] || "$PHP_BIN" "$PHP_ROOT/bin/chat-reminders.php" --check >/dev/null; }
       ); then
         source "$STATE/production.text.env" || { sleep 10; continue; }
         CONFIG="$STATE/production.text.json"
         printf '%s\n' READY > "$RELOAD_STATE/production-text-status"
-        if [[ ${CHAT_PROD_NON_AV:-0} == 1 ]]; then echo 'CHAT_PRODUCTION_NON_AV_READY'; else echo 'CHAT_PRODUCTION_TEXT_READY'; fi
+        if [[ ${CHAT_PROD_SELECTED:-0} == 1 ]]; then echo 'CHAT_PRODUCTION_SELECTED_READY'; elif [[ ${CHAT_PROD_NON_AV:-0} == 1 ]]; then echo 'CHAT_PRODUCTION_NON_AV_READY'; else echo 'CHAT_PRODUCTION_TEXT_READY'; fi
       else
         printf '%s\n' GO_PREFLIGHT > "$RELOAD_STATE/production-text-status"
         echo 'CHAT_PRODUCTION_TEXT_PENDING: GO_PREFLIGHT'
