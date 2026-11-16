@@ -19,6 +19,12 @@ use WorkerAdmin\Http\Admin\AdminRequestGuard;
 
 $config = ['enabled'=>true,'key_id'=>'chat-v1','seed_env'=>'CHAT_ACCESS_SEED'];
 
+// The standalone admin exchange exercises AdminSessionPolicy without loading
+// the web bootstrap that normally provides the global settings helper.
+if (!function_exists('setting')) {
+    function setting($key, $default=null) { return $default; }
+}
+
 if (in_array(($argv[1] ?? ''), ['--issue-mini','--issue-admin','--logout-admin'],true)) {
     if (getenv('CHAT_AUTH_TEST_INTEGRATION') !== '1') exit(2);
     $host = (string)getenv('CHAT_AUTH_TEST_MYSQL_HOST');

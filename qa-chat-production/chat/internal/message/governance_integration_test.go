@@ -84,8 +84,8 @@ func TestMySQLS18AuditSnapshotIsolationAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	detail, err = g.AuditHistory(ctx, admin, HistoryRequest{ConversationID: q.ConversationID, TargetID: first.MessageID})
-	if err != nil || detail.Messages[0].Text == nil || detail.Messages[0].State != "recalled" {
-		t.Fatal("audit lost recalled content", detail, err)
+	if err != nil || len(detail.Messages) != 1 || detail.Messages[0].Text != nil || detail.Messages[0].State != "recalled" {
+		t.Fatal("audit exposed recalled content", detail, err)
 	}
 	if f.text("SELECT COUNT(*) FROM chat_member_reads") != before {
 		t.Fatal("audit marked read")
