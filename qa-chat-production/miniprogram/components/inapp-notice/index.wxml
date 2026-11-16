@@ -1,0 +1,24 @@
+<view wx:if="{{call}}" class="incoming-call-card {{call.media === 'video' ? 'is-video' : 'is-audio'}}" style="top:{{top}}px;" role="alert" aria-live="assertive">
+  <view class="incoming-call-main" bindtap="openCall" aria-label="{{call.peerName}}，{{call.media === 'video' ? '视频' : '语音'}}通话来电，点击展开">
+    <image class="incoming-call-avatar" src="{{call.peerAvatar}}" mode="aspectFill"/>
+    <view class="incoming-call-copy">
+      <text class="incoming-call-name">{{call.peerName}}</text>
+      <view class="incoming-call-kind"><view class="incoming-call-pulse"></view><text>{{call.media === 'video' ? '视频通话' : '语音通话'}} · 正在呼叫你</text></view>
+    </view>
+  </view>
+  <view class="incoming-call-actions">
+    <button class="incoming-call-action reject" data-action="reject" catchtap="callAction" disabled="{{callBusy}}" aria-label="拒接通话"><view class="incoming-call-action-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>拒接</text></button>
+    <button class="incoming-call-action accept" data-action="accept" catchtap="callAction" disabled="{{callBusy}}" aria-label="接听通话"><view class="incoming-call-action-icon"><text class="chat-icon chat-icon-phone" aria-hidden="true"></text></view><text>接听</text></button>
+  </view>
+</view>
+<view wx:elif="{{notice}}" class="inapp-notice kind-{{notice.kind}}" style="top:{{top}}px;" role="alert" aria-live="polite">
+  <view class="notice-mark" aria-hidden="true"><text class="{{notice.kind === 'chat' ? 'cuIcon-commentfill' : (notice.kind === 'todo' ? 'cuIcon-formfill' : 'cuIcon-noticefill')}}"></text></view>
+  <view class="notice-copy" bindtap="open">
+    <text class="notice-title">{{notice.title}}</text>
+    <text class="notice-description">{{notice.description}}</text>
+  </view>
+  <view class="notice-controls">
+    <button class="notice-action" bindtap="open">{{notice.actionText}}</button>
+    <button class="notice-close" catchtap="dismiss" aria-label="关闭本次提醒">×</button>
+  </view>
+</view>

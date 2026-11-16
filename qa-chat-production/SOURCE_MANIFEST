@@ -317,12 +317,12 @@ c96332b5e9ad495f55e50fe580217787265be344  qa-chat-production/miniprogram/utils/C
 ba8e6355d416580158672eafea47c12074b07b14  qa-chat-production/miniprogram/utils/ChatOrderCard.js
 a924d68fe9d24766b79e91f7363051ef1f07a0a1  qa-chat-production/miniprogram/utils/ChatPendingLedger.js
 355b8dad5109b3d9cd29b5a41e3f224a1707e4fb  qa-chat-production/miniprogram/utils/ChatPresentation.js
-bf45358c99bd6e4ff3efd323686fa24293af8e64  qa-chat-production/miniprogram/utils/ChatRuntime.js
+a77dca5f3444f7ed460c37406eb4e9690e8b8dac  qa-chat-production/miniprogram/utils/ChatRuntime.js
 ba63a1084f954b31c45e42fa79fc27cdf07d9660  qa-chat-production/miniprogram/utils/ChatVoiceRecorder.js
 0759d23ab35d8bfc0bde713ec267e6935b96994f  qa-chat-production/miniprogram/utils/CustomerOrderBillingPresentation.js
 98551ba7c356ebfdb137d5537770ce40a3e65e5a  qa-chat-production/miniprogram/utils/CustomerService.js
 decc4ee13e813a4973dfd69e97b81af88a46c9f4  qa-chat-production/miniprogram/utils/DateUtils.js
-2d7ca1f95d8dfc23a95a8bf2d8c16c4fc4198090  qa-chat-production/miniprogram/utils/InAppNotice.js
+ffd550460841be463aabe56c7e56efa5fff4d788  qa-chat-production/miniprogram/utils/InAppNotice.js
 7730e1b74ba7a9bfcefae96f643e8908c2b0e289  qa-chat-production/miniprogram/utils/LocationUtils.js
 6e390e17b8327c9aef1ef421890a19dc1df15b8f  qa-chat-production/miniprogram/utils/MessageNavigation.js
 f6743e13c696beb33016c3c3540584df54ff11c5  qa-chat-production/miniprogram/utils/NotificationState.js
@@ -1215,3 +1215,7 @@ e0cb01da6fdf3a1ce28587bf71cb7bdccc7dfd65  qa-chat-production/tools/test_check_ch
 bb3f716ac8eeef93ed77016e55c586e4210b0d20  qa-chat-production/tools/test_check_chat_release_profiles.py
 e6c29b26933ce31b839bb063b9ff2a3fd126dd88  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxss
 a8e40ba76dd325f6419b10f4cda68d47e600c1cc  qa-chat-production/server/assets/chat-testing-client.js
+fe40d96b7c1a2d55d77224dcde36d249f29854d2  qa-chat-production/miniprogram/components/inapp-notice/index.js
+03483859da80075ccb05a47835e3a86176604361  qa-chat-production/miniprogram/components/inapp-notice/index.wxml
+68505a3794b8921fb69e0960fdd34a3fefed7692  qa-chat-production/miniprogram/components/inapp-notice/index.wxss
+2a73eebfd4f271fa3eb335e8c22ad61f1ae723ab  qa-chat-production/tools/test_chat_notice_recovery.js

@@ -99,10 +99,8 @@ function get() {
  const io = {
   randomBytes:length=>new Promise((resolve,reject)=>{if(typeof wx.getRandomValues!=='function'){reject(new Error('当前设备暂不支持通话'));return}wx.getRandomValues({length,success:r=>resolve(Array.from(new Uint8Array(r.randomValues),b=>b.toString(16).padStart(2,'0')).join('')),fail:reject})}),
   incoming(view,epoch){
-   wx.showModal({title:view.media==='video'?'视频来电':'语音来电',content:'订单沟通来电',confirmText:'接听',cancelText:'拒接',success:async result=>{
-    if(!singleton||singleton.epoch!==epoch||!singleton.foreground||singleton.calls.current?.call_id!==view.call_id)return
-    try{await singleton.calls.action(result.confirm?'accept':'reject');if(result.confirm)wx.navigateTo({url:'/subpackages/chat/call/index'})}catch(_){wx.showToast({title:'来电状态已变化，请重新查看',icon:'none'})}
-   }})
+   if(!singleton||singleton.epoch!==epoch||!singleton.foreground||singleton.calls.current?.call_id!==view.call_id)return
+   singleton.emit('calls.incoming',{...view})
   },
   av:createWxAV(wx),
   disk:createWxCache(wx,()=>wx.showToast({title:'聊天缓存无法保存，可在设置中清理',icon:'none'})),

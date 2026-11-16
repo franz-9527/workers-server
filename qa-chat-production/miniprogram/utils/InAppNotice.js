@@ -2,13 +2,18 @@
 const NotificationState=require('./NotificationState.js')
 const ChatRuntime=require('./ChatRuntime.js')
 const OrderApi=require('./OrderApi.js')
+const Identity=require('./ChatIdentity.js')
 let started=false,foreground=false,context=-1,serial=0,currentPage=null,route='',pageOptions={},current=null,timer=null
 let queue=[],seen=new Map(),chatBaseline=new Map(),chatReady=false,businessBaseline=null,listeners=[]
+let incomingCall=null,callSerial=0,callListeners=[]
 const DISPLAY_MS=10000
 const now=()=>Date.now(),revision=()=>OrderApi.contextRevision?OrderApi.contextRevision():0
+function visibleCall(){return foreground&&currentPage&&!/subpackages\/chat\/call\//.test(route)&&incomingCall?{...incomingCall}:null}
 function notify(){listeners.slice().forEach(fn=>fn(current?{...current}:null))}
+function notifyCall(){const value=visibleCall();callListeners.slice().forEach(fn=>fn(value?{...value}:null))}
 function clearTimer(){if(timer)clearTimeout(timer);timer=null}
-function checkContext(){const value=revision();if(value===context)return;context=value;serial++;clearTimer();queue=[];seen.clear();chatBaseline.clear();chatReady=false;businessBaseline=null;current=null;notify()}
+function resetCall(){callSerial++;incomingCall=null;notifyCall()}
+function checkContext(){const value=revision();if(value===context)return;context=value;serial++;clearTimer();queue=[];seen.clear();chatBaseline.clear();chatReady=false;businessBaseline=null;current=null;resetCall();notify()}
 function suppress(item){
  if(!foreground||!currentPage)return true
  if(/subpackages\/chat\/call\//.test(route))return true
@@ -17,6 +22,7 @@ function suppress(item){
 }
 function advance(){
  clearTimer();current=null
+ if(incomingCall){notify();return}
  if(!foreground||!currentPage){notify();return}
  queue=queue.filter(item=>item.expires>now()&&!suppress(item))
  queue.sort((a,b)=>b.priority-a.priority||b.created-a.created)
@@ -45,9 +51,55 @@ function business(summary){
  if(changedTodo)push({key:'todo:'+snapshot.todo,kind:'todo',priority:80,title:top.role+' · '+top.action,description:'有订单事项待处理，点击查看',actionText:'处理',orderId:top.orderId,detailPage:top.detailPage})
  else if(changedNotice)push({key:'notice:'+snapshot.notice,kind:'notice',priority:60,title:latest.title||'新的业务通知',description:'通知与待办有新动态',actionText:'查看'})
 }
+function incomingView(view){
+ const manager=ChatRuntime.get(),actor=String(manager.calls?.actorID||'')
+ return !!view&&view.state==='ringing'&&String(view.callee_id||'')===actor&&/^[1-9][0-9]{0,19}$/.test(String(view.call_id||''))&&/^[1-9][0-9]{0,19}$/.test(String(view.conversation_id||''))
+}
+async function loadCallIdentity(view,token){
+ const manager=ChatRuntime.get()
+ if(!view?.policy_version||!manager.io?.participants)return
+ const request={conversation_id:String(view.conversation_id),policy_version:String(view.policy_version),sender_ids:[String(view.caller_id),String(view.callee_id)]}
+ try{
+  const result=await manager.io.participants([request]),entry=Identity.response([request],result)[request.conversation_id]
+  const peer=entry?.members?.[String(view.caller_id)]
+  if(token!==callSerial||!incomingCall||incomingCall.callId!==String(view.call_id)||!peer)return
+  incomingCall={...incomingCall,peerName:peer.displayName,peerAvatar:peer.avatarPath};notifyCall()
+ }catch(_){}
+}
+function setIncoming(view,alert=false){
+ checkContext()
+ if(!incomingView(view)){if(incomingCall&&String(view?.call_id||'')===incomingCall.callId)resetCall();return}
+ const id=String(view.call_id),same=incomingCall?.callId===id
+ if(!same){
+  callSerial++
+  if(current&&current.expires>now())queue.push(current)
+  clearTimer();current=null;notify()
+ }
+ const token=callSerial
+ incomingCall={
+  callId:id,conversationId:String(view.conversation_id),callerId:String(view.caller_id),calleeId:String(view.callee_id),
+  media:view.media==='video'?'video':'audio',peerName:same?incomingCall.peerName:'订单成员',peerAvatar:same?incomingCall.peerAvatar:(Identity.avatars?.user||'/images/chat-user.svg'),
+  busy:same&&incomingCall.busy===true
+ }
+ notifyCall()
+ if(alert&&!same&&typeof wx.vibrateShort==='function')try{wx.vibrateShort({type:'medium'})}catch(_){}
+ loadCallIdentity(view,token)
+}
+function clearIncoming(id=''){
+ if(id&&incomingCall?.callId!==String(id))return
+ const had=!!incomingCall;resetCall()
+ if(had&&!current&&foreground&&currentPage)advance()
+}
 function chats(type,payload){
  checkContext()
- if(type==='reset'){chatBaseline.clear();chatReady=false;queue=queue.filter(x=>x.kind!=='chat');if(current?.kind==='chat')advance();return}
+ if(type==='reset'){chatBaseline.clear();chatReady=false;queue=queue.filter(x=>x.kind!=='chat');if(current?.kind==='chat')advance();clearIncoming();return}
+ if(type==='calls.suspend'){clearIncoming();return}
+ if(type==='calls.incoming'){setIncoming(payload,true);return}
+ if(type==='calls.changed'){
+  if(incomingView(payload))setIncoming(payload,false)
+  else if(incomingCall?.callId===String(payload?.call_id||''))clearIncoming(payload.call_id)
+  return
+ }
  if(type==='conversation.clear'){const id=String(payload?.conversation_id||'');chatBaseline.delete(id);queue=queue.filter(x=>x.conversationId!==id);if(current?.conversationId===id)advance();return}
  if(type!=='digests')return
  for(const row of payload?.items||[]){
@@ -62,9 +114,9 @@ function chats(type,payload){
  if(!payload?.has_more)chatReady=true
 }
 function start(){if(started)return;started=true;checkContext();NotificationState.subscribe(business,false);ChatRuntime.get().subscribe(chats)}
-function show(owner,nextRoute,options={}){start();checkContext();currentPage=owner;route=nextRoute||'';pageOptions=options;if(current&&suppress(current))advance();else if(!current)advance();if(foreground){NotificationState.refresh({maxAge:10000}).catch(()=>{})}notify()}
-function hide(owner){if(currentPage!==owner)return;currentPage=null;clearTimer();queue=[];current=null;notify()}
-function setForeground(value){start();checkContext();foreground=value===true;if(!foreground){clearTimer();queue=[];current=null;notify()}else if(currentPage){NotificationState.refresh({maxAge:10000}).catch(()=>{})}}
+function show(owner,nextRoute,options={}){start();checkContext();currentPage=owner;route=nextRoute||'';pageOptions=options;if(current&&suppress(current))advance();else if(!current&&!incomingCall)advance();if(foreground){NotificationState.refresh({maxAge:10000}).catch(()=>{})}notify();notifyCall()}
+function hide(owner){if(currentPage!==owner)return;currentPage=null;clearTimer();queue=[];current=null;notify();notifyCall()}
+function setForeground(value){start();checkContext();foreground=value===true;if(!foreground){clearTimer();queue=[];current=null;resetCall();notify()}else if(currentPage){NotificationState.refresh({maxAge:10000}).catch(()=>{});notifyCall()}}
 function dismiss(){checkContext();advance()}
 function activate(){
  checkContext();const item=current;if(!item||suppress(item))return
@@ -73,5 +125,27 @@ function activate(){
  else if(item.kind==='todo'&&item.orderId)wx.navigateTo({url:'/pages/'+(item.detailPage==='worker'?'workerOrder':'userOrder')+'/detail?id='+encodeURIComponent(item.orderId)})
  else wx.navigateTo({url:'/pages/notificationCenter/index?view=all'})
 }
+function openCall(){
+ checkContext();const item=visibleCall(),manager=ChatRuntime.get()
+ if(!item||manager.calls.current?.call_id!==item.callId)return
+ wx.navigateTo({url:'/subpackages/chat/call/index?call_id='+encodeURIComponent(item.callId)})
+}
+async function answerCall(action){
+ checkContext();if(action!=='accept'&&action!=='reject')return false
+ const item=visibleCall(),manager=ChatRuntime.get()
+ if(!item||item.busy||manager.calls.current?.call_id!==item.callId||manager.calls.current?.state!=='ringing')return false
+ incomingCall={...incomingCall,busy:true};notifyCall()
+ try{
+  await manager.calls.action(action)
+  clearIncoming(item.callId)
+  if(action==='accept')wx.navigateTo({url:'/subpackages/chat/call/index?call_id='+encodeURIComponent(item.callId)})
+  return true
+ }catch(_){
+  if(incomingCall?.callId===item.callId){incomingCall={...incomingCall,busy:false};notifyCall()}
+  if(typeof wx.showToast==='function')wx.showToast({title:'来电状态已变化，请重新查看',icon:'none'})
+  return false
+ }
+}
 function subscribe(fn){listeners.push(fn);fn(current?{...current}:null);return()=>{listeners=listeners.filter(x=>x!==fn)}}
-module.exports={start,show,hide,setForeground,dismiss,activate,subscribe}
+function subscribeCall(fn){callListeners.push(fn);const value=visibleCall();fn(value?{...value}:null);return()=>{callListeners=callListeners.filter(x=>x!==fn)}}
+module.exports={start,show,hide,setForeground,dismiss,activate,openCall,answerCall,subscribe,subscribeCall}
