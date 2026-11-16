@@ -47,6 +47,7 @@ function notice(){
   NotificationState:{subscribe(fn){summary=fn},refresh:()=>Promise.resolve()},
   ChatRuntime:{get:()=>manager},
   ChatIdentity,
+  CallSound:{sync(){},clear(){}},
   OrderApi:{contextRevision:()=>revision}
  }
  const module={exports:{}}
@@ -108,6 +109,12 @@ test('rapid call-card taps create one navigation until the first transition comp
  f.event('calls.changed',call);f.service.openCall();f.service.openCall();assert.equal(f.destinations.length,1)
  f.finishNavigation();f.service.openCall();assert.equal(f.destinations.length,2)
 })
+test('the matching conversation expands an incoming call to the immersive call page',()=>{
+ const f=notice(),call={call_id:'26',conversation_id:'36',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
+ f.route('subpackages/chat/conversation/index',{conversation_id:'36'})
+ f.event('calls.changed',call);f.event('calls.incoming',call)
+ assert.equal(f.call(),null);assert.equal(f.destinations.at(-1),'/subpackages/chat/call/index?call_id=26')
+})
 test('web-view routes immediately expand the incoming call because the native surface can cover normal overlays',()=>{
  const f=notice(),call={call_id:'25',conversation_id:'35',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
  f.route('subpackages/web/h5/index');f.event('calls.changed',call);f.event('calls.incoming',call)
@@ -124,7 +131,7 @@ test('incoming call rendering no longer uses the native confirmation modal',()=>
  const runtime=read('miniprogram/utils/ChatRuntime.js'),wxml=read('miniprogram/components/inapp-notice/index.wxml'),wxss=read('miniprogram/components/inapp-notice/index.wxss')
  assert.equal(runtime.includes("wx.showModal({title:view.media==='video'"),false)
  assert(wxml.includes('incoming-call-card')&&wxml.includes('data-action="reject"')&&wxml.includes('data-action="accept"'))
- assert(wxss.includes('.incoming-call-action.reject')&&wxss.includes('.incoming-call-action.accept')&&wxss.includes('min-width:92rpx'))
+ assert(wxss.includes('.incoming-call-action.reject')&&wxss.includes('.incoming-call-action.accept')&&wxss.includes('min-width:104rpx'))
 })
 test('registered redirect and web surfaces host the incoming-call bridge',()=>{
  const hosts=["miniprogram/pages/plus/plus.wxml","miniprogram/pages/mine/settings.wxml","miniprogram/pages/recharge/recharge.wxml","miniprogram/pages/location/location.wxml","miniprogram/pages/mine/examine.wxml","miniprogram/pages/web-view/web.wxml","miniprogram/pages/search/search.wxml","miniprogram/pages/pay/pay.wxml","miniprogram/pages/h5/h5.wxml","miniprogram/pages/help/help.wxml","miniprogram/pages/agreementCenter/index.wxml","miniprogram/pages/workerFinance/index.wxml","miniprogram/pages/realName/index.wxml","miniprogram/pages/merchantAuth/index.wxml","miniprogram/subpackages/web/view/index.wxml","miniprogram/subpackages/web/h5/index.wxml"]
