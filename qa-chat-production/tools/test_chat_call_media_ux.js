@@ -25,7 +25,7 @@ assert(conversation.includes('cachedURL(this.id,id,v.item_id,true)'),'image rend
 
 const notice=fs.readFileSync(path.join(root,'miniprogram/utils/InAppNotice.js'),'utf8')
 assert(notice.includes("route==='subpackages/chat/conversation/index'"),'matching conversation must use immersive incoming-call route')
-assert(notice.includes('CallSound.sync(view,actor)'),'incoming call must own foreground ringtone state')
+assert(notice.includes("CallSound.sync(view,ChatRuntime.get().calls?.actorID||'')"),'incoming call must own foreground ringtone state')
 
 const floatWxml=fs.readFileSync(path.join(root,'miniprogram/components/inapp-notice/index.wxml'),'utf8')
 assert(floatWxml.includes('{{call.peerName}}')&&floatWxml.includes('语音通话来电'),'floating call card must identify caller')

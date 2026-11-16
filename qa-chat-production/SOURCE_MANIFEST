@@ -1238,7 +1238,7 @@ b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_p
 1f3b51505dfa7215f4612ce1ae6a144023aa8c1b  qa-chat-production/tools/check-chat-release.py
 755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py
 2056412292774341fd5c8639c4e007b70233ece2  qa-chat-production/tools/test_build_chat_non_av_evidence.py
-997be08a8ee39959423a8a8d3ebef058797a7931  qa-chat-production/tools/test_chat_call_media_ux.js
+196c6e1da002d684d2dcaea7b6f0eb9ff44910db  qa-chat-production/tools/test_chat_call_media_ux.js
 ce7d23eaec597c42ba2fdbbb6817abcf05ce4f32  qa-chat-production/tools/test_chat_calls.js
 064416a8cc591e74270417b1b26d0ef28f649dcc  qa-chat-production/tools/test_chat_notice_recovery.js
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
