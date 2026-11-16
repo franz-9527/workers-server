@@ -25,5 +25,6 @@ jobs:
           php -l server/app/Application/Chat/ChatAsrSelfDiagnostic.php
           php -l server/app/Application/Chat/ChatGoRuntimeConfig.php
           php -l tests/chat_asr_admin_diagnostic.php
+          php -l tools/test-chat-tencent-asr.php
       - name: ASR admin diagnostic contract
         run: php tests/chat_asr_admin_diagnostic.php
