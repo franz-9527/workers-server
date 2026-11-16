@@ -281,7 +281,7 @@ text_status=$(sudo cat "$site/storage/private/chat-runtime-control/production-te
 echo "Go production non-AV status=$text_status"
 test "$text_status" = READY
 grep -q 'CHAT_PRODUCTION_NON_AV_READY' /tmp/chatqa-launch.log
-read -r serve_pid worker_pid credential_pid reminder_pid < "$state/processes"
+read -r serve_pid worker_pid credential_pid reminder_pid < <(sudo cat "$state/processes")
 test -n "$reminder_pid"
 sudo kill -0 "$reminder_pid"
 echo "Managed reminder loop is running: pid=$reminder_pid"
