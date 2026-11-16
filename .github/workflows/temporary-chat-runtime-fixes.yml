@@ -38,6 +38,8 @@ jobs:
           php server/tests/chat_call_verification_bootstrap.php
           php server/tests/chat_call_usage_optional_contract.php
           php server/tests/chat_settings_safety_contract.php
+          php server/tests/chat_calls_admin_form_contract.php
+          php server/tests/chat_call_enablement_contract.php
       - name: Mini program regressions
         run: |
           node tools/test_chat_voice_heard.js
