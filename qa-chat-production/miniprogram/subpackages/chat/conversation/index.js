@@ -618,6 +618,7 @@ Page({
   const index=Number(event.detail?.current),viewer=this.data.imageViewer
   if(viewer&&Number.isInteger(index)&&index>=0&&index<viewer.count&&index!==viewer.index)this.setData({imageViewer:{...viewer,index}})
  },
+ stopImageTouch(){},
  closeImageViewer(){if(this.data.imageViewer)this.setData({imageViewer:null})},
  openGovernance(){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index'})},
  openReport(mid,item){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index?conversation_id='+encodeURIComponent(this.id)+'&message_id='+encodeURIComponent(mid)+(item?'&item_id='+encodeURIComponent(item):'')})},

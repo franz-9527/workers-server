@@ -37,6 +37,25 @@ func TestMySQLS09ReadProgressAndUnread(t *testing.T){
  if _,e=h.Unread(f.ctx,p,r.ConversationID);e==nil{t.Fatal("stale authority member accepted")}
 }
 
+func TestMySQLS09SystemEventAttentionOnlyCountsMissedIncoming(t *testing.T){
+ f,_,h,r:=historyFixture(t,0)
+ type eventRow struct{seq int;sender,body string}
+ rows:=[]eventRow{
+  {1,"10203",`{"event":"call","call_id":"7001","media":"audio","outcome":"ended","duration_seconds":12,"caller_id":"10203","callee_id":"10202"}`},
+  {2,"10203",`{"event":"call","call_id":"7002","media":"audio","outcome":"rejected","caller_id":"10202","callee_id":"10203"}`},
+  {3,"10203",`{"event":"call","call_id":"7003","media":"audio","outcome":"cancelled","caller_id":"10203","callee_id":"10202","attention_actor_id":"10202"}`},
+  {4,"10202",`{"event":"call","call_id":"7004","media":"video","outcome":"missed","caller_id":"10202","callee_id":"10203","attention_actor_id":"10203"}`},
+ }
+ for _,row:=range rows{
+  f.exec(`INSERT INTO chat_messages(conversation_id,seq,sender_id,client_message_id,policy_version,message_type,text_body,state,state_version,safety_rule_version,created_at) VALUES(?,?,?,?,1,'system_event',?,'published',1,'system.call.v1',UTC_TIMESTAMP(6))`,string(r.ConversationID),row.seq,row.sender,client(7000+row.seq),row.body)
+ }
+ f.exec(`UPDATE chat_conversations SET last_seq=4,last_message_id=(SELECT MAX(id) FROM chat_messages WHERE conversation_id=?),last_message_at=UTC_TIMESTAMP(6) WHERE id=?`,string(r.ConversationID),string(r.ConversationID))
+ customer,e:=h.Unread(f.ctx,principal("10202"),r.ConversationID)
+ if e!=nil||customer.Count!=1||customer.FirstSeq!="3"{t.Fatalf("customer call attention %+v %v",customer,e)}
+ worker,e:=h.Unread(f.ctx,principal("10203"),r.ConversationID)
+ if e!=nil||worker.Count!=1||worker.FirstSeq!="4"{t.Fatalf("worker call attention %+v %v",worker,e)}
+}
+
 func TestMySQLS09DigestPageAndIsolation(t *testing.T){
  f,_,h,r:=historyFixture(t,3)
  p:=principal("10202")

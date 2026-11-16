@@ -659,6 +659,7 @@ async function s16NativeImageTests(){
  assert(w.includes('bindtap="sendImages"')&&w.includes('catchtap="previewImage"'))
  assert(w.includes('class="image-viewer"')&&w.includes('bindchange="imageViewerChange"'),'chat image preview uses one full-screen swipe viewer')
  assert(w.includes('show-menu-by-longpress="{{true}}"')&&w.includes('catchtap="closeImageViewer"'),'long press uses the native save menu and tapping the image closes')
+ assert(js.includes('stopImageTouch(){}'),'full-screen media viewer keeps its bound touch blocker')
  assert(!/previousImage|nextImage|image-viewer-save|关闭图片|上一张|下一张/.test(w+js),'image viewer has no explicit save/close/previous/next buttons')
  assert(!/activeFrames|previousFrame|nextFrame/.test(w+av),'video poster/frame images must not keep a second custom image viewer')
  assert(av.includes("this.openImageViewer(urls,0,'av'")&&chatAV.includes('nativeImageURL('),'retained video images reuse the same gesture viewer')

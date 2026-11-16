@@ -12,6 +12,11 @@ import (
 
 const unreadCountLimit = 1000
 
+// User messages are incoming when authored by another member. Trusted system
+// events carry an explicit attention actor so a call record can exist without
+// manufacturing an unread badge for participants who already handled the call.
+const incomingAttentionPredicate = `(m.message_type<>'system_event' AND m.sender_id<>? OR m.message_type='system_event' AND JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(m.text_body),m.text_body,'{}'),'$.attention_actor_id'))=?)`
+
 type UnreadWindow struct {
 	Mode              string              `json:"conversation_mode,omitempty"`
 	CountCapped       bool                `json:"unread_count_capped"`
@@ -81,10 +86,10 @@ func unreadLocked(ctx context.Context, tx *sql.Tx, p ports.Principal, id ports.I
 	if tx.QueryRowContext(ctx, `SELECT state FROM chat_conversations WHERE id=?`, string(id)).Scan(&result.ConversationState) != nil {
 		return UnreadWindow{}, ports.ErrUnavailable
 	}
-	predicate := `m.conversation_id=? AND m.seq>? AND m.seq<=? AND m.state='published' AND m.sender_id<>? AND m.policy_version<=? AND EXISTS (
+	predicate := `m.conversation_id=? AND m.seq>? AND m.seq<=? AND m.state='published' AND ` + incomingAttentionPredicate + ` AND m.policy_version<=? AND EXISTS (
  SELECT 1 FROM chat_member_intervals i WHERE i.conversation_id=m.conversation_id AND i.actor_id=?
  AND i.start_version<=m.policy_version AND (i.end_version IS NULL OR i.end_version>m.policy_version))`
-	args := []any{string(id), read, upper, string(p.ActorID), string(grant.Version), string(p.ActorID)}
+	args := []any{string(id), read, upper, string(p.ActorID), string(p.ActorID), string(grant.Version), string(p.ActorID)}
 	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM (SELECT m.id FROM chat_messages m FORCE INDEX (idx_chat_unread) WHERE `+predicate+` LIMIT 1001) unread_candidates`, args...).Scan(&result.Count); err != nil {
 		return UnreadWindow{}, ports.ErrUnavailable
 	}

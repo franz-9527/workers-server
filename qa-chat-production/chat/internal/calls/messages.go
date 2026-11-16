@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/franz-9527/workers/chat/internal/ports"
+	"github.com/franz-9527/workers/chat/internal/storagepolicy"
 )
 
 const callSystemRule = "system.call.v1"
@@ -20,6 +21,7 @@ type callSystemEvent struct {
 	DurationSeconds int64    `json:"duration_seconds,omitempty"`
 	CallerID        ports.ID `json:"caller_id"`
 	CalleeID        ports.ID `json:"callee_id"`
+	AttentionActorID ports.ID `json:"attention_actor_id,omitempty"`
 }
 
 func callMessageClientID(r record) string {
@@ -43,9 +45,9 @@ func (s *Service) callSystemEvent(ctx context.Context, tx *sql.Tx, r record) (ca
 	case Rejected:
 		v.Outcome, sender = "rejected", r.CalleeID
 	case Cancelled:
-		v.Outcome = "cancelled"
+		v.Outcome, v.AttentionActorID = "cancelled", r.CalleeID
 	case Missed:
-		v.Outcome = "missed"
+		v.Outcome, v.AttentionActorID = "missed", r.CalleeID
 	case Failed:
 		v.Outcome = "failed"
 	case Ended:
@@ -118,6 +120,14 @@ func (s *Service) ensureTerminalMessage(ctx context.Context, id ports.ID) error 
 		mid, err := result.LastInsertId()
 		if err != nil || mid < 1 {
 			return ports.ErrUnavailable
+		}
+		if err = storagepolicy.Stamp(ctx, tx, mid, "system_event"); err != nil {
+			return err
+		}
+		if payload.AttentionActorID.Valid() {
+			if _, err = tx.ExecContext(ctx, `INSERT INTO chat_reminder_events(conversation_id,seq,created_at) SELECT id,?,UTC_TIMESTAMP(6) FROM chat_conversations WHERE id=? AND scope_key NOT LIKE 'sandbox:%'`, seq, string(r.ConversationID)); err != nil {
+				return ports.ErrUnavailable
+			}
 		}
 		if _, err = tx.ExecContext(ctx, `INSERT INTO chat_message_changes(conversation_id,change_seq,message_id,state_version,change_type,created_at) VALUES(?,?,?,1,'message.accepted',UTC_TIMESTAMP(6))`, string(r.ConversationID), change, mid); err != nil {
 			return ports.ErrUnavailable

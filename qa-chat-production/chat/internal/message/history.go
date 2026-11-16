@@ -69,6 +69,7 @@ type SystemEventView struct {
 	DurationSeconds int64    `json:"duration_seconds,omitempty"`
 	CallerID        ports.ID `json:"caller_id"`
 	CalleeID        ports.ID `json:"callee_id"`
+	AttentionActorID ports.ID `json:"attention_actor_id,omitempty"`
 }
 type ChangeView struct {
 	Seq     ports.ID    `json:"change_seq"`
@@ -240,6 +241,9 @@ func scanCandidate(rows *sql.Rows, changes bool, audit ...bool) (candidate, erro
 func decodeSystemEvent(raw string) (SystemEventView, bool) {
 	var v SystemEventView
 	if json.Unmarshal([]byte(raw), &v) != nil || v.Event != "call" || !v.CallID.Valid() || !v.CallerID.Valid() || !v.CalleeID.Valid() || v.CallerID == v.CalleeID || (v.Media != "audio" && v.Media != "video") || v.DurationSeconds < 0 {
+		return SystemEventView{}, false
+	}
+	if v.AttentionActorID != "" && (!v.AttentionActorID.Valid() || v.AttentionActorID != v.CalleeID || (v.Outcome != "cancelled" && v.Outcome != "missed")) {
 		return SystemEventView{}, false
 	}
 	switch v.Outcome {

@@ -165,9 +165,12 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 			run(q)
 		}
 	}
-	run("CREATE TABLE chat_conversations(id BIGINT UNSIGNED PRIMARY KEY,policy_version BIGINT UNSIGNED NOT NULL DEFAULT 1,last_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_change_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_message_id BIGINT UNSIGNED NULL,last_message_at DATETIME(6) NULL) ENGINE=InnoDB")
+	run("CREATE TABLE chat_conversations(id BIGINT UNSIGNED PRIMARY KEY,scope_key VARCHAR(96) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'order:fixture',policy_version BIGINT UNSIGNED NOT NULL DEFAULT 1,last_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_change_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_message_id BIGINT UNSIGNED NULL,last_message_at DATETIME(6) NULL) ENGINE=InnoDB")
 	run("CREATE TABLE chat_members(conversation_id BIGINT UNSIGNED,actor_id BIGINT UNSIGNED,member_key VARCHAR(128),can_read TINYINT,can_send TINYINT,PRIMARY KEY(conversation_id,actor_id)) ENGINE=InnoDB")
-	run("CREATE TABLE chat_messages(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,conversation_id BIGINT UNSIGNED NOT NULL,seq BIGINT UNSIGNED NOT NULL,sender_id BIGINT UNSIGNED NOT NULL,client_message_id VARCHAR(43) NOT NULL,policy_version BIGINT UNSIGNED NOT NULL,message_type VARCHAR(24) NOT NULL,text_body TEXT NULL,state VARCHAR(16) NOT NULL,state_version BIGINT UNSIGNED NOT NULL,safety_rule_version VARCHAR(64) NOT NULL,created_at DATETIME(6) NOT NULL,UNIQUE KEY uq_seq(conversation_id,seq),UNIQUE KEY uq_client(sender_id,conversation_id,client_message_id)) ENGINE=InnoDB")
+	run("CREATE TABLE chat_messages(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,conversation_id BIGINT UNSIGNED NOT NULL,seq BIGINT UNSIGNED NOT NULL,sender_id BIGINT UNSIGNED NOT NULL,client_message_id VARCHAR(43) NOT NULL,policy_version BIGINT UNSIGNED NOT NULL,message_type VARCHAR(24) NOT NULL,text_body TEXT NULL,state VARCHAR(16) NOT NULL,state_version BIGINT UNSIGNED NOT NULL,safety_rule_version VARCHAR(64) NOT NULL,created_at DATETIME(6) NOT NULL,retention_policy_version BIGINT UNSIGNED NOT NULL DEFAULT 0,retention_mode VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'permanent',expires_at DATETIME(6) NULL,UNIQUE KEY uq_seq(conversation_id,seq),UNIQUE KEY uq_client(sender_id,conversation_id,client_message_id)) ENGINE=InnoDB")
+	run("CREATE TABLE chat_storage_policy(id TINYINT UNSIGNED PRIMARY KEY,revision BIGINT UNSIGNED NOT NULL,policy_json JSON NOT NULL,apply_through_id BIGINT UNSIGNED NOT NULL DEFAULT 0,updated_at DATETIME(6) NOT NULL) ENGINE=InnoDB")
+	run(`INSERT INTO chat_storage_policy(id,revision,policy_json,apply_through_id,updated_at) VALUES(1,7,'{"schema":1,"retention":{"text":{"mode":"permanent","days":0},"image":{"mode":"days","days":60},"audio":{"mode":"permanent","days":0},"video":{"mode":"days","days":60}},"tiering":{"enabled":false,"images":true,"audio":true,"videos":false,"age_days":60,"idle_days":30,"min_bytes":65536,"remaining_days":32,"batch":20},"quota":{"video_count":20,"video_bytes":104857600}}',0,UTC_TIMESTAMP(6))`)
+	run("CREATE TABLE chat_reminder_events(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,conversation_id BIGINT UNSIGNED NOT NULL,seq BIGINT UNSIGNED NOT NULL,created_at DATETIME(6) NOT NULL,processed_at DATETIME(6) NULL,UNIQUE KEY uq_chat_reminder_event(conversation_id,seq)) ENGINE=InnoDB")
 	run("CREATE TABLE chat_message_changes(conversation_id BIGINT UNSIGNED NOT NULL,change_seq BIGINT UNSIGNED NOT NULL,message_id BIGINT UNSIGNED NOT NULL,state_version BIGINT UNSIGNED NOT NULL,change_type VARCHAR(24) NOT NULL,created_at DATETIME(6) NOT NULL,PRIMARY KEY(conversation_id,change_seq)) ENGINE=InnoDB")
 	run("INSERT INTO chat_conversations(id) VALUES(1)")
 	run("INSERT INTO chat_members VALUES(1,11,'member:11',1,1),(1,12,'member:12',1,1)")
@@ -296,10 +299,21 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 		Event string `json:"event"`
 		CallID string `json:"call_id"`
 		Outcome string `json:"outcome"`
+		Attention string `json:"attention_actor_id"`
 	}
 	var raw string
 	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id LIMIT 1").Scan(&raw); e != nil || json.Unmarshal([]byte(raw), &callPayload) != nil || callPayload.Event != "call" || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "ended" {
 		t.Fatalf("ended call message %q %+v %v", raw, callPayload, e)
+	}
+	var retention uint64
+	var retentionMode string
+	var retentionExpiry sql.NullTime
+	if e = db.QueryRow("SELECT retention_policy_version,retention_mode,expires_at FROM chat_messages WHERE message_type='system_event' ORDER BY id LIMIT 1").Scan(&retention, &retentionMode, &retentionExpiry); e != nil || retention != 7 || retentionMode != "permanent" || retentionExpiry.Valid || callPayload.Attention != "" {
+		t.Fatalf("system event retention/attention %d %q %+v %q %v", retention, retentionMode, retentionExpiry, callPayload.Attention, e)
+	}
+	var reminderCount int
+	if e = db.QueryRow("SELECT COUNT(*) FROM chat_reminder_events").Scan(&reminderCount); e != nil || reminderCount != 0 {
+		t.Fatalf("handled call created reminder %d %v", reminderCount, e)
 	}
 	if e = service.ensureTerminalMessage(ctx, view.CallID); e != nil {
 		t.Fatal("idempotent terminal message", e)
@@ -322,8 +336,32 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 		t.Fatal(e)
 	}
 	var rejectedRaw string
-	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id DESC LIMIT 1").Scan(&rejectedRaw); e != nil || json.Unmarshal([]byte(rejectedRaw), &callPayload) != nil || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "rejected" {
+	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id DESC LIMIT 1").Scan(&rejectedRaw); e != nil || json.Unmarshal([]byte(rejectedRaw), &callPayload) != nil || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "rejected" || callPayload.Attention != "" {
 		t.Fatalf("rejected call message %q %+v %v", rejectedRaw, callPayload, e)
+	}
+	if e = db.QueryRow("SELECT COUNT(*) FROM chat_reminder_events").Scan(&reminderCount); e != nil || reminderCount != 0 {
+		t.Fatalf("explicit rejection created unread reminder %d %v", reminderCount, e)
+	}
+	// A caller cancellation before answer is a missed incoming call for the callee.
+	cancelq := create
+	cancelq.Operation = sha256String("direct-cancel")
+	view, e = service.Create(ctx, caller, cancelq)
+	if e != nil {
+		t.Fatal(e)
+	}
+	cancelled := action(caller, "end", create.Instance)
+	if cancelled.State != Cancelled {
+		t.Fatal("caller cancellation did not become terminal")
+	}
+	if e = service.Tick(ctx); e != nil {
+		t.Fatal(e)
+	}
+	var cancelledRaw string
+	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id DESC LIMIT 1").Scan(&cancelledRaw); e != nil || json.Unmarshal([]byte(cancelledRaw), &callPayload) != nil || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "cancelled" || callPayload.Attention != "12" {
+		t.Fatalf("cancelled call attention %q %+v %v", cancelledRaw, callPayload, e)
+	}
+	if e = db.QueryRow("SELECT COUNT(*) FROM chat_reminder_events").Scan(&reminderCount); e != nil || reminderCount != 1 {
+		t.Fatalf("missed incoming call reminder %d %v", reminderCount, e)
 	}
 	// Only a known pre-media refusal may cross providers after old fencing ACK.
 	fq := create

@@ -70,8 +70,8 @@ daffd6cee3d23931ef3f1f9dc6edfc5e1d97cdbb  qa-chat-production/chat/internal/calls
 3c35cc3d87ee2061e3e46b4914f7e1fc88aba19e  qa-chat-production/chat/internal/calls/http.go
 250da87d5b0188e414db29b18ec18c7817577bd4  qa-chat-production/chat/internal/calls/lifecycle.go
 215be7abf4968feb9eb9879f14e318b00c1ffea6  qa-chat-production/chat/internal/calls/media_policy_test.go
-612f4213dd6039a55ed3eb056194bf3653ed4128  qa-chat-production/chat/internal/calls/messages.go
-7fc4cc1e046bda7d9f2ec0274c4a744abbd6c832  qa-chat-production/chat/internal/calls/mysql_integration_test.go
+f5dfc9ea54276ea8d29e30e32fbb0a5d6b8ce5c4  qa-chat-production/chat/internal/calls/messages.go
+5eb34f04080a2dee450656316135a1a61a940af9  qa-chat-production/chat/internal/calls/mysql_integration_test.go
 57886321915fcba8af7c6a74be54061ac1176286  qa-chat-production/chat/internal/calls/provider_settings_test.go
 80857882ae4e897c9bbc061c50fe64a393c5486d  qa-chat-production/chat/internal/calls/providers_test.go
 5218a758773244b15bd00957b9585cae6968a872  qa-chat-production/chat/internal/calls/providers.go
@@ -152,7 +152,7 @@ b8cdd19075234caedd361b188d59b32405e5c61f  qa-chat-production/chat/internal/messa
 b8f6eddb2469e073203c4bd4d11a916e640cce7c  qa-chat-production/chat/internal/message/history_integration_test.go
 26f1854598c15c7ca97e6fafd701be0ae086017f  qa-chat-production/chat/internal/message/history_locate.go
 2ec44ef5e671242e97f9599672903c3ec04363a3  qa-chat-production/chat/internal/message/history_test.go
-a3539039fba0b3785296493c0ba24b1067a9cfec  qa-chat-production/chat/internal/message/history.go
+adeb0fdbe7520edb30794409485bbaa1ce762855  qa-chat-production/chat/internal/message/history.go
 bebb63c057da2e4ea3530c71c03e42bf8aa76c55  qa-chat-production/chat/internal/message/http_integration_test.go
 a2dd56ab86cb42d7b39da260e24c32a2c5663140  qa-chat-production/chat/internal/message/http.go
 39f07d39f7164f35d4ca0ed0d3e2e967d961aefe  qa-chat-production/chat/internal/message/json_response.go
@@ -183,7 +183,7 @@ b50ea0cfc7ad00fb241e7ba2d2e3792fa54633ec  qa-chat-production/chat/internal/messa
 bf5120e288548f2629ba10ba92a1233bd6a71f63  qa-chat-production/chat/internal/message/reminder_http.go
 a3c8be50aaf0dbbd454c371f4510ad5fbe0a5426  qa-chat-production/chat/internal/message/reminder_rounds.go
 ba2d3c05e181a16f4059160e3d998e66cc19049c  qa-chat-production/chat/internal/message/reminders_integration_test.go
-34d1b9a2e84f711a0649ee53f173b05835df8d8e  qa-chat-production/chat/internal/message/reminders.go
+05cf65cd7783ca92d600b7e17fc354d5f24d8ff6  qa-chat-production/chat/internal/message/reminders.go
 b5cd4046e5988b68315bd5419b38ee9dfc6c2006  qa-chat-production/chat/internal/message/restrictions.go
 c10383e3e580f5d07c4de363d88a682cf4712a65  qa-chat-production/chat/internal/message/retention_integration_test.go
 48a0834245d854163186f643547530af4e1f4c4f  qa-chat-production/chat/internal/message/retention.go
@@ -191,7 +191,7 @@ c80b8465ea163cfd202c772c45e2b2527729a358  qa-chat-production/chat/internal/messa
 809eb76610fd3698d15f48d69810271cb3dd4690  qa-chat-production/chat/internal/message/s09_completion_integration_test.go
 defec095e3644d7c90407a61b0064133ca1e6db0  qa-chat-production/chat/internal/message/s09_http_integration_test.go
 69ceef54ab06530369ea732dff7a73b8eabcc017  qa-chat-production/chat/internal/message/s09_http.go
-23298a461c5519954759c761c689d712403d2fe2  qa-chat-production/chat/internal/message/s09_integration_test.go
+4ceac958d14ccdf1d3b218d22a3098e704837f0a  qa-chat-production/chat/internal/message/s09_integration_test.go
 5648f9a26482e04afed42afd1e98785e2ccc57dc  qa-chat-production/chat/internal/message/s09_test.go
 d7b92cc308c9a3aac85b1338b783c93c6cf3e46c  qa-chat-production/chat/internal/message/sandbox_cleanup.go
 212b66c2dd6dea2a910763f74fbd376c31fa9ed7  qa-chat-production/chat/internal/message/service_test.go
@@ -203,7 +203,7 @@ be751f06da1aad0fba6cd3c9716b68e0af564824  qa-chat-production/chat/internal/messa
 6901f87e12c1420217529e07b4d00160cb91310a  qa-chat-production/chat/internal/message/storage_application.go
 7d0674a4cfd9419fa14b3038b0a013be0104362c  qa-chat-production/chat/internal/message/storage_tiering.go
 d28741818a3c087bb51c1bf2a4b180e6517b6745  qa-chat-production/chat/internal/message/unread_integration_test.go
-c600f96c54c252dddb36c4f1beff8fb671df4f3f  qa-chat-production/chat/internal/message/unread.go
+fef4a8bcda12504a97d966643218fea968eab06a  qa-chat-production/chat/internal/message/unread.go
 4734d617a9e2198651e22019fb2c62a0364b22c4  qa-chat-production/chat/internal/moderation/av.go
 f13a1caf0196c9a5312d31f21421bf28aeea2512  qa-chat-production/chat/internal/moderation/callback_verifier_test.go
 ad38e4e864fa980f6667a694e853c45e1c960da7  qa-chat-production/chat/internal/moderation/image_test.go
@@ -296,7 +296,7 @@ ebbc1eea2a93966dd81ce7583cf636e74265bb02  qa-chat-production/miniprogram/pages/w
 5ba763b33391313f07668f2a96823e60d72f7a7a  qa-chat-production/miniprogram/subpackages/chat/conversation/calls.js
 c40347b239a1f16a3255706aca375ce4de33068b  qa-chat-production/miniprogram/subpackages/chat/conversation/experience.js
 90ce4188cf640104aeb3ca00bb95f84207bde948  qa-chat-production/miniprogram/subpackages/chat/conversation/group.js
-d9e6d4da25e6c208d7d4a0025b590fb68fcc702b  qa-chat-production/miniprogram/subpackages/chat/conversation/index.js
+8029e8c25acc66a2631210393a98ced2fdb96041  qa-chat-production/miniprogram/subpackages/chat/conversation/index.js
 d3d21a35e9876170047c8a3a168fd114473d0d5e  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxml
 bd8302923bf2ea29f6ba9390ab749e3476ff3fe9  qa-chat-production/miniprogram/subpackages/chat/conversation/interaction.js
 4dfdec38c3f243b3199972a6c9af46545605a99e  qa-chat-production/miniprogram/subpackages/chat/conversation/sms.js
@@ -1208,7 +1208,7 @@ b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_p
 755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py
 2056412292774341fd5c8639c4e007b70233ece2  qa-chat-production/tools/test_build_chat_non_av_evidence.py
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
-b27fa5cf2d7ea422bbfd99499e9e93f398a53f80  qa-chat-production/tools/test_chat_s12_business_entry.js
+75ebdb0b0f06bde86a9bc6d83a1ef883dbb832cd  qa-chat-production/tools/test_chat_s12_business_entry.js
 86e61631db8b3f86fc4586af234d9fffdf21fc51  qa-chat-production/tools/test_chat_s18_s20.js
 438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
 e0cb01da6fdf3a1ce28587bf71cb7bdccc7dfd65  qa-chat-production/tools/test_check_chat_non_av_real.py

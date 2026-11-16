@@ -82,8 +82,8 @@ func (r *ReminderService) window(ctx context.Context, tx *sql.Tx, cid, actor por
 	if hash != out.Hash {
 		out.Read = 0
 	}
-	predicate := `m.conversation_id=? AND m.sender_id<>? AND m.state='published' AND m.seq>? AND m.seq<=? AND ` + retainedTarget + ` AND ` + visibleColumn
-	args := []any{string(cid), string(actor), out.Read, target, string(grant.Version), string(actor)}
+	predicate := `m.conversation_id=? AND ` + incomingAttentionPredicate + ` AND m.state='published' AND m.seq>? AND m.seq<=? AND ` + retainedTarget + ` AND ` + visibleColumn
+	args := []any{string(cid), string(actor), string(actor), out.Read, target, string(grant.Version), string(actor)}
 	err = tx.QueryRowContext(ctx, `SELECT m.seq,m.created_at FROM chat_messages m WHERE `+predicate+` ORDER BY m.seq LIMIT 1`, args...).Scan(&out.First, &out.At)
 	if err == sql.ErrNoRows {
 		return out, nil
