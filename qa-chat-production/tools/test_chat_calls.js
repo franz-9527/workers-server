@@ -97,7 +97,13 @@ test('an end intent prevents media re-creation while confirmation is pending',as
  const calls={actorID:'11',current:{...base,state:'active',revision:'4'},async status(){return this.current},async action(name){if(name==='end')ends++;return this.current},async prepare(){prepares++;return{}}}
  const manager={epoch:1,enabled:true,calls,live:()=>true,subscribe:()=>()=>{}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../miniprogram/subpackages/chat/call/index.js'),'utf8'),{
-  require(name){if(name.includes('ChatRuntime'))return{get:()=>manager};if(name==='./media.js')return{CallMedia:class{}};return{terminal:new Set(['ended','failed','cancelled','rejected','missed'])}},
+  require(name){
+   if(name.includes('ChatRuntime'))return{get:()=>manager}
+   if(name==='./media.js')return{CallMedia:class{}}
+   if(name.includes('ChatPresentation'))return{fullTimeLabel:()=>''}
+   if(name.includes('CallSound'))return{sync(){},clear(){}}
+   return{terminal:new Set(['ended','failed','cancelled','rejected','missed']),callMessage:e=>String(e?.message||e?.code||'通话暂不可用')}
+  },
   Page(o){definition=o},wx:{},setTimeout:()=>1,clearTimeout(){},Date,console
  })
  const page={...definition,data:structuredClone(definition.data),setData(p){Object.assign(this.data,p)}}
@@ -154,7 +160,13 @@ function callPage(calls,clock=()=>1000,Media=class{async stop(){}},api={}){
  let definition,listener;const timers=[]
  const manager={epoch:1,identityEpoch:1,enabled:true,foreground:true,calls,io:{now:clock},live(e){return this.enabled&&this.foreground&&this.epoch===e},subscribe(fn){listener=fn;return()=>{}}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../miniprogram/subpackages/chat/call/index.js'),'utf8'),{
-  require(name){if(name.includes('ChatRuntime'))return{get:()=>manager};if(name==='./media.js')return{CallMedia:Media};return require('../miniprogram/utils/ChatCalls.js')},
+  require(name){
+   if(name.includes('ChatRuntime'))return{get:()=>manager}
+   if(name==='./media.js')return{CallMedia:Media}
+   if(name.includes('ChatPresentation'))return{fullTimeLabel:()=>''}
+   if(name.includes('CallSound'))return{sync(){},clear(){}}
+   return require('../miniprogram/utils/ChatCalls.js')
+  },
   Page(o){definition=o},wx:api,setTimeout(fn,delay){timers.push({fn,delay});return timers.length},clearTimeout(){},Date,console
  })
  const page={...definition,data:structuredClone(definition.data),setData(p){Object.assign(this.data,p)}}
