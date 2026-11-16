@@ -55,6 +55,9 @@ func (g *Gateway) Committed(m ports.CommittedMessage) {
 func (g *Gateway) ReceiptChanged(m ports.CommittedMessage, actor ports.ID) {
 	g.offer(liveEvent{message: m, kind: "receipt.changed", exclude: actor})
 }
+func (g *Gateway) CallChanged(m ports.CommittedMessage) {
+	g.offer(liveEvent{message: m, kind: "calls.changed"})
+}
 func (g *Gateway) offer(e liveEvent) {
 	if g.realtime == nil {
 		return

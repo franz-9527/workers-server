@@ -115,6 +115,9 @@ func (s *Service) Create(ctx context.Context, p ports.Principal, q Request) (Vie
 		result = r.view()
 		return s.remember(ctx, tx, p, q, hash, result)
 	})
+	if e == nil {
+		s.notifyCall(result)
+	}
 	return result, e
 }
 func (s *Service) Action(ctx context.Context, p ports.Principal, action string, q Request) (View, error) {
@@ -216,8 +219,11 @@ func (s *Service) Action(ctx context.Context, p ports.Principal, action string, 
 		result = r.view()
 		return s.remember(ctx, tx, p, q, hash, result)
 	})
-	if e == nil && result.State.Terminal() {
-		_ = s.ensureTerminalMessage(ctx, result.CallID)
+	if e == nil {
+		if result.State.Terminal() {
+			_ = s.ensureTerminalMessage(ctx, result.CallID)
+		}
+		s.notifyCall(result)
 	}
 	return result, e
 }
@@ -365,6 +371,7 @@ func (s *Service) Prepare(ctx context.Context, p ports.Principal, q Request) (an
 	if !validPermit(snapshot, permit) || permit.State != "active" || permit.Until <= time.Now().Unix()+2 {
 		return nil, ErrUnavailable
 	}
+	transitioned := false
 	e = s.tx(ctx, func(tx *sql.Tx) error {
 		if e := s.authorized(ctx, tx, p, snapshot, true); e != nil {
 			return e
@@ -379,6 +386,7 @@ func (s *Service) Prepare(ctx context.Context, p ports.Principal, q Request) (an
 		event := ""
 		if r.State == Preparing {
 			event = "media_start"
+			transitioned = true
 			r.Session, e = r.Apply(Event{Name: "media_start", Epoch: r.Epoch, ExpectedRevision: r.Revision, At: time.Now().Unix()})
 			if e != nil {
 				return e
@@ -394,6 +402,9 @@ func (s *Service) Prepare(ctx context.Context, p ports.Principal, q Request) (an
 	})
 	if e != nil {
 		return nil, e
+	}
+	if transitioned {
+		s.notifyCall(snapshot.view())
 	}
 	// Persisted Connecting precedes all media credentials. A lost SDK response
 	// can never be mistaken for "not submitted" or trigger cross-provider retry.

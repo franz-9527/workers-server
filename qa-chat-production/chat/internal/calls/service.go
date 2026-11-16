@@ -158,6 +158,19 @@ func (s *Service) WithPublisher(p ports.MessagePublisher) *Service {
 	s.publisher = p
 	return s
 }
+
+type callChangePublisher interface {
+	CallChanged(ports.CommittedMessage)
+}
+
+func (s *Service) notifyCall(v View) {
+	if s.publisher == nil || !v.ConversationID.Valid() {
+		return
+	}
+	if publisher, ok := s.publisher.(callChangePublisher); ok {
+		publisher.CallChanged(ports.CommittedMessage{ConversationID: v.ConversationID, PolicyVersion: v.PolicyVersion})
+	}
+}
 func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if e != nil {

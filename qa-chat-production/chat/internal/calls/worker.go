@@ -226,6 +226,7 @@ func (s *Service) maintain(ctx context.Context, id ports.ID, emergency bool) err
 		if e != nil {
 			return e
 		}
+		s.notifyCall(r.view())
 	}
 	if r.State == Stopping {
 		stopped, e := s.provider.Stop(ctx, r.Session, r.Binding.Permit)
@@ -253,6 +254,7 @@ func (s *Service) maintain(ctx context.Context, id ports.ID, emergency bool) err
 		if e != nil {
 			return e
 		}
+		s.notifyCall(r.view())
 	}
 	if r.State.Terminal() {
 		if e = s.ensureTerminalMessage(ctx, r.CallID); e != nil {

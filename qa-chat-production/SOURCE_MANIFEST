@@ -68,7 +68,7 @@ fafadd924ea42799d905928f7ecad3ea66e0535b  qa-chat-production/chat/internal/boots
 daffd6cee3d23931ef3f1f9dc6edfc5e1d97cdbb  qa-chat-production/chat/internal/calls/confirmation.go
 78733ede36ca723a4d4acc8966b2e1abbc01b650  qa-chat-production/chat/internal/calls/http_test.go
 3c35cc3d87ee2061e3e46b4914f7e1fc88aba19e  qa-chat-production/chat/internal/calls/http.go
-bfb4ff0f7a6821afab45e7cb00775b6e1371835c  qa-chat-production/chat/internal/calls/lifecycle.go
+ea95d2ed9c5a4d2ec078e45ff414e30a9005efef  qa-chat-production/chat/internal/calls/lifecycle.go
 215be7abf4968feb9eb9879f14e318b00c1ffea6  qa-chat-production/chat/internal/calls/media_policy_test.go
 f5dfc9ea54276ea8d29e30e32fbb0a5d6b8ce5c4  qa-chat-production/chat/internal/calls/messages.go
 5eb34f04080a2dee450656316135a1a61a940af9  qa-chat-production/chat/internal/calls/mysql_integration_test.go
@@ -76,12 +76,13 @@ f5dfc9ea54276ea8d29e30e32fbb0a5d6b8ce5c4  qa-chat-production/chat/internal/calls
 80857882ae4e897c9bbc061c50fe64a393c5486d  qa-chat-production/chat/internal/calls/providers_test.go
 5218a758773244b15bd00957b9585cae6968a872  qa-chat-production/chat/internal/calls/providers.go
 e3e334aec603aa7069ac07bb324f30c5ae252fbe  qa-chat-production/chat/internal/calls/resources_test.go
+a39222ef6095fafa3d9721cead0d7e67418c88ba  qa-chat-production/chat/internal/calls/realtime_test.go
 3f1e0ad3d78a908c04c299fbe2416bb3b6651840  qa-chat-production/chat/internal/calls/resources.go
 4f45113ebd8b7a806da99a543272c73490c9afd6  qa-chat-production/chat/internal/calls/sandbox_routing_test.go
-1bf7249b46f88c8c186f845ff0c82c75445bfc92  qa-chat-production/chat/internal/calls/service.go
+7883efd4611e7569a971653a20a452edbe6cfb62  qa-chat-production/chat/internal/calls/service.go
 a8446fa4e333634b255af080e83d97f831608db3  qa-chat-production/chat/internal/calls/session_test.go
 c046500dba2abfdec504dd9954209478c7f4b37d  qa-chat-production/chat/internal/calls/session.go
-9f1955647404a033896379fe508ecc44abf7c552  qa-chat-production/chat/internal/calls/worker.go
+3de80b4a922a91ef7b7737c0d148b8069e5330a2  qa-chat-production/chat/internal/calls/worker.go
 703b6086036cc051e47f4c8ffe6d31ba36a102d2  qa-chat-production/chat/internal/conversation/consumer.go
 4e0134cfbe0992a826e7f0e771ae80882aacb133  qa-chat-production/chat/internal/conversation/mysql_integration_test.go
 24ab7c4669ca6731cc357e66884a3e313f0761fb  qa-chat-production/chat/internal/conversation/realtime.go
@@ -234,7 +235,7 @@ e7c82f902e8bbb4d757b7696512eddf807de3ef0  qa-chat-production/chat/internal/ports
 e8a450d1ecc5eca9fa2798c6270da207f6a390de  qa-chat-production/chat/internal/socket/gateway.go
 5eaa56fd2e10197f2d1498cb3bbb44162f30e36c  qa-chat-production/chat/internal/socket/protocol.go
 a4ee12144df05dd5be591a76251bb763453b87ee  qa-chat-production/chat/internal/socket/realtime_test.go
-1536f98d19cee07e5c5d52fed82eb0fa030f3e8a  qa-chat-production/chat/internal/socket/realtime.go
+ba9837ace9c286fb73690892bcf202f3ed97675a  qa-chat-production/chat/internal/socket/realtime.go
 afdd33860fc902d1737c9d7dee5fdd81924d2b9c  qa-chat-production/chat/internal/sourceprobe/probe_test.go
 a1e4feff409420f94635c6ec18fa69cd33ec9a03  qa-chat-production/chat/internal/sourceprobe/probe.go
 300b72b51c1e117345560a2330a61a979facd7b2  qa-chat-production/chat/internal/storagepolicy/policy_test.go
