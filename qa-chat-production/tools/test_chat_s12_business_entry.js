@@ -664,6 +664,9 @@ async function s16NativeImageTests(){
  assert(av.includes("this.openImageViewer(urls,0,'av'")&&chatAV.includes('nativeImageURL('),'retained video images reuse the same gesture viewer')
  assert.strictEqual((js.match(/sizeType:\['compressed'\]/g)||[]).length,2,'album selection and replacement default to WeChat compressed images');assert(!js.includes("sizeType:['original']"),'chat images must not default to original quality');assert(js.includes('3*1024*1024'),'chat image limit remains 3MB');assert(!js.includes('compressImage('),'chat must not add a second lossy compression pass')
  assert(!/setStorage|writeFileSync/.test(read('miniprogram/utils/ChatImages.js')),'no local archive of pending or rejected image selections')
+ const testingClient=read('server/assets/chat-testing-client.js')
+ assert(testingClient.includes("row.message_type==='system_event'&&row.system_event?.event==='call'"),'admin chat testing client renders call system events')
+ assert(testingClient.includes("row.message_type!=='system_event'"),'admin chat testing client never exposes recall on trusted system events')
  const selection=nativeConversation(),s=selection.inst
  selection.manager.cache=new Map([['9',{canSend:true}]])
  const staged=[];selection.manager.images={stage(id,files){staged.push({id,files})},list(){return []},setVisible(){}}

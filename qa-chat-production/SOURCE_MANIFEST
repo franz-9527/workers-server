@@ -1208,9 +1208,10 @@ b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_p
 755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py
 2056412292774341fd5c8639c4e007b70233ece2  qa-chat-production/tools/test_build_chat_non_av_evidence.py
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
-44049ecc851a89c40bdf80ffb01b012b2e816d2b  qa-chat-production/tools/test_chat_s12_business_entry.js
+b27fa5cf2d7ea422bbfd99499e9e93f398a53f80  qa-chat-production/tools/test_chat_s12_business_entry.js
 86e61631db8b3f86fc4586af234d9fffdf21fc51  qa-chat-production/tools/test_chat_s18_s20.js
 438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
 e0cb01da6fdf3a1ce28587bf71cb7bdccc7dfd65  qa-chat-production/tools/test_check_chat_non_av_real.py
 bb3f716ac8eeef93ed77016e55c586e4210b0d20  qa-chat-production/tools/test_check_chat_release_profiles.py
 e6c29b26933ce31b839bb063b9ff2a3fd126dd88  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxss
+a8e40ba76dd325f6419b10f4cda68d47e600c1cc  qa-chat-production/server/assets/chat-testing-client.js
