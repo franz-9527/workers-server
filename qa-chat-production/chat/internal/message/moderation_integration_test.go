@@ -321,18 +321,19 @@ func TestMySQLS07ExpiredCredentialCannotUseCachedPass(t *testing.T) {
 
 func TestMySQLP1ExplicitContactsAndAmbiguousBusinessValues(t *testing.T) {
 	for index, tc := range []struct {
-		text    string
-		blocked bool
+		text      string
+		blocked   bool
+		published string
 	}{
-		{"13800138000", true},
-		{"这是13800138000，稍后沟通", true},
-		{"12345678901", true},
-		{"请勿发送电话13800138000", true},
-		{"微信：abc___", true},
-		{"工单号13800138000，联系我核对施工尺寸", false},
-		{"产品型号VX13800138000，报价1380元", false},
-		{"加微信", false},
-		{"abc_123456", false},
+		{"13800138000", true, ""},
+		{"这是13800138000，稍后沟通", true, ""},
+		{"12345678901", true, ""},
+		{"请勿发送电话13800138000", true, ""},
+		{"微信：abc___", true, ""},
+		{"工单号13800138000，联系我核对施工尺寸", false, "工单号13800138000，联系我核对施工尺寸"},
+		{"产品型号VX13800138000，报价1380元", false, "产品型号VX13800138000，报价1380元"},
+		{"加微信", false, "「已屏蔽」"},
+		{"abc_123456", false, "abc_123456"},
 	} {
 		t.Run(tc.text, func(t *testing.T) {
 			f, s, _, r, count := moderated(t, officialPass)
@@ -352,6 +353,12 @@ func TestMySQLP1ExplicitContactsAndAmbiguousBusinessValues(t *testing.T) {
 				}
 			} else if out.State != "accepted" || count.Load() != 1 || f.text("SELECT COUNT(*) FROM chat_risk_events") != "0" || f.text("SELECT COUNT(*) FROM chat_restrictions WHERE permanent=1 OR blocked_until>UTC_TIMESTAMP(6)") != "0" {
 				t.Fatal("ambiguous/business value blocked or punished", out, count.Load())
+			} else {
+				body := f.text("SELECT text_body FROM chat_messages WHERE id=?", string(out.MessageID))
+				rule := f.text("SELECT safety_rule_version FROM chat_messages WHERE id=?", string(out.MessageID))
+				if body != tc.published || strings.HasSuffix(rule, ".masked") != (tc.published != tc.text) {
+					t.Fatalf("publication mismatch body=%q rule=%q want=%q", body, rule, tc.published)
+				}
 			}
 		})
 	}

@@ -7,7 +7,8 @@ import (
 	"unicode/utf8"
 )
 
-const RuleVersion = "wechat-v2.diversion-20261025.2"
+const RuleVersion = "wechat-v2.diversion-20261116.1"
+const maskPlaceholder = "「已屏蔽」"
 
 var appPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 var tokenPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{10,}$`)
@@ -76,6 +77,8 @@ var quantityValue = regexp.MustCompile(`(^|[^a-z0-9_])[0-9]+(?:\.[0-9]+)?[ \t]*(
 var ordinaryURL = regexp.MustCompile(`https?://[^\s，,。！？!?;；]+|weixin://[^\s，,。！？!?;；]+`)
 var directContactLink = regexp.MustCompile(`(?:^|[^a-z0-9+.-])(?:weixin://(?:contacts/profile/|dl/(?:profile|addfriend)(?:[/?:]|$)|wxpay/)|wxp://|alipayqr://|https?://(?:weixin\.qq\.com/r/|u\.wechat\.com/|qr\.alipay\.com/))`)
 var explicitPhone = regexp.MustCompile(`(?:^|[^a-z0-9_])(?:手机号|手机号码|联系电话|电话|手机|联系我|联系你|加我|微信|weixin|vx|wx|tel)(?:号码|号|是|为|[:：])*[ \t]*(?:\+?86)?[0-9]{11}(?:[^0-9]|$)`)
+var maskableContactLanguage = regexp.MustCompile(`(?i)(?:加(?:我)?(?:微信|weixin|vx|wx)|(?:微信|weixin|vx|wx|电话)(?:联系|沟通)(?:我)?|给我打(?:个)?电话|发(?:我)?(?:手机号|手机号码|微信号)|私下联系(?:我)?|私聊(?:我)?|加好友)`)
+const clauseDelimiters = "\n\r,，。！？!?;；"
 var bareEleven = regexp.MustCompile(`^(?:[0-9]{11}|(?:\+?86)1[3-9][0-9]{9})$`)
 var generatedWechat = regexp.MustCompile(`^wxid_[a-z0-9]{6,32}$`)
 
@@ -93,6 +96,42 @@ func clearPhone(text string) bool {
 		}
 	}
 	return false
+}
+
+// Low-risk contact prompts can be published only after the prompt itself is
+// replaced server-side. Negated safety guidance stays intact.
+func maskContactLanguage(text string) (string, bool) {
+	matches := maskableContactLanguage.FindAllStringIndex(text, -1)
+	if len(matches) == 0 {
+		return text, false
+	}
+	var out strings.Builder
+	last := 0
+	changed := false
+	for _, match := range matches {
+		start, end := match[0], match[1]
+		clauseStart := 0
+		if pos := strings.LastIndexAny(text[:start], clauseDelimiters); pos >= 0 {
+			_, size := utf8.DecodeRuneInString(text[pos:])
+			clauseStart = pos + size
+		}
+		clauseEnd := len(text)
+		if pos := strings.IndexAny(text[end:], clauseDelimiters); pos >= 0 {
+			clauseEnd = end + pos
+		}
+		if negated.MatchString(normalize(text[clauseStart:clauseEnd])) {
+			continue
+		}
+		out.WriteString(text[last:start])
+		out.WriteString(maskPlaceholder)
+		last = end
+		changed = true
+	}
+	if !changed {
+		return text, false
+	}
+	out.WriteString(text[last:])
+	return out.String(), true
 }
 
 // Explicit contacts are rejected even without an invitation or inside a quote.

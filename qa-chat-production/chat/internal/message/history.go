@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/franz-9527/workers/chat/internal/conversation"
@@ -51,6 +52,7 @@ type MessageView struct {
 	State         string          `json:"state"`
 	StateVersion  ports.ID        `json:"state_version"`
 	Text          *string         `json:"text,omitempty"`
+	SafetyNotice  string          `json:"safety_notice,omitempty"`
 	CreatedAt     time.Time       `json:"created_at"`
 	ReplyTo       ports.ID        `json:"-"`
 	EditedFrom    ports.ID        `json:"-"`
@@ -172,7 +174,7 @@ func emptyPage(r *historyRead) HistoryPage {
 }
 
 // Projection is safe in SQL too: hidden bodies never cross the DB boundary.
-const viewColumns = `CAST(m.id AS CHAR),CAST(m.seq AS CHAR),CAST(m.sender_id AS CHAR),CAST(m.policy_version AS CHAR),m.message_type,m.state,CAST(m.state_version AS CHAR),CASE WHEN m.state='published' AND m.message_type='text' THEN m.text_body ELSE NULL END,m.created_at,CAST(m.reply_to_message_id AS CHAR),CAST(m.edited_from_recalled_message_id AS CHAR),CAST(m.reply_to_item_id AS CHAR),m.retention_mode,m.expires_at`
+const viewColumns = `CAST(m.id AS CHAR),CAST(m.seq AS CHAR),CAST(m.sender_id AS CHAR),CAST(m.policy_version AS CHAR),m.message_type,m.state,CAST(m.state_version AS CHAR),CASE WHEN m.state='published' AND m.message_type='text' THEN m.text_body ELSE NULL END,m.safety_rule_version,m.created_at,CAST(m.reply_to_message_id AS CHAR),CAST(m.edited_from_recalled_message_id AS CHAR),CAST(m.reply_to_item_id AS CHAR),m.retention_mode,m.expires_at`
 const visibleColumn = `(m.policy_version<=? AND EXISTS(SELECT 1 FROM chat_member_intervals i WHERE i.conversation_id=m.conversation_id AND i.actor_id=? AND i.start_version<=m.policy_version AND (i.end_version IS NULL OR i.end_version>m.policy_version)))`
 
 type candidate struct {
@@ -185,7 +187,8 @@ type candidate struct {
 func scanCandidate(rows *sql.Rows, changes bool, audit ...bool) (candidate, error) {
 	var c candidate
 	var text, reply, edited, replyItem sql.NullString
-	args := []any{&c.view.ID, &c.view.Seq, &c.view.SenderID, &c.view.PolicyVersion, &c.view.Type, &c.view.State, &c.view.StateVersion, &text, &c.view.CreatedAt, &reply, &edited, &replyItem, &c.view.RetentionMode, &c.view.ExpiresAt, &c.visible}
+	var safetyRule string
+	args := []any{&c.view.ID, &c.view.Seq, &c.view.SenderID, &c.view.PolicyVersion, &c.view.Type, &c.view.State, &c.view.StateVersion, &text, &safetyRule, &c.view.CreatedAt, &reply, &edited, &replyItem, &c.view.RetentionMode, &c.view.ExpiresAt, &c.visible}
 	if changes {
 		args = append(args, &c.change, &c.kind)
 	}
@@ -204,6 +207,9 @@ func scanCandidate(rows *sql.Rows, changes bool, audit ...bool) (candidate, erro
 	if (c.view.State == "published" || len(audit) > 0 && audit[0] && c.view.State == "recalled") && c.view.Type == "text" && text.Valid {
 		v := text.String
 		c.view.Text = &v
+		if c.view.State == "published" && strings.HasSuffix(safetyRule, ".masked") {
+			c.view.SafetyNotice = "masked"
+		}
 	} else if c.view.State == "published" && (c.view.Type == "text" || c.view.Type == "image" || c.view.Type == "image_album" || c.view.Type == "audio" || c.view.Type == "video") {
 		c.view.Text = nil
 	} else {

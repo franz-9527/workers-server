@@ -76,3 +76,28 @@ func TestDiversionRulesAndConstructionNegatives(t *testing.T) {
 		})
 	}
 }
+
+
+func TestMaskContactLanguage(t *testing.T) {
+	cases := []struct {
+		text, want string
+		masked     bool
+	}{
+		{"加微信", "「已屏蔽」", true},
+		{"现场尺寸确认后微信联系", "现场尺寸确认后「已屏蔽」", true},
+		{"工单号13800138000，联系我核对施工尺寸", "工单号13800138000，联系我核对施工尺寸", false},
+		{"工单号13800138000，加微信确认施工尺寸", "工单号13800138000，「已屏蔽」确认施工尺寸", true},
+		{"私聊我确认时间", "「已屏蔽」确认时间", true},
+		{"不要私下加微信", "不要私下加微信", false},
+		{"不要私下加微信；但加微信确认", "不要私下加微信；但「已屏蔽」确认", true},
+		{"售后电话请在订单页面查看", "售后电话请在订单页面查看", false},
+	}
+	for _, c := range cases {
+		t.Run(c.text, func(t *testing.T) {
+			got, masked := maskContactLanguage(c.text)
+			if got != c.want || masked != c.masked {
+				t.Fatalf("mask got=%q/%v want=%q/%v", got, masked, c.want, c.masked)
+			}
+		})
+	}
+}

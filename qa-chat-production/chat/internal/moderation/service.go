@@ -136,26 +136,36 @@ func (s *Service) CheckText(ctx context.Context, q ports.TextRequest) (ports.Saf
 		}
 		return ports.SafetyResult{Decision: "blocked", RuleVersion: RuleVersion, AuthorityProof: identity.proof, Finding: &ports.SafetyFinding{Provider: "local.anti_diversion", Code: code, Level: 2, Confirmed: true, ContextEvidence: evidence}}, nil
 	}
+	publication, masked := maskContactLanguage(q.Text)
+	if masked && !validText(publication) {
+		return ports.SafetyResult{}, ports.ErrUnavailable
+	}
 	// Local mode is intentionally limited to development/test by bootstrap
 	// validation. It keeps real identity, authority recheck and anti-diversion
 	// rules, but makes no external WeChat content-safety request.
 	if s.mode == "local" {
+		if masked {
+			return maskedTextResult(identity.proof, publication), nil
+		}
 		return ports.SafetyResult{Decision: "passed", RuleVersion: RuleVersion, AuthorityProof: identity.proof}, nil
 	}
 	credential, e := s.credentials.Get()
 	if e != nil {
 		return ports.SafetyResult{}, ports.ErrUnavailable
 	}
-	key := hash(strings.Join([]string{s.environment, s.appID, identity.proof, q.Actor.SessionVersion, "scene:1", RuleVersion, q.Fingerprint}, "\n"))
+	key := hash(strings.Join([]string{s.environment, s.appID, identity.proof, q.Actor.SessionVersion, "scene:1", RuleVersion, q.Fingerprint, hash(publication)}, "\n"))
 	var cached int
 	e = s.db.QueryRowContext(ctx, `SELECT 1 FROM chat_text_checks WHERE cache_key=? AND pass_until>UTC_TIMESTAMP(6) LIMIT 1`, key).Scan(&cached)
 	if e != nil && e != sql.ErrNoRows {
 		return ports.SafetyResult{}, ports.ErrUnavailable
 	}
 	if cached > 0 {
+		if masked {
+			return maskedTextResult(identity.proof, publication), nil
+		}
 		return ports.SafetyResult{Decision: "passed", RuleVersion: RuleVersion, AuthorityProof: identity.proof}, nil
 	}
-	result, e := s.inspect(ctx, credential, identity.openid, q.Text)
+	result, e := s.inspect(ctx, credential, identity.openid, publication)
 	if e != nil {
 		return ports.SafetyResult{}, ports.ErrUnavailable
 	}
@@ -167,8 +177,20 @@ func (s *Service) CheckText(ctx context.Context, q ports.TextRequest) (ports.Saf
 		if _, e = s.db.ExecContext(ctx, `UPDATE chat_text_checks SET cache_key=?,pass_until=UTC_TIMESTAMP(6)+INTERVAL 5 MINUTE WHERE intent_id=? AND fingerprint=?`, key, string(q.IntentID), q.Fingerprint); e != nil {
 			return ports.SafetyResult{}, ports.ErrUnavailable
 		}
+		if masked {
+			return maskedTextResult(identity.proof, publication), nil
+		}
 	}
 	return result, nil
+}
+func maskedTextResult(proof, text string) ports.SafetyResult {
+	return ports.SafetyResult{
+		Decision:       "masked",
+		RuleVersion:    RuleVersion,
+		AuthorityProof: proof,
+		PublishedText:  text,
+		Finding:        &ports.SafetyFinding{Provider: "local.anti_diversion", Code: "contact_language_masked", Level: 1, Confirmed: false},
+	}
 }
 func validID(id ports.ID) bool { return id.Valid() && id != "0" }
 

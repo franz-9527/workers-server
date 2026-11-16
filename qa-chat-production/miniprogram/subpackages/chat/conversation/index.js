@@ -141,7 +141,7 @@ Page({
    const profile=identity?.version===String(page.policy_version)&&identity.viewerId===String(page.viewer_actor_id)?identity.members[String(message.sender_id)]:null
    const person=message.sender?InboxModel.identities.attribution(message.sender,profile):profile
    const orderCard=text?require('../../../utils/ChatOrderCard.js').parse(message.text):null
-   this.views[id]={orderCard,senderId:String(message.sender_id),displayName:person?.displayName||'成员',avatarPath:person?.avatarPath||InboxModel.identities.avatars.user,messageId:id,seq:String(message.seq),raw:message,state:message.state,stateVersion:String(message.state_version),body:text?(typeof message.text==='string'?message.text:'云端文字已清理，本机暂无缓存'):InboxModel.previewText(message),
+   this.views[id]={orderCard,senderId:String(message.sender_id),displayName:person?.displayName||'成员',avatarPath:person?.avatarPath||InboxModel.identities.avatars.user,messageId:id,seq:String(message.seq),raw:message,state:message.state,stateVersion:String(message.state_version),body:text?(typeof message.text==='string'?message.text:'云端文字已清理，本机暂无缓存'):InboxModel.previewText(message),safetyNote:text&&message.safety_notice==='masked'?'部分内容涉及私人联系方式，已自动屏蔽':'',
     isPlaceholder:!text&&!image&&!av,isAV:av,isAudio:av&&message.message_type==='audio',heard:!!message.av?.heard,duration:Math.ceil((message.av?.duration_ms||0)/1000),bubbleWidth:av?Math.min(540,Math.max(320+Math.ceil((message.av?.duration_ms||0)/1000)*4,Array.from(String(message.av?.transcript||"")).length*26+48)):0,transcript:av?String(message.av?.transcript||''):'',isText:text,canCopy:text&&typeof message.text==='string',isImage:image,imageCount:image?(message.images||[]).length:0,imageExpanded:!!this.expandedImages[id],images:image?(message.images||[]).slice(0,this.expandedImages[id]?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||''})):[],isMine:String(message.sender_id)===String(page.viewer_actor_id||''),createdAt:String(message.created_at||''),
     reply:message.reply||null,editedFrom:message.edited_from||null,canReedit:message.state==='recalled'&&typeof this.manager.editableRecall==='function'&&!!this.manager.editableRecall(this.id,id)}
   })
@@ -353,13 +353,13 @@ Page({
   const labels={sending:'发送中',unknown:'结果待确认',checking:'内容检测中',review_pending:'等待检查',retryable:'检查暂不可用',accepted:'已发送，正在同步',rejected:'未发送'}
   const stored=this.manager.attempts(this.id)
   const attempts=stored.filter(r=>!(r.state==='accepted' && this.views[r.message_id])).map(r=>({
-   clientId:r.client_message_id,body:r.text,state:r.state,busy:r.busy,label:labels[r.state]||'结果待确认',
+   clientId:r.client_message_id,body:r.code==='CHAT_CONTENT_BLOCKED'?'••••••':r.text,state:r.state,busy:r.busy,label:labels[r.state]||'结果待确认',severity:r.code==='CHAT_CONTENT_BLOCKED'?'blocked':r.state==='review_pending'?'review':'normal',
    canRetry:!r.busy && !['accepted','rejected'].includes(r.state),canEdit:!r.busy && r.state==='rejected' && !!r.text,
-   reason:r.code==='CHAT_REFERENCE_UNAVAILABLE'?'原消息已撤回或不可引用，请放回输入框取消引用后重发':r.code==='CHAT_REEDIT_LIMIT'?'重新编辑来源已达上限，请取消并重新输入':r.code==='CHAT_CONTENT_BLOCKED'?'内容未通过检查，未发送。请勿发送私人手机号、微信号或联系二维码；正常施工信息可申请复核':r.code==='CHAT_SEND_RESTRICTED'?'当前账号暂不能发送，可通过订单详情联系平台':r.code==='CHAT_ACTION_EXPIRED'?'发送动作已过期，请核对消息记录':r.code==='CHAT_DEPENDENCY_UNAVAILABLE'?'聊天依赖未就绪，请管理员查看检测结果':r.code==='CHAT_NETWORK_ERROR'?'连接中断，请核对原消息状态':r.code==='CHAT_CHECK_UNAVAILABLE'?'内容检查暂不可用，不计违规':r.code==='CHAT_CLIENT_MESSAGE_CONFLICT'?'原消息内容不一致，请核对记录':''
+   reason:r.code==='CHAT_REFERENCE_UNAVAILABLE'?'原消息已撤回或不可引用，请放回输入框取消引用后重发':r.code==='CHAT_REEDIT_LIMIT'?'重新编辑来源已达上限，请取消并重新输入':r.code==='CHAT_CONTENT_BLOCKED'?'包含明确禁止的私人联系方式、联系二维码或站外交易信息，消息未发送。请修改后再发送。':r.code==='CHAT_SEND_RESTRICTED'?'当前账号暂不能发送，可通过订单详情联系平台':r.code==='CHAT_ACTION_EXPIRED'?'发送动作已过期，请核对消息记录':r.code==='CHAT_DEPENDENCY_UNAVAILABLE'?'聊天依赖未就绪，请管理员查看检测结果':r.code==='CHAT_NETWORK_ERROR'?'连接中断，请核对原消息状态':r.code==='CHAT_CHECK_UNAVAILABLE'?'内容检查暂不可用，不计违规':r.code==='CHAT_CLIENT_MESSAGE_CONFLICT'?'原消息内容不一致，请核对记录':''
   }))
   const latest=stored[stored.length-1],last=latest && attempts.find(r=>r.clientId===latest.client_message_id)
   const source=draft.source||{},target=this.views[source.reply_to_message_id]
-  this.setData({replyTarget:source.reply_to_message_id||'',replyPreview:target&&(target.canCopy||target.isImage)?Array.from(target.body).slice(0,160).join(''):'原消息已不可查看',editedSource:source.edited_from_recalled_message_id||'',draft:draft.text,attempts,inputError:draft.text && !validText(draft.text)?'文字最多2000字、4000字节，请缩短后发送':'',sendReason:last && last.reason || ''})
+  this.setData({replyTarget:source.reply_to_message_id||'',replyPreview:target&&(target.canCopy||target.isImage)?Array.from(target.body).slice(0,160).join(''):'原消息已不可查看',editedSource:source.edited_from_recalled_message_id||'',draft:draft.text,attempts,inputError:draft.text && !validText(draft.text)?'文字最多2000字、4000字节，请缩短后发送':'',sendReason:last && last.reason && last.state!=='rejected'?last.reason:''})
   if(this.draftTimer)clearTimeout(this.draftTimer)
   if(draft.expires)this.draftTimer=setTimeout(()=>{this.draftTimer=null;this.refreshComposer()},Math.max(1,draft.expires-this.manager.io.now()))
  },
@@ -371,14 +371,17 @@ Page({
   this.manager.typing(!!text.trim()).catch(()=>{})
   this.refreshComposer()
  },
- inputBlur(){this.manager.typing(false).catch(()=>{})},
+ inputBlur(){
+  this.manager.typing(false).catch(()=>{})
+  if(this.data.keyboardHeight>0||this.data.keyboardOpen)this.keyboardChange({detail:{height:0}})
+ },
  keyboardChange(event) {
-  const height=Math.max(0,Number(event.detail.height)||0)
-  if(height===this.data.keyboardHeight)return
+  const height=Math.max(0,Number(event.detail.height)||0),open=height>0
+  if(height===this.data.keyboardHeight&&open===this.data.keyboardOpen)return
   const life=this.life,epoch=this.manager.epoch,atBottom=this.atBottom
   this.captureAnchor().then(anchor=>{
    if(!this.current(life,epoch))return
-   this.setData({keyboardHeight:height,keyboardOpen:height>0},()=>atBottom?this.jumpBottom():this.restoreAnchor(anchor,life,epoch))
+   this.setData({keyboardHeight:height,keyboardOpen:open},()=>atBottom?this.jumpBottom():this.restoreAnchor(anchor,life,epoch))
   })
  },
  async sendText(event) {

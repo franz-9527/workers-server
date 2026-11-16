@@ -368,12 +368,23 @@ function nativeConversation() {
  const msg=(seq,extra={})=>Object.assign({message_id:String(seq),seq:String(seq),sender_id:'2',message_type:'text',state:'published',state_version:'1',text:'text-'+seq},extra)
  const emit=(type,page)=>listener(type,{conversation_id:'9',page:Object.assign({},meta,page)})
  const expire=delay=>{const entry=[...timers].find(([,v])=>v.delay===delay);assert(entry,'timer '+delay);timers.delete(entry[0]);entry[1].fn()}
- return {inst,manager,requests,reads,modals,actions,timers,emit,msg,expire,reset(){manager.epoch++;draft={text:'',revision:0};attempts.length=0;recalls.clear();listener('reset')}}
+ return {inst,manager,requests,reads,modals,actions,timers,attempts,emit,msg,expire,reset(){manager.epoch++;draft={text:'',revision:0};attempts.length=0;recalls.clear();listener('reset')}}
 }
 async function s13NativeTests() {
  const source=read('miniprogram/subpackages/chat/conversation/index.wxml')
  assert(source.includes('confirm-type="send"') && source.includes('bindconfirm="sendText"') && source.includes('confirm-hold="{{true}}"'),'IME send key uses the explicit text send handler')
  assert(source.includes('scroll-into-view="{{scrollInto}}"') && source.includes('bindscrolltoupper="loadEarlier"'))
+ const masked=nativeConversation()
+ masked.emit('conversation.reset',{messages:[masked.msg(1,{text:'请「已屏蔽」后确认',safety_notice:'masked'})]})
+ assert.strictEqual(masked.inst.data.messages[0].safetyNote,'部分内容涉及私人联系方式，已自动屏蔽','masked publication renders weak note below bubble')
+ masked.inst.onUnload()
+ const blocked=nativeConversation()
+ blocked.attempts.push({client_message_id:'1700000000.'+'a'.repeat(32),conversation_id:'9',text:'加微信abc123456',state:'rejected',code:'CHAT_CONTENT_BLOCKED',busy:false,source:{}})
+ blocked.inst.refreshComposer()
+ assert.strictEqual(blocked.inst.data.attempts[0].body,'••••••','blocked attempt never re-renders original prohibited text')
+ assert(blocked.inst.data.attempts[0].canEdit && blocked.inst.data.attempts[0].reason.includes('消息未发送'),'blocked attempt stays editable with explicit failure reason')
+ assert.strictEqual(blocked.inst.data.sendReason,'','blocked attempt reason is not duplicated above the composer')
+ blocked.inst.onUnload()
  const f=nativeConversation(),p=f.inst
  f.emit('conversation.reset',{messages:[f.msg(50),f.msg(51)],history_cursor:'before50'})
  await settle()

@@ -66,16 +66,20 @@
             <text wx:if="{{smsFirstHint}}" class="sms-nudge-hint">暂未读，可用余额发短信提醒</text>
             <button class="sms-nudge-button" catchtap="openSMS" aria-label="短信提醒，点击查看费用与余额"><text class="chat-icon chat-icon-notice" aria-hidden="true"></text></button>
           </view>
-          </view><view wx:if="{{item.isMine && item.state === 'published'}}" class="message-receipt" role="button" data-id="{{item.messageId}}" catchtap="showReaders">{{receiptLabels[item.messageId] || (directCalls ? '未读' : '查看阅读状态')}}</view></view>
+          </view><view wx:if="{{item.safetyNote}}" class="message-safety-note" role="note">{{item.safetyNote}}</view><view wx:if="{{item.isMine && item.state === 'published'}}" class="message-receipt" role="button" data-id="{{item.messageId}}" catchtap="showReaders">{{receiptLabels[item.messageId] || (directCalls ? '未读' : '查看阅读状态')}}</view></view>
         </view></block>
         <view wx:if="{{loading}}" class="conversation-empty compact"><text class="cuIcon-loading2 cuIconfont-spin"></text> 正在同步会话</view>
         <view wx:elif="{{!messages.length && status !== 'denied'}}" class="conversation-empty compact"><text class="cuIcon-comment"></text> 暂无可查看的消息</view>
-        <view wx:for="{{attempts}}" wx:key="clientId" class="attempt-item">
-          <view wx:if="{{item.body}}" class="message-text">{{item.body}}</view>
-          <view class="attempt-state">{{item.label}}</view>
-          <view wx:if="{{item.reason}}" class="attempt-reason">{{item.reason}}</view>
-          <button wx:if="{{item.canRetry}}" data-id="{{item.clientId}}" bindtap="retryMessage">核验并重试原消息</button>
-          <button wx:if="{{item.canEdit}}" data-id="{{item.clientId}}" bindtap="editAttempt">放回输入框修改</button>
+        <view wx:for="{{attempts}}" wx:key="clientId" class="message-item is-mine attempt-item {{item.severity === 'blocked' ? 'is-blocked' : ''}}">
+          <view class="message-body attempt-message-body">
+            <view wx:if="{{item.body}}" class="message-bubble attempt-bubble"><view class="message-text">{{item.body}}</view></view>
+            <view class="attempt-state">{{item.label}}</view>
+            <view wx:if="{{item.reason}}" class="attempt-reason">{{item.reason}}</view>
+            <view wx:if="{{item.canRetry || item.canEdit}}" class="attempt-actions">
+              <button wx:if="{{item.canRetry}}" data-id="{{item.clientId}}" bindtap="retryMessage">核验并重试</button>
+              <button wx:if="{{item.canEdit}}" data-id="{{item.clientId}}" bindtap="editAttempt">修改内容</button>
+            </view>
+          </view>
         </view>
         <view wx:for="{{albums}}" wx:for-item="album" wx:key="clientId" class="album-attempt">
           <view class="album-attempt-heading"><text class="album-attempt-name">{{album.items.length}} 张照片</text><text class="album-attempt-status">{{album.submitted ? album.label : '待确认'}}</text></view><view wx:if="{{!album.submitted}}" class="draft-hint">仅暂存本机，确认后才会发送</view>
