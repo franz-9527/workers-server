@@ -170,7 +170,7 @@ test('hiding a non-native call pauses local media without ending the server call
 test('native WeChat call media survives page hide and exits only when the call page unloads',async()=>{
  let ends=0,stops=0;const calls={current:{...base,state:'active',provider:'wechat'},actorID:'11',action:async name=>{if(name==='end')ends++;return calls.current}}
  const f=callPage(calls);f.page.media={stop:async()=>{stops++}}
- f.page.onHide();await new Promise(setImmediate);assert.equal(ends,0);assert.equal(stops,0)
+ f.page.onHide();f.emit('calls.suspend',{});await new Promise(setImmediate);assert.equal(ends,0);assert.equal(stops,0)
  f.page.onUnload();await new Promise(setImmediate);assert.equal(ends,1);assert.equal(stops,1)
 })
 test('an old call page cannot hang up a newly accepted call when hidden',async()=>{
