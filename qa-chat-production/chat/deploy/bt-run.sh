@@ -133,6 +133,10 @@ while (( STOP == 0 )); do
       fi
     fi
     rm -f -- "$STATE/production.text.env"
+    # Selected production media needs a current WeChat credential export while
+    # the runtime configuration is being built. Refresh it before generation;
+    # the later strict check still prevents startup when refresh is unavailable.
+    "$PHP_BIN" "$PHP_ROOT/bin/chat-credentials.php" >/dev/null 2>&1 || true
     runtime_status=0
     "$PHP_BIN" "$CHAT/deploy/production-runtime.php" "$PHP_ROOT" "$STATE" "$REVISION" || runtime_status=$?
     if (( runtime_status != 0 && runtime_status != 4 )); then

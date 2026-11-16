@@ -4,7 +4,7 @@ c9d2e8c654fac590d6533b2dfaa9d6e31e3d1aaa  qa-chat-production/chat/build.sh
 ecd53d4d9b8d37dd714e8148a8e606a52801870f  qa-chat-production/chat/cmd/chatd/main.go
 633b34e07d21f8e2e514ff582cdce8d7c57b05c2  qa-chat-production/chat/config.example.json
 f5513e16683bd1cf9397f2b3086f7706a78beee7  qa-chat-production/chat/deploy/bt-deploy.sh
-476be661bc11a1abfe6d15f27d3d8c12d98a8cbb  qa-chat-production/chat/deploy/bt-run.sh
+a1fb444992d36eac7b7cab57334e22e9cf6c4b5e  qa-chat-production/chat/deploy/bt-run.sh
 e4128de6205e3afc17aac4faeb4bc73089799066  qa-chat-production/chat/deploy/bt-site.sh
 f2df583d79eec5afef44d875d1c3630515e383d0  qa-chat-production/chat/deploy/init-production-recovery.php
 9e59031770fdd33c2242ced2454b543440f461c3  qa-chat-production/chat/deploy/nginx.conf.example
