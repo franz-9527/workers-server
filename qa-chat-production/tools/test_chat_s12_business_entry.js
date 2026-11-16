@@ -643,10 +643,21 @@ async function s16NativeImageTests(){
  assert.strictEqual(p.views['7'].images.length,0);assert.strictEqual(p.views['7'].isImage,false)
  f.emit('conversation.page',{messages:[photo]});assert.strictEqual(p.views['7'].images.length,0,'old response cannot restore a recalled album')
  p.onUnload()
- const w=read('miniprogram/subpackages/chat/conversation/index.wxml'),js=read('miniprogram/subpackages/chat/conversation/index.js')
+ const frames=nativeConversation(),fp=frames.inst
+ frames.manager.av={nativeImageURL:async(id,mid,poster,frame)=>'https://test.invalid/'+(poster?'poster':'frame-'+frame)+'.jpg',setVisible(){},list(){return[]},refresh:async()=>{}}
+ const video=frames.msg(18,{message_type:'video',text:undefined,av:{duration_ms:5000,heard:false,transcript:'',frames:[{ordinal:0},{ordinal:1}]}})
+ frames.emit('conversation.reset',{messages:[video]})
+ await fp.showFrames({currentTarget:{dataset:{id:'18'}}})
+ assert.strictEqual(frames.previews.length,1);assert.strictEqual(frames.previews[0].current,'https://test.invalid/poster.jpg')
+ assert.deepStrictEqual(Array.from(frames.previews[0].urls),['https://test.invalid/poster.jpg','https://test.invalid/frame-0.jpg','https://test.invalid/frame-1.jpg'])
+ assert.strictEqual(frames.previews[0].showmenu,true,'video poster and retained frames reuse the native WeChat viewer')
+ fp.onUnload()
+ const w=read('miniprogram/subpackages/chat/conversation/index.wxml'),js=read('miniprogram/subpackages/chat/conversation/index.js'),av=read('miniprogram/subpackages/chat/conversation/av.js'),chatAV=read('miniprogram/utils/ChatAV.js')
  assert(w.includes('bindtap="sendImages"')&&w.includes('catchtap="previewImage"'))
  assert(!/largeImage|image-viewer|saveImage|previousImage|nextImage/.test(w+js),'chat image preview must stay on the native WeChat viewer without custom save/close/page buttons')
  assert(js.includes('wx.previewImage({current,urls,showmenu:true'),'chat image preview uses the native swipe and long-press menu')
+ assert(!/activeFrames|previousFrame|nextFrame|关闭图片|上一张|下一张/.test(w+av),'video poster/frame images must not keep a second custom image viewer')
+ assert(av.includes('wx.previewImage({current:urls[0],urls,showmenu:true')&&chatAV.includes('nativeImageURL('),'retained video images use the same native WeChat preview path')
  assert.strictEqual((js.match(/sizeType:\['compressed'\]/g)||[]).length,2,'album selection and replacement default to WeChat compressed images');assert(!js.includes("sizeType:['original']"),'chat images must not default to original quality');assert(js.includes('3*1024*1024'),'chat image limit remains 3MB');assert(!js.includes('compressImage('),'chat must not add a second lossy compression pass')
  assert(!/setStorage|writeFileSync/.test(read('miniprogram/utils/ChatImages.js')),'no local archive of pending or rejected image selections')
  const selection=nativeConversation(),s=selection.inst

@@ -109,6 +109,15 @@ class ChatAV {
  }
  setVisible(id,views){this.visible.set(id,new Map(views.map(v=>[v.message_id,v])))}
  view(id,mid){const a=this.manager.cache.get(id)?.messages.get(mid),b=this.visible.get(id)?.get(mid);if(!a)return b;if(!b)return a;return String(a.state_version).length>String(b.state_version).length||String(a.state_version).length===String(b.state_version).length&&a.state_version>=b.state_version?a:b}
+ async nativeImageURL(id,mid,poster=false,frame=null){
+  const m=this.manager,epoch=m.epoch,generation=this.generation,view=this.view(id,mid)
+  if(!view||view.state!=='published'||view.message_type!=='video'||!poster&&frame===null)throw fail('CHAT_MEDIA_UNAVAILABLE')
+  const result=await m.http('av.url',{conversation_id:id,message_id:mid,...(poster?{thumbnail:true}:{}),...(frame!==null?{frame_ordinal:frame}:{})},epoch)
+  if(!this.live(epoch,generation,id)||this.view(id,mid)?.state!=='published'||this.view(id,mid)?.state_version!==view.state_version)throw fail('CHAT_CONTEXT_CHANGED')
+  if(result.cloud_available===false)throw fail('CHAT_MEDIA_CLOUD_EXPIRED')
+  if(!/^https:\/\//.test(result.url||''))throw fail('CHAT_INVALID_RESPONSE')
+  return result.url
+ }
  async url(id,mid,poster=false,frame=null){
   const m=this.manager,epoch=m.epoch,generation=this.generation,view=this.view(id,mid)
   if(!view||view.state!=='published'||!['audio','video'].includes(view.message_type))throw fail('CHAT_MEDIA_UNAVAILABLE')

@@ -167,7 +167,6 @@
       <view class="sms-dialog-actions"><button bindtap="closeSMS" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? '取消' : '关闭'}}</button><button class="sms-confirm" bindtap="confirmSMS" loading="{{smsBusy}}" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? (smsDialog.insufficient ? '去充值' : '确认提醒') : (smsDialog.state === 'pending' ? '核对结果' : '知道了')}}</button></view>
     </view>
   </view>
-  <view wx:if="{{activeFrames}}" class="av-viewer" catchtouchmove="stopImageTouch"><button bindtap="closeAV">关闭图片</button><view>{{activeFrames.label}}</view><image wx:if="{{activeFrames.src}}" src="{{activeFrames.src}}" mode="aspectFit" style="width:100%;height:65vh"/><view class="av-composer"><button bindtap="previousFrame" disabled="{{activeFrames.index < 0}}">上一张</button><button bindtap="nextFrame" disabled="{{activeFrames.index + 1 >= activeFrames.count}}">下一张</button></view></view>
   <view wx:if="{{activeVideo}}" class="av-viewer" catchtouchmove="stopImageTouch">
     <button bindtap="closeAV">关闭视频</button>
     <video id="chat-video" src="{{activeVideo.src}}" controls autoplay="{{false}}" show-center-play-btn object-fit="contain" binderror="closeAV" />
