@@ -15,7 +15,10 @@ Page({
     const keepNative=this.sameCall()&&this.calls.current?.provider==='wechat'&&!terminal.has(this.calls.current.state)
     this.life++;this.clearTimers();if(!keepNative)this.stopMedia();return
    }
-   if(this.visible&&type==='calls.changed')this.render(value)
+   if(this.visible&&type==='calls.changed'){
+    this.render(value)
+    if(this.pageIdentityEpoch===this.manager.identityEpoch&&this.manager.enabled&&this.manager.foreground&&!this.ticking&&!this.timer){this.pageEpoch=this.manager.epoch;this.tick()}
+   }
   })
  },
  onShow(){

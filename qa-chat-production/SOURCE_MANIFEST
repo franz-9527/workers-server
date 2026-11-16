@@ -1221,9 +1221,9 @@ aab4d39349b6cdedef10c99f011b7a41c099f412  qa-chat-production/miniprogram/compone
 1afee792683672fc664bf9fd4bb5e9b11263a021  qa-chat-production/tools/test_chat_notice_recovery.js
 b31776b56b42d986a85a9703a54130893057e091  qa-chat-production/miniprogram/pages/index/index.js
 fa4cf94b7bf3ff13440118f03eca7ec682ccbe2a  qa-chat-production/miniprogram/components/order-announcement/index.js
-ae4196ec8bc965b81f7dd836bf7f52ff3e5ce564  qa-chat-production/miniprogram/subpackages/chat/call/index.js
+1d46069db1e1ad538233c0dad46930e291404703  qa-chat-production/miniprogram/subpackages/chat/call/index.js
 bdd87153c5641fd75bf98ec9edb3ec6d0ca89eb3  qa-chat-production/miniprogram/subpackages/chat/call/media.js
-b36679df400f25862440c1df8c0e027e085fc076  qa-chat-production/tools/test_chat_calls.js
+2658f34ff113ac44953d7e17ec5e867127d941dc  qa-chat-production/tools/test_chat_calls.js
 0d9750397a84fc92c4ba2459163abc8961573549  qa-chat-production/miniprogram/pages/plus/plus.wxml
 0d9750397a84fc92c4ba2459163abc8961573549  qa-chat-production/miniprogram/pages/recharge/recharge.wxml
 0d9750397a84fc92c4ba2459163abc8961573549  qa-chat-production/miniprogram/pages/location/location.wxml

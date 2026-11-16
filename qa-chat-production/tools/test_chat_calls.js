@@ -152,7 +152,7 @@ test('request time is deducted from remaining media authorization',async()=>{
 })
 function callPage(calls,clock=()=>1000,Media=class{async stop(){}},api={}){
  let definition,listener;const timers=[]
- const manager={epoch:1,identityEpoch:1,enabled:true,calls,io:{now:clock},live:()=>true,subscribe(fn){listener=fn;return()=>{}}}
+ const manager={epoch:1,identityEpoch:1,enabled:true,foreground:true,calls,io:{now:clock},live(e){return this.enabled&&this.foreground&&this.epoch===e},subscribe(fn){listener=fn;return()=>{}}}
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../miniprogram/subpackages/chat/call/index.js'),'utf8'),{
   require(name){if(name.includes('ChatRuntime'))return{get:()=>manager};if(name==='./media.js')return{CallMedia:Media};return require('../miniprogram/utils/ChatCalls.js')},
   Page(o){definition=o},wx:api,setTimeout(fn,delay){timers.push({fn,delay});return timers.length},clearTimeout(){},Date,console
@@ -179,6 +179,13 @@ test('foreground recovery rebinds the transport epoch but an identity reset keep
  assert.equal(f.page.pageEpoch,2);assert.equal(f.page.pageIdentityEpoch,1);assert.notEqual(f.page.data.status,'通话已暂停')
  f.page.onHide();f.manager.epoch=3;f.manager.identityEpoch=2;f.page.onShow()
  assert.equal(f.page.pageEpoch,2);assert.equal(f.page.data.status,'通话已暂停')
+})
+test('a calls.changed snapshot resumes the page when page onShow happened before app foreground recovery',async()=>{
+ const calls={current:{...base,state:'ringing'},actorID:'11',status:async()=>calls.current,poll:async()=>calls.current}
+ const f=callPage(calls);f.page.onHide();f.manager.epoch=2;f.manager.foreground=false;f.page.onShow()
+ assert.equal(f.timers.length,0)
+ f.manager.foreground=true;f.emit('calls.changed',calls.current);await new Promise(setImmediate);await new Promise(setImmediate)
+ assert.equal(f.page.pageEpoch,2);assert.ok(f.timers.length>0)
 })
 test('native media callbacks remain valid after a foreground transport epoch change for the same account and call',async()=>{
  let events,ready=0
