@@ -104,11 +104,11 @@ python_bin=$(command -v python3)
 mysql chat_fixture -e "INSERT INTO system_settings(setting_key,setting_value,value_type,group_name,is_public,created_at,updated_at) VALUES
 ('media.storage_disk','qiniu','string','storage',0,NOW(),NOW()),
 ('qiniu.enabled','1','bool','storage',0,NOW(),NOW()),
-('qiniu.private_bucket','0','bool','storage',0,NOW(),NOW()),
+('qiniu.private_bucket','1','bool','storage',0,NOW(),NOW()),
 ('qiniu.access_key','fixture-access-key','string','storage',0,NOW(),NOW()),
 ('qiniu.secret_key','fixture-secret-key','string','storage',0,NOW(),NOW()),
 ('qiniu.bucket','fixture-bucket','string','storage',0,NOW(),NOW()),
-('qiniu.domain','http://media.example.com','string','storage',0,NOW(),NOW()),
+('qiniu.domain','https://media.example.com','string','storage',0,NOW(),NOW()),
 ('qiniu.path_prefix','worker','string','storage',0,NOW(),NOW()),
 ('qiniu.prefix.chat','chat','string','storage',0,NOW(),NOW()),
 ('chat.go_python_binary','$python_bin','string','chat',0,NOW(),NOW())
