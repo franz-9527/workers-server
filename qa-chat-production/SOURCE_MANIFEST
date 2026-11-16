@@ -1219,3 +1219,5 @@ fe40d96b7c1a2d55d77224dcde36d249f29854d2  qa-chat-production/miniprogram/compone
 03483859da80075ccb05a47835e3a86176604361  qa-chat-production/miniprogram/components/inapp-notice/index.wxml
 68505a3794b8921fb69e0960fdd34a3fefed7692  qa-chat-production/miniprogram/components/inapp-notice/index.wxss
 2a73eebfd4f271fa3eb335e8c22ad61f1ae723ab  qa-chat-production/tools/test_chat_notice_recovery.js
+b31776b56b42d986a85a9703a54130893057e091  qa-chat-production/miniprogram/pages/index/index.js
+fa4cf94b7bf3ff13440118f03eca7ec682ccbe2a  qa-chat-production/miniprogram/components/order-announcement/index.js
