@@ -337,17 +337,23 @@ func TestMySQLFinalRevalidationAndSequenceOrder(t *testing.T) {
 		t.Fatal("summary not atomic")
 	}
 }
-func TestMySQLExpiredIDsAndLeaseOwner(t *testing.T) {
+func TestMySQLOpaqueIDDoesNotCarryClientTime(t *testing.T) {
 	f, s, r := setupMessage(t, safetyFunc(pass))
-	expired := r
-	expired.ClientMessageID = fmt.Sprintf("%d.%032x", time.Now().Add(-25*time.Hour).Unix(), 1)
-	if _, e := s.Send(f.ctx, principal("10202"), expired); e != ErrExpired {
-		t.Fatalf("expired ID accepted %v", e)
+	r.ClientMessageID = fmt.Sprintf("%d.%032x", time.Now().Add(-25*time.Hour).Unix(), 1)
+	out := accepted(t, s, r)
+	if out.ClientMessageID != r.ClientMessageID {
+		t.Fatalf("opaque ID changed %+v", out)
 	}
-	if _, e := s.Query(f.ctx, principal("10202"), expired.ConversationID, expired.ClientMessageID); e != ErrExpired {
-		t.Fatalf("missing expired result %v", e)
+	if queried, e := s.Query(f.ctx, principal("10202"), r.ConversationID, r.ClientMessageID); e != nil || queried.State != "accepted" || queried.MessageID != out.MessageID {
+		t.Fatalf("opaque ID result unavailable %+v %v", queried, e)
 	}
-	noMessages(t, f)
+	if f.text("SELECT action_expires_at>UTC_TIMESTAMP(6) FROM chat_send_intents WHERE client_message_id=?", r.ClientMessageID) != "1" {
+		t.Fatal("server action deadline not persisted")
+	}
+}
+
+func TestMySQLLeaseOwner(t *testing.T) {
+	f, s, r := setupMessage(t, safetyFunc(pass))
 	// Simulate takeover while old inspector is outstanding. Old token cannot
 	// accept even though it obtained a positive safety result.
 	s.safety = safetyFunc(func(ctx context.Context, r ports.TextRequest) (ports.SafetyResult, error) {

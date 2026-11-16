@@ -209,9 +209,9 @@ func TestMySQLAuthorityAndPHPIssuer(t *testing.T) {
 		t.Helper()
 		command := exec.CommandContext(ctx, php, path, mode)
 		command.Env = append(adminEnv, "CHAT_AUTH_TEST_MYSQL_USER="+phpUser, "CHAT_AUTH_TEST_MYSQL_PASSWORD="+phpPassword, "CHAT_AUTH_TEST_SESSION_DIR="+sessionDir, "CHAT_AUTH_TEST_SESSION_ID="+sessionID)
-		data, err := command.Output()
+		data, err := command.CombinedOutput()
 		if err != nil {
-			t.Fatal("PHP admin operation failed")
+			t.Fatalf("PHP admin operation failed: %v output=%s", err, strings.TrimSpace(string(data)))
 		}
 		var r struct {
 			Token string `json:"access_token"`

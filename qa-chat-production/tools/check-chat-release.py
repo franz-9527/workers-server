@@ -99,9 +99,25 @@ def validate(e,revision,profile=None):
         require(c.get("environment")=="target_host" and c.get("connections")==[30,100,300]
                 and c.get("history_sizes")==[1000,10000,100000]
                 and c.get("mixed_order_media_notifications") is True,"target_mixed_capacity")
+        require(c.get("authenticated_limit")==300 and c.get("over_limit_upgrade_completed") is True
+                and c.get("over_limit_auth_ok") is False,"authenticated_connection_capacity")
         base=c.get("baseline_order_p95_ms",0);mixed=c.get("mixed_order_p95_ms",0);headroom=c.get("headroom_percent",0)
         numeric=all(type(v) in (int,float) and math.isfinite(v) for v in (base,mixed,headroom))
         require(numeric and base>0 and 0<mixed<=base*1.10 and 30<=headroom<=100,"order_budget_and_headroom")
+        database=obj(e.get("database_contract"))
+        dedicated=(database.get("mode")=="dedicated" and database.get("shared_app_credentials") is False
+                   and database.get("dedicated_least_privilege_verified") is True
+                   and database.get("overgrant_readiness_blocked") is True
+                   and database.get("overgrant_error_code")=="CHAT_DATABASE_GRANTS_INVALID")
+        managed=(database.get("mode")=="managed_shared" and database.get("shared_app_credentials") is True
+                 and database.get("dedicated_least_privilege_verified") is False
+                 and database.get("overgrant_readiness_blocked") is False
+                 and database.get("overgrant_error_code")=="")
+        require(has_evidence(database) and (dedicated or managed),"database_credential_contract")
+        contracts=obj(e.get("non_av_contracts"))
+        for name in ("opaque_action_id_and_expiry","recall_safe_audit_search","admin_identity_isolation"):
+            value=contracts.get(name)
+            require(isinstance(value,str) and 5<=len(value.strip())<=512,"non_av_contract_"+name)
         channels=obj(e.get("channels"))
         require(channels.get("simulated") is False and channels.get("private_media_expiry") is True
                 and channels.get("platform_safety") is True and channels.get("subscription_receipts") is True
@@ -156,6 +172,13 @@ def template(profile="full"):
         e["image_acceptance"]={"status":"pending","revision":"","evidence":"","private_storage":False,
                                "upload_download":False,"pre_publish_review":False,"recall_and_expiry":False,"simulated":False}
     if profile=="full":
+        e["capacity"].update(environment="target_host",connections=[],history_sizes=[],mixed_order_media_notifications=False,
+                             baseline_order_p95_ms=0,mixed_order_p95_ms=0,headroom_percent=0,authenticated_limit=300,
+                             over_limit_upgrade_completed=False,over_limit_auth_ok=None)
+        e["database_contract"]={"mode":"","shared_app_credentials":None,"dedicated_least_privilege_verified":False,
+                                "overgrant_readiness_blocked":False,"overgrant_error_code":"","evidence":""}
+        e["non_av_contracts"]={"opaque_action_id_and_expiry":"","recall_safe_audit_search":"",
+                               "admin_identity_isolation":""}
         for n in range(1,21): e["cases"]["AV"+str(n).zfill(2)]={"status":"pending","revision":"","evidence":""}
         e["calls"]={"status":"pending","revision":"","evidence":""}
         e["paid_sms"]={"status":"pending","revision":"","evidence":""}

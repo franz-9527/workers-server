@@ -398,7 +398,7 @@ repository=os.environ.get("GITHUB_REPOSITORY","franz-9527/workers-server").strip
 run_reference=f"{server}/{repository}/actions/runs/{run_id}" if run_id else "workers-server/local-isolated-run"
 out=pathlib.Path(os.environ["QA_REPO_ROOT"])/"non-av-automation-evidence.json"
 data={
-  "schema":1,
+  "schema":2,
   "profile":"non-av-automation",
   "revision":os.environ["SOURCE_SHA"],
   "environment":"isolated",
@@ -423,7 +423,12 @@ data={
     "production_non_av":True,
     "images_runtime":True,
     "reminders_runtime":True,
-    "recovery_gate":True
+    "recovery_gate":True,
+    "mysql_credential_contract":True,
+    "authenticated_connection_capacity":True,
+    "opaque_action_id_and_expiry":True,
+    "recall_safe_audit_search":True,
+    "admin_identity_isolation":True
   },
   "cases":list(release.CASES),
   "pending_real_acceptance":{
@@ -438,8 +443,12 @@ data={
   },
   "production_business_retest":False
 }
+builder_spec=importlib.util.spec_from_file_location("chat_non_av_builder",root/"tools"/"build-chat-non-av-evidence.py")
+builder=importlib.util.module_from_spec(builder_spec);builder_spec.loader.exec_module(builder)
+missing=builder.validate_auto(data,os.environ["SOURCE_SHA"])
+if missing:raise RuntimeError("non-AV automation evidence invalid: "+",".join(missing))
 out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-print("Non-AV automation evidence written:",out,len(data["cases"]),"cases")
+print("Non-AV schema 2 automation evidence written:",out,len(data["cases"]),"cases")
 PY
 
 echo "Isolated production chat deployment verified for source SHA $source_sha"

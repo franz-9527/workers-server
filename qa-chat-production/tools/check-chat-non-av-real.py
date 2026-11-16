@@ -2,13 +2,14 @@
 """Validate test.20m.cc real-device/channel evidence for the non-AV release."""
 import argparse, json, math, pathlib, re, sys
 
+REAL_SCHEMA=2
 CHECKS=(
     "ordinary_order_chat","platform_order_chat","measurement_order_chat","collaboration_group",
     "identity_and_cross_order_denial","reassignment_revocation","closure_and_ban_revocation",
-    "text_reply_edit_recall","image_send_preview_private_access","history_read_cache_reconnect",
-    "wechat_text_safety","qiniu_image_channel","subscription_reminder_channel",
-    "notification_dedupe_no_paid_sms","admin_governance_audit","release_gate",
-    "recovery_gate_and_no_revive","rollback",
+    "text_reply_edit_recall","opaque_action_id_and_expiry","image_send_preview_private_access",
+    "history_read_cache_reconnect","wechat_text_safety","qiniu_image_channel","subscription_reminder_channel",
+    "notification_dedupe_no_paid_sms","admin_governance_audit","recall_safe_audit_search",
+    "admin_identity_isolation","release_gate","recovery_gate_and_no_revive","rollback",
 )
 CHANNEL_FLAGS=(
     "private_media_expiry","platform_safety","subscription_receipts",
@@ -25,8 +26,10 @@ def finite(v): return type(v) in (int,float) and math.isfinite(v)
 def template(revision):
     if not valid_revision(revision): raise ValueError("revision")
     return {
-        "schema":1,"profile":"non-av-real","revision":revision,"environment":"test",
+        "schema":REAL_SCHEMA,"profile":"non-av-real","revision":revision,"environment":"test",
         "runtime":{"deployed_sha":"","running_sha":"","source_dirty":False,"recovery_epoch":"","evidence":""},
+        "database":{"mode":"","shared_app_credentials":None,"dedicated_least_privilege_verified":False,
+                    "overgrant_readiness_blocked":False,"overgrant_error_code":"","evidence":""},
         "devices":[
             {"id":"","platform":"ios","physical":True,"passed":False,"evidence":""},
             {"id":"","platform":"android","physical":True,"passed":False,"evidence":""},
@@ -38,19 +41,30 @@ def template(revision):
                     "manual_wait_reviewed":False},
         "capacity":{"status":"pending","environment":"target_host","connections":[],"history_sizes":[],
                     "mixed_order_media_notifications":False,"baseline_order_p95_ms":0,
-                    "mixed_order_p95_ms":0,"headroom_percent":0,"evidence":""},
+                    "mixed_order_p95_ms":0,"headroom_percent":0,"authenticated_limit":300,
+                    "over_limit_upgrade_completed":False,"over_limit_auth_ok":None,"evidence":""},
     }
 
 def validate(data,revision):
     missing=[]
     if not isinstance(data,dict): return ["evidence_object"]
-    if data.get("schema")!=1: missing.append("schema")
+    if data.get("schema")!=REAL_SCHEMA: missing.append("schema")
     if data.get("profile")!="non-av-real": missing.append("profile")
     if data.get("environment")!="test": missing.append("test_environment_only")
     if not valid_revision(revision) or data.get("revision")!=revision: missing.append("exact_revision")
     runtime=data.get("runtime") if isinstance(data.get("runtime"),dict) else {}
     if runtime.get("deployed_sha")!=revision or runtime.get("running_sha")!=revision or runtime.get("source_dirty") is not False or not valid_epoch(runtime.get("recovery_epoch")) or not evidence(runtime):
         missing.append("runtime_binding")
+    database=data.get("database") if isinstance(data.get("database"),dict) else {}
+    dedicated=(database.get("mode")=="dedicated" and database.get("shared_app_credentials") is False
+               and database.get("dedicated_least_privilege_verified") is True
+               and database.get("overgrant_readiness_blocked") is True
+               and database.get("overgrant_error_code")=="CHAT_DATABASE_GRANTS_INVALID")
+    managed=(database.get("mode")=="managed_shared" and database.get("shared_app_credentials") is True
+             and database.get("dedicated_least_privilege_verified") is False
+             and database.get("overgrant_readiness_blocked") is False
+             and database.get("overgrant_error_code")=="")
+    if not evidence(database) or not (dedicated or managed): missing.append("database_credential_contract")
     rows=data.get("devices") if isinstance(data.get("devices"),list) else []
     good=[r for r in rows if isinstance(r,dict) and isinstance(r.get("id"),str) and r.get("id").strip()
           and r.get("platform") in ("ios","android") and r.get("physical") is True and r.get("passed") is True and evidence(r)]
@@ -67,8 +81,13 @@ def validate(data,revision):
         missing.append("actual_channels")
     cap=data.get("capacity") if isinstance(data.get("capacity"),dict) else {}
     vals=(cap.get("baseline_order_p95_ms"),cap.get("mixed_order_p95_ms"),cap.get("headroom_percent"))
-    if cap.get("status")!="passed" or cap.get("environment")!="target_host" or cap.get("connections")!=[30,100,300] or cap.get("history_sizes")!=[1000,10000,100000] or cap.get("mixed_order_media_notifications") is not True or not evidence(cap) or not all(finite(v) for v in vals) or vals[0]<=0 or not (0<vals[1]<=vals[0]*1.10) or not (30<=vals[2]<=100):
-        missing.append("target_mixed_capacity")
+    capacity_contract=(cap.get("status")=="passed" and cap.get("environment")=="target_host"
+        and cap.get("connections")==[30,100,300] and cap.get("history_sizes")==[1000,10000,100000]
+        and cap.get("mixed_order_media_notifications") is True and cap.get("authenticated_limit")==300
+        and cap.get("over_limit_upgrade_completed") is True and cap.get("over_limit_auth_ok") is False
+        and evidence(cap) and all(finite(v) for v in vals) and vals[0]>0
+        and 0<vals[1]<=vals[0]*1.10 and 30<=vals[2]<=100)
+    if not capacity_contract: missing.append("target_mixed_capacity")
     return missing
 
 def main():

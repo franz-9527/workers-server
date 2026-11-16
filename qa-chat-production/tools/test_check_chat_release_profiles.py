@@ -51,7 +51,7 @@ def ready_evidence(profile):
         "recall_not_revived": True, "notification_not_resent": True,
         "wallet_not_recharged": True, "gap_blocks_access": True,
     })
-    if profile in ("text", "text-images"): 
+    if profile in ("text", "text-images"):
         evidence["text_channels"] = {
             "status": "passed", "revision": REVISION, "evidence": "wechat-text-safety-run",
             "simulated": False, "platform_safety": True, "wechat_text_safety": True,
@@ -71,7 +71,19 @@ def ready_evidence(profile):
             "environment": "target_host", "connections": [30, 100, 300],
             "history_sizes": [1000, 10000, 100000], "mixed_order_media_notifications": True,
             "baseline_order_p95_ms": 100, "mixed_order_p95_ms": 105, "headroom_percent": 40,
+            "authenticated_limit": 300, "over_limit_upgrade_completed": True,
+            "over_limit_auth_ok": False,
         })
+        evidence["database_contract"] = {
+            "mode": "dedicated", "shared_app_credentials": False,
+            "dedicated_least_privilege_verified": True, "overgrant_readiness_blocked": True,
+            "overgrant_error_code": "CHAT_DATABASE_GRANTS_INVALID", "evidence": "mysql-grants-run",
+        }
+        evidence["non_av_contracts"] = {
+            "opaque_action_id_and_expiry": "opaque-action-run",
+            "recall_safe_audit_search": "recall-search-run",
+            "admin_identity_isolation": "admin-identity-run",
+        }
         evidence["channels"].update({
             "status": "passed", "revision": REVISION, "evidence": "full-channel-run",
             "simulated": False, "private_media_expiry": True, "platform_safety": True,
@@ -83,6 +95,17 @@ class ReleaseProfileTests(unittest.TestCase):
     def validate(self, evidence, profile):
         with patch.object(CHECK, "expected_database_version", return_value="2.7.6"):
             return CHECK.validate(evidence, REVISION, profile)
+
+    def test_full_template_exposes_non_av_contract_placeholders(self):
+        with patch.object(CHECK, "expected_database_version", return_value="2.7.6"):
+            evidence = CHECK.template("full")
+        self.assertEqual(300, evidence["capacity"]["authenticated_limit"])
+        self.assertIsNone(evidence["capacity"]["over_limit_auth_ok"])
+        self.assertIn("database_contract", evidence)
+        self.assertEqual(
+            {"opaque_action_id_and_expiry", "recall_safe_audit_search", "admin_identity_isolation"},
+            set(evidence["non_av_contracts"]),
+        )
 
     def test_text_profile_passes_without_image_or_capacity_evidence(self):
         evidence = ready_evidence("text")
@@ -110,6 +133,16 @@ class ReleaseProfileTests(unittest.TestCase):
         self.assertEqual([], self.validate(evidence, "full"))
         evidence["capacity"]["connections"] = [30, 100]
         self.assertIn("target_mixed_capacity", self.validate(evidence, "full"))
+
+    def test_full_profile_requires_authenticated_limit_and_non_av_contracts(self):
+        evidence = ready_evidence("full")
+        evidence["capacity"]["over_limit_auth_ok"] = True
+        evidence["database_contract"]["dedicated_least_privilege_verified"] = False
+        evidence["non_av_contracts"]["recall_safe_audit_search"] = ""
+        failures = self.validate(evidence, "full")
+        self.assertIn("authenticated_connection_capacity", failures)
+        self.assertIn("database_credential_contract", failures)
+        self.assertIn("non_av_contract_recall_safe_audit_search", failures)
 
     def test_full_profile_requires_its_base_capabilities(self):
         evidence = ready_evidence("full")

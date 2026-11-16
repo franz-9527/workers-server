@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/franz-9527/workers/chat/internal/ports"
-	"strings"
 	"time"
 )
 
@@ -41,8 +40,7 @@ func (g *GovernanceService) AuditHistory(ctx context.Context, p ports.Principal,
 		limit = 30
 	}
 	out := HistoryPage{MemberRole: "audit", CanSend: false, ViewerID: p.ActorID, Messages: []MessageView{}, Changes: []ChangeView{}, PolicyVersion: version, SnapshotMaxSeq: c.Seq, SnapshotMaxChange: c.Change, ExpiresAt: c.Expiry}
-	auditColumns := strings.Replace(viewColumns, "m.state='published'", "m.state IN ('published','recalled') AND (m.retention_mode='permanent' OR m.expires_at>UTC_TIMESTAMP(6))", 1)
-	query := `SELECT ` + auditColumns + `,1 FROM chat_messages m WHERE m.conversation_id=? AND m.seq>? AND m.seq<=? AND m.seq<=? ORDER BY m.seq DESC LIMIT ?`
+	query := `SELECT ` + viewColumns + `,1 FROM chat_messages m WHERE m.conversation_id=? AND m.seq>? AND m.seq<=? AND m.seq<=? AND m.state IN ('published','recalled') AND (m.message_type IN ('image','image_album') OR m.retention_mode='permanent' OR m.expires_at>UTC_TIMESTAMP(6)) ORDER BY m.seq DESC LIMIT ?`
 	pos := number(c.Position)
 	if q.TargetID != "" {
 		var target uint64
