@@ -67,6 +67,7 @@ sudo chmod 2750 /www/backup-control/bixuan-chat/production
 sudo cp -R server/. "$site/"
 sudo cp -R chat "$site/"
 sudo ln -s "$(command -v php)" /www/server/php/83/bin/php
+php=/www/server/php/83/bin/php
 sudo chown root:www "$site/chat"
 sudo chmod 0750 "$site/chat"
 sudo chown 999:999 /var/lib/chatqa-bin
