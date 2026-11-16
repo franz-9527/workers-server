@@ -31,7 +31,7 @@ foreach ($cases as $name=>$facts) $decisions[$name]=$policy->availability($facts
 if (($argv[1]??'') === '--emit-decisions') {
     $other=array_replace($pool,['provider'=>'shengwang','unit'=>'shengwang_standard','quota_scope_id'=>'synthetic-project:test']);
     $decisions['shengwang']=$policy->availability($other,$now);
-    echo json_encode(['now'=>$now,'decisions'=>$decisions],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+    echo json_encode(['now'=>$now,'cycle_expires_at'=>$pool['expires_at'],'decisions'=>$decisions],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
     exit;
 }
 $count=0;

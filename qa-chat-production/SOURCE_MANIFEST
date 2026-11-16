@@ -75,7 +75,7 @@ daffd6cee3d23931ef3f1f9dc6edfc5e1d97cdbb  qa-chat-production/chat/internal/calls
 57886321915fcba8af7c6a74be54061ac1176286  qa-chat-production/chat/internal/calls/provider_settings_test.go
 80857882ae4e897c9bbc061c50fe64a393c5486d  qa-chat-production/chat/internal/calls/providers_test.go
 5218a758773244b15bd00957b9585cae6968a872  qa-chat-production/chat/internal/calls/providers.go
-6eecd07bb6d840d659634b1317f817825f7ac2af  qa-chat-production/chat/internal/calls/resources_test.go
+e3e334aec603aa7069ac07bb324f30c5ae252fbe  qa-chat-production/chat/internal/calls/resources_test.go
 3f1e0ad3d78a908c04c299fbe2416bb3b6651840  qa-chat-production/chat/internal/calls/resources.go
 e2ba2140f574ccb4163edc648316af6f7acb6deb  qa-chat-production/chat/internal/calls/sandbox_routing_test.go
 e3a896bb5161c69587030f7b42b9a901e49b93ab  qa-chat-production/chat/internal/calls/service.go
@@ -1169,7 +1169,7 @@ d17e3cd295fa762c484e491d6c28904cf0d9c794  qa-chat-production/server/database/upg
 50a633d869fc6f5bbd3d3298149ed46913ab9a39  qa-chat-production/server/database/upgrades/2.7.6.sql
 a14ade4f2bcb0f42126c81583f58eac108d8ccb4  qa-chat-production/server/database/upgrades/manifest.json
 e417eadbb70f3e162cc9cc87f600a071cfb90996  qa-chat-production/server/tests/chat_assignment_contract.php
-608869cf3c3c4f6c665169f98325c4bf56cfac27  qa-chat-production/server/tests/chat_call_resource_contract.php
+a14d88f67ea41412613c9968aa636eb3b89a3cfb  qa-chat-production/server/tests/chat_call_resource_contract.php
 b051069d81be986eb9245b6252e0b7012793608d  qa-chat-production/server/tests/chat_calls_mysql_contract.php
 6a33319d146a0e2a691ee09ce00781c825c40e4e  qa-chat-production/server/tests/chat_closure_contract.php
 07820aa9301e8b4aab31b4d6b8b4e74e76e9031f  qa-chat-production/server/tests/chat_collaboration_fixture.php

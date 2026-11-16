@@ -177,8 +177,9 @@ func TestPHPResourceContract(t *testing.T) {
 		t.Fatalf("PHP contract: %v", err)
 	}
 	var envelope struct {
-		Now       int64                      `json:"now"`
-		Decisions map[string]json.RawMessage `json:"decisions"`
+		Now            int64                      `json:"now"`
+		CycleExpiresAt int64                      `json:"cycle_expires_at"`
+		Decisions      map[string]json.RawMessage `json:"decisions"`
 	}
 	if json.Unmarshal(output, &envelope) != nil || len(envelope.Decisions) != 8 {
 		t.Fatalf("PHP envelope: %s", output)
@@ -191,8 +192,8 @@ func TestPHPResourceContract(t *testing.T) {
 		if name != "shengwang" && got.Status != name {
 			t.Fatalf("PHP status: %s", name)
 		}
-		if got.ExpiresAt != envelope.Now+50 {
-			t.Fatalf("PHP freshness: %s", raw)
+		if envelope.CycleExpiresAt <= envelope.Now || got.ExpiresAt != envelope.CycleExpiresAt {
+			t.Fatalf("PHP cycle expiry: %s", raw)
 		}
 	}
 	wx, _ := DecodeResourceDecision(envelope.Decisions["exhausted"])
