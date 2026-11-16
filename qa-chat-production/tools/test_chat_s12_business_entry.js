@@ -635,7 +635,7 @@ async function s16NativeImageTests(){
  p.imageActions({currentTarget:{dataset:{message:'7',item:'8'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));p.runMessageAction({currentTarget:{dataset:{key:'reply'}}});assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,'8')
  p.cancelReply();assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,undefined)
  p.messageActions({currentTarget:{dataset:{id:'7'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));assert(p.data.messageMenu.actions.some(a=>a.key==='recall'))
- f.manager.images={nativePreviewURL:async(id,mid,item)=>'https://test.invalid/'+item+'.jpg',setVisible(){}}
+ f.manager.images={nativePreviewURL:async(id,mid,item)=>'https://test.invalid/'+item+'.jpg',setVisible(){},list(){return[]},refresh:async()=>{},urls:new Map()}
  await p.previewImage({currentTarget:{dataset:{message:'7',item:'8'}}})
  assert.strictEqual(f.previews.length,1);assert.strictEqual(f.previews[0].current,'https://test.invalid/8.jpg')
  assert.strictEqual(f.previews[0].urls.length,9);assert.strictEqual(f.previews[0].showmenu,true,'native preview keeps WeChat long-press menu')
