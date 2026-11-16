@@ -351,7 +351,7 @@ ba63a1084f954b31c45e42fa79fc27cdf07d9660  qa-chat-production/miniprogram/utils/C
 0759d23ab35d8bfc0bde713ec267e6935b96994f  qa-chat-production/miniprogram/utils/CustomerOrderBillingPresentation.js
 98551ba7c356ebfdb137d5537770ce40a3e65e5a  qa-chat-production/miniprogram/utils/CustomerService.js
 decc4ee13e813a4973dfd69e97b81af88a46c9f4  qa-chat-production/miniprogram/utils/DateUtils.js
-fc669b55354d4c1af8ec58615f7f02ea94a6fc21  qa-chat-production/miniprogram/utils/InAppNotice.js
+78eeb46148d9906c8365f08171361f08b5f8fa79  qa-chat-production/miniprogram/utils/InAppNotice.js
 7730e1b74ba7a9bfcefae96f643e8908c2b0e289  qa-chat-production/miniprogram/utils/LocationUtils.js
 6e390e17b8327c9aef1ef421890a19dc1df15b8f  qa-chat-production/miniprogram/utils/MessageNavigation.js
 f6743e13c696beb33016c3c3540584df54ff11c5  qa-chat-production/miniprogram/utils/NotificationState.js

@@ -84,7 +84,7 @@ function setIncoming(view,alert=false){
   media:view.media==='video'?'video':'audio',peerName:same?incomingCall.peerName:'订单成员',peerAvatar:same?incomingCall.peerAvatar:(Identity.avatars?.user||'/images/chat-user.svg'),
   busy:same&&incomingCall.busy===true
  }
- notifyCall();CallSound.sync(view,actor)
+ notifyCall();CallSound.sync(view,ChatRuntime.get().calls?.actorID||'')
  if(alert&&callAlerted!==id){callAlerted=id;if(typeof wx.vibrateShort==='function')try{wx.vibrateShort({type:'medium'})}catch(_){}}
  if(profileKey&&callIdentityKey!==profileKey&&callIdentityPending!==profileKey){callIdentityPending=profileKey;loadCallIdentity(view,token,profileKey)}
  // The matching conversation uses an immersive incoming-call screen; other
