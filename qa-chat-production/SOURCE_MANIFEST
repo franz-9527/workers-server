@@ -1213,3 +1213,4 @@ b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_p
 438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
 e0cb01da6fdf3a1ce28587bf71cb7bdccc7dfd65  qa-chat-production/tools/test_check_chat_non_av_real.py
 bb3f716ac8eeef93ed77016e55c586e4210b0d20  qa-chat-production/tools/test_check_chat_release_profiles.py
+e6c29b26933ce31b839bb063b9ff2a3fd126dd88  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxss
