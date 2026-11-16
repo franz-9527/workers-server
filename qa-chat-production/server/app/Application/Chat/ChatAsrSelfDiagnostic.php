@@ -32,7 +32,12 @@ final class ChatAsrSelfDiagnostic
         $contractReady=$profile==='tencent_sentence'&&(string)($runtime['asr_api_name']??'')==='SentenceRecognition'&&(string)($runtime['asr_data_encoding']??'')==='json'&&$engineReady;
         $add('tencent_credentials','腾讯云凭据',$credentialReady?'pass':'fail',$credentialReady?'SecretId / SecretKey 已加密保存，运行时仅注入 Go 环境':'SecretId / SecretKey 尚未完整配置');
         $add('contract','一句话识别契约',$contractReady?'pass':'fail',$contractReady?('SentenceRecognition · '.$engine.' · HTTPS URL · TC3-HMAC-SHA256'):'当前运行配置不是腾讯云一句话识别直连契约');
-        $versions=!empty($go['versions_match'])&&!empty($go['running_sha']);$add('go_release','Go 运行版本',$versions?'pass':'warning',$versions?'deployed / running / current 已确认一致':'Go 运行版本尚未确认完全一致');
+        $versions=!empty($go['versions_match'])&&!empty($go['running_sha']);
+        $currentRecorded=trim((string)($go['current_sha']??''))!=='';
+        $versionDetail=$versions
+            ?($currentRecorded?'deployed / running / current 已确认一致':'deployed / running 已确认一致；current 元数据未提供，不影响运行一致性判断')
+            :'Go 运行版本尚未确认完全一致';
+        $add('go_release','Go 运行版本',$versions?'pass':'warning',$versionDetail);
 
         $pluginState=(string)($plugin['plugin_state']??'unknown');
         $add('wechat_si','WechatSI 备用',!empty($plugin['approved'])?'pass':($pluginState==='pending'?'warning':'unknown'),!empty($plugin['approved'])?'旧 WechatSI 插件已获批，仅在客户端作为备用转写，不承担主服务端识别':('备用插件状态：'.$pluginState));

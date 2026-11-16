@@ -48,12 +48,12 @@ foreach ($decisions as $name=>$result) {
     $assert($result['status']===$name,'status '.$name);
     $assert($result['available_units']===($name==='available'?'66000':'0'),'amount '.$name);
 }
-$assert($decisions['available']['expires_at']===$now+50,'freshness deadline limits Go lifetime');
-$assert($policy->availability(array_replace($pool,['usage_observed_at'=>$now-61]),$now)['status']==='unavailable','stale is not exhausted');
+$assert($decisions['available']['expires_at']===$pool['expires_at'],'resource cycle limits Go lifetime');
+$assert($policy->availability(array_replace($pool,['usage_observed_at'=>$now-61]),$now)['status']==='available','old official-usage observation does not expire admission');
 $assert($policy->availability(array_replace($pool,['expires_at'=>$now]),$now)['status']==='unavailable','cycle expiry is not exhaustion');
 $assert($policy->availability(array_replace($pool,['valid_from'=>$now+1]),$now)['status']==='unavailable','no future-cycle grant');
 $assert($policy->availability(array_replace($pool,['verified'=>false]),$now)['status']==='waiting_verification','unverified entitlements closed');
-$assert($policy->availability(array_replace($pool,['usage_observed_at'=>$now-60]),$now)['status']==='unavailable','freshness boundary is expired in PHP and Go');
+$assert($policy->availability(array_replace($pool,['usage_observed_at'=>$now-60]),$now)['status']==='available','legacy freshness field is advisory at its boundary');
 $assert($policy->availability(array_replace($pool,['reserved'=>'9223372036854775807','external_uncertainty'=>'9223372036854775807']),$now)['status']==='safety_insufficient','saturating subtraction no sum overflow');
 foreach (['-1','01','1.0','1e3','9223372036854775808',1,1.5,null,true] as $value) {
     $reject(fn()=>$policy->availability(array_replace($pool,['reserved'=>$value]),$now),'invalid exact resource amount');

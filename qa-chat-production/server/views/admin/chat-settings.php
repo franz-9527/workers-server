@@ -106,7 +106,7 @@ $credentialMetric=$metric('credential_latency_ms');$discoverMetric=$metric('disc
 <div class="admin-field"><label class="admin-label">聊天数据表</label><div><?= !empty($goRuntime['message_schema_ready'])?'已就绪':'缺失或版本未升级' ?></div></div>
 <div class="admin-field"><label class="admin-label">恢复门禁</label><div><?= !empty($goRuntime['message_recovery_default'])?'测试站默认恢复状态':(!empty($goRuntime['message_operations_configured'])?'已配置':'未配置') ?></div></div>
 <div class="admin-field"><label class="admin-label">小程序 AppID</label><div><?= !empty($goRuntime['message_app_id_configured'])?'已配置':'缺失' ?></div></div>
-<div class="admin-field"><label class="admin-label">文字风控</label><div><?= ($goRuntime['safety_mode']??'')==='local'?'本地风控（测试站）':(($goRuntime['safety_mode']??'')==='release_required'?'正式发布门禁':'未启用') ?></div></div>
+<div class="admin-field"><label class="admin-label">文字风控</label><div><?= ($goRuntime['safety_mode']??'')==='wechat'?'微信内容安全 + 本地规则':(($goRuntime['safety_mode']??'')==='local'?'本地风控（测试站）':(($goRuntime['safety_mode']??'')==='release_required'?'正式发布门禁':'未启用')) ?></div></div>
 </div>
 <?php if(($goRuntime['environment']??'')==='test'): ?>
 <p class="admin-text-muted admin-mt-2">测试站满足上述条件后，启动器会自动生成 <code>messages.enabled=true</code>，文字发送继续执行真实身份、订单权限、手机号/微信号/链接及拆分规避检测，并写入正式聊天历史后通过 Socket 推送；本阶段不调用微信 <code>msg_sec_check</code>。</p>
@@ -207,6 +207,11 @@ $tencentCredentials=!empty($goRuntime['tencent_asr_secret_id_configured'])&&!emp
 $asrDiagnostic=$canManage?($secretValues['asr_diagnostic']??[]):[];
 $asrDiagnosticStatus=(string)($asrDiagnostic['status']??'empty');
 $asrDiagnosticReady=$asrDiagnosticStatus==='diagnostic_ready';
+$asrRequestState=(string)($asrDiagnostic['request_state']??'');
+$asrTencentDirect=(string)($asrDiagnostic['service']??'')==='tencent_cloud_asr';
+$asrDiagnosticTone=$asrDiagnosticReady
+    ?($asrRequestState==='completed'?'success':($asrRequestState==='failed'?'danger':'warning'))
+    :(in_array($asrDiagnosticStatus,['read_failed','metadata_invalid'],true)?'warning':'info');
 $asrCurrentSha=(string)($goStatus['current_sha']??'');
 $asrDeployedSha=(string)($goStatus['deployed_sha']??'');
 $asrRunningSha=(string)($goStatus['running_sha']??'');
@@ -233,10 +238,14 @@ $asrCheckTones=['pass'=>'success','warning'=>'warning','fail'=>'danger','unknown
 <small class="admin-text-muted">证据：intent <code><?= e((string)($selfEvidence['intent_id']??'—')) ?></code> · source <code><?= e((string)($selfEvidence['source_host']??'—')) ?></code> · HTTP <?= e((string)($selfEvidence['http_status']??'—')) ?> · errcode <code><?= e((string)(($selfEvidence['errcode']??'')!==''?$selfEvidence['errcode']:'—')) ?></code> · RequestId <?= !empty($selfEvidence['request_id_present'])?'有':'无' ?><?= !empty($selfEvidence['tested_at'])?' · '.e((string)$selfEvidence['tested_at']):'' ?></small>
 </div>
 <?php endif; ?>
-<?php if($canManage): ?><div class="admin-alert <?= $asrDiagnosticReady?'admin-alert--warning':'admin-alert--info' ?> chat-runtime-wide"><div><strong>ASR 调用诊断</strong>
+<?php if($canManage): ?><div class="admin-alert admin-alert--<?= e($asrDiagnosticTone) ?> chat-runtime-wide"><div><strong>ASR 最近调用<?= $asrDiagnosticReady&&$asrRequestState==='completed'?' · 正常':($asrDiagnosticReady&&$asrRequestState==='failed'?' · 失败':'') ?></strong>
 <?php if($asrDiagnosticReady): ?>
 <p>状态 <code><?= e((string)($asrDiagnostic['request_state']??'未知')) ?></code><?= !empty($asrDiagnostic['provider_code'])?' · '.e((string)$asrDiagnostic['provider_code']):'' ?><?= !empty($asrDiagnostic['provider_message'])?' · '.e((string)$asrDiagnostic['provider_message']):'' ?><?= !empty($asrDiagnostic['provider_request_id'])?' · RequestId '.e((string)$asrDiagnostic['provider_request_id']):'' ?></p>
-<small>Service <?= e((string)($asrDiagnostic['service']??'—')) ?> · API <?= e((string)($asrDiagnostic['api']??'—')) ?> · <?= e((string)($asrDiagnostic['input_mode']??'—')) ?> · Data <?= e((string)($asrDiagnostic['data_encoding']??'—')) ?> · Key <?= e((string)($asrDiagnostic['request_key_length']??'—')) ?> · URL Host <?= e((string)($asrDiagnostic['url_host']??'—')) ?> · 长度 <?= e((string)($asrDiagnostic['url_length']??'—')) ?>/<?= e((string)($asrDiagnostic['url_encoded_length']??'—')) ?></small>
+<?php if($asrTencentDirect): ?>
+<small>Service <?= e((string)($asrDiagnostic['service']??'tencent_cloud_asr')) ?> · API <?= e((string)($asrDiagnostic['api']??'SentenceRecognition')) ?> · 引擎 <?= e((string)($asrDiagnostic['engine']??'—')) ?> · Data <?= e((string)($asrDiagnostic['data_encoding']??'json')) ?> · URL Host <?= e((string)($asrDiagnostic['url_host']??'—')) ?> · URL 长度 <?= e((string)($asrDiagnostic['url_length']??'—')) ?></small>
+<?php else: ?>
+<small>Service <?= e((string)($asrDiagnostic['service']??'—')) ?> · API <?= e((string)($asrDiagnostic['api']??'—')) ?> · Data <?= e((string)($asrDiagnostic['data_encoding']??'—')) ?> · URL Host <?= e((string)($asrDiagnostic['url_host']??'—')) ?> · URL 长度 <?= e((string)($asrDiagnostic['url_length']??'—')) ?></small>
+<?php endif; ?>
 <?php if(($asrDiagnostic['source_preflight']??'')==='passed'): ?><small>音频取件预检已通过；当前服务端主识别为腾讯云 SentenceRecognition。客户端插件文字只作备用，服务端识别失败不会阻塞语音消息。</small><?php endif; ?>
 <?php elseif($asrDiagnosticStatus==='asr_not_reached'): ?>
 <?php if(in_array((string)($asrDiagnostic['job_error']??''),['CHAT_AV_ASR_SOURCE_UNREACHABLE','CHAT_AV_ASR_SOURCE_INVALID_MP3'],true)): ?>
@@ -263,13 +272,14 @@ $asrCheckTones=['pass'=>'success','warning'=>'warning','fail'=>'danger','unknown
 <?php endif; ?>
 
 <?php if(!empty($asrDiagnostic['latest_intent_id'])): ?>
-<p class="admin-text-muted">最新发送：intent <code><?= e((string)$asrDiagnostic['latest_intent_id']) ?></code> · 状态 <code><?= e((string)($asrDiagnostic['intent_state']??'—')) ?></code> · error <code><?= e((string)($asrDiagnostic['intent_error']??'—')) ?></code> · 更新 <?= e(local_datetime((string)($asrDiagnostic['intent_updated_at']??''),'Y-m-d H:i:s')) ?></p>
-<p class="admin-text-muted">最新 AV job：phase <code><?= e((string)($asrDiagnostic['job_phase']??'—')) ?></code> · error <code><?= e((string)($asrDiagnostic['job_error']??'—')) ?></code> · submitted <?= e(local_datetime((string)($asrDiagnostic['job_submitted_at']??''),'Y-m-d H:i:s')) ?> · next <?= e(local_datetime((string)($asrDiagnostic['job_next_attempt_at']??''),'Y-m-d H:i:s')) ?></p>
+<?php $intentError=(string)($asrDiagnostic['intent_error']??'');$jobError=(string)($asrDiagnostic['job_error']??''); ?>
+<p class="admin-text-muted">最新发送：intent <code><?= e((string)$asrDiagnostic['latest_intent_id']) ?></code> · 状态 <code><?= e((string)($asrDiagnostic['intent_state']??'—')) ?></code> · error <code><?= e($intentError!==''?$intentError:'无') ?></code> · 更新 <?= e(local_datetime((string)($asrDiagnostic['intent_updated_at']??''),'Y-m-d H:i:s')) ?></p>
+<p class="admin-text-muted">最新 AV job：phase <code><?= e((string)($asrDiagnostic['job_phase']??'—')) ?></code> · error <code><?= e($jobError!==''?$jobError:'无') ?></code> · submitted <?= e(local_datetime((string)($asrDiagnostic['job_submitted_at']??''),'Y-m-d H:i:s')) ?> · next <?= e(local_datetime((string)($asrDiagnostic['job_next_attempt_at']??''),'Y-m-d H:i:s')) ?></p>
 <?php endif; ?>
 <?php if(!empty($asrDiagnostic['asr_intent_id'])): ?>
 <p class="admin-text-muted">最新 ASR：intent <code><?= e((string)$asrDiagnostic['asr_intent_id']) ?></code> · state <code><?= e((string)($asrDiagnostic['request_state']??'—')) ?></code> · 时间 <?= e(local_datetime((string)($asrDiagnostic['asr_created_at']??''),'Y-m-d H:i:s')) ?></p>
 <?php endif; ?>
-<p class="admin-text-muted">Go current <code><?= e($asrShort($asrCurrentSha)) ?></code> · deployed <code><?= e($asrShort($asrDeployedSha)) ?></code> · running <code><?= e($asrShort($asrRunningSha)) ?></code> · <?= !empty($goStatus['versions_match'])?'版本一致':'版本未确认一致' ?>。仅显示脱敏诊断，不保存 access_token、完整音频 URL 或七牛签名参数。</p>
+<p class="admin-text-muted">Go deployed <code><?= e($asrShort($asrDeployedSha)) ?></code> · running <code><?= e($asrShort($asrRunningSha)) ?></code><?= $asrCurrentSha!==''?' · current <code>'.e($asrShort($asrCurrentSha)).'</code>':'' ?> · <?= !empty($goStatus['versions_match'])?'版本一致':'版本未确认一致' ?><?= $asrCurrentSha===''&&!empty($goStatus['versions_match'])?'；current 元数据未提供，不影响运行一致性判断':'' ?>。仅显示脱敏诊断，不保存 access_token、完整音频 URL 或七牛签名参数。</p>
 </div></div><?php endif; ?>
 <div class="admin-field chat-runtime-wide"><label class="admin-label" for="chat-calls-endpoint">通话 PHP 端点（可留空自动配置）</label><input class="admin-control" id="chat-calls-endpoint" name="calls_php_endpoint" value="<?= e((string)($goRuntime['calls_php_endpoint']??'')) ?>" placeholder="https://私有入口/chat-calls.php" <?= !$canManage?'disabled':'' ?>><small class="admin-text-muted">测试站留空使用本站签名桥接；正式站沿用独立配置。</small></div>
 </div></fieldset>

@@ -28,10 +28,27 @@ function orderURL(context) {
  const page = { customer:'userOrder', worker:'workerOrder', platform_staff:'adminWorkbench' }[context.role]
  return page && /^[A-Za-z0-9_-]{1,80}$/.test(String(context.publicNo || '')) ? '/pages/' + page + '/detail?id=' + encodeURIComponent(context.publicNo) : ''
 }
+function callDuration(seconds) {
+ const n=Math.max(0,Math.floor(Number(seconds)||0)),m=Math.floor(n/60),s=n%60
+ return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')
+}
+function callText(message,viewerID='') {
+ const v=message&&message.system_event
+ if(!v||v.event!=='call')return '通话记录'
+ const caller=String(v.caller_id||''),viewer=String(viewerID||''),out=String(v.outcome||'')
+ if(out==='rejected')return viewer&&viewer===caller?'对方已拒绝':viewer?'已拒绝':'已拒绝'
+ if(out==='cancelled')return viewer&&viewer===caller?'已取消':viewer?'对方已取消':'已取消'
+ if(out==='missed')return viewer&&viewer===caller?'对方未接听':viewer?'未接听':'未接听'
+ if(out==='failed')return '未能接通'
+ if(out==='interrupted')return '通话已中断'
+ if(out==='ended')return '通话时长 '+callDuration(v.duration_seconds)
+ return '通话已结束'
+}
 function previewText(message) {
  if (!message) return '暂无沟通消息'
  if (message.state === 'recalled') return '消息已撤回'
  if (message.state !== 'published') return '消息暂不可查看'
+ if(message.message_type==='system_event'&&message.system_event?.event==='call')return (message.system_event.media==='video'?'视频通话 · ':'语音通话 · ')+callText(message)
  if(message.message_type==='image_album')return '[图片合集] '+Math.max(2,Math.min(9,Number(message.image_count)||(message.images||[]).length||2))+'张'
  if (message.message_type === 'text' && require('./ChatOrderCard.js').parse(message.text)) return '[订单] '+require('./ChatOrderCard.js').parse(message.text).title
  if (message.message_type === 'text') return Array.from(String(message.text || '')).slice(0,160).join('')
@@ -122,4 +139,4 @@ function inboxRows(map, summary, filter) {
   rows.sort(rowCompare)
   return filter === 'unread' ? rows.filter(row => row.unreadCount > 0) : rows
 }
-module.exports = { identities, preferences,mergePreferences,matches,bookmark,rowCompare, MAX_ROWS, validID, normalize, applyPage, toRows, inboxRows, orderContext, orderURL, previewText }
+module.exports = { identities, preferences,mergePreferences,matches,bookmark,rowCompare, MAX_ROWS, validID, normalize, applyPage, toRows, inboxRows, orderContext, orderURL, previewText, callText }

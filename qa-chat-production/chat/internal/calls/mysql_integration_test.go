@@ -45,7 +45,7 @@ func (g fixtureAuthority) Pair(ctx context.Context, tx *sql.Tx, p ports.Principa
 		if !read || (send && !write) {
 			return ports.Grant{}, ports.Grant{}, ErrUnavailable
 		}
-		grants = append(grants, ports.Grant{Mode: "direct", MemberKey: key, CanRead: read, CanSend: write})
+		grants = append(grants, ports.Grant{Mode: "direct", Version: "1", MemberKey: key, CanRead: read, CanSend: write})
 	}
 	return grants[0], grants[1], nil
 }
@@ -96,6 +96,10 @@ func (b *phpBrokerFixture) Resource(ctx context.Context, q ResourceRequest) (Per
 func (b *phpBrokerFixture) Identities(context.Context, ResourceRequest) (map[string]NativePerson, error) {
 	return nil, ErrUnavailable
 }
+
+type fixturePublisher struct{ committed []ports.CommittedMessage }
+
+func (p *fixturePublisher) Committed(m ports.CommittedMessage) { p.committed = append(p.committed, m) }
 
 type fixtureMedia struct{ stopped bool }
 
@@ -148,13 +152,23 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	for _, q := range strings.Split(string(schema), ";") {
+	schemaText := string(schema)
+	if start := strings.Index(schemaText, "-- CHAT_BEGIN calls"); start >= 0 {
+		end := strings.Index(schemaText[start:], "-- CHAT_END calls")
+		if end < 0 {
+			t.Fatal("call schema end marker missing")
+		}
+		schemaText = schemaText[start : start+end]
+	}
+	for _, q := range strings.Split(schemaText, ";") {
 		if strings.TrimSpace(q) != "" {
 			run(q)
 		}
 	}
-	run("CREATE TABLE chat_conversations(id BIGINT UNSIGNED PRIMARY KEY,policy_version BIGINT UNSIGNED NOT NULL DEFAULT 1) ENGINE=InnoDB")
+	run("CREATE TABLE chat_conversations(id BIGINT UNSIGNED PRIMARY KEY,policy_version BIGINT UNSIGNED NOT NULL DEFAULT 1,last_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_change_seq BIGINT UNSIGNED NOT NULL DEFAULT 0,last_message_id BIGINT UNSIGNED NULL,last_message_at DATETIME(6) NULL) ENGINE=InnoDB")
 	run("CREATE TABLE chat_members(conversation_id BIGINT UNSIGNED,actor_id BIGINT UNSIGNED,member_key VARCHAR(128),can_read TINYINT,can_send TINYINT,PRIMARY KEY(conversation_id,actor_id)) ENGINE=InnoDB")
+	run("CREATE TABLE chat_messages(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,conversation_id BIGINT UNSIGNED NOT NULL,seq BIGINT UNSIGNED NOT NULL,sender_id BIGINT UNSIGNED NOT NULL,client_message_id VARCHAR(43) NOT NULL,policy_version BIGINT UNSIGNED NOT NULL,message_type VARCHAR(24) NOT NULL,text_body TEXT NULL,state VARCHAR(16) NOT NULL,state_version BIGINT UNSIGNED NOT NULL,safety_rule_version VARCHAR(64) NOT NULL,created_at DATETIME(6) NOT NULL,UNIQUE KEY uq_seq(conversation_id,seq),UNIQUE KEY uq_client(sender_id,conversation_id,client_message_id)) ENGINE=InnoDB")
+	run("CREATE TABLE chat_message_changes(conversation_id BIGINT UNSIGNED NOT NULL,change_seq BIGINT UNSIGNED NOT NULL,message_id BIGINT UNSIGNED NOT NULL,state_version BIGINT UNSIGNED NOT NULL,change_type VARCHAR(24) NOT NULL,created_at DATETIME(6) NOT NULL,PRIMARY KEY(conversation_id,change_seq)) ENGINE=InnoDB")
 	run("INSERT INTO chat_conversations(id) VALUES(1)")
 	run("INSERT INTO chat_members VALUES(1,11,'member:11',1,1),(1,12,'member:12',1,1)")
 	now := time.Now().Unix()
@@ -176,10 +190,12 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 	run("UPDATE chat_call_settings SET config_json=JSON_SET(config_json,'$.enabled',CAST('true' AS JSON)) WHERE id=1")
 	broker := &phpBrokerFixture{t: t, database: name}
 	media := &fixtureMedia{}
+	publisher := &fixturePublisher{}
 	service, e := NewService(db, fixtureAuthority{}, broker, media)
 	if e != nil {
 		t.Fatal(e)
 	}
+	service = service.WithPublisher(publisher)
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
 	actor := func(id ports.ID) ports.Principal {
@@ -276,6 +292,21 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 	if e = db.QueryRow("SELECT reserved_units FROM chat_call_resource_pools WHERE id=1").Scan(&reserved); e != nil || reserved != 0 {
 		t.Fatalf("settled R %d %v", reserved, e)
 	}
+	var callPayload struct {
+		Event string `json:"event"`
+		CallID string `json:"call_id"`
+		Outcome string `json:"outcome"`
+	}
+	var raw string
+	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id LIMIT 1").Scan(&raw); e != nil || json.Unmarshal([]byte(raw), &callPayload) != nil || callPayload.Event != "call" || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "ended" {
+		t.Fatalf("ended call message %q %+v %v", raw, callPayload, e)
+	}
+	if e = service.ensureTerminalMessage(ctx, view.CallID); e != nil {
+		t.Fatal("idempotent terminal message", e)
+	}
+	if count := 0; db.QueryRow("SELECT COUNT(*) FROM chat_messages").Scan(&count) != nil || count != 1 || len(publisher.committed) != 1 {
+		t.Fatalf("terminal message duplicated count=%d wake=%d", count, len(publisher.committed))
+	}
 	// A callee can reject directly without first accepting or owning a leg.
 	rejectq := create
 	rejectq.Operation = sha256String("direct-reject")
@@ -289,6 +320,10 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 	}
 	if e = service.Tick(ctx); e != nil {
 		t.Fatal(e)
+	}
+	var rejectedRaw string
+	if e = db.QueryRow("SELECT text_body FROM chat_messages WHERE message_type='system_event' ORDER BY id DESC LIMIT 1").Scan(&rejectedRaw); e != nil || json.Unmarshal([]byte(rejectedRaw), &callPayload) != nil || callPayload.CallID != string(view.CallID) || callPayload.Outcome != "rejected" {
+		t.Fatalf("rejected call message %q %+v %v", rejectedRaw, callPayload, e)
 	}
 	// Only a known pre-media refusal may cross providers after old fencing ACK.
 	fq := create

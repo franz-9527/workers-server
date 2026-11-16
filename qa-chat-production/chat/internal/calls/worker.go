@@ -258,6 +258,9 @@ func (s *Service) maintain(ctx context.Context, id ports.ID, emergency bool) err
 		}
 	}
 	if r.State.Terminal() {
+		if e = s.ensureTerminalMessage(ctx, r.CallID); e != nil {
+			return e
+		}
 		action := "release_unsubmitted"
 		if r.Binding.Submitted {
 			action = "release"

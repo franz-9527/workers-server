@@ -49,8 +49,7 @@ final class CallResourcePolicy
         $available = 0;
         if (!$pool['enabled']) $status = 'disabled';
         elseif (!$pool['verified'] || !$pool['hard_stop_verified']) $status = 'waiting_verification';
-        elseif (!$pool['healthy'] || $now < $pool['valid_from'] || $now >= $pool['expires_at']
-            || $now - $pool['usage_observed_at'] >= $pool['max_age_seconds']) $status = 'unavailable';
+        elseif (!$pool['healthy'] || $now < $pool['valid_from'] || $now >= $pool['expires_at']) $status = 'unavailable';
         else {
             // Saturating sequential subtraction avoids overflow when independent
             // conservative counters exceed the original budget.
@@ -65,9 +64,9 @@ final class CallResourcePolicy
             'quota_scope_id'=>$pool['quota_scope_id'], 'cycle_id'=>$pool['cycle_id'],
             'config_revision'=>$pool['config_revision'], 'unit'=>$pool['unit'],
             'status'=>$status, 'available_units'=>(string)$available,
-            // Go must reject a snapshot after the usage freshness boundary too.
-            'expires_at'=>min($pool['expires_at'], $pool['usage_observed_at']
-                + min($pool['max_age_seconds'], PHP_INT_MAX - $pool['usage_observed_at'])),
+            // Official-usage observation age is advisory. Runtime authorization
+            // expires only at the verified resource cycle boundary.
+            'expires_at'=>$pool['expires_at'],
         ];
     }
 

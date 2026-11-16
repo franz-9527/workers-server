@@ -2,17 +2,31 @@
 
 > **先确认部署范围：** 2026-10-31 起默认由 PHP 已安装配置和后台聊天设置自动生成 Go 私有运行配置。环境、现有 PHP 数据库、签名公钥及基础会话配置不再重复填写 `chat.json`；Redis 等 Go 独有项在后台维护。编译成功／进程绿色仍不等于完整消息业务已验收。
 
-用户已确认：完整仓库同步至 `/www/wwwroot/workers-test`，网站运行目录仍为 `/server`。2026-10-28用户已自行合并chat到main，宝塔改为同步main；聊天开发仍在chat，验收后集成到main。本流程支持main/chat两种同步分支，保留完整检出，不设置或改写sparse-checkout。**分支名不会改变仓库目录，脚本始终位于chat/deploy/，不能改成main/deploy/。**
+测试站完整检出位于 `/www/wwwroot/workers-test`，网站运行目录为 `/server`。服务器和宝塔 Git 管理只跟踪并部署 `origin/main`。Go 脚本固定放在 `chat/deploy/`，与 Git 分支名无关。仓库发布规则见[维护手册](../../docs/GitHub开发与仓库维护手册.md#3-分支规则)。
 
 ## 一次设置
 
 1. 宝塔安装与 `chat/go.mod` 一致的 Go 工具链（当前 Go 1.27.3）；确认部署脚本实际使用的 Git ≥2.24.0，并已有 PHP 8.3 CLI、Bash、tar、flock、sha256sum。服务器自行编译，无需手动上传 chatd，二进制不提交 Git。
-2. 宝塔「网站 → Git 管理」：原仓库地址不变，项目目录保持 `/www/wwwroot/workers-test`，分支使用 **main**（也支持直接同步chat），运行目录保持 **/server**。
-3. 在现有「部署后脚本」末尾追加以下内容；保留原 PHP 部署步骤、配置与数据。既有脚本若失败，应立即停止，不应继续编译：
+2. 宝塔「网站 → Git 管理」保留原仓库地址，项目目录设为 `/www/wwwroot/workers-test`，分支设为 **main**，运行目录保持 **/server**。使用只读部署凭据，过滤 Webhook 事件，只允许 `refs/heads/main` 触发部署。
+3. 保留现有 PHP 部署步骤，将以下内容纳入「部署后脚本」。任一前置步骤失败时退出。部署前重新读取远端 main，并校验本地检出：
    ```bash
    set -e
    cd /www/wwwroot/workers-test
+   git fetch --no-tags origin
+   target=$(git rev-parse --verify refs/remotes/origin/main)
+   if [ "$(git branch --show-current)" != main ] ||
+      [ "$(git rev-parse HEAD)" != "$target" ]; then
+     echo 'CHAT_DEPLOY_REF_MISMATCH: 测试站 HEAD 必须等于 origin/main' >&2
+     exit 1
+   fi
    /bin/bash chat/deploy/bt-deploy.sh
+   test "$(git rev-parse HEAD)" = "$target"
+   test "$(readlink chat/bin/current)" = "releases/$target"
+   test "$(cat chat/bin/deployed-sha)" = "$target"
+   if [ "$(cat chat/bin/state/running-sha 2>/dev/null)" != "$target" ]; then
+     echo 'CHAT_DEPLOY_RUNNING_MISMATCH: 请核对宝塔 Go 项目和启动日志' >&2
+     exit 1
+   fi
    ```
 4. 点击一次「部署／同步」。部署脚本先调用 `server/bin/chat-runtime-config.php`，从 PHP `installed.php`、后台聊天设置和签名状态生成 `chat/bin/state/chat.runtime.json` 与 `runtime.env`，再校验和编译 Go；PHP 安装配置必须为 testing。
 5. 在后台“聊天设置”生成 PHP↔Go 签名，并按需核对 Redis。数据库继续使用当前测试站 PHP 已有数据库，不新建聊天数据库、不重复填写数据库密码。然后到「网站 → Go 项目 → 添加项目」填写下表。只建这一个项目；脚本以前台方式统一管理 serve/worker 两个 Go 子进程，宝塔保存、查看日志及停止此项目即可，不另开 Supervisor 或第二个项目竞争同一端口。
@@ -28,9 +42,9 @@
 | 绑定域名 | 留空；沿用现有测试站 HTTPS |
 
 6. 现有测试站「设置 → 配置文件」加入同目录 `nginx.conf.example` 的聊天 location，并把 9501 换为 19501；保留 PHP 和 /server 运行目录。19502 是本机内部端口，不加入公网代理或防火墙开放项。检查配置并重载 Nginx。
-7. Git 管理启用原有自动部署，触发分支与Git管理保持一致：当前为 `main`。如以后直接同步chat，再对应调整Webhook分支限制。配置好后先手动触发一次，再核对 GitHub 最近投递和宝塔部署日志。本仓库脚本不创建公网 Webhook 接口或保存面板 API 密钥。
+7. 首次编译若显示 `CHAT_DEPLOY_BUILT`，在宝塔启动现有 Go 项目后再核对运行 SHA。日常自动部署只接收 main 事件，配置好后核对 GitHub 最近投递、宝塔部署日志和实际运行版本。
 
-之后流程：chat开发并验收 → 集成到main → 原 Git 管理同步main → 自动编译已提交源码 → 校验配置 → 原子切换版本 → 统一启动器优雅更新两个子进程。Git 同步本身不能证明两个进程已更新，核对下文版本标记。
+日常流程为发布 main、宝塔同步 main、构建并校验 Go、切换版本、启动器更新两个子进程。Go 部署以运行 SHA 为准。
 
 ## CentOS 7.9 x86_64 兼容核对（2026-10-27）
 
@@ -88,14 +102,61 @@ CHAT_RUN_USER='www'
 
 ## Git 拉取失败与 Go 构建失败
 
-若日志出现 `Not possible to fast-forward, aborting`，Git 拉取已结束，后置 Go 脚本尚未执行。健康接口的 `chat_go.running_sha` 是运行中的 Go 版本。要核对实际工作区，请在服务器执行以下只读检查：
+若日志出现 `Not possible to fast-forward, aborting`，Git 可能已经更新 `origin/main`，但本地 HEAD 没有切换，后置构建也可能尚未执行。先核对两条引用的操作记录：
 
 ```bash
 git -C /www/wwwroot/workers-test status --short --branch
 git -C /www/wwwroot/workers-test rev-parse HEAD
 git -C /www/wwwroot/workers-test rev-list --left-right --count HEAD...origin/main
+git -C /www/wwwroot/workers-test reflog show --date=iso -n 25 main
+git -C /www/wwwroot/workers-test reflog show --date=iso -n 25 refs/remotes/origin/main
 ```
 
-`84d05d9` 曾与 `main` 分叉，业务代码与 `d686f49` 相同。历史合并 `b74756e` 已保留两条历史。若工作区只有旧部署提交，直接在宝塔重试同步即可。仍失败时，以重试日志的第一条错误为准；工作区另有本地提交或修改时先保留并核对，避免强制重置。
+若本地 reflog 显示 `pull origin main: Fast-forward`，而远端跟踪 reflog 随后出现 `forced-update`，到 GitHub 仓库 Activity 查询同一时段的 main 强推记录。恢复与防复发按下节执行。
+
+### 终端同步 main 并重新部署 Go
+
+在宝塔终端执行。此操作只限测试站，要求当前分支为 main 且没有已跟踪的本地修改。已经对齐时也可以用这套命令重新构建 Go。确认应丢弃旧部署线的本地独有提交后执行 `reset --keep`，发生冲突就退出。站点配置、安装标记和运行数据保留在原目录。
+
+```bash
+(
+  set -e
+  cd /www/wwwroot/workers-test
+  test "$(git branch --show-current)" = main
+  git diff --quiet
+  git diff --cached --quiet
+  git config --local --replace-all remote.origin.fetch '+refs/heads/main:refs/remotes/origin/main'
+  git config --local pull.ff only
+  git fetch --no-tags origin
+  target=$(git rev-parse --verify refs/remotes/origin/main)
+  git reset --keep "$target"
+  test "$(git rev-parse HEAD)" = "$target"
+  /bin/bash chat/deploy/bt-deploy.sh
+)
+```
+
+- `CHAT_DEPLOY_RUNNING` 表示现有启动器已切到新 Go。若显示 `CHAT_DEPLOY_BUILT`，在宝塔「网站 → Go 项目」启动现有 `bixuan_chat_test`，确认其启动命令为 `/bin/bash /www/wwwroot/workers-test/chat/deploy/bt-run.sh`。
+- `CHAT_DEPLOY_UPGRADE_REQUIRED` 表示先在测试后台完成数据库升级，再执行上面的部署命令。
+- `CHAT_DEPLOY_START_FAILED` 表示新 Go 启动失败，脚本会尝试恢复上一个 Go 版本。先查宝塔 Go 项目日志及 `chat/bin/state/last-error`，修复后再部署。
+
+部署后在终端核对五项一致，并检查业务就绪：
+
+```bash
+(
+  set -e
+  cd /www/wwwroot/workers-test
+  target=$(git rev-parse --verify refs/remotes/origin/main)
+  printf 'origin/main %s\nHEAD %s\ncurrent %s\ndeployed %s\nrunning %s\n' \
+    "$target" "$(git rev-parse HEAD)" "$(readlink chat/bin/current)" \
+    "$(cat chat/bin/deployed-sha)" "$(cat chat/bin/state/running-sha)"
+  test "$(git rev-parse HEAD)" = "$target"
+  test "$(readlink chat/bin/current)" = "releases/$target"
+  test "$(cat chat/bin/deployed-sha)" = "$target"
+  test "$(cat chat/bin/state/running-sha)" = "$target"
+  curl -fsS http://127.0.0.1:19502/readyz
+)
+```
+
+日常部署使用快进同步。上面的 `reset --keep` 是确认过旧分叉后的一次性恢复操作。服务器检出仅用于部署，业务修改和提交从开发端发布。GitHub 的 main 发布入口只允许快进更新，有分支保护时禁用强推及删除。
 
 正式站按[正式 Go 部署与微信回调](./正式Go部署与微信回调.md)单独部署。

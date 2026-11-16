@@ -153,6 +153,7 @@ func (r *Runtime) EnableCalls(c CallsConfig) error {
 	if e != nil {
 		return e
 	}
+	service = service.WithPublisher(publicationRelay{r})
 	r.Calls = service
 	r.CallsHTTP = calls.NewHandler(service, r.Identity)
 	r.CallsInternal = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

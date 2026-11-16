@@ -86,7 +86,9 @@ type SafetyResult struct {
 	Decision, RuleVersion string
 	// AuthorityProof binds the real AppID/OPENID generation; never client input.
 	AuthorityProof string
-	Finding        *SafetyFinding
+	// PublishedText is set only for a trusted masked-pass decision.
+	PublishedText string
+	Finding       *SafetyFinding
 }
 type SafetyFinding struct {
 	Provider, Code, TraceID string

@@ -94,6 +94,8 @@ func missingCloudReferences(ctx context.Context, tx *sql.Tx, id ports.ID, kind s
 	var missing bool
 	var query string
 	switch kind {
+	case "system_event":
+		return false, nil
 	case "text":
 		query = `SELECT text_body IS NULL FROM chat_messages WHERE id=?`
 	case "image", "image_album":

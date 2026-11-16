@@ -171,6 +171,10 @@ echo "Managed PHP signing, selected capability request and audio-only call polic
 mysql chat_fixture -e "UPDATE system_settings SET setting_value='0' WHERE setting_key='chat.go_production_selected_requested'; UPDATE system_settings SET setting_value='1' WHERE setting_key='chat.go_production_non_av_requested';"
 
 cd chat
+export CHAT_CALLS_MYSQL_ADDR="$CHAT_INTEGRATION_MYSQL_ADDR"
+export CHAT_CALLS_MYSQL_PASSWORD="$CHAT_INTEGRATION_ADMIN_PASSWORD"
+export CHAT_CALLS_TEST_PHP=/usr/bin/php
+export CHAT_CALLS_SCHEMA_FILE="$PWD/../server/database/upgrades/2.7.0.sql"
 mkdir -p bin
 go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o bin/chatd ./cmd/chatd
 export CHAT_INTEGRATION_CHATD_BIN="$PWD/bin/chatd"

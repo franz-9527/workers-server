@@ -43,7 +43,7 @@ func unreadLocked(ctx context.Context, tx *sql.Tx, p ports.Principal, id ports.I
 	// own messages and recall placeholders. Read acknowledgements never move it.
 	var preview MessageView
 	var text sql.NullString
-	err := tx.QueryRowContext(ctx, `SELECT CAST(m.id AS CHAR),CAST(m.seq AS CHAR),CAST(m.sender_id AS CHAR),CAST(m.policy_version AS CHAR),m.message_type,m.state,CAST(m.state_version AS CHAR),CASE WHEN m.state='published' AND m.message_type='text' THEN LEFT(m.text_body,160) ELSE NULL END,m.created_at,(SELECT COUNT(*) FROM chat_image_items ci WHERE ci.message_id=m.id),m.retention_mode,m.expires_at FROM chat_messages m WHERE m.conversation_id=? AND m.seq<=? AND m.policy_version<=? AND EXISTS (
+	err := tx.QueryRowContext(ctx, `SELECT CAST(m.id AS CHAR),CAST(m.seq AS CHAR),CAST(m.sender_id AS CHAR),CAST(m.policy_version AS CHAR),m.message_type,m.state,CAST(m.state_version AS CHAR),CASE WHEN m.state='published' AND m.message_type='text' THEN LEFT(m.text_body,160) WHEN m.state='published' AND m.message_type='system_event' THEN m.text_body ELSE NULL END,m.created_at,(SELECT COUNT(*) FROM chat_image_items ci WHERE ci.message_id=m.id),m.retention_mode,m.expires_at FROM chat_messages m WHERE m.conversation_id=? AND m.seq<=? AND m.policy_version<=? AND EXISTS (
  SELECT 1 FROM chat_member_intervals i WHERE i.conversation_id=m.conversation_id AND i.actor_id=?
  AND i.start_version<=m.policy_version AND (i.end_version IS NULL OR i.end_version>m.policy_version)) ORDER BY m.seq DESC LIMIT 1`, string(id), upper, string(grant.Version), string(p.ActorID)).Scan(&preview.ID, &preview.Seq, &preview.SenderID, &preview.PolicyVersion, &preview.Type, &preview.State, &preview.StateVersion, &text, &preview.CreatedAt, &preview.ImageCount, &preview.RetentionMode, &preview.ExpiresAt)
 	if err != nil && err != sql.ErrNoRows {
@@ -55,6 +55,13 @@ func unreadLocked(ctx context.Context, tx *sql.Tx, p ports.Principal, id ports.I
 		if preview.State == "published" && preview.Type == "text" && text.Valid {
 			value := text.String
 			preview.Text = &value
+		}
+		if preview.State == "published" && preview.Type == "system_event" && text.Valid {
+			if event, ok := decodeSystemEvent(text.String); ok {
+				preview.SystemEvent = &event
+			} else {
+				preview.State = "unavailable"
+			}
 		}
 		if preview.State != "published" && preview.State != "recalled" && preview.State != "blocked" && preview.State != "expired" {
 			preview.State = "unavailable"

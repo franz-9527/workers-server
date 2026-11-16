@@ -19,7 +19,7 @@ module.exports={
   const age=this.manager.io.now()-Date.parse(row.createdAt)
   if(row.isMine&&(row.canCopy||row.isImage||row.isAV)&&age>=0&&age<=120000)add('recall','撤回',()=>this.recallMessage(id))
   if(row.canReedit&&this.data.canSend)add('edit','重新编辑',()=>this.reedit(id))
-  if(!this.manager.simulation)add('report','举报',()=>row.isImage&&event.currentTarget.dataset.item?this.reportImage(id,String(event.currentTarget.dataset.item)):this.openReport(id,''))
+  if(!this.manager.simulation&&!row.isCall)add('report','举报',()=>row.isImage&&event.currentTarget.dataset.item?this.reportImage(id,String(event.currentTarget.dataset.item)):this.openReport(id,''))
   this.presentMessageMenu(event,actions,()=>this.current(life,epoch)&&this.views[id]?.stateVersion===version,'#message-'+id+' .message-bubble')
  },
  presentMessageMenu(event,actions,guard,selector){

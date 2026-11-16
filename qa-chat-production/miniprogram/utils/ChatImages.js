@@ -137,6 +137,19 @@ class ChatImages {
   if(!/^https:\/\//.test(result.url||'')||Number(result.expires_at)*1000<=m.io.now())throw fail('CHAT_INVALID_RESPONSE')
   this.urls.set(key,{url:result.url,until:Math.min(Number(result.expires_at)*1000,m.io.now()+50000)});return result.url
  }
+ async nativePreviewURL(id,message,item) {
+  const m=this.manager,epoch=m.epoch,generation=this.generation,model=m.cache.get(id),view=this.view(id,message)
+  if(!view||view.state!=='published'||!view.images?.some(i=>i.item_id===item))throw fail('CHAT_MEDIA_UNAVAILABLE')
+  const request=async thumbnail=>{
+   const result=await m.http('media.url',{conversation_id:id,message_id:message,item_id:item,thumbnail},epoch)
+   if(!this.live(epoch,generation,id)||m.cache.get(id)!==model||this.view(id,message)?.state!=='published'||String(this.view(id,message)?.state_version)!==String(view.state_version))throw fail('CHAT_MEDIA_UNAVAILABLE')
+   if(result.cloud_available===false)throw fail('CHAT_MEDIA_CLOUD_EXPIRED')
+   if(!/^https:\/\//.test(result.url||'')||Number(result.expires_at)*1000<=m.io.now())throw fail('CHAT_INVALID_RESPONSE')
+   return result.url
+  }
+  try{return await request(false)}
+  catch(error){if(error.code!=='CHAT_MEDIA_CLOUD_EXPIRED')throw error;return request(true)}
+ }
  async preview(id,message,item,original=false) {
   const view=this.view(id,message),image=view?.images?.find(v=>v.item_id===item),bytes=Number(image?.main_size_bytes)||0
   const key=[id,message,item,view?.state_version].join(':')

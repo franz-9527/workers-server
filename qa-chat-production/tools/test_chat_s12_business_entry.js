@@ -206,6 +206,12 @@ async function run() {
   assert(discoveryPage.chatRefreshes()>=1,'normal digest refresh is not blocked by collaboration discovery')
   discoveryPage.inst.onHide();discoveryPage.inst.onUnload()
   const model = require('../miniprogram/utils/ChatInboxModel.js')
+  const call={state:'published',message_type:'system_event',system_event:{event:'call',call_id:'9',media:'audio',outcome:'rejected',caller_id:'11',callee_id:'12'}}
+  assert.strictEqual(model.callText(call,'11'),'对方已拒绝')
+  assert.strictEqual(model.callText(call,'12'),'已拒绝')
+  assert.strictEqual(model.previewText(call),'语音通话 · 已拒绝')
+  call.system_event.outcome='ended';call.system_event.duration_seconds=156
+  assert.strictEqual(model.callText(call,'11'),'通话时长 02:36')
   const digest = (id, time, unread = 1) => ({ conversation_id: id, unread: { unread_count: unread, last_message_at: time } })
   const map = model.applyPage({}, { items: [digest('1', '2026-10-23T12:00:00Z'), digest('2', '2026-10-23T10:00:00Z', 0)] })
   const notices = { unreadCount: 120, latestNotification: { title: '订单进度已更新', createdAt: '2026-10-23T11:00:00Z' } }
@@ -333,7 +339,7 @@ async function s12RemainderTests() {
 }
 function nativeConversation() {
  let definition,listener,clock=Date.now(),revision=0,draft={text:'',revision:0},serial=0
- const requests=[],modals=[],actions=[],timers=new Map(),attempts=[],reads=[],recalls=new Map()
+ const requests=[],modals=[],actions=[],previews=[],timers=new Map(),attempts=[],reads=[],recalls=new Map()
  const manager={enabled:true,epoch:1,state:'http',active:'',io:{now:()=>clock},
   subscribe(fn){listener=fn;return()=>{}},focus(id){this.active=id},typing(){return Promise.resolve(false)},schedulePoll(){},
   draft(){return draft},saveDraft(id,text,expected,source){if(expected!==undefined&&expected!==draft.revision)return false;source=source===undefined?(draft.source||{}):source;draft={text,source:{...source},revision:text||Object.keys(source).length?++revision:0,expires:text||Object.keys(source).length?clock+1800000:undefined};return true},
@@ -345,7 +351,7 @@ function nativeConversation() {
   sendText(id,text,rev){this.sent={id,text,rev};return Promise.resolve()},retryText(){return Promise.resolve()}
  }
  const setTimer=(fn,delay)=>{const id=++serial;timers.set(id,{fn,delay});return id},clearTimer=id=>timers.delete(id)
- const wx={hideKeyboard(){},navigateTo(){},stopPullDownRefresh(){},showModal(options){modals.push(options)},showActionSheet(options){actions.push(options)},setClipboardData(){},getWindowInfo(){return {windowWidth:375,windowHeight:667}},
+ const wx={hideKeyboard(){},navigateTo(){},stopPullDownRefresh(){},showModal(options){modals.push(options)},showActionSheet(options){actions.push(options)},previewImage(options){previews.push(options)},showToast(){},setClipboardData(){},getWindowInfo(){return {windowWidth:375,windowHeight:667}},
   createSelectorQuery(){
    const selectors=[]
    const query={in(){return query},select(s){selectors.push(s);return query},selectAll(s){selectors.push(s);return query},boundingClientRect(){return query},
@@ -368,12 +374,30 @@ function nativeConversation() {
  const msg=(seq,extra={})=>Object.assign({message_id:String(seq),seq:String(seq),sender_id:'2',message_type:'text',state:'published',state_version:'1',text:'text-'+seq},extra)
  const emit=(type,page)=>listener(type,{conversation_id:'9',page:Object.assign({},meta,page)})
  const expire=delay=>{const entry=[...timers].find(([,v])=>v.delay===delay);assert(entry,'timer '+delay);timers.delete(entry[0]);entry[1].fn()}
- return {inst,manager,requests,reads,modals,actions,timers,emit,msg,expire,reset(){manager.epoch++;draft={text:'',revision:0};attempts.length=0;recalls.clear();listener('reset')}}
+ return {inst,manager,requests,reads,modals,actions,previews,timers,attempts,emit,msg,expire,reset(){manager.epoch++;draft={text:'',revision:0};attempts.length=0;recalls.clear();listener('reset')}}
 }
 async function s13NativeTests() {
  const source=read('miniprogram/subpackages/chat/conversation/index.wxml')
  assert(source.includes('confirm-type="send"') && source.includes('bindconfirm="sendText"') && source.includes('confirm-hold="{{true}}"'),'IME send key uses the explicit text send handler')
  assert(source.includes('scroll-into-view="{{scrollInto}}"') && source.includes('bindscrolltoupper="loadEarlier"'))
+ const masked=nativeConversation()
+ masked.emit('conversation.reset',{messages:[masked.msg(1,{text:'请「已屏蔽」后确认',safety_notice:'masked'})]})
+ assert.strictEqual(masked.inst.data.messages[0].safetyNote,'部分内容涉及私人联系方式，已自动屏蔽','masked publication renders weak note below bubble')
+ masked.inst.onUnload()
+ const blocked=nativeConversation()
+ blocked.attempts.push({client_message_id:'1700000000.'+'a'.repeat(32),conversation_id:'9',text:'加微信abc123456',state:'rejected',code:'CHAT_CONTENT_BLOCKED',busy:false,source:{}})
+ blocked.inst.refreshComposer()
+ assert.strictEqual(blocked.inst.data.attempts[0].body,'••••••','blocked attempt never re-renders original prohibited text')
+ assert(blocked.inst.data.attempts[0].canEdit && blocked.inst.data.attempts[0].reason.includes('消息未发送'),'blocked attempt stays editable with explicit failure reason')
+ assert.strictEqual(blocked.inst.data.sendReason,'','blocked attempt reason is not duplicated above the composer')
+ blocked.inst.onUnload()
+ const review=nativeConversation()
+ review.attempts.push({client_message_id:'1700000001.'+'b'.repeat(32),conversation_id:'9',text:'疑似内容原文',state:'review_pending',code:'CHAT_REVIEW_PENDING',busy:false,source:{}})
+ review.inst.refreshComposer()
+ assert.strictEqual(review.inst.data.attempts[0].body,'「内容待复核」','review-pending attempt does not expose the original body')
+ assert.strictEqual(review.inst.data.attempts[0].canRetry,false,'review-pending attempt waits for review instead of resubmitting')
+ assert(review.inst.data.attempts[0].reason.includes('暂未发送'),'review-pending attempt explains that no message was published')
+ review.inst.onUnload()
  const f=nativeConversation(),p=f.inst
  f.emit('conversation.reset',{messages:[f.msg(50),f.msg(51)],history_cursor:'before50'})
  await settle()
@@ -611,14 +635,18 @@ async function s16NativeImageTests(){
  p.imageActions({currentTarget:{dataset:{message:'7',item:'8'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));p.runMessageAction({currentTarget:{dataset:{key:'reply'}}});assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,'8')
  p.cancelReply();assert.strictEqual(f.manager.draft('9').source.reply_to_item_id,undefined)
  p.messageActions({currentTarget:{dataset:{id:'7'}}});assert(p.data.messageMenu.actions.some(a=>a.key==='reply'));assert(p.data.messageMenu.actions.some(a=>a.key==='recall'))
- p.atBottom=false;p.currentTop=37;p.setData({largeImage:{messageId:'7',index:4,count:9,url:'https://private.invalid/a'}})
- p.closeImage();assert.strictEqual(p.currentTop,37,'closing a preview never jumps the reading position')
+ f.manager.images={nativePreviewURL:async(id,mid,item)=>'https://test.invalid/'+item+'.jpg',setVisible(){}}
+ await p.previewImage({currentTarget:{dataset:{message:'7',item:'8'}}})
+ assert.strictEqual(f.previews.length,1);assert.strictEqual(f.previews[0].current,'https://test.invalid/8.jpg')
+ assert.strictEqual(f.previews[0].urls.length,9);assert.strictEqual(f.previews[0].showmenu,true,'native preview keeps WeChat long-press menu')
  f.emit('conversation.page',{changes:[{message:{...photo,state:'recalled',state_version:'2'}}]})
  assert.strictEqual(p.views['7'].images.length,0);assert.strictEqual(p.views['7'].isImage,false)
  f.emit('conversation.page',{messages:[photo]});assert.strictEqual(p.views['7'].images.length,0,'old response cannot restore a recalled album')
  p.onUnload()
  const w=read('miniprogram/subpackages/chat/conversation/index.wxml'),js=read('miniprogram/subpackages/chat/conversation/index.js')
- assert(w.includes('bindtap="sendImages"')&&w.includes('catchtap="previewImage"')&&w.includes('bindtap="saveImage"'))
+ assert(w.includes('bindtap="sendImages"')&&w.includes('catchtap="previewImage"'))
+ assert(!/largeImage|image-viewer|saveImage|previousImage|nextImage/.test(w+js),'chat image preview must stay on the native WeChat viewer without custom save/close/page buttons')
+ assert(js.includes('wx.previewImage({current,urls,showmenu:true'),'chat image preview uses the native swipe and long-press menu')
  assert.strictEqual((js.match(/sizeType:\['compressed'\]/g)||[]).length,2,'album selection and replacement default to WeChat compressed images');assert(!js.includes("sizeType:['original']"),'chat images must not default to original quality');assert(js.includes('3*1024*1024'),'chat image limit remains 3MB');assert(!js.includes('compressImage('),'chat must not add a second lossy compression pass')
  assert(!/setStorage|writeFileSync/.test(read('miniprogram/utils/ChatImages.js')),'no local archive of pending or rejected image selections')
  const selection=nativeConversation(),s=selection.inst

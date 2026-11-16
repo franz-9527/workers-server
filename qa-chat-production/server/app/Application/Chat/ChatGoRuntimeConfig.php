@@ -219,7 +219,7 @@ final class ChatGoRuntimeConfig
                         $result['status']='metadata_invalid';
                     }else{
                         $result['has_metadata']=true;
-                        $allowed=['service','api','engine','input_mode','provider_code','provider_message','provider_inner_code','url_host','url_length','url_encoded_length','request_key_length','data_encoding','source_preflight'];
+                        $allowed=['service','api','engine','provider_code','provider_message','provider_inner_code','url_host','url_length','data_encoding','source_preflight'];
                         foreach($allowed as $key){
                             $value=$meta[$key]??null;
                             if(is_string($value))$result[$key]=mb_substr($value,0,240);

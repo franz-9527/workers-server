@@ -20,7 +20,7 @@ Page({
  ...Group,
  imageRows:[],
  data: {showChatMenu:false,testSandbox:false,messageMenu:null,receiptLabels:{},recordCanceled:false,voiceStarting:false,recordSeconds:0,voiceCountdown:60,keyboardOpen:false,smsAnchor:'',smsFirstHint:false,smsDialog:null,smsBusy:false,voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'', conversationId:'', enabled:false, status:'disabled', loading:false, messages:[], invalid:false, orderContext:null,canOpenOrder:false, orderLabel:'订单沟通', canSend:false,sendRestricted:false,restrictionText:'',
-  audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',albums:[],largeImage:null, replyTarget:'', replyPreview:'',editedSource:'',recallBusy:false, draft:'', inputError:'', sendReason:'', notice:'', attempts:[], unreadCount:0, unreadLabel:'0', firstUnread:'', newCount:0, hasHistory:false, windowBusy:false, hasReturn:false, readReady:false, readBusy:false, scrollTop:0, scrollInto:'', keyboardHeight:0 },
+  audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',albums:[], replyTarget:'', replyPreview:'',editedSource:'',recallBusy:false, draft:'', inputError:'', sendReason:'', notice:'', attempts:[], unreadCount:0, unreadLabel:'0', firstUnread:'', newCount:0, hasHistory:false, windowBusy:false, hasReturn:false, readReady:false, readBusy:false, scrollTop:0, scrollInto:'', keyboardHeight:0 },
  onLoad(options) {
   this.unloaded=false
   this.identities={};this.identitySerial=0;this.identityPending=''
@@ -137,12 +137,13 @@ Page({
    const text=message.state==='published' && message.message_type==='text'
    const av=message.state==='published'&&['audio','video'].includes(message.message_type)&&!!message.av
    const image=message.state==='published'&&['image','image_album'].includes(message.message_type)
+   const call=message.state==='published'&&message.message_type==='system_event'&&message.system_event?.event==='call'
    const identity=this.identities[this.id]
    const profile=identity?.version===String(page.policy_version)&&identity.viewerId===String(page.viewer_actor_id)?identity.members[String(message.sender_id)]:null
    const person=message.sender?InboxModel.identities.attribution(message.sender,profile):profile
    const orderCard=text?require('../../../utils/ChatOrderCard.js').parse(message.text):null
-   this.views[id]={orderCard,senderId:String(message.sender_id),displayName:person?.displayName||'成员',avatarPath:person?.avatarPath||InboxModel.identities.avatars.user,messageId:id,seq:String(message.seq),raw:message,state:message.state,stateVersion:String(message.state_version),body:text?(typeof message.text==='string'?message.text:'云端文字已清理，本机暂无缓存'):InboxModel.previewText(message),
-    isPlaceholder:!text&&!image&&!av,isAV:av,isAudio:av&&message.message_type==='audio',heard:!!message.av?.heard,duration:Math.ceil((message.av?.duration_ms||0)/1000),bubbleWidth:av?Math.min(540,Math.max(320+Math.ceil((message.av?.duration_ms||0)/1000)*4,Array.from(String(message.av?.transcript||"")).length*26+48)):0,transcript:av?String(message.av?.transcript||''):'',isText:text,canCopy:text&&typeof message.text==='string',isImage:image,imageCount:image?(message.images||[]).length:0,imageExpanded:!!this.expandedImages[id],images:image?(message.images||[]).slice(0,this.expandedImages[id]?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||''})):[],isMine:String(message.sender_id)===String(page.viewer_actor_id||''),createdAt:String(message.created_at||''),
+   this.views[id]={orderCard,senderId:String(message.sender_id),displayName:person?.displayName||'成员',avatarPath:person?.avatarPath||InboxModel.identities.avatars.user,messageId:id,seq:String(message.seq),raw:message,state:message.state,stateVersion:String(message.state_version),body:text?(typeof message.text==='string'?message.text:'云端文字已清理，本机暂无缓存'):InboxModel.previewText(message),safetyNote:text&&message.safety_notice==='masked'?'部分内容涉及私人联系方式，已自动屏蔽':'',
+    isPlaceholder:!text&&!image&&!av&&!call,isCall:call,callVideo:call&&message.system_event.media==='video',callText:call?InboxModel.callText(message,String(page.viewer_actor_id||'')):'',isAV:av,isAudio:av&&message.message_type==='audio',heard:!!message.av?.heard,duration:Math.ceil((message.av?.duration_ms||0)/1000),bubbleWidth:av?Math.min(540,Math.max(320+Math.ceil((message.av?.duration_ms||0)/1000)*4,Array.from(String(message.av?.transcript||"")).length*26+48)):0,transcript:av?String(message.av?.transcript||''):'',isText:text,canCopy:text&&typeof message.text==='string',isImage:image,imageCount:image?(message.images||[]).length:0,imageExpanded:!!this.expandedImages[id],images:image?(message.images||[]).slice(0,this.expandedImages[id]?9:4).map(v=>({...v,url:this.imageURLs[id+':'+v.item_id]||''})):[],isMine:String(message.sender_id)===String(page.viewer_actor_id||''),createdAt:String(message.created_at||''),
     reply:message.reply||null,editedFrom:message.edited_from||null,canReedit:message.state==='recalled'&&typeof this.manager.editableRecall==='function'&&!!this.manager.editableRecall(this.id,id)}
   })
   for(const row of Object.values(this.views)){
@@ -162,13 +163,12 @@ Page({
   this.views={};window.forEach(m=>{this.views[m.messageId]=m})
   this.manager.av?.setVisible(this.id,window.map(v=>v.raw));this.checkAVPlayback()
   this.manager.images?.setVisible(this.id,window.map(v=>v.raw))
-  if(this.data.largeImage&&!this.views[this.data.largeImage.messageId]?.isImage)this.closeImage()
   this.identityPolicy=String(page.policy_version||'');this.identityViewer=String(page.viewer_actor_id||'')
   this.orderCanSend=page.can_send===true
   const isGroup=page.conversation_mode==='collaboration',assignmentGroup=page.conversation_mode==='assignment_group',directCalls=!page.conversation_mode||page.conversation_mode==='direct'
   const peer=typeof page.peer_read_seq==='string'&&/^(0|[1-9][0-9]{0,19})$/.test(page.peer_read_seq)?page.peer_read_seq:''
   if(directCalls&&peer&&(!this.peerReadSeq||compare(peer,this.peerReadSeq)>=0))this.peerReadSeq=peer
-  const receiptLabels=Object.fromEntries(window.filter(row=>row.isMine&&row.state==='published').map(row=>{
+  const receiptLabels=Object.fromEntries(window.filter(row=>row.isMine&&row.state==='published'&&!row.isCall).map(row=>{
    if(directCalls)return [row.messageId,this.peerReadSeq&&compare(row.seq,this.peerReadSeq)<=0?'已读':'未读']
    const label=this.data.receiptLabels[row.messageId];return label?[row.messageId,label]:null
   }).filter(Boolean))
@@ -216,7 +216,7 @@ Page({
   }
   this.orderCanSend=false
   this.views={};this.initialized=false;this.historyCursor='';this.historyDetached=false;this.returnPoint=null;this.mode='latest';this.highSeq='0';this.atBottom=true;this.currentTop=0;this.unreadJob=null
-  this.setData({voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'',audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],largeImage:null,orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
+  this.setData({voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'',audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
  },
  async refreshRestriction(){
   const life=this.life,epoch=this.manager.epoch
@@ -353,13 +353,13 @@ Page({
   const labels={sending:'发送中',unknown:'结果待确认',checking:'内容检测中',review_pending:'等待检查',retryable:'检查暂不可用',accepted:'已发送，正在同步',rejected:'未发送'}
   const stored=this.manager.attempts(this.id)
   const attempts=stored.filter(r=>!(r.state==='accepted' && this.views[r.message_id])).map(r=>({
-   clientId:r.client_message_id,body:r.text,state:r.state,busy:r.busy,label:labels[r.state]||'结果待确认',
-   canRetry:!r.busy && !['accepted','rejected'].includes(r.state),canEdit:!r.busy && r.state==='rejected' && !!r.text,
-   reason:r.code==='CHAT_REFERENCE_UNAVAILABLE'?'原消息已撤回或不可引用，请放回输入框取消引用后重发':r.code==='CHAT_REEDIT_LIMIT'?'重新编辑来源已达上限，请取消并重新输入':r.code==='CHAT_CONTENT_BLOCKED'?'内容未通过检查，未发送。请勿发送私人手机号、微信号或联系二维码；正常施工信息可申请复核':r.code==='CHAT_SEND_RESTRICTED'?'当前账号暂不能发送，可通过订单详情联系平台':r.code==='CHAT_ACTION_EXPIRED'?'发送动作已过期，请核对消息记录':r.code==='CHAT_DEPENDENCY_UNAVAILABLE'?'聊天依赖未就绪，请管理员查看检测结果':r.code==='CHAT_NETWORK_ERROR'?'连接中断，请核对原消息状态':r.code==='CHAT_CHECK_UNAVAILABLE'?'内容检查暂不可用，不计违规':r.code==='CHAT_CLIENT_MESSAGE_CONFLICT'?'原消息内容不一致，请核对记录':''
+   clientId:r.client_message_id,body:r.code==='CHAT_CONTENT_BLOCKED'?'••••••':r.state==='review_pending'?'「内容待复核」':r.text,state:r.state,busy:r.busy,label:labels[r.state]||'结果待确认',severity:r.code==='CHAT_CONTENT_BLOCKED'?'blocked':r.state==='review_pending'?'review':'normal',
+   canRetry:!r.busy && !['accepted','rejected','review_pending'].includes(r.state),canEdit:!r.busy && r.state==='rejected' && !!r.text,
+   reason:r.code==='CHAT_REFERENCE_UNAVAILABLE'?'原消息已撤回或不可引用，请放回输入框取消引用后重发':r.code==='CHAT_REEDIT_LIMIT'?'重新编辑来源已达上限，请取消并重新输入':r.code==='CHAT_CONTENT_BLOCKED'?'包含明确禁止的私人联系方式、联系二维码或站外交易信息，消息未发送。请修改后再发送。':r.code==='CHAT_REVIEW_PENDING'?'内容需要进一步核验，暂未发送。':r.code==='CHAT_SEND_RESTRICTED'?'当前账号暂不能发送，可通过订单详情联系平台':r.code==='CHAT_ACTION_EXPIRED'?'发送动作已过期，请核对消息记录':r.code==='CHAT_DEPENDENCY_UNAVAILABLE'?'聊天依赖未就绪，请管理员查看检测结果':r.code==='CHAT_NETWORK_ERROR'?'连接中断，请核对原消息状态':r.code==='CHAT_CHECK_UNAVAILABLE'?'内容检查暂不可用，不计违规':r.code==='CHAT_CLIENT_MESSAGE_CONFLICT'?'原消息内容不一致，请核对记录':''
   }))
   const latest=stored[stored.length-1],last=latest && attempts.find(r=>r.clientId===latest.client_message_id)
   const source=draft.source||{},target=this.views[source.reply_to_message_id]
-  this.setData({replyTarget:source.reply_to_message_id||'',replyPreview:target&&(target.canCopy||target.isImage)?Array.from(target.body).slice(0,160).join(''):'原消息已不可查看',editedSource:source.edited_from_recalled_message_id||'',draft:draft.text,attempts,inputError:draft.text && !validText(draft.text)?'文字最多2000字、4000字节，请缩短后发送':'',sendReason:last && last.reason || ''})
+  this.setData({replyTarget:source.reply_to_message_id||'',replyPreview:target&&(target.canCopy||target.isImage)?Array.from(target.body).slice(0,160).join(''):'原消息已不可查看',editedSource:source.edited_from_recalled_message_id||'',draft:draft.text,attempts,inputError:draft.text && !validText(draft.text)?'文字最多2000字、4000字节，请缩短后发送':'',sendReason:last && last.reason && last.state!=='rejected'?last.reason:''})
   if(this.draftTimer)clearTimeout(this.draftTimer)
   if(draft.expires)this.draftTimer=setTimeout(()=>{this.draftTimer=null;this.refreshComposer()},Math.max(1,draft.expires-this.manager.io.now()))
  },
@@ -371,14 +371,17 @@ Page({
   this.manager.typing(!!text.trim()).catch(()=>{})
   this.refreshComposer()
  },
- inputBlur(){this.manager.typing(false).catch(()=>{})},
+ inputBlur(){
+  this.manager.typing(false).catch(()=>{})
+  if(this.data.keyboardHeight>0||this.data.keyboardOpen)this.keyboardChange({detail:{height:0}})
+ },
  keyboardChange(event) {
-  const height=Math.max(0,Number(event.detail.height)||0)
-  if(height===this.data.keyboardHeight)return
+  const height=Math.max(0,Number(event.detail.height)||0),open=height>0
+  if(height===this.data.keyboardHeight&&open===this.data.keyboardOpen)return
   const life=this.life,epoch=this.manager.epoch,atBottom=this.atBottom
   this.captureAnchor().then(anchor=>{
    if(!this.current(life,epoch))return
-   this.setData({keyboardHeight:height,keyboardOpen:height>0},()=>atBottom?this.jumpBottom():this.restoreAnchor(anchor,life,epoch))
+   this.setData({keyboardHeight:height,keyboardOpen:open},()=>atBottom?this.jumpBottom():this.restoreAnchor(anchor,life,epoch))
   })
  },
  async sendText(event) {
@@ -488,7 +491,7 @@ Page({
   this.manager.images?.setVisible(this.id,[])
   this.imageURLs={};for(const key of this.manager.images?.urls?.keys()||[])if(key.startsWith(this.id+':'))this.manager.images.urls.delete(key)
   for(const row of Object.values(this.views||{}))if(row.isImage)row.images=row.images.map(i=>({...i,url:''}))
-  this.setData({largeImage:null,messages:this.data.messages.map(v=>this.views[v.messageId]||v)})
+  this.setData({messages:this.data.messages.map(v=>this.views[v.messageId]||v)})
  },
  chooseImages(event){
   if(!this.visible||!this.data.canSend||!this.manager.images)return
@@ -595,42 +598,16 @@ Page({
  },
  async previewImage(event){
   const data=event.currentTarget.dataset,mid=String(data.message||''),item=String(data.item||''),row=this.views[mid]
-  if(!row?.isImage)return
-  const index=(row.raw.images||[]).findIndex(i=>i.item_id===item)
-  if(index>=0)await this.openImage(mid,index)
- },
- async openImage(mid,index,original=false){
-  const row=this.views[mid],items=row?.raw.images||[],life=this.life,epoch=this.manager.epoch,serial=(this.previewSerial||0)+1;this.previewSerial=serial
-  if(!row?.isImage||!items[index])return
-  const previous=this.data.largeImage
-  this.setData({largeImage:{messageId:mid,index,count:items.length,url:original&&previous?.messageId===mid?previous.url:'',loading:true,error:''}})
-  try{const image=await this.manager.images.preview(this.id,mid,items[index].item_id,original),url=image.url
-   if(this.current(life,epoch)&&this.previewSerial===serial&&this.views[mid]?.isImage)this.setData({largeImage:{messageId:mid,index,count:items.length,url,thumbnail:image.thumbnail,showOriginal:image.showOriginal,sizeLabel:image.mainBytes?'（'+(image.mainBytes/1048576).toFixed(1)+'MB）':'',loading:false,error:''}})
-  }catch(error){if(this.current(life,epoch)&&this.previewSerial===serial)this.setData({largeImage:{messageId:mid,index,count:items.length,url:'',loading:false,error:'图片暂不可查看，请关闭后重试'}})}
- },
- loadOriginalImage(){const v=this.data.largeImage;if(v&&!v.loading)this.openImage(v.messageId,v.index,true)},
- async imagePreviewError(){
-  const v=this.data.largeImage,life=this.life,epoch=this.manager.epoch,serial=this.previewSerial
-  const item=v&&this.views[v.messageId]?.raw.images?.[v.index]
-  if(!item)return
-  if(v.thumbnail){this.setData({largeImage:{...v,url:'',loading:false,error:'缩略图暂不可用，请关闭后重试'}});return}
-  try{
-   const url=await this.manager.images.url(this.id,v.messageId,item.item_id,true)
-   if(this.current(life,epoch)&&this.previewSerial===serial)this.setData({largeImage:{...v,url,thumbnail:true,loading:false}})
-  }catch(_){if(this.current(life,epoch)&&this.previewSerial===serial)this.setData({largeImage:{...v,url:'',loading:false,error:'图片暂不可用，请关闭后重试'}})}
- },
- previousImage(){const v=this.data.largeImage;if(v&&v.index>0)this.openImage(v.messageId,v.index-1)},
- nextImage(){const v=this.data.largeImage;if(v&&v.index+1<v.count)this.openImage(v.messageId,v.index+1)},
- stopImageTouch(){},
- imageTouchStart(e){this.imageTouchX=e.changedTouches?.[0]?.clientX},
- imageTouchEnd(e){const x=e.changedTouches?.[0]?.clientX;if(Number.isFinite(x)&&Number.isFinite(this.imageTouchX)){if(x-this.imageTouchX>50)this.previousImage();else if(this.imageTouchX-x>50)this.nextImage()}},
- closeImage(){this.previewSerial=(this.previewSerial||0)+1;this.setData({largeImage:null})},
- async saveImage(){
-  const v=this.data.largeImage,row=v&&this.views[v.messageId],life=this.life,epoch=this.manager.epoch
-  if(!row?.isImage||!v.url)return
-  const save=filePath=>{if(this.current(life,epoch)&&this.views[v.messageId]?.isImage)wx.saveImageToPhotosAlbum({filePath,success:()=>wx.showToast({title:'已保存',icon:'success'}),fail:()=>wx.showToast({title:'请允许相册权限后重试',icon:'none'})})}
-  if(!/^https:\/\//.test(v.url)){save(v.url);return}
-  wx.downloadFile({url:v.url,success:r=>{if(r.statusCode===200)save(r.tempFilePath)},fail:()=>{if(this.current(life,epoch))wx.showToast({title:'图片下载未完成',icon:'none'})}})
+  if(!row?.isImage||typeof wx.previewImage!=='function')return
+  const items=row.raw.images||[],life=this.life,epoch=this.manager.epoch
+  const resolved=await Promise.all(items.map(async photo=>{
+   try{return {item:String(photo.item_id),url:await this.manager.images.nativePreviewURL(this.id,mid,photo.item_id)}}
+   catch(_){return {item:String(photo.item_id),url:''}}
+  }))
+  if(!this.current(life,epoch)||!this.views[mid]?.isImage)return
+  const current=resolved.find(photo=>photo.item===item)?.url,urls=resolved.map(photo=>photo.url).filter(Boolean)
+  if(!current||!urls.length){wx.showToast({title:'图片暂不可查看',icon:'none'});return}
+  wx.previewImage({current,urls,showmenu:true,fail:()=>{if(this.current(life,epoch))wx.showToast({title:'图片预览未完成',icon:'none'})}})
  },
  openGovernance(){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index'})},
  openReport(mid,item){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index?conversation_id='+encodeURIComponent(this.id)+'&message_id='+encodeURIComponent(mid)+(item?'&item_id='+encodeURIComponent(item):'')})},

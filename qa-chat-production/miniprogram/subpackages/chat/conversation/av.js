@@ -166,10 +166,11 @@ module.exports={
   const life=this.life,epoch=this.manager.epoch,serial=this.playSerial
   audio.onEnded(async()=>{
    if(!this.current(life,epoch)||serial!==this.playSerial||this.audio!==audio)return
-   if(row&&this.views[row.messageId]?.stateVersion===row.stateVersion){
-    try{await this.manager.av.heard(this.id,row.messageId);if(this.current(life,epoch)){this.views[row.messageId].heard=true;this.setData({messages:this.data.messages.map(v=>this.views[v.messageId]||v)})}}catch(_){}
-   }
-   if(this.current(life,epoch))this.setData({playingAudio:''})
+   const current=row&&this.views[row.messageId]
+   const receipt=!!(current&&current.stateVersion===row.stateVersion)
+   if(receipt&&!current.heard)current.heard=true
+   this.setData({playingAudio:'',...(receipt?{messages:this.data.messages.map(v=>this.views[v.messageId]||v)}:{})})
+   if(receipt)try{await this.manager.av.heard(this.id,row.messageId)}catch(_){}
   })
   audio.onError(()=>{if(this.current(life,epoch)){this.setData({playingAudio:''});this.avError(asError('语音暂未播放完成，请重新尝试'))}})
   this.playingVersion=row?.stateVersion||'';this.setData({playingAudio:row?.messageId||''});audio.play()

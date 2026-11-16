@@ -31,7 +31,7 @@ func TestPolicyDefaultsAndStrictWireContract(t *testing.T) {
 func TestRuleDeadlineAndModeIsolation(t *testing.T) {
 	p := Defaults()
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	for _, kind := range []string{"text", "audio"} {
+	for _, kind := range []string{"text", "audio", "system_event"} {
 		r, e := p.Rule(kind)
 		if e != nil || r.Deadline(now) != nil {
 			t.Fatal(kind, r, e)

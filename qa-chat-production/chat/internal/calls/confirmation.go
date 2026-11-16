@@ -14,7 +14,7 @@ func (s *Service) ConfirmStopped(ctx context.Context, id, epoch ports.ID, eviden
 	if !positive(id) || !positive(epoch) || !opPattern.MatchString(evidence) {
 		return ErrInvalid
 	}
-	return s.tx(ctx, func(tx *sql.Tx) error {
+	e := s.tx(ctx, func(tx *sql.Tx) error {
 		r, e := s.load(ctx, tx, id, true)
 		if e != nil {
 			return e
@@ -34,4 +34,8 @@ func (s *Service) ConfirmStopped(ctx context.Context, id, epoch ports.ID, eviden
 		}
 		return s.save(ctx, tx, r, "evidence_stopped", evidence)
 	})
+	if e != nil {
+		return e
+	}
+	return s.ensureTerminalMessage(ctx, id)
 }

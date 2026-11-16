@@ -83,10 +83,11 @@ type MediaProvider interface {
 	Stop(context.Context, Session, Permit) (bool, error)
 }
 type Binding struct {
-	Pool      Pool   `json:"pool"`
-	Permit    Permit `json:"permit"`
-	Submitted bool   `json:"submitted"`
-	NextPool  *Pool  `json:"next_pool,omitempty"`
+	Pool          Pool     `json:"pool"`
+	Permit        Permit   `json:"permit"`
+	Submitted     bool     `json:"submitted"`
+	NextPool      *Pool    `json:"next_pool,omitempty"`
+	PolicyVersion ports.ID `json:"policy_version,omitempty"`
 }
 type record struct {
 	Session
@@ -130,12 +131,13 @@ type Request struct {
 	Before         ports.ID `json:"before_id,omitempty"`
 }
 type Service struct {
-	db       *sql.DB
-	guard    Authority
-	broker   Broker
-	provider MediaProvider
-	audio    bool
-	video    bool
+	db        *sql.DB
+	guard     Authority
+	broker    Broker
+	provider  MediaProvider
+	publisher ports.MessagePublisher
+	audio     bool
+	video     bool
 }
 
 func NewService(db *sql.DB, g Authority, b Broker, p MediaProvider, media ...bool) (*Service, error) {
@@ -150,6 +152,10 @@ func NewService(db *sql.DB, g Authority, b Broker, p MediaProvider, media ...boo
 		return nil, ErrInvalid
 	}
 	return &Service{db: db, guard: g, broker: b, provider: p, audio: audio, video: video}, nil
+}
+func (s *Service) WithPublisher(p ports.MessagePublisher) *Service {
+	s.publisher = p
+	return s
 }
 func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
@@ -168,16 +174,21 @@ func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 func (s *Service) load(ctx context.Context, tx *sql.Tx, id ports.ID, lock bool) (record, error) {
 	var r record
 	var model, binding []byte
+	var currentPolicy ports.ID
 	query := "SELECT model_json,resource_json,caller_member_key,callee_member_key,created_at,(SELECT CAST(policy_version AS CHAR) FROM chat_conversations WHERE id=chat_call_sessions.conversation_id) FROM chat_call_sessions WHERE id=?"
 	if lock {
 		query += " FOR UPDATE"
 	}
-	e := tx.QueryRowContext(ctx, query, string(id)).Scan(&model, &binding, &r.CallerKey, &r.CalleeKey, &r.Created, &r.PolicyVersion)
+	e := tx.QueryRowContext(ctx, query, string(id)).Scan(&model, &binding, &r.CallerKey, &r.CalleeKey, &r.Created, &currentPolicy)
 	if e != nil {
 		return r, e
 	}
 	if json.Unmarshal(model, &r.Session) != nil || json.Unmarshal(binding, &r.Binding) != nil || !r.Session.valid() {
 		return r, ErrInvalid
+	}
+	r.PolicyVersion = currentPolicy
+	if r.Binding.PolicyVersion.Valid() {
+		r.PolicyVersion = r.Binding.PolicyVersion
 	}
 	if e = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM chat_call_legs WHERE call_id=? AND prepared=1", string(id)).Scan(&r.Prepared); e != nil {
 		return r, e

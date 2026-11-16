@@ -350,15 +350,25 @@ func (s *Service) Send(ctx context.Context, p ports.Principal, r Request) (Resul
 	if tx.Commit() != nil {
 		return Result{}, ports.ErrUnavailable
 	}
-	// No DB lease/transaction is held over network inspection. Exact text and
-	// fingerprint are immutable on this stack and supplied together to safety.
+	// No DB lease/transaction is held over network inspection. Original text and
+	// fingerprint stay immutable; only a server-produced masked publication body
+	// may replace the body after the same safety call has passed.
 	checked, checkErr := s.safety.CheckText(ctx, ports.TextRequest{Actor: p, ConversationID: r.ConversationID, IntentID: current.id, Text: r.Text, Fingerprint: fp})
-	if checkErr != nil || !rulePattern.MatchString(checked.RuleVersion) || (checked.Decision != "passed" && !validFinding(checked)) {
+	masked := checked.Decision == "masked" && checked.PublishedText != "" && checked.PublishedText != r.Text && checked.Finding != nil &&
+		checked.Finding.Provider == "local.anti_diversion" && checked.Finding.Code == "contact_language_masked" && checked.Finding.Level == 1 && !checked.Finding.Confirmed
+	if checkErr != nil || !rulePattern.MatchString(checked.RuleVersion) || (checked.Decision != "passed" && !masked && !validFinding(checked)) {
 		s.settle(ctx, current.id, owner, "retryable", ErrCheck.Error())
 		return Result{}, ErrCheck
 	}
-	if checked.Decision != "passed" {
+	if checked.Decision != "passed" && !masked {
 		return s.reject(ctx, p, r, fp, current.id, owner, checked)
+	}
+	if masked {
+		r.Text = checked.PublishedText
+		if _, e = fingerprint(r); e != nil {
+			s.settle(ctx, current.id, owner, "retryable", ErrCheck.Error())
+			return Result{}, ErrCheck
+		}
 	}
 	return s.publish(ctx, p, r, fp, current.id, owner, checked)
 
@@ -412,7 +422,11 @@ func (s *Service) publish(ctx context.Context, p ports.Principal, r Request, fp 
 	}
 	seq++
 	change++
-	res, e := tx.ExecContext(ctx, `INSERT INTO chat_messages(conversation_id,seq,sender_id,client_message_id,policy_version,message_type,text_body,state,state_version,safety_rule_version,created_at,reply_to_message_id,edited_from_recalled_message_id,reedit_depth,reply_to_item_id) VALUES(?,?,?,?,?,'text',?,'published',1,?,UTC_TIMESTAMP(6),?,?,?,?)`, string(r.ConversationID), seq, string(p.ActorID), r.ClientMessageID, string(grant.Version), r.Text, checked.RuleVersion, nullableID(r.ReplyTo), nullableID(r.EditedFrom), depth, nullableID(r.ReplyItem))
+	storedRule := checked.RuleVersion
+	if checked.Decision == "masked" {
+		storedRule += ".masked"
+	}
+	res, e := tx.ExecContext(ctx, `INSERT INTO chat_messages(conversation_id,seq,sender_id,client_message_id,policy_version,message_type,text_body,state,state_version,safety_rule_version,created_at,reply_to_message_id,edited_from_recalled_message_id,reedit_depth,reply_to_item_id) VALUES(?,?,?,?,?,'text',?,'published',1,?,UTC_TIMESTAMP(6),?,?,?,?)`, string(r.ConversationID), seq, string(p.ActorID), r.ClientMessageID, string(grant.Version), r.Text, storedRule, nullableID(r.ReplyTo), nullableID(r.EditedFrom), depth, nullableID(r.ReplyItem))
 	if e != nil {
 		return Result{}, ports.ErrUnavailable
 	}

@@ -62,8 +62,6 @@ final class CallQuotaDisplay
         if(empty($facts['hard_stop_verified'])&&!$admitted)$out[]='实际通话停止能力尚未确认；空频道接口自检不能替代真机通话验证';
         if($now<(int)$facts['valid_from'])$out[]='权益周期尚未生效';
         if($now>=(int)$facts['expires_at'])$out[]='权益周期已经到期';
-        if($known&&!$admitted&&$now-(int)$row['observation_at']>=(int)$facts['max_age_seconds'])
-            $out[]='官方用量数据距上次核对已超过'.(int)$facts['max_age_seconds'].'秒，请重新核对并更新官方用量';
         if(empty($facts['healthy']))$out[]='供应商资源健康状态待确认';
         if(!$out&&($decision['status']??'')!=='available'){
             $out[]=['busy'=>'额度已被活动或待确认通话预占','exhausted'=>'本周期可用额度已耗尽',

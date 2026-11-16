@@ -141,6 +141,8 @@ func (p Policy) Rule(kind string) (Rule, error) {
 	switch kind {
 	case "text":
 		return p.Retention.Text, nil
+	case "system_event":
+		return Rule{Mode: "permanent"}, nil
 	case "image", "image_album":
 		return p.Retention.Image, nil
 	case "audio":

@@ -93,7 +93,7 @@ type storageMessage struct {
 }
 
 func (s *Service) keepMessageObjects(ctx context.Context, id ports.ID, kind string) error {
-	if kind == "text" {
+	if kind == "text" || kind == "system_event" {
 		return nil
 	}
 	if kind != "image" && kind != "image_album" {
