@@ -23,6 +23,6 @@ $check(!str_contains($view,'官方用量核对有效期（秒）')&&str_contains
 $check(str_contains($view,"asset_url('chat-calls.css')"),'call page stylesheet is loaded');
 $check(str_contains($view,"<?php endif; ?></div></section><?php endforeach; ?>\n<?php elseif(\$section==='register'): ?>"),'resource pool loop closes before register section');
 foreach(['budget','import','reverify','disable_pool'] as $action)$check(str_contains($admin,"'".$action."'"),'automatic audit reason covers '.$action);
-$check(str_contains($module,"['pool','reverify','budget','import','confirmed_stop','configuration','settings','credentials']"),'failed resource forms preserve input');
+$check(str_contains($module,"['pool','reverify','budget','import','reconfirm_usage','confirmed_stop','configuration','settings','credentials']"),'failed resource forms preserve input');
 $check(str_contains($module,"'reverify'=>'资源设置已保存。'"),'resource success feedback is action-specific');
 echo 'Chat calls admin form contract: '.$count." assertions passed\n";
