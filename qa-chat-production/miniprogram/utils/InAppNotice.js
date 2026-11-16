@@ -5,14 +5,15 @@ const OrderApi=require('./OrderApi.js')
 const Identity=require('./ChatIdentity.js')
 let started=false,foreground=false,context=-1,serial=0,currentPage=null,route='',pageOptions={},current=null,timer=null
 let queue=[],seen=new Map(),chatBaseline=new Map(),chatReady=false,businessBaseline=null,listeners=[]
-let incomingCall=null,callSerial=0,callListeners=[]
+let incomingCall=null,callSerial=0,callListeners=[],callOpening='',callAlerted='',callIdentityKey='',callIdentityPending=''
 const DISPLAY_MS=10000
 const now=()=>Date.now(),revision=()=>OrderApi.contextRevision?OrderApi.contextRevision():0
 function visibleCall(){return foreground&&currentPage&&!/subpackages\/chat\/call\//.test(route)&&incomingCall?{...incomingCall}:null}
+function nativeSurface(){return /^subpackages\/web\/(view|h5)\/index$/.test(route)}
 function notify(){listeners.slice().forEach(fn=>fn(current?{...current}:null))}
 function notifyCall(){const value=visibleCall();callListeners.slice().forEach(fn=>fn(value?{...value}:null))}
 function clearTimer(){if(timer)clearTimeout(timer);timer=null}
-function resetCall(){callSerial++;incomingCall=null;notifyCall()}
+function resetCall(){const id=incomingCall?.callId||'';callSerial++;incomingCall=null;callIdentityKey='';callIdentityPending='';callAlerted='';if(callOpening===id)callOpening='';notifyCall()}
 function checkContext(){const value=revision();if(value===context)return;context=value;serial++;clearTimer();queue=[];seen.clear();chatBaseline.clear();chatReady=false;businessBaseline=null;current=null;resetCall();notify()}
 function suppress(item){
  if(!foreground||!currentPage)return true
@@ -55,7 +56,7 @@ function incomingView(view){
  const manager=ChatRuntime.get(),actor=String(manager.calls?.actorID||'')
  return !!view&&view.state==='ringing'&&String(view.callee_id||'')===actor&&/^[1-9][0-9]{0,19}$/.test(String(view.call_id||''))&&/^[1-9][0-9]{0,19}$/.test(String(view.conversation_id||''))
 }
-async function loadCallIdentity(view,token){
+async function loadCallIdentity(view,token,key){
  const manager=ChatRuntime.get()
  if(!view?.policy_version||!manager.io?.participants)return
  const request={conversation_id:String(view.conversation_id),policy_version:String(view.policy_version),sender_ids:[String(view.caller_id),String(view.callee_id)]}
@@ -63,27 +64,28 @@ async function loadCallIdentity(view,token){
   const result=await manager.io.participants([request]),entry=Identity.response([request],result)[request.conversation_id]
   const peer=entry?.members?.[String(view.caller_id)]
   if(token!==callSerial||!incomingCall||incomingCall.callId!==String(view.call_id)||!peer)return
-  incomingCall={...incomingCall,peerName:peer.displayName,peerAvatar:peer.avatarPath};notifyCall()
- }catch(_){}
+  callIdentityKey=key;incomingCall={...incomingCall,peerName:peer.displayName,peerAvatar:peer.avatarPath};notifyCall()
+ }catch(_){}finally{if(callIdentityPending===key)callIdentityPending=''}
 }
 function setIncoming(view,alert=false){
  checkContext()
  if(!incomingView(view)){if(incomingCall&&String(view?.call_id||'')===incomingCall.callId)resetCall();return}
  const id=String(view.call_id),same=incomingCall?.callId===id
  if(!same){
-  callSerial++
+  callSerial++;callAlerted='';callIdentityKey='';callIdentityPending='';if(callOpening&&callOpening!==id)callOpening=''
   if(current&&current.expires>now())queue.push(current)
   clearTimer();current=null;notify()
  }
- const token=callSerial
+ const token=callSerial,profileKey=view.policy_version?[id,String(view.policy_version),String(view.caller_id),String(view.callee_id)].join(':'):''
  incomingCall={
   callId:id,conversationId:String(view.conversation_id),callerId:String(view.caller_id),calleeId:String(view.callee_id),
   media:view.media==='video'?'video':'audio',peerName:same?incomingCall.peerName:'订单成员',peerAvatar:same?incomingCall.peerAvatar:(Identity.avatars?.user||'/images/chat-user.svg'),
   busy:same&&incomingCall.busy===true
  }
  notifyCall()
- if(alert&&!same&&typeof wx.vibrateShort==='function')try{wx.vibrateShort({type:'medium'})}catch(_){}
- loadCallIdentity(view,token)
+ if(alert&&callAlerted!==id){callAlerted=id;if(typeof wx.vibrateShort==='function')try{wx.vibrateShort({type:'medium'})}catch(_){}}
+ if(profileKey&&callIdentityKey!==profileKey&&callIdentityPending!==profileKey){callIdentityPending=profileKey;loadCallIdentity(view,token,profileKey)}
+ if(nativeSurface()&&visibleCall())navigateCall(id)
 }
 function clearIncoming(id=''){
  if(id&&incomingCall?.callId!==String(id))return
@@ -125,10 +127,16 @@ function activate(){
  else if(item.kind==='todo'&&item.orderId)wx.navigateTo({url:'/pages/'+(item.detailPage==='worker'?'workerOrder':'userOrder')+'/detail?id='+encodeURIComponent(item.orderId)})
  else wx.navigateTo({url:'/pages/notificationCenter/index?view=all'})
 }
+function navigateCall(id){
+ const manager=ChatRuntime.get(),callId=String(id||'')
+ if(!callId||callOpening||manager.calls.current?.call_id!==callId)return false
+ callOpening=callId
+ const release=()=>{if(callOpening===callId)callOpening=''}
+ try{wx.navigateTo({url:'/subpackages/chat/call/index?call_id='+encodeURIComponent(callId),fail:release,complete:release});return true}catch(_){release();return false}
+}
 function openCall(){
- checkContext();const item=visibleCall(),manager=ChatRuntime.get()
- if(!item||manager.calls.current?.call_id!==item.callId)return
- wx.navigateTo({url:'/subpackages/chat/call/index?call_id='+encodeURIComponent(item.callId)})
+ checkContext();const item=visibleCall()
+ return item?navigateCall(item.callId):false
 }
 async function answerCall(action){
  checkContext();if(action!=='accept'&&action!=='reject')return false
@@ -138,7 +146,7 @@ async function answerCall(action){
  try{
   await manager.calls.action(action)
   clearIncoming(item.callId)
-  if(action==='accept')wx.navigateTo({url:'/subpackages/chat/call/index?call_id='+encodeURIComponent(item.callId)})
+  if(action==='accept')navigateCall(item.callId)
   return true
  }catch(_){
   if(incomingCall?.callId===item.callId){incomingCall={...incomingCall,busy:false};notifyCall()}

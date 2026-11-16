@@ -21,8 +21,8 @@ test('manual retry and identity reset discard old credential failure',async()=>{
  m.reset();assert.equal(m.credentialFailure,null)
 })
 function notice(){
- let event,summary,revision=1,current,currentCall,vibrations=0
- const timers=new Map(),destinations=[],callActions=[]
+ let event,summary,revision=1,current,currentCall,vibrations=0,participantRequests=0
+ const timers=new Map(),destinations=[],callActions=[],navigationCompletions=[]
  let timerID=0
  const ChatIdentity=require('../miniprogram/utils/ChatIdentity.js')
  const manager={
@@ -37,10 +37,10 @@ function notice(){
     return this.current
    }
   },
-  io:{participants:async requests=>({items:requests.map(r=>({conversation_id:r.conversation_id,policy_version:r.policy_version,viewer_actor_id:'1',members:[
+  io:{participants:async requests=>{participantRequests++;return {items:requests.map(r=>({conversation_id:r.conversation_id,policy_version:r.policy_version,viewer_actor_id:'1',members:[
    {actor_id:'1',role:'user',avatar:'user',display_name:'用户A1'},
    {actor_id:'2',role:'worker',avatar:'worker',display_name:'师傅B2'}
-  ]}))})},
+  ]}))}}},
   subscribe(fn){event=fn}
  }
  const deps={
@@ -53,7 +53,7 @@ function notice(){
  vm.runInNewContext(read('miniprogram/utils/InAppNotice.js'),{
   module,require:p=>deps[p.replace('./','').replace('.js','')],Date,Map,console,
   setTimeout(fn,delay){timers.set(++timerID,{fn,delay});return timerID},clearTimeout(id){timers.delete(id)},
-  wx:{navigateTo:({url})=>destinations.push(url),vibrateShort(){vibrations++},showToast(){}}
+  wx:{navigateTo:options=>{destinations.push(options.url);navigationCompletions.push(()=>{if(options.success)options.success();if(options.complete)options.complete()})},vibrateShort(){vibrations++},showToast(){}}
  })
  const service=module.exports,owner={}
  service.subscribe(value=>current=value)
@@ -62,7 +62,7 @@ function notice(){
  service.show(owner,'pages/index/index')
  const emit=(type,payload)=>{if(['calls.incoming','calls.changed'].includes(type))manager.calls.current=payload;event(type,payload)}
  return {service,current:()=>current,call:()=>currentCall,summary:value=>summary({businessSource:{ready:true,stale:false},...value}),
-  event:emit,destinations,timers,callActions,vibrations:()=>vibrations,route:(route,options)=>service.show(owner,route,options),switchIdentity:()=>{revision++}}
+  event:emit,destinations,timers,callActions,vibrations:()=>vibrations,participantRequests:()=>participantRequests,finishNavigation(){const done=navigationCompletions.shift();if(done)done()},route:(route,options)=>service.show(owner,route,options),switchIdentity:()=>{revision++}}
 }
 test('home waits for the first snapshot and then shows only new business notices and todos',()=>{
  const f=notice(),old={id:'1',title:'旧通知'},todo={orderId:'A',action:'支付预约费',role:'我的下单',detailPage:'user'}
@@ -88,9 +88,11 @@ test('identity change and background do not show historical notices on home',()=
 })
 test('incoming call uses the floating call surface and accept enters the live call page',async()=>{
  const f=notice(),call={call_id:'21',conversation_id:'31',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
- f.event('calls.incoming',call);await flush()
+ f.event('calls.changed',call);f.event('calls.incoming',call);await flush()
  assert.equal(f.call().callId,'21');assert.equal(f.call().peerName,'师傅B2');assert.equal(f.call().media,'audio')
- assert.equal(f.current(),null);assert.equal(f.vibrations(),1)
+ assert.equal(f.current(),null);assert.equal(f.vibrations(),1);assert.equal(f.participantRequests(),1)
+ f.event('calls.changed',call);f.event('calls.incoming',call);await flush()
+ assert.equal(f.vibrations(),1);assert.equal(f.participantRequests(),1)
  assert.equal(await f.service.answerCall('accept'),true)
  assert.deepEqual(f.callActions,['accept']);assert.equal(f.call(),null)
  assert.equal(f.destinations.at(-1),'/subpackages/chat/call/index?call_id=21')
@@ -100,6 +102,16 @@ test('ringing call restored by state polling clears itself on terminal state',()
  f.event('calls.changed',call);assert.equal(f.call().media,'video');assert.equal(f.vibrations(),0)
  f.service.openCall();assert.equal(f.destinations.at(-1),'/subpackages/chat/call/index?call_id=22')
  f.event('calls.changed',{...call,state:'missed'});assert.equal(f.call(),null)
+})
+test('rapid call-card taps create one navigation until the first transition completes',()=>{
+ const f=notice(),call={call_id:'24',conversation_id:'34',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
+ f.event('calls.changed',call);f.service.openCall();f.service.openCall();assert.equal(f.destinations.length,1)
+ f.finishNavigation();f.service.openCall();assert.equal(f.destinations.length,2)
+})
+test('web-view routes immediately expand the incoming call because the native surface can cover normal overlays',()=>{
+ const f=notice(),call={call_id:'25',conversation_id:'35',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
+ f.route('subpackages/web/h5/index');f.event('calls.changed',call);f.event('calls.incoming',call)
+ assert.equal(f.destinations.at(-1),'/subpackages/chat/call/index?call_id=25');assert.equal(f.vibrations(),1)
 })
 test('background clears the visible incoming call until a fresh ringing snapshot arrives',()=>{
  const f=notice(),call={call_id:'23',conversation_id:'33',caller_id:'2',callee_id:'1',media:'audio',state:'ringing',policy_version:'1'}
@@ -112,7 +124,11 @@ test('incoming call rendering no longer uses the native confirmation modal',()=>
  const runtime=read('miniprogram/utils/ChatRuntime.js'),wxml=read('miniprogram/components/inapp-notice/index.wxml'),wxss=read('miniprogram/components/inapp-notice/index.wxss')
  assert.equal(runtime.includes("wx.showModal({title:view.media==='video'"),false)
  assert(wxml.includes('incoming-call-card')&&wxml.includes('data-action="reject"')&&wxml.includes('data-action="accept"'))
- assert(wxss.includes('.incoming-call-action.reject')&&wxss.includes('.incoming-call-action.accept'))
+ assert(wxss.includes('.incoming-call-action.reject')&&wxss.includes('.incoming-call-action.accept')&&wxss.includes('min-width:92rpx'))
+})
+test('registered redirect and web surfaces host the incoming-call bridge',()=>{
+ const hosts=["miniprogram/pages/plus/plus.wxml","miniprogram/pages/mine/settings.wxml","miniprogram/pages/recharge/recharge.wxml","miniprogram/pages/location/location.wxml","miniprogram/pages/mine/examine.wxml","miniprogram/pages/web-view/web.wxml","miniprogram/pages/search/search.wxml","miniprogram/pages/pay/pay.wxml","miniprogram/pages/h5/h5.wxml","miniprogram/pages/help/help.wxml","miniprogram/pages/agreementCenter/index.wxml","miniprogram/pages/workerFinance/index.wxml","miniprogram/pages/realName/index.wxml","miniprogram/pages/merchantAuth/index.wxml","miniprogram/subpackages/web/view/index.wxml","miniprogram/subpackages/web/h5/index.wxml"]
+ for(const path of hosts)assert(read(path).includes('<inapp-notice'),path+' missing inapp-notice')
 })
 test('floating component ready and page-show do not clear and redraw the same notice',()=>{
  let def,shown=0,listener,callListener;vm.runInNewContext(read('miniprogram/components/inapp-notice/index.js'),{Component:x=>def=x,require:()=>({subscribe(fn){listener=fn;return ()=>{}},subscribeCall(fn){callListener=fn;return ()=>{}},show(){shown++;listener({title:'提醒'});callListener(null)},hide(){}}),getCurrentPages:()=>[{route:'pages/orderHall/orderHall',options:{}}],wx:{getWindowInfo:()=>({statusBarHeight:20}),getMenuButtonBoundingClientRect:()=>({top:26,height:32})}})
