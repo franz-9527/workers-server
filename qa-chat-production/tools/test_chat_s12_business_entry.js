@@ -644,6 +644,7 @@ async function s16NativeImageTests(){
  f.emit('conversation.page',{messages:[photo]});assert.strictEqual(p.views['7'].images.length,0,'old response cannot restore a recalled album')
  p.onUnload()
  const frames=nativeConversation(),fp=frames.inst
+ frames.manager.cache=new Map([['9',{capabilities:{audio:false,video:true}}]])
  frames.manager.av={nativeImageURL:async(id,mid,poster,frame)=>'https://test.invalid/'+(poster?'poster':'frame-'+frame)+'.jpg',setVisible(){},list(){return[]},refresh:async()=>{}}
  const video=frames.msg(18,{message_type:'video',text:undefined,av:{duration_ms:5000,heard:false,transcript:'',frames:[{ordinal:0},{ordinal:1}]}})
  frames.emit('conversation.reset',{messages:[video]})
