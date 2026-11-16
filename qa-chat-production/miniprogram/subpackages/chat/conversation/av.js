@@ -53,7 +53,7 @@ module.exports={
   if(this.avExpiry)clearTimeout(this.avExpiry);this.avExpiry=null
   if(this.avPoll)clearTimeout(this.avPoll);this.avPoll=null
   this.playSerial=(this.playSerial||0)+1;this.manager.av?.setVisible(this.id,[])
-  this.setData({recording:false,playingAudio:'',activeVideo:null})
+  this.setData({recording:false,playingAudio:'',activeVideo:null,imageViewer:null})
  },
  startAV(){
   this.refreshAV();if(!this.visible||this.avPoll||!this.manager.av)return
@@ -124,13 +124,13 @@ module.exports={
  },
  async showFrames(event){
   const mid=String(event.currentTarget.dataset.id||''),row=this.views[mid]
-  if(!row?.isAV||row.isAudio||!this.visible||typeof wx.previewImage!=='function')return
+  if(!row?.isAV||row.isAudio||!this.visible)return
   this.closeAV();const life=this.life,epoch=this.manager.epoch,serial=this.playSerial,count=(row.raw.av?.frames||[]).length
   const refs=[{poster:true,frame:null},...Array.from({length:count},(_,frame)=>({poster:false,frame}))]
   const urls=(await Promise.all(refs.map(async ref=>{try{return await this.manager.av.nativeImageURL(this.id,mid,ref.poster,ref.frame)}catch(_){return ''}}))).filter(Boolean)
   if(!this.current(life,epoch)||serial!==this.playSerial||this.views[mid]?.stateVersion!==row.stateVersion)return
   if(!urls.length){this.avError(asError('视频封面与抽帧暂不可查看'));return}
-  wx.previewImage({current:urls[0],urls,showmenu:true,fail:()=>{if(this.current(life,epoch))this.avError(asError('图片预览未完成，请重新尝试'))}})
+  this.openImageViewer(urls,0,'av',mid,row.stateVersion)
  },
  previewAV(event){
   const client=String(event.currentTarget.dataset.client||''),row=this.manager.av.rows.get(client)
@@ -139,8 +139,9 @@ module.exports={
   else this.setData({activeVideo:{src:row.path,messageId:'',version:'',preview:true}})
  },
  checkAVPlayback(){
-  const active=this.data.activeVideo,id=this.data.playingAudio
+  const active=this.data.activeVideo,viewer=this.data.imageViewer,id=this.data.playingAudio
   if(active?.messageId){const row=this.views[active.messageId];if(!row?.isAV||row.stateVersion!==active.version){this.closeAV();return}}
+  if(viewer?.owner==='av'&&viewer.messageId){const row=this.views[viewer.messageId];if(!row?.isAV||row.stateVersion!==viewer.version){this.closeImageViewer();return}}
   if(id){const row=this.views[id];if(!row?.isAV||row.stateVersion!==this.playingVersion){this.closeAV();return}}
  },
  async playAV(event){
@@ -175,6 +176,7 @@ module.exports={
   if(this.avExpiry)clearTimeout(this.avExpiry);this.avExpiry=null
   if(this.audio){try{this.audio.stop();this.audio.destroy()}catch(_){};this.audio=null}
   if(typeof wx.createVideoContext==='function')try{wx.createVideoContext('chat-video',this).stop()}catch(_){}
-  this.setData({activeVideo:null,playingAudio:''})
+  const patch={activeVideo:null,playingAudio:''};if(this.data.imageViewer?.owner==='av')patch.imageViewer=null
+  this.setData(patch)
  }
 }

@@ -167,6 +167,12 @@
       <view class="sms-dialog-actions"><button bindtap="closeSMS" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? '取消' : '关闭'}}</button><button class="sms-confirm" bindtap="confirmSMS" loading="{{smsBusy}}" disabled="{{smsBusy}}">{{smsDialog.state === 'confirm' ? (smsDialog.insufficient ? '去充值' : '确认提醒') : (smsDialog.state === 'pending' ? '核对结果' : '知道了')}}</button></view>
     </view>
   </view>
+  <view wx:if="{{imageViewer}}" class="image-viewer" catchtouchmove="stopImageTouch">
+    <swiper class="image-viewer-swiper" current="{{imageViewer.index}}" bindchange="imageViewerChange" duration="220">
+      <swiper-item wx:for="{{imageViewer.urls}}" wx:key="*this"><view class="image-viewer-slide"><image src="{{item}}" mode="aspectFit" show-menu-by-longpress="{{true}}" catchtap="closeImageViewer" aria-label="图片预览，左右滑动切换，点击关闭，长按保存"/></view></swiper-item>
+    </swiper>
+    <text wx:if="{{imageViewer.count > 1}}" class="image-viewer-count">{{imageViewer.index + 1}} / {{imageViewer.count}}</text>
+  </view>
   <view wx:if="{{activeVideo}}" class="av-viewer" catchtouchmove="stopImageTouch">
     <button bindtap="closeAV">关闭视频</button>
     <video id="chat-video" src="{{activeVideo.src}}" controls autoplay="{{false}}" show-center-play-btn object-fit="contain" binderror="closeAV" />

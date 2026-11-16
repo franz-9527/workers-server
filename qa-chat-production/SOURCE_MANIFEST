@@ -292,12 +292,12 @@ c2fdbce8a5651eb4b6f0d4405e28bac98e4d129d  qa-chat-production/miniprogram/pages/n
 175d650c9dfb3634da22f52e714d5d44068476b5  qa-chat-production/miniprogram/pages/userOrder/detail.wxml
 ebbc1eea2a93966dd81ce7583cf636e74265bb02  qa-chat-production/miniprogram/pages/workerOrder/detail.wxml
 2026dbcf5daa457c16e0eb01d0ae66f60ca41887  qa-chat-production/miniprogram/subpackages/chat/audit/index.js
-420d681a22b0c61a49cdbd927bc05d13baf5c5bd  qa-chat-production/miniprogram/subpackages/chat/conversation/av.js
+505ad08f3d4dde9ed76553d403f0709df022ff34  qa-chat-production/miniprogram/subpackages/chat/conversation/av.js
 5ba763b33391313f07668f2a96823e60d72f7a7a  qa-chat-production/miniprogram/subpackages/chat/conversation/calls.js
 c40347b239a1f16a3255706aca375ce4de33068b  qa-chat-production/miniprogram/subpackages/chat/conversation/experience.js
 90ce4188cf640104aeb3ca00bb95f84207bde948  qa-chat-production/miniprogram/subpackages/chat/conversation/group.js
-768bda29bc4ff6e7132cc9735e70ef3375b8bd1f  qa-chat-production/miniprogram/subpackages/chat/conversation/index.js
-0ecceee07aa5553be606f37250f74b3e78e20cb6  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxml
+d9e6d4da25e6c208d7d4a0025b590fb68fcc702b  qa-chat-production/miniprogram/subpackages/chat/conversation/index.js
+d3d21a35e9876170047c8a3a168fd114473d0d5e  qa-chat-production/miniprogram/subpackages/chat/conversation/index.wxml
 bd8302923bf2ea29f6ba9390ab749e3476ff3fe9  qa-chat-production/miniprogram/subpackages/chat/conversation/interaction.js
 4dfdec38c3f243b3199972a6c9af46545605a99e  qa-chat-production/miniprogram/subpackages/chat/conversation/sms.js
 00b0a07bb90473b1ed92c23a174fa4f023e64218  qa-chat-production/miniprogram/subpackages/chat/conversation/voice.js
@@ -1208,7 +1208,7 @@ b216e03bdb18b26b62d7c2a59df80b3d7391761e  qa-chat-production/server/tests/v260_p
 755d4f2acad0b862756a013fcda153649e11d9ff  qa-chat-production/tools/test_build_chat_l1_evidence.py
 2056412292774341fd5c8639c4e007b70233ece2  qa-chat-production/tools/test_build_chat_non_av_evidence.py
 2598d775f07c0345489d1e897426f79e58cc17a1  qa-chat-production/tools/test_chat_s11.js
-ed1a5216c1200bb47028fcff48f22a5148b875e0  qa-chat-production/tools/test_chat_s12_business_entry.js
+44049ecc851a89c40bdf80ffb01b012b2e816d2b  qa-chat-production/tools/test_chat_s12_business_entry.js
 86e61631db8b3f86fc4586af234d9fffdf21fc51  qa-chat-production/tools/test_chat_s18_s20.js
 438b797dc8d83359f03a7de20e6a33b2f005eb3c  qa-chat-production/tools/test_check_chat_l1_real.py
 e0cb01da6fdf3a1ce28587bf71cb7bdccc7dfd65  qa-chat-production/tools/test_check_chat_non_av_real.py

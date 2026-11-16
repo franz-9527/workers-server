@@ -20,7 +20,7 @@ Page({
  ...Group,
  imageRows:[],
  data: {showChatMenu:false,testSandbox:false,messageMenu:null,receiptLabels:{},recordCanceled:false,voiceStarting:false,recordSeconds:0,voiceCountdown:60,keyboardOpen:false,smsAnchor:'',smsFirstHint:false,smsDialog:null,smsBusy:false,voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'', conversationId:'', enabled:false, status:'disabled', loading:false, messages:[], invalid:false, orderContext:null,canOpenOrder:false, orderLabel:'订单沟通', canSend:false,sendRestricted:false,restrictionText:'',
-  audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',albums:[], replyTarget:'', replyPreview:'',editedSource:'',recallBusy:false, draft:'', inputError:'', sendReason:'', notice:'', attempts:[], unreadCount:0, unreadLabel:'0', firstUnread:'', newCount:0, hasHistory:false, windowBusy:false, hasReturn:false, readReady:false, readBusy:false, scrollTop:0, scrollInto:'', keyboardHeight:0 },
+  audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',albums:[],imageViewer:null, replyTarget:'', replyPreview:'',editedSource:'',recallBusy:false, draft:'', inputError:'', sendReason:'', notice:'', attempts:[], unreadCount:0, unreadLabel:'0', firstUnread:'', newCount:0, hasHistory:false, windowBusy:false, hasReturn:false, readReady:false, readBusy:false, scrollTop:0, scrollInto:'', keyboardHeight:0 },
  onLoad(options) {
   this.unloaded=false
   this.identities={};this.identitySerial=0;this.identityPending=''
@@ -163,6 +163,7 @@ Page({
   this.views={};window.forEach(m=>{this.views[m.messageId]=m})
   this.manager.av?.setVisible(this.id,window.map(v=>v.raw));this.checkAVPlayback()
   this.manager.images?.setVisible(this.id,window.map(v=>v.raw))
+  if(this.data.imageViewer?.owner==='image'&&!this.views[this.data.imageViewer.messageId]?.isImage)this.closeImageViewer()
   this.identityPolicy=String(page.policy_version||'');this.identityViewer=String(page.viewer_actor_id||'')
   this.orderCanSend=page.can_send===true
   const isGroup=page.conversation_mode==='collaboration',assignmentGroup=page.conversation_mode==='assignment_group',directCalls=!page.conversation_mode||page.conversation_mode==='direct'
@@ -216,7 +217,7 @@ Page({
   }
   this.orderCanSend=false
   this.views={};this.initialized=false;this.historyCursor='';this.historyDetached=false;this.returnPoint=null;this.mode='latest';this.highSeq='0';this.atBottom=true;this.currentTop=0;this.unreadJob=null
-  this.setData({voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'',audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
+  this.setData({voiceMode:false,showTools:false,showJump:false,callAudio:false,callVideo:false,callReason:'',audioEnabled:false,videoEnabled:false,avAttempts:[],recording:false,avSelecting:false,activeVideo:null,playingAudio:'',messages:[],albums:[],imageViewer:null,orderContext:null,canOpenOrder:false,orderLabel:'订单沟通',canSend:false,sendRestricted:false,restrictionText:'',loading:false,draft:'',attempts:[],firstUnread:'',unreadCount:0,unreadLabel:'0',newCount:0,hasHistory:false,hasReturn:false,readReady:false,windowBusy:false,readBusy:false,inputError:'',sendReason:'',notice:'',scrollInto:'',scrollTop:0,keyboardHeight:0,replyTarget:'',replyPreview:'',editedSource:'',recallBusy:false})
  },
  async refreshRestriction(){
   const life=this.life,epoch=this.manager.epoch
@@ -598,7 +599,7 @@ Page({
  },
  async previewImage(event){
   const data=event.currentTarget.dataset,mid=String(data.message||''),item=String(data.item||''),row=this.views[mid]
-  if(!row?.isImage||typeof wx.previewImage!=='function')return
+  if(!row?.isImage)return
   const items=row.raw.images||[],life=this.life,epoch=this.manager.epoch
   const resolved=await Promise.all(items.map(async photo=>{
    try{return {item:String(photo.item_id),url:await this.manager.images.nativePreviewURL(this.id,mid,photo.item_id)}}
@@ -607,8 +608,17 @@ Page({
   if(!this.current(life,epoch)||!this.views[mid]?.isImage)return
   const current=resolved.find(photo=>photo.item===item)?.url,urls=resolved.map(photo=>photo.url).filter(Boolean)
   if(!current||!urls.length){wx.showToast({title:'图片暂不可查看',icon:'none'});return}
-  wx.previewImage({current,urls,showmenu:true,fail:()=>{if(this.current(life,epoch))wx.showToast({title:'图片预览未完成',icon:'none'})}})
+  this.openImageViewer(urls,urls.indexOf(current),'image',mid,row.stateVersion)
  },
+ openImageViewer(urls,index,owner,messageId,version){
+  if(!Array.isArray(urls)||!urls.length||!Number.isInteger(index)||index<0||index>=urls.length||urls.some(url=>typeof url!=='string'||!url))return
+  this.setData({imageViewer:{urls,index,count:urls.length,owner:owner||'image',messageId:String(messageId||''),version:String(version||'')}})
+ },
+ imageViewerChange(event){
+  const index=Number(event.detail?.current),viewer=this.data.imageViewer
+  if(viewer&&Number.isInteger(index)&&index>=0&&index<viewer.count&&index!==viewer.index)this.setData({imageViewer:{...viewer,index}})
+ },
+ closeImageViewer(){if(this.data.imageViewer)this.setData({imageViewer:null})},
  openGovernance(){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index'})},
  openReport(mid,item){if(this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index?conversation_id='+encodeURIComponent(this.id)+'&message_id='+encodeURIComponent(mid)+(item?'&item_id='+encodeURIComponent(item):'')})},
  appealImages(event){const client=String(event.currentTarget.dataset.client||'');if(client&&this.manager.enabled)wx.navigateTo({url:'/subpackages/chat/governance/index?conversation_id='+encodeURIComponent(this.id)+'&client_message_id='+encodeURIComponent(client)})},
