@@ -146,7 +146,7 @@ declare(strict_types=1);
     $assert(strpos($reviewPage, 'SERVER_OUTBOX_UNKNOWN') !== false, 'review list must distinguish an unknown provider outcome');
     $assert(strpos($outboxConsole, 'delivery_outcome') !== false && strpos($outboxConsole, '结果未知 · 已停止自动重试') !== false, 'outbox console must distinguish unknown outcomes');
     $assert(strpos($outboxView, "(\$row['delivery_outcome']??'')!=='unknown'") !== false, 'unknown provider outcomes must not offer manual retry');
-    $assert(strpos($reviewPage, ' + \' · \' + diagnostic') !== false, 'review errors must keep explanation before request ID');
+    $assert(strpos($reviewPage, "diagnostic ? ' · ' + diagnostic") !== false, 'review errors must keep explanation before request ID');
     $assert(strpos($persistence, 'mergeServerReviewNoticeStatus') !== false, 'server review records must merge delivery status');
     $assert(strpos($persistence, 'SERVER_OUTBOX_UNKNOWN') !== false, 'review reconciliation must surface unknown provider outcomes distinctly');
     $assert(strpos($persistence, "topic='wechat_subscribe'") !== false, 'review delivery status must read subscribe outbox');
