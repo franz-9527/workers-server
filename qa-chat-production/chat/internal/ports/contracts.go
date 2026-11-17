@@ -119,6 +119,14 @@ type Identity interface {
 // CommittedMessage is a best-effort wakeup, never a second message store.
 type CommittedMessage struct{ ConversationID, Seq, PolicyVersion ID }
 type MessagePublisher interface{ Committed(CommittedMessage) }
+
+// CallChange is a best-effort state wakeup. Clients still fetch the
+// authoritative call status and message cursor; this payload is not a ledger.
+type CallChange struct {
+ ConversationID, CallID, PolicyVersion, AttemptEpoch, Revision ID
+ State string
+}
+type CallChangePublisher interface{ CallChanged(CallChange) }
 type RealtimePolicy interface {
 	Policy
 	MemberCandidates(context.Context, ID) ([]ID, error)

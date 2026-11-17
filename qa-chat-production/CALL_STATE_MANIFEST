@@ -1,0 +1,11 @@
+12252211fa632cc14b63b34dc86e9cb02762f8e2  qa-chat-production/chat/internal/calls/lifecycle.go
+165f4b44d4e5d1ae54b4fbd90c4387f959def5cb  qa-chat-production/chat/internal/calls/authority.go
+23a905e0c0612e135211f7d9a9ec0bbadbfe2f02  qa-chat-production/chat/internal/ports/contracts.go
+2c5b7ee590ae9ffef9927ed3071769ca6740fa29  qa-chat-production/chat/internal/calls/realtime_test.go
+50bcb7f0f249e7cc428a892134287a3555543bb0  qa-chat-production/chat/internal/dependencies/messaging.go
+6a2976fe568f0a3aadcc6f822c68a4120f76e999  qa-chat-production/chat/internal/calls/service.go
+71bceb52d491df4215758242ed6966a7d6b96c29  qa-chat-production/chat/internal/socket/realtime.go
+7303fda121f95a4b0053d33d957bd8bb15e7ef71  qa-chat-production/server/views/admin/chat-calls.php
+733207f2143b3eb01ae4b061d996da79bf0bf7d1  qa-chat-production/chat/internal/calls/worker.go
+885cc7a07edf6c119a67df2feab4a74c80560305  qa-chat-production/chat/internal/calls/mysql_integration_test.go
+a0658b2e932d358d5ef157fa7ae1e2842a8ab909  qa-chat-production/chat/internal/socket/gateway_test.go

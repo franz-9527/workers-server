@@ -77,8 +77,17 @@ func (e *echo) Execute(ctx context.Context, p ports.Principal, typ string, raw j
 	return typ + ".result", map[string]any{"actor_id": p.ActorID}, nil
 }
 
+type fixtureRealtimePolicy struct{}
+
+func (fixtureRealtimePolicy) Authorize(context.Context, ports.PolicyRequest) (ports.Grant, error) {
+ return ports.Grant{CanRead: true, CanSend: true}, nil
+}
+func (fixtureRealtimePolicy) MemberCandidates(context.Context, ports.ID) ([]ports.ID, error) {
+ return []ports.ID{"18446744073709551615"}, nil
+}
+
 type fixture struct {
-	g        *Gateway
+ g        *Gateway
 	s        *auth.Service
 	src      *source
 	store    *tickets
@@ -89,15 +98,22 @@ type fixture struct {
 	url      string
 }
 
-func setup(t *testing.T) *fixture {
-	t.Helper()
+func setup(t *testing.T) *fixture { return setupWithPolicy(t, nil) }
+func setupRealtime(t *testing.T) *fixture { return setupWithPolicy(t, fixtureRealtimePolicy{}) }
+func setupWithPolicy(t *testing.T, policy ports.RealtimePolicy) *fixture {
+ t.Helper()
 	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
 	v, _ := auth.NewVerifier("test", map[string]ed25519.PublicKey{"v1": pub})
 	src := &source{}
 	store := &tickets{values: map[string]string{}}
 	s, _ := auth.NewService(v, src, store, 16, 100*time.Millisecond)
 	commands := &echo{}
-	g, _ := New(s, commands)
+ var g *Gateway
+ if policy == nil {
+  g, _ = New(s, commands)
+ } else {
+  g, _ = NewWithPolicy(s, commands, policy)
+ }
 	g.limits = admissionLimits{preAuth: 64, authenticated: 300, perIP: 64, attempts: 1000, window: time.Second}
 	g.timing = timings{300 * time.Millisecond, 100 * time.Millisecond, 100 * time.Millisecond, 70 * time.Millisecond, 600 * time.Millisecond, 30 * time.Millisecond, 100 * time.Millisecond}
 	server := httptest.NewServer(g)
@@ -567,4 +583,35 @@ func TestS21SocketAuthorityContentionRetriesWithinBudgetAndStillRevokes(t *testi
 	if _, err := c.current(); err != auth.ErrUnauthorized {
 		t.Fatal("real revoke was softened", err)
 	}
+}
+
+func TestCallChangedPublishesAuthoritativeStateToConversationMembers(t *testing.T) {
+ f := setupRealtime(t)
+ c := f.login(t)
+ f.g.CallChanged(ports.CallChange{
+  ConversationID: "2", CallID: "9", PolicyVersion: "3",
+  AttemptEpoch: "2", Revision: "5", State: "rejected",
+ })
+ c.SetReadDeadline(time.Now().Add(time.Second))
+ var got frame
+ if err := c.ReadJSON(&got); err != nil {
+  t.Fatal("calls.changed was not delivered", err)
+ }
+ if got.Type != "calls.changed" || got.RequestID != "server" {
+  t.Fatalf("unexpected live call frame %+v", got)
+ }
+ var payload struct {
+  ConversationID ports.ID `json:"conversation_id"`
+  CallID ports.ID `json:"call_id"`
+  PolicyVersion ports.ID `json:"policy_version"`
+  AttemptEpoch ports.ID `json:"attempt_epoch"`
+  Revision ports.ID `json:"revision"`
+  State string `json:"state"`
+ }
+ if err := json.Unmarshal(got.Payload, &payload); err != nil {
+  t.Fatal(err)
+ }
+ if payload.ConversationID != "2" || payload.CallID != "9" || payload.PolicyVersion != "3" || payload.AttemptEpoch != "2" || payload.Revision != "5" || payload.State != "rejected" {
+  t.Fatalf("call wake omitted authoritative state: %+v", payload)
+ }
 }

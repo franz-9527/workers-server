@@ -126,7 +126,8 @@ func (s *Service) Action(ctx context.Context, p ports.Principal, action string, 
 		return result, ErrInvalid
 	}
 	hash := operation(action, q)
-	e := s.tx(ctx, func(tx *sql.Tx) error {
+ changed := false
+ e := s.tx(ctx, func(tx *sql.Tx) error {
 		initial, e := s.load(ctx, tx, q.CallID, false)
 		if e != nil {
 			return e
@@ -217,14 +218,17 @@ func (s *Service) Action(ctx context.Context, p ports.Principal, action string, 
 			return ErrInvalid
 		}
 		result = r.view()
-		return s.remember(ctx, tx, p, q, hash, result)
-	})
-	if e == nil {
-		if result.State.Terminal() {
-			_ = s.ensureTerminalMessage(ctx, result.CallID)
-		}
-		s.notifyCall(result)
-	}
+  changed = r.Revision != initial.Revision || r.Epoch != initial.Epoch || r.State != initial.State
+  return s.remember(ctx, tx, p, q, hash, result)
+ })
+ if e == nil {
+  if result.State.Terminal() {
+   _ = s.ensureTerminalMessage(ctx, result.CallID)
+  }
+  if changed {
+   s.notifyCall(result)
+  }
+ }
 	return result, e
 }
 func (s *Service) Status(ctx context.Context, p ports.Principal, q Request) (View, error) {
@@ -465,33 +469,43 @@ func (s *Service) beginFallback(ctx context.Context, r record) error {
 	return s.completeFallback(ctx, r)
 }
 func (s *Service) completeFallback(ctx context.Context, r record) error {
-	if r.Binding.NextPool == nil || r.State != Preparing || r.Binding.Submitted {
-		return ErrConflict
-	}
-	// This durable tombstone fences an in-flight old reserve before either end
-	// can get new credentials. A lost ACK is retried with the same operation.
-	stopped, e := s.broker.Resource(ctx, resourceRequest(r, "release_unsubmitted", "fallback"))
-	if e != nil || !validPermit(r, stopped) || stopped.State != "closed" {
-		return ErrUnavailable
-	}
-	return s.tx(ctx, func(tx *sql.Tx) error {
-		live, e := s.load(ctx, tx, r.CallID, true)
-		if e != nil {
-			return e
-		}
-		if live.Epoch != r.Epoch || live.State != Preparing || live.Binding.Submitted || live.Binding.NextPool == nil {
-			return ErrConflict
-		}
-		target := *live.Binding.NextPool
-		live.Session, e = live.Apply(Event{Name: "fallback", Epoch: live.Epoch, ExpectedRevision: live.Revision, At: time.Now().Unix(), NextProvider: target.Decision.Provider})
-		if e != nil {
-			return e
-		}
-		live.Binding = Binding{Pool: target}
-		_, e = tx.ExecContext(ctx, "UPDATE chat_call_legs SET prepared=0,ready=0 WHERE call_id=?", string(r.CallID))
-		if e != nil {
-			return e
-		}
-		return s.save(ctx, tx, live, "fallback")
-	})
+ if r.Binding.NextPool == nil || r.State != Preparing || r.Binding.Submitted {
+  return ErrConflict
+ }
+ // This durable tombstone fences an in-flight old reserve before either end
+ // can get new credentials. A lost ACK is retried with the same operation.
+ stopped, e := s.broker.Resource(ctx, resourceRequest(r, "release_unsubmitted", "fallback"))
+ if e != nil || !validPermit(r, stopped) || stopped.State != "closed" {
+  return ErrUnavailable
+ }
+ e = s.tx(ctx, func(tx *sql.Tx) error {
+  live, e := s.load(ctx, tx, r.CallID, true)
+  if e != nil {
+   return e
+  }
+  if live.Epoch != r.Epoch || live.State != Preparing || live.Binding.Submitted || live.Binding.NextPool == nil {
+   return ErrConflict
+  }
+  target := *live.Binding.NextPool
+  live.Session, e = live.Apply(Event{Name: "fallback", Epoch: live.Epoch, ExpectedRevision: live.Revision, At: time.Now().Unix(), NextProvider: target.Decision.Provider})
+  if e != nil {
+   return e
+  }
+  policyVersion := live.Binding.PolicyVersion
+  if !policyVersion.Valid() {
+   policyVersion = live.PolicyVersion
+  }
+  live.Binding = Binding{Pool: target, PolicyVersion: policyVersion}
+  live.PolicyVersion = policyVersion
+  _, e = tx.ExecContext(ctx, "UPDATE chat_call_legs SET prepared=0,ready=0 WHERE call_id=?", string(r.CallID))
+  if e != nil {
+   return e
+  }
+  r = live
+  return s.save(ctx, tx, live, "fallback")
+ })
+ if e == nil {
+  s.notifyCall(r.view())
+ }
+ return e
 }

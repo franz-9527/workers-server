@@ -11,8 +11,9 @@ import (
 )
 
 type liveEvent struct {
-	message ports.CommittedMessage
-	kind    string
+ message ports.CommittedMessage
+ call    *ports.CallChange
+ kind    string
 	source  *client
 	exclude ports.ID
 	until   time.Time
@@ -55,8 +56,8 @@ func (g *Gateway) Committed(m ports.CommittedMessage) {
 func (g *Gateway) ReceiptChanged(m ports.CommittedMessage, actor ports.ID) {
 	g.offer(liveEvent{message: m, kind: "receipt.changed", exclude: actor})
 }
-func (g *Gateway) CallChanged(m ports.CommittedMessage) {
-	g.offer(liveEvent{message: m, kind: "calls.changed"})
+func (g *Gateway) CallChanged(m ports.CallChange) {
+ g.offer(liveEvent{call: &m, kind: "calls.changed"})
 }
 func (g *Gateway) offer(e liveEvent) {
 	if g.realtime == nil {
@@ -89,12 +90,16 @@ func (g *Gateway) deliver() {
 		case <-g.realtime.stop:
 			return
 		case event := <-g.realtime.events:
-			root := g.realtime.ctx
+            conversationID := event.message.ConversationID
+            if event.call != nil {
+                conversationID = event.call.ConversationID
+            }
+            root := g.realtime.ctx
 			if root == nil {
 				root = context.Background()
 			}
 			ctx, cancel := context.WithTimeout(root, 2*time.Second)
-			ids, e := g.realtime.policy.MemberCandidates(ctx, event.message.ConversationID)
+			ids, e := g.realtime.policy.MemberCandidates(ctx, conversationID)
 			cancel()
 			if e != nil {
 				continue
@@ -112,7 +117,7 @@ func (g *Gateway) deliver() {
 				}
 				if event.kind == "presence.changed" {
 					c.stateMu.Lock()
-					focused := c.active == event.message.ConversationID
+					focused := c.active == conversationID
 					c.stateMu.Unlock()
 					if !focused {
 						continue
@@ -126,8 +131,15 @@ func (g *Gateway) deliver() {
 						continue
 					}
 				}
-				payload := map[string]any{"conversation_id": event.message.ConversationID}
-				if event.kind == "message.new" {
+				payload := map[string]any{"conversation_id": conversationID}
+                if event.call != nil {
+                    payload["call_id"] = event.call.CallID
+                    payload["state"] = event.call.State
+                    payload["policy_version"] = event.call.PolicyVersion
+                    payload["attempt_epoch"] = event.call.AttemptEpoch
+                    payload["revision"] = event.call.Revision
+                }
+                if event.kind == "message.new" {
 					payload["highest_seq"] = event.message.Seq
 					payload["policy_version"] = event.message.PolicyVersion
 				}
@@ -139,7 +151,7 @@ func (g *Gateway) deliver() {
 					payload["actor_id"] = event.source.actor
 					payload["expires_at"] = event.until.UnixMilli()
 				}
-				c.live(frame{RequestID: "server"}, event.kind, payload, event.message.ConversationID, event.source, event.until)
+				c.live(frame{RequestID: "server"}, event.kind, payload, conversationID, event.source, event.until)
 				if event.kind == "message.new" || event.kind == "message.changed" {
 					c.live(frame{RequestID: "server"}, "account.summary.changed", map[string]bool{"reconcile": true}, event.message.ConversationID, nil, time.Time{})
 				}

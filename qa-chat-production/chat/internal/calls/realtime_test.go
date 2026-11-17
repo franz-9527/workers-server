@@ -8,22 +8,23 @@ import (
 
 type callWakePublisher struct {
 	committed int
-	changed   []ports.CommittedMessage
+	changed   []ports.CallChange
 }
 
 func (p *callWakePublisher) Committed(ports.CommittedMessage) { p.committed++ }
-func (p *callWakePublisher) CallChanged(m ports.CommittedMessage) {
+func (p *callWakePublisher) CallChanged(m ports.CallChange) {
 	p.changed = append(p.changed, m)
 }
 
 func TestNotifyCallUsesRealtimeWakeWithoutCreatingMessage(t *testing.T) {
 	publisher := &callWakePublisher{}
 	service := &Service{publisher: publisher}
-	service.notifyCall(View{ConversationID: "7", PolicyVersion: "3"})
+	service.notifyCall(View{CallID: "9", ConversationID: "7", PolicyVersion: "3", Epoch: "2", Revision: "5", State: Rejected})
 	if publisher.committed != 0 || len(publisher.changed) != 1 {
 		t.Fatalf("unexpected wake counts committed=%d changed=%d", publisher.committed, len(publisher.changed))
 	}
-	if publisher.changed[0].ConversationID != "7" || publisher.changed[0].PolicyVersion != "3" {
-		t.Fatalf("unexpected call wake %+v", publisher.changed[0])
-	}
+	wake := publisher.changed[0]
+    if wake.ConversationID != "7" || wake.CallID != "9" || wake.PolicyVersion != "3" || wake.AttemptEpoch != "2" || wake.Revision != "5" || wake.State != "rejected" {
+        t.Fatalf("unexpected call wake %+v", wake)
+    }
 }
