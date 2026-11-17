@@ -51,7 +51,7 @@ async function run() {
   assert.strictEqual(result.items[1].reviewNotice.status, 'queued')
   assert.strictEqual(result.items[2].reviewNotice.status, 'sent', 'cloud receipt remains authoritative')
   assert.strictEqual(context.decorateRecord(result.items[0], 'worker').reviewNoticeText, '暂无发送记录')
-  assert.strictEqual(context.decorateRecord(records[3], 'worker').reviewNoticeText, '审核后通知申请人')
+  assert.strictEqual(context.decorateRecord(records[3], 'worker').reviewNoticeText, '审核后发送')
   fallback = new Error('offline')
   const failed = await page.loadWorkerReviewPage(1, '')
   assert.strictEqual(context.decorateRecord(failed.items[0], 'worker').reviewNoticeText, '审核结果通知状态查询失败，请稍后刷新')
