@@ -1,6 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+PHP_COMMAND="$(command -v php || true)"
+[[ -n "$PHP_COMMAND" && -x "$PHP_COMMAND" ]] || { echo 'QA_PHP_CLI_NOT_FOUND: PHP 8.3.36+ required' >&2; exit 2; }
+PHP_BIN="$(readlink -f -- "$PHP_COMMAND")"
+if [[ -n "${CHAT_PHP_BIN:-}" && "$(readlink -f -- "$CHAT_PHP_BIN")" != "$PHP_BIN" ]]; then
+  echo 'QA_PHP_BINARY_MISMATCH: CHAT_PHP_BIN must resolve to the validated php command' >&2
+  exit 2
+fi
+PHP_VERSION="$("$PHP_BIN" -r 'echo PHP_VERSION;')"
+"$PHP_BIN" -r '
+if (PHP_SAPI !== "cli" || PHP_VERSION_ID < 80336) {
+    fwrite(STDERR, "QA_PHP_VERSION_REQUIRED: PHP 8.3.36+; got " . PHP_VERSION . "\n");
+    exit(2);
+}
+$required = ["pdo_mysql", "sodium", "mbstring", "curl", "gd"];
+$missing = array_values(array_filter($required, static function ($extension) { return !extension_loaded($extension); }));
+if ($missing) {
+    fwrite(STDERR, "QA_PHP_EXTENSIONS_MISSING: " . implode(",", $missing) . "\n");
+    exit(2);
+}
+' || { echo 'QA_PHP_RUNTIME_INVALID' >&2; exit 2; }
+export CHAT_PHP_BIN="$PHP_BIN" CHAT_AUTH_TEST_PHP="$PHP_BIN" CHAT_CALLS_TEST_PHP="$PHP_BIN"
+echo "QA_PHP_RUNTIME: PHP $PHP_VERSION ($PHP_BIN)"
 repo_root=$(cd .. && pwd -P)
 site=/www/wwwroot/worker
 legacy_state=/var/lib/bixuan-chat-prod
@@ -41,25 +63,25 @@ node tools/test_chat_calls.js
 node tools/test_chat_call_media_ux.js
 echo "L1 snapshot front-end regression suites passed"
 
-php server/tests/chat_collaboration_policy_contract.php
-php server/tests/chat_participant_contract.php
-php server/tests/chat_schema_contract.php
-php server/tests/chat_storage_contract.php
-php server/tests/chat_text_security_contract.php
-php server/tests/v250_platform_order_application.php
-php server/tests/v250_platform_order_smoke.php
-php server/tests/v250_public_demo_detail_boundary_regression.php
-php server/tests/v250_admin_workbench_read_split_regression.php
-php server/tests/v260_message_delivery_failure_policy.php
-php server/tests/v260_message_outbox_dispatch_policy.php
-php server/tests/v260_paid_sms_receipt_policy.php
+"$PHP_BIN" server/tests/chat_collaboration_policy_contract.php
+"$PHP_BIN" server/tests/chat_participant_contract.php
+"$PHP_BIN" server/tests/chat_schema_contract.php
+"$PHP_BIN" server/tests/chat_storage_contract.php
+"$PHP_BIN" server/tests/chat_text_security_contract.php
+"$PHP_BIN" server/tests/v250_platform_order_application.php
+"$PHP_BIN" server/tests/v250_platform_order_smoke.php
+"$PHP_BIN" server/tests/v250_public_demo_detail_boundary_regression.php
+"$PHP_BIN" server/tests/v250_admin_workbench_read_split_regression.php
+"$PHP_BIN" server/tests/v260_message_delivery_failure_policy.php
+"$PHP_BIN" server/tests/v260_message_outbox_dispatch_policy.php
+"$PHP_BIN" server/tests/v260_paid_sms_receipt_policy.php
 echo "Non-AV pure PHP contracts passed"
 
 python3 chat/deploy/test-bt-deploy.py . main
 echo "BaoTa Git deployment, rollback and release retention passed"
 
 sudo id www >/dev/null 2>&1 || sudo useradd --system --user-group www
-sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /www/server/php/83/bin /var/lib/chatqa-bin
+sudo mkdir -p "$site" "$legacy_state" /www/backup-control/bixuan-chat/production /var/lib/chatqa-bin
 sudo chown www:www "$legacy_state"
 sudo chmod 0700 "$legacy_state"
 # Simulate the legacy launcher's permissive lock file; migration must normalize it safely.
@@ -69,8 +91,7 @@ sudo chown root:www /www/backup-control/bixuan-chat/production
 sudo chmod 2750 /www/backup-control/bixuan-chat/production
 sudo cp -R server/. "$site/"
 sudo cp -R chat "$site/"
-sudo ln -s "$(command -v php)" /www/server/php/83/bin/php
-php=/www/server/php/83/bin/php
+php="$PHP_BIN"
 sudo chown root:www "$site/chat"
 sudo chmod 0750 "$site/chat"
 sudo chown 999:999 /var/lib/chatqa-bin
@@ -97,9 +118,9 @@ export CHAT_AUTH_TEST_INTEGRATION=1
 export CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:3306
 export CHAT_INTEGRATION_ADMIN_PASSWORD=fixture
 export CHAT_AUTH_TEST_MYSQL_USER_HOST=%
-php server/tests/chat_policy_contract.php
-php server/tests/chat_reminder_contract.php
-php server/tests/chat_storage_contract.php
+"$PHP_BIN" server/tests/chat_policy_contract.php
+"$PHP_BIN" server/tests/chat_reminder_contract.php
+"$PHP_BIN" server/tests/chat_storage_contract.php
 echo "Non-AV MySQL authorization, revocation, reminder and storage contracts passed"
 mysql -e "CREATE DATABASE chat_fixture CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER 'chat_fixture'@'%' IDENTIFIED BY 'fixture-only'; GRANT ALL ON chat_fixture.* TO 'chat_fixture'@'%';"
 mysql chat_fixture < server/database/database.sql
@@ -130,19 +151,19 @@ if ! command -v mysqlbinlog >/dev/null; then
 fi
 binlog=$(command -v mysqlbinlog)
 "$binlog" --no-defaults --version
-sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog" --check
+sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture "$PHP_BIN" "$site/chat/deploy/init-production-recovery.php" "$binlog" --check
 (while :; do mysql chat_fixture -e "UPDATE system_settings SET updated_at=NOW(6) WHERE setting_key='chat.enabled'" >/dev/null 2>&1; sleep .15; done) &
 writer=$!
 trap 'kill "$writer" 2>/dev/null || true; docker logs --tail 20 chatqa-mysql || true' ERR
-sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture php "$site/chat/deploy/init-production-recovery.php" "$binlog"
+sudo env CHAT_RECOVERY_DB_USER=root CHAT_RECOVERY_DB_PASSWORD=fixture "$PHP_BIN" "$site/chat/deploy/init-production-recovery.php" "$binlog"
 kill "$writer"
 wait "$writer" 2>/dev/null || true
 trap - ERR
-sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="ready") exit(1); echo "PHP recovery gate is readable\n";' "$site/bootstrap.php"
-sudo -u www php -d "open_basedir=$site/:/tmp/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="unreadable") exit(1); echo "PHP reports an inaccessible recovery gate separately\n";' "$site/bootstrap.php"
+sudo -u www "$PHP_BIN" -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="ready") exit(1); echo "PHP recovery gate is readable\n";' "$site/bootstrap.php"
+sudo -u www "$PHP_BIN" -d "open_basedir=$site/:/tmp/" -r 'require $argv[1]; if (WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production")!=="unreadable") exit(1); echo "PHP reports an inaccessible recovery gate separately\n";' "$site/bootstrap.php"
 
 # Exercise the same managed first-enable path used by the super-administrator UI.
-sudo -u www php -r '
+sudo -u www "$PHP_BIN" -r '
 require $argv[1];
 $db=db();
 $cipher=(new WorkerAdmin\Foundation\ApplicationContainer($db))->privateCipher();
@@ -176,7 +197,7 @@ mysql chat_fixture -e "UPDATE system_settings SET setting_value='0' WHERE settin
 cd chat
 export CHAT_CALLS_MYSQL_ADDR="$CHAT_INTEGRATION_MYSQL_ADDR"
 export CHAT_CALLS_MYSQL_PASSWORD="$CHAT_INTEGRATION_ADMIN_PASSWORD"
-export CHAT_CALLS_TEST_PHP=/usr/bin/php
+export CHAT_CALLS_TEST_PHP="$PHP_BIN"
 export CHAT_CALLS_SCHEMA_FILE="$PWD/../server/database/upgrades/2.7.0.sql"
 mkdir -p bin
 go build -trimpath -ldflags="-X github.com/franz-9527/workers/chat/internal/bootstrap.sourceRevision=$source_sha -X github.com/franz-9527/workers/chat/internal/bootstrap.sourceDirty=false" -o bin/chatd ./cmd/chatd
@@ -197,8 +218,7 @@ cd ..
 # Seed an older installed binary so the real signed updater exercises the migration and switch.
 base=$(printf '0%.0s' {1..40})
 sudo install -d -m 0755 "$site/chat/bin/releases/$base"
-sudo install -m 0755 /tmp/chatqa "$site/chat/bin/releases/$base/chatd"
-sudo ln -s "releases/$base" "$site/chat/bin/current"
+sudo install -m 0755 /tmp/chatqa "$site/chat/bin/releases/$base/chatd"sudo ln -s "releases/$base" "$site/chat/bin/current"
 sudo ln -s current/chatd "$site/chat/bin/chatd"
 sudo install -d -m 0700 -o root -g root "$site/chat/update"
 sudo bash -s -- "$site/chat/update" "$PWD" "$site" <<'SH'
@@ -230,7 +250,7 @@ echo "QA lock state: $(sudo stat -c '%U:%G:%a' "$state/run.lock")"
 echo "QA production status: $(sudo cat "$site/storage/private/chat-runtime-control/production-text-status" 2>/dev/null || echo missing)"
 sudo ls -la "$state"
 sudo ls -la "$legacy_state.migrated" || true
-sudo -u www php -r 'require $argv[1]; $direct=db()->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]); $helper=setting("chat.go_production_text_requested","0"); echo "Post-deploy request direct=".(string)$direct." helper=".(string)$helper."\n";' "$site/bootstrap.php"
+sudo -u www "$PHP_BIN" -r 'require $argv[1]; $direct=db()->fetchValue("SELECT setting_value FROM system_settings WHERE setting_key=:key LIMIT 1",["key"=>"chat.go_production_text_requested"]); $helper=setting("chat.go_production_text_requested","0"); echo "Post-deploy request direct=".(string)$direct." helper=".(string)$helper."\n";' "$site/bootstrap.php"
 set -x
 test "$(sudo readlink "$site/chat/bin/current")" = "releases/$source_sha"
 test "$(sudo stat -c '%U:%G:%a' "$state")" = "www:www:700"
@@ -258,7 +278,7 @@ probe_config() {
 probe_config "$state/production.text.json" | python3 -c 'import json,sys;x=json.load(sys.stdin);assert x["business_enabled"] and x["infrastructure_ready"] and x["mysql"]["state"]=="ready" and x["redis"]["state"]=="ready",x'
 
 # Seed a synthetic WeChat token cache; no vendor network call is made.
-sudo -u www php -r '
+sudo -u www "$PHP_BIN" -r '
 $dir=$argv[1]."/storage/private/wechat-tokens";
 if(!is_dir($dir) && !mkdir($dir,0700,true)) exit(1);
 $app="wxfixture"; $env="production"; $now=time();
@@ -292,7 +312,7 @@ callback_http=$(curl -sS -o /tmp/chatqa-callback.txt -w '%{http_code}' http://12
 echo "Optional media callback without L1 configuration HTTP=$callback_http"
 test "$callback_http" = 404
 ! grep -q 'healthy 9501 /chat/api/v1/av/callback' chat/deploy/bt-run.sh
-sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) { fwrite(STDERR,"PHP_GO_BUSINESS_NOT_READY ".json_encode($s)."\n"); exit(1); } echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
+sudo -u www "$PHP_BIN" -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; $s=(new WorkerAdmin\Application\Chat\ChatGoRuntimeStatus)->status(); if (empty($s["business_ready"])) { fwrite(STDERR,"PHP_GO_BUSINESS_NOT_READY ".json_encode($s)."\n"); exit(1); } echo "PHP sees Go business ready\n";' "$site/bootstrap.php"
 text_status=$(sudo cat "$site/storage/private/chat-runtime-control/production-text-status")
 echo "Go production non-AV status=$text_status"
 test "$text_status" = READY
@@ -331,7 +351,7 @@ test "$blocked" = 1
 callback_after_block=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:9501/chat/api/v1/av/callback)
 echo "Optional callback while recovery blocked HTTP=$callback_after_block"
 test "$callback_after_block" = 503
-php_gate_status=$(sudo -u www php -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; echo WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production");' "$site/bootstrap.php")
+php_gate_status=$(sudo -u www "$PHP_BIN" -d "open_basedir=$site/:/tmp/:/www/backup-control/bixuan-chat/production/" -r 'require $argv[1]; echo WorkerAdmin\Infrastructure\Chat\ChatRecoveryGate::status(app_config("chat"),"production");' "$site/bootstrap.php")
 echo "PHP recovery gate status=$php_gate_status"
 test "$php_gate_status" = blocked
 sudo sed -i 's/"state":"blocked"/"state":"ready"/' "$gate"
@@ -397,8 +417,7 @@ data = {
         "recovery_gate": True,
         "source_clean": True,
     },
-    "cases": list(release.TEXT_CASES),
-}
+    "cases": list(release.TEXT_CASES),}
 out = pathlib.Path(os.environ["QA_REPO_ROOT"]) / "l1-automation-evidence.json"
 out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"L1 automation evidence written: {out} ({len(data['cases'])} cases)")

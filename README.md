@@ -30,7 +30,7 @@
 2. 禁止回到 workers 工作区运行测试。需要独立 Runner/MySQL/Redis 环境时，在本仓库准备最小快照、合成夹具和临时 workflow；不需要运行环境的静态审查不得伪装成测试通过。
 3. 临时输入统一放在 .validation/；记录来源仓库、完整源提交 SHA、文件清单/校验值、测试命令和运行时版本。检查可公开性后按具体路径 git add -f，禁止整仓强制添加。临时 workflow 使用 temporary-*.yml，放在 main 按自身路径触发或手动执行。
 4. workflow 默认仅 contents: read，设置超时及按 workflow/ref 的 concurrency；普通测试启用 cancel-in-progress: true。测试只连接本次创建的隔离服务，禁止生产连接和真实短信、支付、微信通知等外部业务调用。
-5. PHP 新开发目标为 8.3.36，数据库兼容验证使用 MySQL 5.7.44；Go 版本读取被测 go.mod，Redis 版本按被测模块规范固定。旧 PHP 兼容测试须明确单独声明，不混作新目标验收。
+5. PHP CLI 测试运行时统一为 8.3.36（PHP 新开发目标及当前 CI 固定版本）。当前保留的 QA workflow 必须显式安装并校验 PHP 8.3.36；`verify.sh` 使用同一已验证的绝对 CLI 路径执行全部 PHP 测试，不得通过软链接伪装版本。此前临时调度器维护测试曾使用 PHP 7.4.33，已按测试仓清理规范从 main 删除；历史 Actions 运行记录仍可能显示旧版本。源码快照中的 `min_php: 7.4.0`、SQL 注释和旧兼容注释只描述历史兼容下限，不会选择或启动 PHP 7.4；源码快照受 `SOURCE_SHA` / `SOURCE_MANIFEST` 校验，不在测试仓库单独改写业务文件。数据库兼容验证使用 MySQL 5.7.44；Go 版本读取被测 go.mod，Redis 版本按被测模块规范固定。
 6. 检查 run → jobs → steps → logs。记录 source SHA、测试仓库提交 SHA、run URL、实际运行时版本、命令和结果；有 artifact 时显式设置 retention-days: 7。结果写入正式仓库相关交接记录或提交说明，临时日志只留 Actions；workflow 不自动提交日志和结果。
 7. 确认正式代码与回归已提交到 workers 指定分支、结果已交接且没有在执行/排队的依赖任务后，删除全部临时源码、夹具、压缩包、结果和 workflow。失败或中断也需记录结果并清理；仍需复测的输入必须标明负责人和待办，不作为长期基础设施留下。
 8. 暂存清理改动，执行 python3 tools/check-clean-state.py 和 git diff --cached --check，检查 diff 后用普通提交完成收尾，再核对远端 main。测试源码准备、必要修正和最终清理应各有明确目的，避免无意义空提交和细碎结果提交。

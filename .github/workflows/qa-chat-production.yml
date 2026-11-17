@@ -35,7 +35,18 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          php qa-chat-production/seed-non-av.php &
+          php_bin="$(command -v php || true)"
+          [[ -n "$php_bin" && -x "$php_bin" ]]
+          php_bin="$(readlink -f -- "$php_bin")"
+          "$php_bin" -r '
+            if (PHP_SAPI !== "cli" || PHP_VERSION_ID < 80336) exit(2);
+            foreach (["pdo_mysql", "sodium", "mbstring", "curl", "gd"] as $extension) {
+              if (!extension_loaded($extension)) { fwrite(STDERR, "missing PHP extension: " . $extension . "\n"); exit(2); }
+            }
+          '
+          export CHAT_PHP_BIN="$php_bin" CHAT_AUTH_TEST_PHP="$php_bin" CHAT_CALLS_TEST_PHP="$php_bin"
+          echo "QA_PHP_RUNTIME: $("$php_bin" -r 'echo PHP_VERSION;') ($php_bin)"
+          "$php_bin" qa-chat-production/seed-non-av.php &
           seed_pid=$!
           trap 'kill "$seed_pid" 2>/dev/null || true' EXIT
           bash qa-chat-production/verify.sh
@@ -43,7 +54,6 @@ jobs:
           trap - EXIT
         env:
           CHAT_INTEGRATION: '1'
-          CHAT_AUTH_TEST_PHP: /usr/bin/php
           CHAT_INTEGRATION_REDIS_ADDR: 127.0.0.1:6379
           CHAT_AUTH_TEST_REDIS_ADDRESS: 127.0.0.1:6379
       - uses: actions/upload-artifact@v4
