@@ -1,1 +1,0 @@
-Temporary isolated regression snapshot for message outbox and mini-admin review. Source files are copied from the exact workers candidate SHA recorded in SOURCE_SHA. This directory and its workflow must be removed after the run; do not retain a second product source tree in workers-server.
