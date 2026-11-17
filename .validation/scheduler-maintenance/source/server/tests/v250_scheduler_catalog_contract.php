@@ -78,6 +78,15 @@ $service = file_get_contents($root . '/server/app/Services/SchedulerService.php'
 $gateway = file_get_contents($root . '/server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php');
 schedulerCatalogContract(is_string($service), '可读取旧调度器源码');
 schedulerCatalogContract(is_string($gateway), '可读取防腐网关源码');
+schedulerCatalogContract(
+    strpos((string)$gateway, 'runWithExecutionGuard($task') !== false,
+    '防腐网关所有任务统一经过维护文件与全局互斥门禁'
+);
+schedulerCatalogContract(
+    strpos((string)$gateway, 'finishResult($result, $afterRun)') !== false,
+    '钱包充值到期清理等后置动作由网关在全局门禁内执行'
+);
+
 
 $matched = preg_match(
     '/\$tasks\s*=\s*\$task\s*===\s*\'all\'\s*\?\s*\[(.*?)\]\s*:\s*\[\$task\];/s',
