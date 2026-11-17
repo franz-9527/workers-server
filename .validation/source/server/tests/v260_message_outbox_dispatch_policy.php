@@ -118,6 +118,7 @@ $dispatch->dispatch();
 dispatchPolicyAssert(end($queue->failed)[2]===null,'fifth SMS transient failure is terminal');
 dispatchPolicyAssert(count($queue->fallbacks)===$fallbacks,'terminal SMS failure never recursively degrades');
 
+$subscribe->failure='微信订阅消息发送失败（43101）：permission unavailable';
 $queue->rows=[['id'=>6,'topic'=>'wechat_subscribe','business_key'=>'wx-43101-quota-failure','payload_json'=>$basePayload,'attempt_count'=>0]];
 $queue->invalidateFailure='quota database unavailable';$failureCount=count($queue->failed);$fallbackCount=count($queue->fallbacks);$dispatch->dispatch();
 dispatchPolicyAssert(count($queue->failed)===$failureCount+1&&end($queue->failed)[0]===6&&end($queue->failed)[2]===null,'43101 reaches terminal failure when quota invalidation throws');
