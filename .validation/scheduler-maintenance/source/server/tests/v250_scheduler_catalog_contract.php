@@ -79,7 +79,7 @@ $gateway = file_get_contents($root . '/server/app/Infrastructure/Scheduling/Lega
 schedulerCatalogContract(is_string($service), '可读取旧调度器源码');
 schedulerCatalogContract(is_string($gateway), '可读取防腐网关源码');
 schedulerCatalogContract(
-    strpos((string)$gateway, 'runWithExecutionGuard($task') !== false,
+    preg_match('/runWithExecutionGuard\s*\(\s*\$task/s', (string)$gateway) === 1,
     '防腐网关所有任务统一经过维护文件与全局互斥门禁'
 );
 schedulerCatalogContract(

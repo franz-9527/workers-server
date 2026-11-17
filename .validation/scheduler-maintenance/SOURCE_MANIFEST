@@ -1,5 +1,5 @@
 source_repo=franz-9527/workers
-source_sha=1531a0fec25113cf3ffba364ecfaaa24264bfa1c
+source_sha=fbebaf499c48c0f68f59cb2da2f71ecd49e9e12e
 runtime=PHP 7.4.33
 database=MySQL 5.7.44
 purpose=maintenance-gate-and-global-scheduler-lock-regression
@@ -13,7 +13,7 @@ server/app/Infrastructure/Scheduling/ConfiguredOrderDeadlineBridge.php 4cfe8d508
 server/app/Core/Database.php a671a8326daa9abd8fde041c31716db263fe206a
 server/app/Contracts/SchedulerGateway.php 64824fb9236d696baf68c282f263290bacdf3512
 server/app/Application/Scheduling/SchedulerRunner.php 6c2b82b6028006140828319134d542e1b6b7f93a
-server/tests/v250_scheduler_catalog_contract.php a7c40068a3973154dbe82e7069dea83eff803794
+server/tests/v250_scheduler_catalog_contract.php 38a8958a0396e24a424f5c3ccd0e957b5cb73adc
 server/tests/v260_scheduler_task_backoff_mysql.php 6b2dd886833ac347bb39e69b07e7a27d036fe0cc
 server/bin/scheduler.php 2f7b0e2392910a06390c72bd8f799464e6a4d5ee
 tools/test-wallet-recharge-scheduler-wiring.php bb97001f7cb7cf77d7816705763d3bd03a12119c
