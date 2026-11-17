@@ -86,7 +86,7 @@ schedulerCatalogContract(
     strpos((string)$gateway, 'finishResult($result, $afterRun)') !== false,
     '钱包充值到期清理等后置动作由网关在全局门禁内执行'
 );
-    strpos((string)$gateway, '$this->scheduler->run($task,') !== false
+    preg_match('/\$this->scheduler->run\s*\(\s*\$task\s*,\s*\$force\s*,/s', (string)$gateway) === 1
         && strpos((string)$gateway, 'function (callable $runLegacyTasks)') !== false,
     '独立任务、旧任务和后置清理由同一次受保护调度回调编排'
 );
