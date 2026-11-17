@@ -34,7 +34,7 @@ try{
  $db->execute("INSERT INTO notifications(id,public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(1,'legacy-notice','worker',1,'in_app','worker_profile_review_result','师傅入驻审核通过','审核通过',:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['data'=>json_encode(['cloud_id'=>'CW-skipped','review_status'=>'approved'],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]);
  $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(2),(3)');
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(3,'CW-missing-user',43,'用户映射缺失师傅')");
- WorkerAdminInfrastructureMessagingOrderNotificationProjector::queueWorkerReviewResult($db,3,'CW-missing-user','approved','','用户映射缺失师傅');
+ \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::queueWorkerReviewResult($db,3,'CW-missing-user','approved','','用户映射缺失师傅');
  $missingUserNotice=$db->fetch("SELECT content FROM notifications WHERE recipient_type='worker' AND recipient_id=3 AND template_key='worker_profile_review_result' LIMIT 1");
  $missingUserOutbox=$db->fetch("SELECT status,last_error FROM message_outbox WHERE JSON_UNQUOTE(JSON_EXTRACT(payload_json,'$.cloud_worker_id'))='CW-missing-user' LIMIT 1");
  ensure($missingUserNotice&&strpos($missingUserNotice['content'],'用户账号')!==false,'missing local user row does not silently drop the in-app review result');
