@@ -185,13 +185,13 @@ namespace {
                 '[FAIL] '.$label.' actual='.var_export($actual,true).' expected='.var_export($expected,true)
             );
         }
-        fwrite(STDOUT, '[PASS] '.$label."\\n");
+        fwrite(STDOUT, '[PASS] '.$label."\n");
     }
 
     if (getenv('V260_SCHEDULER_TASK_BACKOFF_MYSQL_TEST') !== '1'
         || getenv('GITHUB_ACTIONS') !== 'true'
         || getenv('V250_DB_NAME') !== 'worker_test') {
-        fwrite(STDERR, "This test is restricted to GitHub Actions worker_test.\\n");
+        fwrite(STDERR, "This test is restricted to GitHub Actions worker_test.\n");
         exit(2);
     }
 
@@ -356,6 +356,10 @@ namespace {
             SchedulerTaskBackoffFakeTasks::$chat,
         ];
         file_put_contents($maintenancePath,'maintenance test');
+        $directDispatchCalls=SchedulerTaskBackoffFakePaidSms::$dispatchCalls;
+        $directMaintenance=$scheduler->run('paid_sms_dispatch',false);
+        schedulerBackoffSame($directMaintenance['status'],'skipped_maintenance','direct legacy SchedulerService run observes maintenance gate');
+        schedulerBackoffSame(SchedulerTaskBackoffFakePaidSms::$dispatchCalls,$directDispatchCalls,'direct legacy SchedulerService run has no maintenance side effect');
         $maintenanceCallbacks=0;
         foreach (['media_promote','platform_auto_publish','measurement_release','auto_cancel','wallet_reconcile','all'] as $blockedTask) {
             $blocked=$gateway->run($blockedTask,false,function(array $result) use (&$maintenanceCallbacks): array {
@@ -387,11 +391,17 @@ namespace {
             SchedulerTaskBackoffFakeTasks::$chat,
         ];
         $lockedCallbacks=0;
-        $locked=$gateway->run('all',false,function(array $result) use (&$lockedCallbacks): array {
-            $lockedCallbacks++;
-            return ['after_run_called'=>true];
-        });
-        schedulerBackoffSame($locked['status'],'skipped_locked','scheduler lock contention skips the whole Gateway run');
+        foreach (['media_promote','platform_auto_publish','measurement_release','auto_cancel','wallet_reconcile','all'] as $blockedTask) {
+            $locked=$gateway->run($blockedTask,false,function(array $result) use (&$lockedCallbacks): array {
+                $lockedCallbacks++;
+                return ['after_run_called'=>true];
+            });
+            schedulerBackoffSame($locked['status'],'skipped_locked','scheduler lock contention blocks '.$blockedTask);
+        }
+        $directCallsBeforeLock=SchedulerTaskBackoffFakePaidSms::$dispatchCalls;
+        $directLocked=$scheduler->run('paid_sms_dispatch',false);
+        schedulerBackoffSame($directLocked['status'],'skipped_locked','direct legacy SchedulerService run observes scheduler lock contention');
+        schedulerBackoffSame(SchedulerTaskBackoffFakePaidSms::$dispatchCalls,$directCallsBeforeLock,'direct legacy SchedulerService run has no lock-contention side effect');
         schedulerBackoffSame($lockedCallbacks,0,'locked skip never invokes post-run callback');
         schedulerBackoffSame([
             SchedulerTaskBackoffFakeTasks::$media,
@@ -407,6 +417,8 @@ namespace {
         schedulerBackoffSame((int)$lockDb->fetchValue("SELECT GET_LOCK('wall_worker_admin_upgrade',0)"),1,'test connection acquires upgrade lock');
         $upgradeLocked=$gateway->run('media_promote',false);
         schedulerBackoffSame($upgradeLocked['status'],'skipped_locked','upgrade lock contention skips independent media task');
+        $directUpgradeLocked=$scheduler->run('paid_sms_dispatch',false);
+        schedulerBackoffSame($directUpgradeLocked['status'],'skipped_locked','direct legacy SchedulerService run observes upgrade lock contention');
         schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$media,$beforeLocked[0],'upgrade lock contention never enters media task');
         $lockDb->fetchValue("SELECT RELEASE_LOCK('wall_worker_admin_upgrade')");
 
