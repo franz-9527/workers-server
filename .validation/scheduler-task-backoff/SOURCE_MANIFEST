@@ -1,0 +1,6 @@
+a671a8326daa9abd8fde041c31716db263fe206a  .validation/scheduler-task-backoff/source/server/app/Core/Database.php
+be10b4457cbcfef176b9bed15e38adca979c9d06  .validation/scheduler-task-backoff/source/server/app/Infrastructure/Persistence/SchedulerOrderEventWriter.php
+d7226669f523830fe63566c708b2210696df73fd  .validation/scheduler-task-backoff/source/server/app/Infrastructure/Scheduling/SchedulerTaskFailureBackoff.php
+ebd6e8ef56a30022eea9df0d541d182260cfeb6f  .validation/scheduler-task-backoff/source/server/app/Services/SchedulerService.php
+9e751a04a64a7cb6634f78ced3ec95e1274ca75f  .validation/scheduler-task-backoff/source/server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php
+abf632d09461372f8d91f749ca01e9a097f1bd6b  .validation/scheduler-task-backoff/source/server/tests/v260_scheduler_task_backoff_mysql.php
