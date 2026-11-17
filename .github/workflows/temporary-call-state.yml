@@ -68,7 +68,7 @@ jobs:
       - name: Check Go formatting
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           files=(
             qa-chat-production/chat/internal/calls/authority.go
             qa-chat-production/chat/internal/calls/lifecycle.go
@@ -81,12 +81,16 @@ jobs:
             qa-chat-production/chat/internal/socket/gateway_test.go
             qa-chat-production/chat/internal/socket/realtime.go
           )
-          diff=$(gofmt -d "${files[@]}")
-          if [[ -n "$diff" ]]; then
-            printf '%s\n' "$diff"
-            echo 'GOFMT_REQUIRED'
-            exit 1
-          fi
+          failed=0
+          for file in "${files[@]}"; do
+            echo "=== GOFMT $file ==="
+            output=$(gofmt -d "$file" 2>&1)
+            rc=$?
+            printf '%s\n' "$output"
+            echo "GOFMT_EXIT=$rc"
+            if [[ $rc -ne 0 || -n "$output" ]]; then failed=1; fi
+          done
+          [[ $failed -eq 0 ]] || { echo 'GOFMT_REQUIRED'; exit 1; }
           echo 'Go formatting passed'
       - name: PHP admin view syntax
         run: php -l qa-chat-production/server/views/admin/chat-calls.php
