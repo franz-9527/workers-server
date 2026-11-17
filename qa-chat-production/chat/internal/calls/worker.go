@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/franz-9527/workers/chat/internal/policy"
 	"github.com/franz-9527/workers/chat/internal/ports"
 	"strconv"
 	"sync"
@@ -15,39 +14,26 @@ func (s *Service) Available(ctx context.Context, p ports.Principal, q Request) (
 	if !positive(q.ConversationID) {
 		return nil, ErrInvalid
 	}
-	if e := s.guard.Validate(ctx, p); e != nil {
+	rows, e := s.db.QueryContext(ctx, "SELECT CAST(actor_id AS CHAR) FROM chat_members WHERE conversation_id=? AND actor_id<>? AND can_read=1 AND can_send=1 ORDER BY actor_id LIMIT 50", string(q.ConversationID), string(p.ActorID))
+	if e != nil {
 		return nil, e
 	}
-	// Keep membership authorization and peer discovery in one transaction:
-	// a revoked member must not retain a race window for peer-count probing.
 	peers := []ports.ID{}
-	e := s.tx(ctx, func(tx *sql.Tx) error {
-		own, e := s.guard.Member(ctx, tx, p, q.ConversationID, false)
-		if e != nil {
-			return e
+	for rows.Next() {
+		var id ports.ID
+		if e = rows.Scan(&id); e != nil {
+			rows.Close()
+			return nil, e
 		}
-		if !own.CanRead {
-			return policy.ErrDenied
-		}
-		rows, e := tx.QueryContext(ctx, "SELECT CAST(actor_id AS CHAR) FROM chat_members WHERE conversation_id=? AND actor_id<>? AND can_read=1 AND can_send=1 ORDER BY actor_id LIMIT 50", string(q.ConversationID), string(p.ActorID))
-		if e != nil {
-			return e
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var id ports.ID
-			if e = rows.Scan(&id); e != nil {
-				return e
-			}
-			peers = append(peers, id)
-		}
-		return rows.Err()
-	})
+		peers = append(peers, id)
+	}
+	e = rows.Err()
+	rows.Close()
 	if e != nil {
 		return nil, e
 	}
 	if len(peers) != 1 {
-		return map[string]any{"audio": false, "video": false, "reason": "no_peer", "peers": []ports.ID{}}, nil
+		return map[string]any{"audio": false, "video": false, "reason": "no_peer", "peers": []ports.ID{}}, s.guard.Validate(ctx, p)
 	}
 	direct := false
 	e = s.tx(ctx, func(tx *sql.Tx) error {

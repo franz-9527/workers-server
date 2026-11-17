@@ -126,7 +126,6 @@ func (s *Service) Action(ctx context.Context, p ports.Principal, action string, 
 		return result, ErrInvalid
 	}
 	hash := operation(action, q)
-	changed := false
 	e := s.tx(ctx, func(tx *sql.Tx) error {
 		initial, e := s.load(ctx, tx, q.CallID, false)
 		if e != nil {
@@ -218,16 +217,13 @@ func (s *Service) Action(ctx context.Context, p ports.Principal, action string, 
 			return ErrInvalid
 		}
 		result = r.view()
-		changed = r.Revision != initial.Revision || r.Epoch != initial.Epoch || r.State != initial.State
 		return s.remember(ctx, tx, p, q, hash, result)
 	})
 	if e == nil {
 		if result.State.Terminal() {
 			_ = s.ensureTerminalMessage(ctx, result.CallID)
 		}
-		if changed {
-			s.notifyCall(result)
-		}
+		s.notifyCall(result)
 	}
 	return result, e
 }
@@ -478,7 +474,7 @@ func (s *Service) completeFallback(ctx context.Context, r record) error {
 	if e != nil || !validPermit(r, stopped) || stopped.State != "closed" {
 		return ErrUnavailable
 	}
-	e = s.tx(ctx, func(tx *sql.Tx) error {
+	return s.tx(ctx, func(tx *sql.Tx) error {
 		live, e := s.load(ctx, tx, r.CallID, true)
 		if e != nil {
 			return e
@@ -491,21 +487,11 @@ func (s *Service) completeFallback(ctx context.Context, r record) error {
 		if e != nil {
 			return e
 		}
-		policyVersion := live.Binding.PolicyVersion
-		if !policyVersion.Valid() {
-			policyVersion = live.PolicyVersion
-		}
-		live.Binding = Binding{Pool: target, PolicyVersion: policyVersion}
-		live.PolicyVersion = policyVersion
+		live.Binding = Binding{Pool: target}
 		_, e = tx.ExecContext(ctx, "UPDATE chat_call_legs SET prepared=0,ready=0 WHERE call_id=?", string(r.CallID))
 		if e != nil {
 			return e
 		}
-		r = live
 		return s.save(ctx, tx, live, "fallback")
 	})
-	if e == nil {
-		s.notifyCall(r.view())
-	}
-	return e
 }

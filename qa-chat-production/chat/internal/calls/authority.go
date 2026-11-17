@@ -11,7 +11,6 @@ import (
 )
 
 type Authority interface {
-	Member(context.Context, *sql.Tx, ports.Principal, ports.ID, bool) (ports.Grant, error)
 	Pair(context.Context, *sql.Tx, ports.Principal, ports.ID, ports.ID, bool) (ports.Grant, ports.Grant, error)
 	Validate(context.Context, ports.Principal) error
 }
@@ -34,17 +33,6 @@ func NewOrderAuthority(db *sql.DB, store *conversation.Store, env string) (*Orde
 }
 func (g *OrderAuthority) Validate(ctx context.Context, p ports.Principal) error {
 	return g.store.ValidatePrincipal(ctx, p)
-}
-func (g *OrderAuthority) Member(ctx context.Context, tx *sql.Tx, p ports.Principal, cid ports.ID, send bool) (ports.Grant, error) {
-	action := "read"
-	if send {
-		action = "send"
-	}
-	authority, err := g.store.LockAuthority(ctx, tx, ports.PolicyRequest{Actor: p, ConversationID: cid, Action: action})
-	if err != nil {
-		return ports.Grant{}, err
-	}
-	return g.store.LockProjection(ctx, tx, authority)
 }
 func (g *OrderAuthority) Pair(ctx context.Context, tx *sql.Tx, p ports.Principal, cid, peer ports.ID, send bool) (ports.Grant, ports.Grant, error) {
 	action := "read"

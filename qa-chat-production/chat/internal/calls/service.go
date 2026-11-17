@@ -159,19 +159,16 @@ func (s *Service) WithPublisher(p ports.MessagePublisher) *Service {
 	return s
 }
 
+type callChangePublisher interface {
+	CallChanged(ports.CommittedMessage)
+}
+
 func (s *Service) notifyCall(v View) {
-	if s.publisher == nil || !v.ConversationID.Valid() || !v.CallID.Valid() {
+	if s.publisher == nil || !v.ConversationID.Valid() {
 		return
 	}
-	if publisher, ok := s.publisher.(ports.CallChangePublisher); ok {
-		publisher.CallChanged(ports.CallChange{
-			ConversationID: v.ConversationID,
-			CallID:         v.CallID,
-			PolicyVersion:  v.PolicyVersion,
-			AttemptEpoch:   ports.ID(v.Epoch),
-			Revision:       ports.ID(v.Revision),
-			State:          string(v.State),
-		})
+	if publisher, ok := s.publisher.(callChangePublisher); ok {
+		publisher.CallChanged(ports.CommittedMessage{ConversationID: v.ConversationID, PolicyVersion: v.PolicyVersion})
 	}
 }
 func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
