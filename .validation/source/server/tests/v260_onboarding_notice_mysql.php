@@ -43,7 +43,7 @@ try{
  ensure($missingUserOutbox&&$missingUserOutbox['status']==='skipped','missing local user row is recorded as a non-sending outbox result');
  \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::recordWorkerReviewNotificationFailure($db,2,'CW-fallback','approved','故障通知师傅','审核已完成，但微信通知流程异常，请联系管理员');
  $fallbackNotice=$db->fetch("SELECT data_json FROM notifications WHERE recipient_type='worker' AND recipient_id=2 AND template_key='worker_profile_review_result' LIMIT 1");
- $fallbackOutbox=$db->fetch("SELECT status,last_error FROM message_outbox WHERE business_key='worker-review:CW-fallback:approved:review-1:skipped' LIMIT 1");
+ $fallbackOutbox=$db->fetch("SELECT status,last_error FROM message_outbox WHERE business_key='worker-review:CW-fallback:approved:review-2:skipped' LIMIT 1");
  ensure($fallbackNotice&&strpos((string)(json_decode((string)$fallbackNotice['data_json'],true)['wechat_skip_reason']??''),'通知流程异常')!==false,'notification failure still leaves a visible in-app review result');
  ensure($fallbackOutbox&&$fallbackOutbox['status']==='skipped'&&strpos($fallbackOutbox['last_error'],'通知流程异常')!==false,'notification failure is recorded as a terminal non-sending outbox row');
  \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::recordWorkerReviewNotificationFailure($db,0,'CW-no-local','approved','未映射师傅','未能建立本地师傅账号映射，通知无法发送');
