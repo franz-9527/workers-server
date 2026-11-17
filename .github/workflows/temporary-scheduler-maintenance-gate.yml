@@ -1,0 +1,82 @@
+name: Temporary scheduler maintenance gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/scheduler-maintenance/**'
+      - '.github/workflows/temporary-scheduler-maintenance-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduler-maintenance-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scheduler-php74-mysql57:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4.33'
+          extensions: pdo_mysql,mbstring
+          coverage: none
+      - name: Prepare isolated database
+        run: mysql -h127.0.0.1 -uroot -proot -e "CREATE DATABASE worker_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+      - name: PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=.validation/scheduler-maintenance/source
+          for file in \
+            server/app/Core/Database.php \
+            server/app/Contracts/SchedulerGateway.php \
+            server/app/Domain/Scheduling/SchedulerTaskCatalog.php \
+            server/app/Infrastructure/Scheduling/SchedulerTaskFailureBackoff.php \
+            server/app/Infrastructure/Scheduling/ConfiguredOrderDeadlineBridge.php \
+            server/app/Infrastructure/Persistence/SchedulerOrderEventWriter.php \
+            server/app/Services/SchedulerService.php \
+            server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php \
+            server/app/Application/Scheduling/SchedulerRunner.php \
+            server/app/Foundation/ApplicationContainer.php \
+            server/app/Infrastructure/Persistence/DatabaseWalletRechargeRepository.php \
+            server/app/Http/Admin/AdminKernel.php \
+            server/app/Http/Admin/Modules/SchedulerAdminModule.php \
+            server/app/Foundation/SchedulerAdminComposition.php \
+            server/bin/scheduler.php \
+            server/tests/v250_scheduler_catalog_contract.php \
+            server/tests/v260_scheduler_task_backoff_mysql.php \
+            tools/test-wallet-recharge-scheduler-wiring.php
+          do
+            php -l "$root/$file"
+          done
+      - name: Scheduler catalog contract
+        run: php .validation/scheduler-maintenance/source/server/tests/v250_scheduler_catalog_contract.php
+      - name: MySQL maintenance gate and task backoff regression
+        run: php .validation/scheduler-maintenance/source/server/tests/v260_scheduler_task_backoff_mysql.php
+        env:
+          V260_SCHEDULER_TASK_BACKOFF_MYSQL_TEST: '1'
+          V250_DB_NAME: worker_test
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+      - name: Wallet recharge scheduler wiring
+        run: php .validation/scheduler-maintenance/source/tools/test-wallet-recharge-scheduler-wiring.php
