@@ -54,6 +54,7 @@ jobs:
             server/app/Application/Messaging/MessageOutboxDispatch.php \
             server/app/Domain/Messaging/MessageDeliveryFailurePolicy.php \
             server/app/Domain/Messaging/WechatTemplateValue.php \
+            server/app/Domain/Messaging/OrderProgressMessageCatalog.php \
             server/tests/support/message_delivery_fakes.php \
             server/tests/v260_message_delivery_failure_policy.php \
             server/tests/v260_message_outbox_dispatch_policy.php \
