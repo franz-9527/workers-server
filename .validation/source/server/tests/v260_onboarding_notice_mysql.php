@@ -25,16 +25,16 @@ try{
  $insert=static function($key,$status,$attempts=0,$next=null,$topic='wechat_subscribe')use($db){
   return $db->insert("INSERT INTO message_outbox(topic,business_key,payload_json,status,attempt_count,next_attempt_at,created_at) VALUES(:topic,:key,'{}',:status,:attempts,:next,UTC_TIMESTAMP())",['topic'=>$topic,'key'=>$key,'status'=>$status,'attempts'=>$attempts,'next'=>$next]);
  };
- $insert('worker-review:CW-terminal:approved:1','failed',1);
- $insert('worker-review:CW-closed:approved:1','closed',1);
- $insert('worker-review:CW-retry:approved:1','failed',1,'2099-01-01 00:00:00');
- $insert('worker-review:CW-sent:approved:1','processed',1);
- $insert('worker-review:CW-pending:approved:1','pending');
- $insert('worker-review:CW-cloud:approved:1','failed',5);
+ $insert('worker-review:CW-terminal:approved:review-6','failed',1);
+ $insert('worker-review:CW-closed:approved:review-7','closed',1);
+ $insert('worker-review:CW-retry:approved:review-8','failed',1,'2099-01-01 00:00:00');
+ $insert('worker-review:CW-sent:approved:review-9','processed',1);
+ $insert('worker-review:CW-pending:approved:review-10','pending');
+ $insert('worker-review:CW-cloud:approved:review-11','failed',5);
  $insert('worker-review:CW-skipped-other:approved:1','processed',1);
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(1,'CW-skipped',41,'已有通知师傅'),(2,'CW-fallback',42,'故障通知师傅')");
- $db->execute("INSERT INTO notifications(id,public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(1,'legacy-notice','worker',1,'in_app','worker_profile_review_result','师傅入驻审核通过','审核通过',:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['data'=>json_encode(['cloud_id'=>'CW-skipped','review_status'=>'approved'],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]);
- $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(2),(3)');
+ $db->execute("INSERT INTO notifications(id,public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(1,'legacy-notice','worker',1,'in_app','worker_profile_review_result','师傅入驻审核通过','审核通过',:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['data'=>json_encode(['cloud_id'=>'CW-skipped','review_status'=>'approved','review_id'=>1,'review_time'=>''],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]);
+ $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(1),(2),(3)');
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(3,'CW-missing-user',43,'用户映射缺失师傅')");
  \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::queueWorkerReviewResult($db,3,'CW-missing-user','approved','','用户映射缺失师傅');
  $missingUserNotice=$db->fetch("SELECT content FROM notifications WHERE recipient_type='worker' AND recipient_id=3 AND template_key='worker_profile_review_result' LIMIT 1");
@@ -73,10 +73,18 @@ try{
  $refreshedSkippedAt=(string)$db->fetchValue("SELECT created_at FROM message_outbox WHERE business_key=:key",['key'=>$unmappedRepeatKey]);
  ensure(count($unmappedRepeatRows)===2,'separate unmapped reviews receive separate idempotency keys');
  ensure($refreshedSkippedAt>'2000-01-01 00:00:00','duplicate skipped event refreshes its creation timestamp');
+ $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(5,'CW-terminal',45,'终态师傅'),(6,'CW-closed',46,'结案师傅'),(7,'CW-retry',47,'重试师傅'),(8,'CW-sent',48,'已发送师傅'),(9,'CW-pending',49,'待发送师傅'),(10,'CW-cloud',50,'云端回执师傅')");
+ $db->execute("INSERT INTO worker_verifications(worker_id,submitted_snapshot_json,decision,reviewed_at) VALUES
+  (5,'{\"cloud_worker_id\":\"CW-terminal\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (6,'{\"cloud_worker_id\":\"CW-closed\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (7,'{\"cloud_worker_id\":\"CW-retry\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (8,'{\"cloud_worker_id\":\"CW-sent\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (9,'{\"cloud_worker_id\":\"CW-pending\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (10,'{\"cloud_worker_id\":\"CW-cloud\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP())");
  $cloud=new class implements \WorkerAdmin\Contracts\WorkerCloudGateway{
-  public array $calls=[];
+  public array $calls=[];public string $reviewTimeNew='';
   public function invoke(string $action,array $payload=[]):array{
-   $this->calls[]=[$action,$payload];
+   $this->calls[]=[$action,$payload];$reviewTimeNew=$this->reviewTimeNew;
    return ['items'=>array_map(static function($id)use($reviewTimeNew){
     $row=['_id'=>$id,'status'=>'approved','workerName'=>$id];
     if($id==='CW-cloud')$row['reviewNotice']=['status'=>'sent','statusCode'=>'0'];
@@ -85,6 +93,7 @@ try{
    },array_reverse($payload['ids']))];
   }
  };
+ $cloud->reviewTimeNew=$reviewTimeNew;
  $repository=new \WorkerAdmin\Infrastructure\Persistence\DatabaseMiniAdminWorkerStoreRepository($db,$cloud);
  $app=new \WorkerAdmin\Application\Admin\MiniAdminWorkerStoreOperations($repository);
  $ids=['CW-unrecorded','CW-terminal','CW-closed','CW-retry','CW-sent','CW-pending','CW-cloud','CW-skipped','CW-fallback','CW-no-local','CW-repeat'];
