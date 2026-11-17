@@ -1,0 +1,50 @@
+name: Temporary call-state browser bundle
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/call-state-build/**'
+      - '.github/workflows/temporary-call-state-bundle.yml'
+permissions:
+  contents: write
+concurrency:
+  group: temporary-call-state-bundle-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact shared-module inputs
+        working-directory: .validation/call-state-build
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha=$(tr -d '\r\n' < SOURCE_SHA)
+          [[ "$sha" =~ ^[a-f0-9]{40}$ ]]
+          while read -r expected path; do
+            actual=$(git hash-object "../../$path")
+            [[ "$actual" == "$expected" ]] || { echo "BUNDLE_INPUT_MISMATCH $path"; exit 2; }
+          done < SOURCE_MANIFEST
+          echo "Building server browser runtime from workers source SHA $sha"
+      - name: Build and validate browser runtime
+        working-directory: .validation/call-state-build
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx esbuild server/assets/chat-testing-client.js --bundle --platform=browser --format=iife --target=es2020 --outfile=../../.generated/chat-testing-runtime-call-state.js
+          node --check ../../.generated/chat-testing-runtime-call-state.js
+          grep -q 'refreshConversationChanges' ../../.generated/chat-testing-runtime-call-state.js
+          grep -q 'CallSound.sync' ../../.generated/chat-testing-runtime-call-state.js
+          grep -q 'calls.cleared' ../../.generated/chat-testing-runtime-call-state.js
+          ! grep -q 'Math.floor(m.io.now() / 1e3).*client_message_id' ../../.generated/chat-testing-runtime-call-state.js
+      - name: Publish generated fixture
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .generated/chat-testing-runtime-call-state.js
+          git commit -m "test: generate call-state browser runtime [skip ci]"
+          git push
