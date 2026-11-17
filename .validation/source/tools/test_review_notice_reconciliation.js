@@ -23,7 +23,13 @@ const api = { request(route, method, body, params) {
 } }
 const context = {
   Page(definition) { page = definition },
-  require() { return api },
+  require(modulePath) {
+    if (String(modulePath).indexOf('OrderApi') >= 0) return api
+    if (String(modulePath).indexOf('WorkerProfileTime') >= 0) {
+      return require(path.join(root, 'miniprogram/utils/WorkerProfileTime.js'))
+    }
+    throw new Error('Unexpected module in review regression: ' + modulePath)
+  },
   wx: { cloud: { callFunction(options) { options.success({ result: { code: 1, data } }) } } },
   console: { warn() {}, error() {} }
 }
