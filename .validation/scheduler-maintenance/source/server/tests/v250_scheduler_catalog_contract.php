@@ -118,7 +118,7 @@ schedulerCatalogContract(
     '媒体后台迁移已接入单任务和 all 两条网关路径'
 );
 $mediaBeforeLegacy = strpos((string)$gateway, '$mediaRun = $retryAt !== null');
-$legacyAllRun = strpos((string)$gateway, '$result = $this->scheduler->run($task, $force);');
+$legacyAllRun = strpos((string)$gateway, '$result = $runLegacyTasks($task, $force);');
 schedulerCatalogContract(
     $mediaBeforeLegacy !== false && $legacyAllRun !== false && $mediaBeforeLegacy < $legacyAllRun,
     'all 真实执行先迁移订单媒体，再进入包含 media_cleanup 的旧调度序列'
