@@ -90,3 +90,35 @@ jobs:
           ONBOARDING_NOTICE_MYSQL_TEST: '1'
           V250_DB_PORT: '3306'
         run: php server/tests/v260_onboarding_notice_mysql.php
+      - name: Set up PHP 7.4.34 production compatibility runtime
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4.34'
+          extensions: mbstring, pdo_mysql
+          coverage: none
+      - name: PHP 7.4.34 production syntax checks
+        working-directory: .validation/source
+        run: |
+          set -euo pipefail
+          for file in \
+            server/app/Infrastructure/Messaging/OrderNotificationProjector.php \
+            server/app/Services/OrderNotificationService.php \
+            server/app/Contracts/MessageDeliveryReceiptQueue.php \
+            server/app/Infrastructure/Messaging/SubscriptionQuotaStore.php \
+            server/app/Infrastructure/Messaging/SubscriptionCatalog.php \
+            server/app/Infrastructure/Messaging/OrderSubscriptionDefinitionOperations.php \
+            server/app/Infrastructure/Persistence/DatabaseMiniAdminWorkerStoreRepository.php \
+            server/app/Infrastructure/Messaging/DatabaseMessageDeliveryQueue.php \
+            server/app/Infrastructure/Messaging/OrderSubscriptionQueue.php \
+            server/app/Application/Messaging/MessageOutboxConsole.php \
+            server/app/Application/Messaging/MessageOutboxDispatch.php \
+            server/app/Domain/Messaging/MessageDeliveryFailurePolicy.php \
+            server/app/Domain/Messaging/WechatTemplateValue.php \
+            server/tests/support/message_delivery_fakes.php \
+            server/tests/v260_message_delivery_failure_policy.php \
+            server/tests/v260_message_outbox_dispatch_policy.php \
+            server/tests/v260_onboarding_notice_mysql.php \
+            tools/test-mini-admin-worker-store-migration.php \
+            server/views/admin/message-outbox.php; do
+            php -l "$file"
+          done
