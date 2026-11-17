@@ -125,15 +125,28 @@ final class LegacySchedulerGateway implements SchedulerGateway
         // legacy all 仍保留旧任务目录以兼容现有 catalog；随后再运行一次无队头饥饿的扫描器。
         // 已由旧任务成功释放的记录不再满足 frozen 条件，因此新扫描天然幂等，只补齐被阻断队头挡住的后续订单。
         if ($task === 'all') {
-            $retryAt = $this->taskFailureBackoff->retryAt('measurement_release', $force);
-            $measurementRun = $retryAt !== null
-                ? $this->taskFailureBackoff->recordSkippedRun('measurement_release', $retryAt)
-                : (new MeasurementFrozenBalanceReleaseTask($this->db, $this->limit))->run();
-            if (!isset($result['runs']) || !is_array($result['runs'])) $result['runs'] = [];
-            $result['runs'][] = $measurementRun;
-            if ($measurementRun['status'] === 'failed') {
-                $result['status'] = 'failed';
-                $result['message'] = '部分计划任务执行失败，请查看运行日志。';
+            // 旧 SchedulerService 已执行过 measurement_release；若它因退避而跳过，
+            // 不再为同一轮 all 追加第二条相同的跳过运行记录。
+            $measurementAlreadyDeferred = false;
+            foreach ((array)($result['runs'] ?? []) as $legacyRun) {
+                if ((string)($legacyRun['task'] ?? '') === 'measurement_release'
+                    && (string)($legacyRun['status'] ?? '') === 'skipped_backoff') {
+                    $measurementAlreadyDeferred = true;
+                    break;
+                }
+            }
+
+            if (!$measurementAlreadyDeferred) {
+                $retryAt = $this->taskFailureBackoff->retryAt('measurement_release', $force);
+                $measurementRun = $retryAt !== null
+                    ? $this->taskFailureBackoff->recordSkippedRun('measurement_release', $retryAt)
+                    : (new MeasurementFrozenBalanceReleaseTask($this->db, $this->limit))->run();
+                if (!isset($result['runs']) || !is_array($result['runs'])) $result['runs'] = [];
+                $result['runs'][] = $measurementRun;
+                if ($measurementRun['status'] === 'failed') {
+                    $result['status'] = 'failed';
+                    $result['message'] = '部分计划任务执行失败，请查看运行日志。';
+                }
             }
         }
 

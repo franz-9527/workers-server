@@ -13,10 +13,89 @@ namespace WorkerAdmin\Foundation {
     }
 }
 
+namespace WorkerAdmin\Infrastructure\Scheduling {
+    final class ConfiguredOrderDeadlineBridge
+    {
+        public function __construct($db) {}
+        public function prepare($task): void {}
+        public function after($task, $startedAtUtc): void {}
+    }
+
+    final class ApprovedOrderRefundRetryBridge
+    {
+        public function __construct($db, $limit) {}
+        public function run(): array
+        {
+            return [
+                'status'=>'success','task'=>'order_refund_retry',
+                'scanned'=>0,'success'=>0,'failure'=>0,'error'=>null,
+            ];
+        }
+    }
+
+    final class MediaPromotionTask
+    {
+        private $db;
+        public function __construct($db, $limit = 100) { $this->db=$db; }
+        public function run(): array
+        {
+            \SchedulerTaskBackoffFakeTasks::$media++;
+            $this->resolve('media_promote');
+            return \SchedulerTaskBackoffFakeTasks::success('media_promote');
+        }
+        private function resolve(string $job): void
+        {
+            $this->db->execute(
+                'UPDATE scheduled_job_failures SET resolved_at=UTC_TIMESTAMP() WHERE job_name=:job AND business_key=:key AND resolved_at IS NULL',
+                ['job'=>$job,'key'=>'task:'.$job]
+            );
+        }
+    }
+
+    final class PlatformOrderAutoPublishTask
+    {
+        private $db;
+        public function __construct($db, $limit = 100) { $this->db=$db; }
+        public function run(): array
+        {
+            \SchedulerTaskBackoffFakeTasks::$platform++;
+            $this->resolve('platform_auto_publish');
+            return \SchedulerTaskBackoffFakeTasks::success('platform_auto_publish');
+        }
+        private function resolve(string $job): void
+        {
+            $this->db->execute(
+                'UPDATE scheduled_job_failures SET resolved_at=UTC_TIMESTAMP() WHERE job_name=:job AND business_key=:key AND resolved_at IS NULL',
+                ['job'=>$job,'key'=>'task:'.$job]
+            );
+        }
+    }
+
+    final class MeasurementFrozenBalanceReleaseTask
+    {
+        private $db;
+        public function __construct($db, $limit = 100) { $this->db=$db; }
+        public function run(): array
+        {
+            \SchedulerTaskBackoffFakeTasks::$measurement++;
+            $this->resolve('measurement_release');
+            return \SchedulerTaskBackoffFakeTasks::success('measurement_release');
+        }
+        private function resolve(string $job): void
+        {
+            $this->db->execute(
+                'UPDATE scheduled_job_failures SET resolved_at=UTC_TIMESTAMP() WHERE job_name=:job AND business_key=:key AND resolved_at IS NULL',
+                ['job'=>$job,'key'=>'task:'.$job]
+            );
+        }
+    }
+}
+
 namespace {
     use WorkerAdmin\Core\Database;
     use WorkerAdmin\Services\SchedulerService;
     use WorkerAdmin\Infrastructure\Scheduling\SchedulerTaskFailureBackoff;
+    use WorkerAdmin\Infrastructure\Scheduling\LegacySchedulerGateway;
 
     function write_log($channel, $line): void {}
 
@@ -35,6 +114,21 @@ namespace {
         {
             self::$receiptCalls++;
             return ['scanned'=>0,'success'=>0,'failure'=>0];
+        }
+    }
+
+    final class SchedulerTaskBackoffFakeTasks
+    {
+        public static int $media = 0;
+        public static int $platform = 0;
+        public static int $measurement = 0;
+
+        public static function success(string $task): array
+        {
+            return [
+                'run_id'=>null,'run_uuid'=>null,'task'=>$task,'status'=>'success',
+                'scanned'=>0,'success'=>0,'failure'=>0,'duration_ms'=>0,'error'=>null,
+            ];
         }
     }
 
@@ -57,8 +151,11 @@ namespace {
 
     $root=dirname(__DIR__,2);
     require_once $root.'/server/app/Core/Database.php';
+    require_once $root.'/server/app/Contracts/SchedulerGateway.php';
+    require_once $root.'/server/app/Domain/Scheduling/SchedulerTaskCatalog.php';
     require_once $root.'/server/app/Infrastructure/Scheduling/SchedulerTaskFailureBackoff.php';
     require_once $root.'/server/app/Services/SchedulerService.php';
+    require_once $root.'/server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php';
 
     if (!defined('WORKER_BASE_PATH')) define('WORKER_BASE_PATH',$root);
 
@@ -179,22 +276,39 @@ namespace {
         schedulerBackoffSame($receiptForced['runs'][0]['status'],'success','manual receipt retry bypasses task-level backoff');
         schedulerBackoffSame(SchedulerTaskBackoffFakePaidSms::$receiptCalls,3,'manual receipt retry reaches receipt engine');
 
-        $backoff=new SchedulerTaskFailureBackoff($db);
+        $gateway=new LegacySchedulerGateway($db,10);
+
         $seedFailure('media_promote','task:media_promote','2035-01-01 00:00:00');
-        $mediaRetryAt=$backoff->retryAt('media_promote',false);
-        schedulerBackoffSame(is_string($mediaRetryAt),true,'gateway-only task exposes active task-level retry time');
-        schedulerBackoffSame($backoff->retryAt('media_promote',true),null,'manual force bypasses only task-level backoff');
-        $skip1=$backoff->recordSkippedRun('media_promote',(string)$mediaRetryAt);
-        $skip2=$backoff->recordSkippedRun('media_promote',(string)$mediaRetryAt);
-        schedulerBackoffSame($skip1['status'],'skipped_backoff','gateway skip summary uses explicit status');
-        schedulerBackoffSame((int)$db->fetchValue("SELECT COUNT(*) FROM scheduler_runs WHERE job_name='media_promote' AND status='skipped_backoff'"),1,'gateway skip summaries are bounded to one per task');
+        $mediaSkipped=$gateway->run('media_promote',false);
+        schedulerBackoffSame($mediaSkipped['status'],'skipped_backoff','gateway media promotion observes task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$media,0,'deferred media promotion never enters task');
+        $mediaSkippedAgain=$gateway->run('media_promote',false);
+        schedulerBackoffSame($mediaSkippedAgain['runs'][0]['status'],'skipped_backoff','repeated media promotion remains deferred');
+        schedulerBackoffSame((int)$db->fetchValue("SELECT COUNT(*) FROM scheduler_runs WHERE job_name='media_promote' AND status='skipped_backoff'"),1,'gateway keeps only latest skipped media run');
+        $mediaForced=$gateway->run('media_promote',true);
+        schedulerBackoffSame($mediaForced['status'],'success','manual media promotion bypasses task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$media,1,'manual media promotion enters task exactly once');
+        schedulerBackoffSame($unresolved('media_promote','task:media_promote'),0,'successful media promotion resolves task-level failure');
 
-        $gatewaySource=(string)file_get_contents($root.'/server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php');
-        foreach (['media_promote','platform_auto_publish','measurement_release'] as $job) {
-            schedulerBackoffSame(strpos($gatewaySource,"retryAt('".$job."', $force)")!==false,true,'gateway wires task-level backoff for '.$job);
-        }
+        $seedFailure('platform_auto_publish','task:platform_auto_publish','2035-01-01 00:00:00');
+        $platformSkipped=$gateway->run('platform_auto_publish',false);
+        schedulerBackoffSame($platformSkipped['status'],'skipped_backoff','gateway platform publish observes task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$platform,0,'deferred platform publish never enters task');
+        $platformForced=$gateway->run('platform_auto_publish',true);
+        schedulerBackoffSame($platformForced['status'],'success','manual platform publish bypasses task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$platform,1,'manual platform publish enters task exactly once');
+        schedulerBackoffSame($unresolved('platform_auto_publish','task:platform_auto_publish'),0,'successful platform publish resolves task-level failure');
 
-        fwrite(STDOUT,"Scheduler task-level failure backoff MySQL regression passed.\\n");
+        $seedFailure('measurement_release','task:measurement_release','2035-01-01 00:00:00');
+        $measurementSkipped=$gateway->run('measurement_release',false);
+        schedulerBackoffSame($measurementSkipped['status'],'skipped_backoff','gateway measurement release observes task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$measurement,0,'deferred measurement release never enters task');
+        $measurementForced=$gateway->run('measurement_release',true);
+        schedulerBackoffSame($measurementForced['status'],'success','manual measurement release bypasses task-level backoff');
+        schedulerBackoffSame(SchedulerTaskBackoffFakeTasks::$measurement,1,'manual measurement release enters task exactly once');
+        schedulerBackoffSame($unresolved('measurement_release','task:measurement_release'),0,'successful measurement release resolves task-level failure');
+
+        fwrite(STDOUT,"Scheduler task-level failure backoff MySQL regression passed.\n");
     } finally {
         $rootDb->pdo()->exec('DROP DATABASE IF EXISTS '.$dbName);
     }

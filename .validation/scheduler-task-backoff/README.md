@@ -1,7 +1,7 @@
 Scheduler task-level failure backoff regression snapshot
 
 Source repository: franz-9527/workers
-Source commit: 77447fb9b12586aee6ee4442d255b24fb44bc3d0
+Source commit: 6789c743b27d5730b2a9a9636160b09676e3a87f
 
 The snapshot is intentionally limited to the scheduler service, its database adapter,
 the task-level backoff helper, the legacy gateway wiring, and the MySQL regression test.
