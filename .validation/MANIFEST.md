@@ -1,7 +1,7 @@
 # Isolated validation manifest
 
 - Source repository: `franz-9527/workers`
-- Candidate SHA: `23aa1a1fbe4c719334c15614e01e08e1b2d39da2`
+- Candidate SHA: `780eebfb8c03bd43cba5731cba0354ca02731916`
 - Baseline main SHA: `975f46bac6963f59f55db889a8c283b584a55f86`
 - Test runtime: PHP 8.3.36, Node 20 (runner default), MySQL 5.7.44
 - Snapshot covers exact review-event reconciliation, repeated-review idempotency, missing cloud review-time normalization, transactional WeChat acceptance/quota accounting, terminal unknown outcomes, admin outbox presentation, and the complete focused regression dependency set.
