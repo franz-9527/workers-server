@@ -189,7 +189,10 @@ final class OrderNotificationProjector
             "SELECT w.user_id,w.display_name,u.mobile_ciphertext FROM worker_profiles w JOIN users u ON u.id=w.user_id WHERE w.id=:id LIMIT 1",
             ['id'=>$workerId]
         );
-        if (!$row) return;
+        if (!$row) {
+            self::recordWorkerReviewNotificationFailure($db,$workerId,$cloudId,$decision,$workerName,'未找到本地师傅或用户账号，微信通知未发送');
+            return;
+        }
         $labels=['approved'=>'审核通过','rejected'=>'审核未通过','suspended'=>'接单已暂停','pending'=>'等待审核'];
         $status=$labels[$decision]??'审核状态已更新';
         $reviewId=(int)$db->fetchValue('SELECT id FROM worker_verifications WHERE worker_id=:id ORDER BY id DESC LIMIT 1',['id'=>$workerId]);

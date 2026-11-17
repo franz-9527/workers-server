@@ -17,6 +17,7 @@ try{
  $db=new \WorkerAdmin\Core\Database($config);
  $db->execute("CREATE TABLE message_outbox(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,topic VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,business_key VARCHAR(128) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,payload_json LONGTEXT,status VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin,attempt_count INT UNSIGNED NOT NULL DEFAULT 0,next_attempt_at DATETIME NULL,last_error TEXT,created_at DATETIME,processed_at DATETIME NULL,UNIQUE KEY uq_message_outbox_topic_business(topic,business_key)) ENGINE=InnoDB");
  $db->execute("CREATE TABLE worker_profiles(id INT PRIMARY KEY,cloud_worker_id VARCHAR(128),user_id INT,display_name VARCHAR(80))");
+ $db->execute("CREATE TABLE users(id INT PRIMARY KEY,mobile_ciphertext TEXT NULL)");
  $db->execute("CREATE TABLE worker_verifications(id INT AUTO_INCREMENT PRIMARY KEY,worker_id INT)");
  $db->execute("CREATE TABLE notifications(id INT AUTO_INCREMENT PRIMARY KEY,public_id VARCHAR(80),recipient_type VARCHAR(30),recipient_id INT,channel VARCHAR(30),template_key VARCHAR(80),title TEXT,content TEXT,data_json TEXT,status VARCHAR(30),scheduled_at DATETIME,created_at DATETIME)");
  $insert=static function($key,$status,$attempts=0,$next=null,$topic='wechat_subscribe')use($db){
@@ -31,7 +32,13 @@ try{
  $insert('worker-review:CW-skipped-other:approved:1','processed',1);
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(1,'CW-skipped',41,'已有通知师傅'),(2,'CW-fallback',42,'故障通知师傅')");
  $db->execute("INSERT INTO notifications(id,public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(1,'legacy-notice','worker',1,'in_app','worker_profile_review_result','师傅入驻审核通过','审核通过',:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['data'=>json_encode(['cloud_id'=>'CW-skipped','review_status'=>'approved'],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]);
- $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(2)');
+ $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(2),(3)');
+ $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(3,'CW-missing-user',43,'用户映射缺失师傅')");
+ WorkerAdminInfrastructureMessagingOrderNotificationProjector::queueWorkerReviewResult($db,3,'CW-missing-user','approved','','用户映射缺失师傅');
+ $missingUserNotice=$db->fetch("SELECT content FROM notifications WHERE recipient_type='worker' AND recipient_id=3 AND template_key='worker_profile_review_result' LIMIT 1");
+ $missingUserOutbox=$db->fetch("SELECT status,last_error FROM message_outbox WHERE JSON_UNQUOTE(JSON_EXTRACT(payload_json,'$.cloud_worker_id'))='CW-missing-user' LIMIT 1");
+ ensure($missingUserNotice&&strpos($missingUserNotice['content'],'用户账号')!==false,'missing local user row does not silently drop the in-app review result');
+ ensure($missingUserOutbox&&$missingUserOutbox['status']==='skipped','missing local user row is recorded as a non-sending outbox result');
  \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::recordWorkerReviewNotificationFailure($db,2,'CW-fallback','approved','故障通知师傅','审核已完成，但微信通知流程异常，请联系管理员');
  $fallbackNotice=$db->fetch("SELECT data_json FROM notifications WHERE recipient_type='worker' AND recipient_id=2 AND template_key='worker_profile_review_result' LIMIT 1");
  $fallbackOutbox=$db->fetch("SELECT status,last_error FROM message_outbox WHERE business_key='worker-review:CW-fallback:approved:review-1:skipped' LIMIT 1");
