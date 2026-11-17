@@ -114,7 +114,7 @@ try{
  ensure($invalid,'invalid requested IDs are rejected');
  $queueCheck=new \WorkerAdmin\Infrastructure\Messaging\DatabaseMessageDeliveryQueue($db);
  $due=$queueCheck->pending(100);
- ensure(count($due)===1&&$due[0]['business_key']==='worker-review:CW-pending:approved:1','terminal failures and future retries are excluded from send candidates');
+ ensure(count($due)===1&&$due[0]['business_key']==='worker-review:CW-pending:approved:review-10','terminal failures and future retries are excluded from send candidates');
  ensure(!$queueCheck->claim(1),'terminal failure cannot be reclaimed');
  $db->execute('DELETE FROM message_outbox');
  $id=$insert('worker-profile:CW-1:admin:wecom','pending',0,null,'wecom_webhook');
