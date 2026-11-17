@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           source_sha=$(tr -d '\r\n' < .validation/scheduler-task-backoff/SOURCE_SHA)
-          [[ "$source_sha" == "bfc0eb3c33a2c6000e9e286527fc2392cb281c02" ]]
+          [[ "$source_sha" == "65c3a648fc1bff7c9768d19049b4e73bf5464019" ]]
           while read -r expected path; do
             [[ "$expected" =~ ^[a-f0-9]{40}$ && -n "$path" ]]
             actual=$(git hash-object "$path")

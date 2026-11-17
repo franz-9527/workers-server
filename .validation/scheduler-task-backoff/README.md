@@ -1,7 +1,7 @@
 Scheduler task-level failure backoff regression snapshot
 
 Source repository: franz-9527/workers
-Source commit: bfc0eb3c33a2c6000e9e286527fc2392cb281c02
+Source commit: 65c3a648fc1bff7c9768d19049b4e73bf5464019
 
 The snapshot contains only the scheduler code, its contracts/catalog, admin status
 projection, and the focused MySQL regression test. Every PHP source blob is checked

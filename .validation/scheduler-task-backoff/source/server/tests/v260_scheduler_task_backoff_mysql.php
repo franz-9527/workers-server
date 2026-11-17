@@ -327,7 +327,8 @@ namespace {
         schedulerBackoffSame($unresolved('measurement_release','task:measurement_release'),0,'successful measurement release resolves task-level failure');
 
         $gatewaySource=(string)file_get_contents($root.'/server/app/Infrastructure/Scheduling/LegacySchedulerGateway.php');
-        schedulerBackoffSame(strpos($gatewaySource, '$taskForce = $force && $task !== \\'all\\';') !== false, true, 'gateway does not bypass task backoff for an all run');
+        $expectedForceGuard = "\$taskForce = \$force && \$task !== 'all';";
+        schedulerBackoffSame(strpos($gatewaySource, $expectedForceGuard) !== false, true, 'gateway does not bypass task backoff for an all run');
         schedulerBackoffSame(strpos($gatewaySource, '$measurementAlreadyDeferred') !== false, true, 'all run does not write a duplicate measurement backoff heartbeat');
 
         fwrite(STDOUT,"Scheduler task-level failure backoff MySQL regression passed.\n");
