@@ -1,5 +1,5 @@
 source_repo=franz-9527/workers
-source_sha=5c82f6f9480f4bea60cc68c4a2f0e63bd0812bfa
+source_sha=82f303ce0d11bbd0f1c0e727e87a8027a3545c89
 runtime=PHP 8.3.36
 database=MySQL 5.7.44
 purpose=scheduler-maintenance-gate-and-global-lock-regression
