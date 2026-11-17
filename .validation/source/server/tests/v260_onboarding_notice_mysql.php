@@ -34,7 +34,10 @@ try{
  $insert('worker-review:CW-skipped-other:approved:1','processed',1);
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(1,'CW-skipped',41,'已有通知师傅'),(2,'CW-fallback',42,'故障通知师傅')");
  $db->execute("INSERT INTO notifications(id,public_id,recipient_type,recipient_id,channel,template_key,title,content,data_json,status,scheduled_at,created_at) VALUES(1,'legacy-notice','worker',1,'in_app','worker_profile_review_result','师傅入驻审核通过','审核通过',:data,'pending',UTC_TIMESTAMP(),UTC_TIMESTAMP())",['data'=>json_encode(['cloud_id'=>'CW-skipped','review_status'=>'approved','review_id'=>1,'review_time'=>''],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)]);
- $db->execute('INSERT INTO worker_verifications(worker_id) VALUES(1),(2),(3)');
+ $db->execute("INSERT INTO worker_verifications(worker_id,submitted_snapshot_json,decision,reviewed_at) VALUES
+  (1,'{\"cloud_worker_id\":\"CW-skipped\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (2,'{\"cloud_worker_id\":\"CW-fallback\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP()),
+  (3,'{\"cloud_worker_id\":\"CW-missing-user\",\"status\":\"approved\"}','approved',UTC_TIMESTAMP())");
  $db->execute("INSERT INTO worker_profiles(id,cloud_worker_id,user_id,display_name) VALUES(3,'CW-missing-user',43,'用户映射缺失师傅')");
  \WorkerAdmin\Infrastructure\Messaging\OrderNotificationProjector::queueWorkerReviewResult($db,3,'CW-missing-user','approved','','用户映射缺失师傅');
  $missingUserNotice=$db->fetch("SELECT content FROM notifications WHERE recipient_type='worker' AND recipient_id=3 AND template_key='worker_profile_review_result' LIMIT 1");
