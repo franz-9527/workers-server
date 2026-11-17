@@ -160,19 +160,19 @@ func (s *Service) WithPublisher(p ports.MessagePublisher) *Service {
 }
 
 func (s *Service) notifyCall(v View) {
- if s.publisher == nil || !v.ConversationID.Valid() || !v.CallID.Valid() {
-  return
- }
- if publisher, ok := s.publisher.(ports.CallChangePublisher); ok {
-  publisher.CallChanged(ports.CallChange{
-   ConversationID: v.ConversationID,
-   CallID: v.CallID,
-   PolicyVersion: v.PolicyVersion,
-   AttemptEpoch: ports.ID(v.Epoch),
-   Revision: ports.ID(v.Revision),
-   State: string(v.State),
-  })
- }
+	if s.publisher == nil || !v.ConversationID.Valid() || !v.CallID.Valid() {
+		return
+	}
+	if publisher, ok := s.publisher.(ports.CallChangePublisher); ok {
+		publisher.CallChanged(ports.CallChange{
+			ConversationID: v.ConversationID,
+			CallID:         v.CallID,
+			PolicyVersion:  v.PolicyVersion,
+			AttemptEpoch:   ports.ID(v.Epoch),
+			Revision:       ports.ID(v.Revision),
+			State:          string(v.State),
+		})
+	}
 }
 func (s *Service) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 	tx, e := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})

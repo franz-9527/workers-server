@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/franz-9527/workers/chat/internal/policy"
 	"github.com/franz-9527/workers/chat/internal/ports"
 	mysql "github.com/go-sql-driver/mysql"
-    "github.com/franz-9527/workers/chat/internal/policy"
 	"net"
 	"os"
 	"os/exec"
@@ -29,19 +29,19 @@ func (fixtureAuthority) Validate(_ context.Context, p ports.Principal) error {
 	return nil
 }
 func (g fixtureAuthority) Member(ctx context.Context, tx *sql.Tx, p ports.Principal, cid ports.ID, send bool) (ports.Grant, error) {
- if e := g.Validate(ctx, p); e != nil {
-  return ports.Grant{}, e
- }
- var key string
-    var read, write bool
-    e := tx.QueryRowContext(ctx, "SELECT member_key,can_read,can_send FROM chat_members WHERE conversation_id=? AND actor_id=?", string(cid), string(p.ActorID)).Scan(&key, &read, &write)
-    if errors.Is(e, sql.ErrNoRows) || (e == nil && (!read || (send && !write))) {
-        return ports.Grant{}, policy.ErrDenied
-    }
-    if e != nil {
-        return ports.Grant{}, e
-    }
- return ports.Grant{Mode: "direct", Version: "1", MemberKey: key, CanRead: read, CanSend: write}, nil
+	if e := g.Validate(ctx, p); e != nil {
+		return ports.Grant{}, e
+	}
+	var key string
+	var read, write bool
+	e := tx.QueryRowContext(ctx, "SELECT member_key,can_read,can_send FROM chat_members WHERE conversation_id=? AND actor_id=?", string(cid), string(p.ActorID)).Scan(&key, &read, &write)
+	if errors.Is(e, sql.ErrNoRows) || (e == nil && (!read || (send && !write))) {
+		return ports.Grant{}, policy.ErrDenied
+	}
+	if e != nil {
+		return ports.Grant{}, e
+	}
+	return ports.Grant{Mode: "direct", Version: "1", MemberKey: key, CanRead: read, CanSend: write}, nil
 }
 func (g fixtureAuthority) Pair(ctx context.Context, tx *sql.Tx, p ports.Principal, cid, peer ports.ID, send bool) (ports.Grant, ports.Grant, error) {
 	if e := g.Validate(ctx, p); e != nil {
@@ -114,12 +114,12 @@ func (b *phpBrokerFixture) Identities(context.Context, ResourceRequest) (map[str
 }
 
 type fixturePublisher struct {
- committed []ports.CommittedMessage
- callChanges []ports.CallChange
+	committed   []ports.CommittedMessage
+	callChanges []ports.CallChange
 }
 
 func (p *fixturePublisher) Committed(m ports.CommittedMessage) { p.committed = append(p.committed, m) }
-func (p *fixturePublisher) CallChanged(m ports.CallChange) { p.callChanges = append(p.callChanges, m) }
+func (p *fixturePublisher) CallChanged(m ports.CallChange)     { p.callChanges = append(p.callChanges, m) }
 
 type fixtureMedia struct{ stopped bool }
 
@@ -193,7 +193,7 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 	run("CREATE TABLE chat_reminder_events(id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,conversation_id BIGINT UNSIGNED NOT NULL,seq BIGINT UNSIGNED NOT NULL,created_at DATETIME(6) NOT NULL,processed_at DATETIME(6) NULL,UNIQUE KEY uq_chat_reminder_event(conversation_id,seq)) ENGINE=InnoDB")
 	run("CREATE TABLE chat_message_changes(conversation_id BIGINT UNSIGNED NOT NULL,change_seq BIGINT UNSIGNED NOT NULL,message_id BIGINT UNSIGNED NOT NULL,state_version BIGINT UNSIGNED NOT NULL,change_type VARCHAR(24) NOT NULL,created_at DATETIME(6) NOT NULL,PRIMARY KEY(conversation_id,change_seq)) ENGINE=InnoDB")
 	run("INSERT INTO chat_conversations(id) VALUES(1),(2)")
-    run("INSERT INTO chat_members VALUES(1,11,'member:11',1,1),(1,12,'member:12',1,1),(2,11,'member:11',1,1),(2,12,'member:12',1,1),(2,13,'member:13',1,1)")
+	run("INSERT INTO chat_members VALUES(1,11,'member:11',1,1),(1,12,'member:12',1,1),(2,11,'member:11',1,1),(2,12,'member:12',1,1),(2,13,'member:13',1,1)")
 	now := time.Now().Unix()
 	facts := map[string]any{"schema_version": 1, "provider": "wechat", "quota_scope_id": "synthetic-app", "cycle_id": "synthetic-cycle", "config_revision": "1", "unit": "wechat_equivalent", "enabled": true, "verified": true, "hard_stop_verified": true, "healthy": true, "valid_from": now - 3600, "expires_at": now + 3600, "verified_at": now, "usage_observed_at": now, "max_age_seconds": 3600, "free_total": "6000000", "budget_limit": "6000000", "official_used": "0", "local_uncovered": "0", "reserved": "0", "safety_margin": "0", "external_uncertainty": "0"}
 	profile := map[string]any{"app_id": strings.Repeat("a", 32), "evidence_hash": strings.Repeat("f", 64), "audio": Meter{1, 1, 60}, "video": Meter{1, 1, 60}}
@@ -225,29 +225,29 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 		return ports.Principal{ActorID: id, SourceID: id, Kind: "mini", Environment: "test", Scopes: []string{"chat:use"}, ExpiresAt: time.Now().Add(time.Hour)}
 	}
 	caller, callee := actor("11"), actor("12")
-    // A non-member must not learn whether a guessed conversation has zero,
-    // one or multiple peers from the availability response.
-    outsider := actor("14")
-    if _, err := service.Available(ctx, outsider, Request{ConversationID: "1"}); !errors.Is(err, policy.ErrDenied) {
-        t.Fatalf("non-member learned peer count for direct conversation: %v", err)
-    }
-    if _, err := service.Available(ctx, outsider, Request{ConversationID: "999"}); !errors.Is(err, policy.ErrDenied) {
-        t.Fatalf("non-member learned whether conversation exists: %v", err)
-    }
-    groupAvailability, err := service.Available(ctx, caller, Request{ConversationID: "2"})
-    groupMap, ok := groupAvailability.(map[string]any)
-    if err != nil || !ok || groupMap["reason"] != "no_peer" {
-        t.Fatalf("authorized group availability %+v %v", groupAvailability, err)
-    }
-    create := Request{ConversationID: "1", PeerID: "12", Media: Audio, Instance: strings.Repeat("a", 32), Operation: sha256String("initial-call")}
+	// A non-member must not learn whether a guessed conversation has zero,
+	// one or multiple peers from the availability response.
+	outsider := actor("14")
+	if _, err := service.Available(ctx, outsider, Request{ConversationID: "1"}); !errors.Is(err, policy.ErrDenied) {
+		t.Fatalf("non-member learned peer count for direct conversation: %v", err)
+	}
+	if _, err := service.Available(ctx, outsider, Request{ConversationID: "999"}); !errors.Is(err, policy.ErrDenied) {
+		t.Fatalf("non-member learned whether conversation exists: %v", err)
+	}
+	groupAvailability, err := service.Available(ctx, caller, Request{ConversationID: "2"})
+	groupMap, ok := groupAvailability.(map[string]any)
+	if err != nil || !ok || groupMap["reason"] != "no_peer" {
+		t.Fatalf("authorized group availability %+v %v", groupAvailability, err)
+	}
+	create := Request{ConversationID: "1", PeerID: "12", Media: Audio, Instance: strings.Repeat("a", 32), Operation: sha256String("initial-call")}
 	view, e := service.Create(ctx, caller, create)
-    if e != nil {
-        t.Fatal(e)
-    }
-    if view.PolicyVersion != "1" || len(publisher.callChanges) == 0 || publisher.callChanges[len(publisher.callChanges)-1].State != "ringing" {
-        t.Fatalf("create did not publish immutable policy/state %+v changes=%+v", view, publisher.callChanges)
-    }
-    again, e := service.Create(ctx, caller, create)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if view.PolicyVersion != "1" || len(publisher.callChanges) == 0 || publisher.callChanges[len(publisher.callChanges)-1].State != "ringing" {
+		t.Fatalf("create did not publish immutable policy/state %+v changes=%+v", view, publisher.callChanges)
+	}
+	again, e := service.Create(ctx, caller, create)
 	if e != nil || again.CallID != view.CallID {
 		t.Fatalf("create replay %+v %v", again, e)
 	}
@@ -333,9 +333,9 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 		t.Fatalf("settled R %d %v", reserved, e)
 	}
 	var callPayload struct {
-		Event string `json:"event"`
-		CallID string `json:"call_id"`
-		Outcome string `json:"outcome"`
+		Event     string `json:"event"`
+		CallID    string `json:"call_id"`
+		Outcome   string `json:"outcome"`
 		Attention string `json:"attention_actor_id"`
 	}
 	var raw string
@@ -413,16 +413,16 @@ func TestMySQLPHPCallLifecycleAndConcurrency(t *testing.T) {
 		t.Fatalf("pre-media fallback %v", e)
 	}
 	switched, e := service.Status(ctx, caller, Request{CallID: view.CallID})
-    if e != nil || switched.Provider != Shengwang || switched.Epoch != "2" || switched.State != Preparing || switched.PolicyVersion != view.PolicyVersion {
-        t.Fatalf("fallback epoch/policy binding %+v original=%+v %v", switched, view, e)
-    }
-    if len(publisher.callChanges) == 0 {
-        t.Fatal("fallback state was not published")
-    }
-    fallbackWake := publisher.callChanges[len(publisher.callChanges)-1]
-    if fallbackWake.CallID != view.CallID || fallbackWake.State != "preparing" || fallbackWake.AttemptEpoch != "2" || fallbackWake.PolicyVersion != view.PolicyVersion {
-        t.Fatalf("fallback wake lost state/epoch/policy %+v", fallbackWake)
-    }
+	if e != nil || switched.Provider != Shengwang || switched.Epoch != "2" || switched.State != Preparing || switched.PolicyVersion != view.PolicyVersion {
+		t.Fatalf("fallback epoch/policy binding %+v original=%+v %v", switched, view, e)
+	}
+	if len(publisher.callChanges) == 0 {
+		t.Fatal("fallback state was not published")
+	}
+	fallbackWake := publisher.callChanges[len(publisher.callChanges)-1]
+	if fallbackWake.CallID != view.CallID || fallbackWake.State != "preparing" || fallbackWake.AttemptEpoch != "2" || fallbackWake.PolicyVersion != view.PolicyVersion {
+		t.Fatalf("fallback wake lost state/epoch/policy %+v", fallbackWake)
+	}
 	if _, e = service.Prepare(ctx, caller, Request{CallID: view.CallID, Epoch: "1", Instance: create.Instance}); e == nil {
 		t.Fatal("old provider epoch was accepted")
 	}

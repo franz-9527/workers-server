@@ -24,7 +24,7 @@ func TestNotifyCallUsesRealtimeWakeWithoutCreatingMessage(t *testing.T) {
 		t.Fatalf("unexpected wake counts committed=%d changed=%d", publisher.committed, len(publisher.changed))
 	}
 	wake := publisher.changed[0]
-    if wake.ConversationID != "7" || wake.CallID != "9" || wake.PolicyVersion != "3" || wake.AttemptEpoch != "2" || wake.Revision != "5" || wake.State != "rejected" {
-        t.Fatalf("unexpected call wake %+v", wake)
-    }
+	if wake.ConversationID != "7" || wake.CallID != "9" || wake.PolicyVersion != "3" || wake.AttemptEpoch != "2" || wake.Revision != "5" || wake.State != "rejected" {
+		t.Fatalf("unexpected call wake %+v", wake)
+	}
 }

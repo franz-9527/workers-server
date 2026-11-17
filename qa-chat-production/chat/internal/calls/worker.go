@@ -4,85 +4,85 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/franz-9527/workers/chat/internal/ports"
 	"github.com/franz-9527/workers/chat/internal/policy"
+	"github.com/franz-9527/workers/chat/internal/ports"
 	"strconv"
 	"sync"
 	"time"
 )
 
 func (s *Service) Available(ctx context.Context, p ports.Principal, q Request) (any, error) {
- if !positive(q.ConversationID) {
-  return nil, ErrInvalid
- }
- if e := s.guard.Validate(ctx, p); e != nil {
-  return nil, e
- }
- // Keep membership authorization and peer discovery in one transaction:
- // a revoked member must not retain a race window for peer-count probing.
- peers := []ports.ID{}
- e := s.tx(ctx, func(tx *sql.Tx) error {
-  own, e := s.guard.Member(ctx, tx, p, q.ConversationID, false)
-  if e != nil {
-   return e
-  }
-  if !own.CanRead {
-   return policy.ErrDenied
-  }
-  rows, e := tx.QueryContext(ctx, "SELECT CAST(actor_id AS CHAR) FROM chat_members WHERE conversation_id=? AND actor_id<>? AND can_read=1 AND can_send=1 ORDER BY actor_id LIMIT 50", string(q.ConversationID), string(p.ActorID))
-  if e != nil {
-   return e
-  }
-  defer rows.Close()
-  for rows.Next() {
-   var id ports.ID
-   if e = rows.Scan(&id); e != nil {
-    return e
-   }
-   peers = append(peers, id)
-  }
-  return rows.Err()
- })
- if e != nil {
-  return nil, e
- }
- if len(peers) != 1 {
-  return map[string]any{"audio": false, "video": false, "reason": "no_peer", "peers": []ports.ID{}}, nil
- }
- direct := false
- e = s.tx(ctx, func(tx *sql.Tx) error {
-  own, other, e := s.guard.Pair(ctx, tx, p, q.ConversationID, peers[0], false)
-  if e != nil {
-   return e
-  }
-  direct = own.Mode == "direct"
-  if !direct {
-   return nil
-  }
-  if !own.CanSend || !other.CanSend {
-   return ErrUnavailable
-  }
-  return nil
- })
- if e != nil {
-  return nil, e
- }
- if !direct {
-  return map[string]any{"audio": false, "video": false, "reason": "仅单聊支持通话", "peers": []ports.ID{}}, nil
- }
- selectPool := func(ctx context.Context, media Media, exclude ...Provider) (Pool, Settings, error) {
-  return s.selectRequestPool(ctx, p, q, media, exclude...)
- }
- _, _, audio := selectPool(ctx, Audio)
- _, _, video := selectPool(ctx, Video)
- reason := "available"
- if audio != nil && video != nil {
-  reason = "unavailable"
-  if audio.Error() == video.Error() {
-   reason = audio.Error()
-  }
- }
- return map[string]any{"audio": audio == nil, "video": video == nil, "reason": reason, "peers": peers}, nil
+	if !positive(q.ConversationID) {
+		return nil, ErrInvalid
+	}
+	if e := s.guard.Validate(ctx, p); e != nil {
+		return nil, e
+	}
+	// Keep membership authorization and peer discovery in one transaction:
+	// a revoked member must not retain a race window for peer-count probing.
+	peers := []ports.ID{}
+	e := s.tx(ctx, func(tx *sql.Tx) error {
+		own, e := s.guard.Member(ctx, tx, p, q.ConversationID, false)
+		if e != nil {
+			return e
+		}
+		if !own.CanRead {
+			return policy.ErrDenied
+		}
+		rows, e := tx.QueryContext(ctx, "SELECT CAST(actor_id AS CHAR) FROM chat_members WHERE conversation_id=? AND actor_id<>? AND can_read=1 AND can_send=1 ORDER BY actor_id LIMIT 50", string(q.ConversationID), string(p.ActorID))
+		if e != nil {
+			return e
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id ports.ID
+			if e = rows.Scan(&id); e != nil {
+				return e
+			}
+			peers = append(peers, id)
+		}
+		return rows.Err()
+	})
+	if e != nil {
+		return nil, e
+	}
+	if len(peers) != 1 {
+		return map[string]any{"audio": false, "video": false, "reason": "no_peer", "peers": []ports.ID{}}, nil
+	}
+	direct := false
+	e = s.tx(ctx, func(tx *sql.Tx) error {
+		own, other, e := s.guard.Pair(ctx, tx, p, q.ConversationID, peers[0], false)
+		if e != nil {
+			return e
+		}
+		direct = own.Mode == "direct"
+		if !direct {
+			return nil
+		}
+		if !own.CanSend || !other.CanSend {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if e != nil {
+		return nil, e
+	}
+	if !direct {
+		return map[string]any{"audio": false, "video": false, "reason": "仅单聊支持通话", "peers": []ports.ID{}}, nil
+	}
+	selectPool := func(ctx context.Context, media Media, exclude ...Provider) (Pool, Settings, error) {
+		return s.selectRequestPool(ctx, p, q, media, exclude...)
+	}
+	_, _, audio := selectPool(ctx, Audio)
+	_, _, video := selectPool(ctx, Video)
+	reason := "available"
+	if audio != nil && video != nil {
+		reason = "unavailable"
+		if audio.Error() == video.Error() {
+			reason = audio.Error()
+		}
+	}
+	return map[string]any{"audio": audio == nil, "video": video == nil, "reason": reason, "peers": peers}, nil
 }
 
 // Tick is crash-recoverable. Terminal rows keep account occupancy until PHP

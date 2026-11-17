@@ -123,8 +123,8 @@ type MessagePublisher interface{ Committed(CommittedMessage) }
 // CallChange is a best-effort state wakeup. Clients still fetch the
 // authoritative call status and message cursor; this payload is not a ledger.
 type CallChange struct {
- ConversationID, CallID, PolicyVersion, AttemptEpoch, Revision ID
- State string
+	ConversationID, CallID, PolicyVersion, AttemptEpoch, Revision ID
+	State                                                         string
 }
 type CallChangePublisher interface{ CallChanged(CallChange) }
 type RealtimePolicy interface {
@@ -164,9 +164,9 @@ type AudioInspectionRequest struct {
 type Transcription struct {
 	Text, RequestID, AuthorityProof, ServiceID, APIName, Engine string
 	ProviderCode, ProviderMessage, ProviderInnerCode            string
-	DataEncoding, InputHost                                      string
-	InputURLLength, EncodedURLLength                             int
-	Dispatched, Known, Retryable                                 bool
+	DataEncoding, InputHost                                     string
+	InputURLLength, EncodedURLLength                            int
+	Dispatched, Known, Retryable                                bool
 }
 type AudioTicket struct {
 	TraceID, AuthorityProof      string

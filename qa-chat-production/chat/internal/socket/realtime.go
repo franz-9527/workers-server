@@ -11,9 +11,9 @@ import (
 )
 
 type liveEvent struct {
- message ports.CommittedMessage
- call    *ports.CallChange
- kind    string
+	message ports.CommittedMessage
+	call    *ports.CallChange
+	kind    string
 	source  *client
 	exclude ports.ID
 	until   time.Time
@@ -57,7 +57,7 @@ func (g *Gateway) ReceiptChanged(m ports.CommittedMessage, actor ports.ID) {
 	g.offer(liveEvent{message: m, kind: "receipt.changed", exclude: actor})
 }
 func (g *Gateway) CallChanged(m ports.CallChange) {
- g.offer(liveEvent{call: &m, kind: "calls.changed"})
+	g.offer(liveEvent{call: &m, kind: "calls.changed"})
 }
 func (g *Gateway) offer(e liveEvent) {
 	if g.realtime == nil {
@@ -90,11 +90,11 @@ func (g *Gateway) deliver() {
 		case <-g.realtime.stop:
 			return
 		case event := <-g.realtime.events:
-            conversationID := event.message.ConversationID
-            if event.call != nil {
-                conversationID = event.call.ConversationID
-            }
-            root := g.realtime.ctx
+			conversationID := event.message.ConversationID
+			if event.call != nil {
+				conversationID = event.call.ConversationID
+			}
+			root := g.realtime.ctx
 			if root == nil {
 				root = context.Background()
 			}
@@ -132,14 +132,14 @@ func (g *Gateway) deliver() {
 					}
 				}
 				payload := map[string]any{"conversation_id": conversationID}
-                if event.call != nil {
-                    payload["call_id"] = event.call.CallID
-                    payload["state"] = event.call.State
-                    payload["policy_version"] = event.call.PolicyVersion
-                    payload["attempt_epoch"] = event.call.AttemptEpoch
-                    payload["revision"] = event.call.Revision
-                }
-                if event.kind == "message.new" {
+				if event.call != nil {
+					payload["call_id"] = event.call.CallID
+					payload["state"] = event.call.State
+					payload["policy_version"] = event.call.PolicyVersion
+					payload["attempt_epoch"] = event.call.AttemptEpoch
+					payload["revision"] = event.call.Revision
+				}
+				if event.kind == "message.new" {
 					payload["highest_seq"] = event.message.Seq
 					payload["policy_version"] = event.message.PolicyVersion
 				}

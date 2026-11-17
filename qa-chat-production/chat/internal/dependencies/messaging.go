@@ -29,9 +29,9 @@ var _ ports.MessagePublisher = publicationRelay{}
 var _ ports.CallChangePublisher = publicationRelay{}
 
 func (p publicationRelay) CallChanged(m ports.CallChange) {
- if p.runtime != nil && p.runtime.Socket != nil {
-  p.runtime.Socket.CallChanged(m)
- }
+	if p.runtime != nil && p.runtime.Socket != nil {
+		p.runtime.Socket.CallChanged(m)
+	}
 }
 
 func (p publicationRelay) Committed(m ports.CommittedMessage) {
