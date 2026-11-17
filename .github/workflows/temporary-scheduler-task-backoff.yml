@@ -1,0 +1,83 @@
+name: Temporary scheduler task backoff regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/scheduler-task-backoff/**'
+      - '.github/workflows/temporary-scheduler-task-backoff.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-scheduler-task-backoff-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scheduler-backoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: worker_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,mbstring
+          coverage: none
+
+      - name: Verify isolated snapshot against source Git blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha=$(tr -d '\r\n' < .validation/scheduler-task-backoff/SOURCE_SHA)
+          [[ "$source_sha" == "77447fb9b12586aee6ee4442d255b24fb44bc3d0" ]]
+          while read -r expected path; do
+            [[ "$expected" =~ ^[a-f0-9]{40}$ && -n "$path" ]]
+            actual=$(git hash-object "$path")
+            [[ "$actual" == "$expected" ]] || {
+              echo "SNAPSHOT_MISMATCH: $path" >&2
+              exit 1
+            }
+          done < .validation/scheduler-task-backoff/SOURCE_MANIFEST
+          echo "Testing source SHA: $source_sha"
+
+      - name: PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find .validation/scheduler-task-backoff/source -type f -name '*.php' -print0 |
+            while IFS= read -r -d '' file; do php -l "$file"; done
+
+      - name: MySQL 5.7 task-level backoff regression
+        run: php .validation/scheduler-task-backoff/source/server/tests/v260_scheduler_task_backoff_mysql.php
+        env:
+          V260_SCHEDULER_TASK_BACKOFF_MYSQL_TEST: '1'
+          V250_DB_HOST: 127.0.0.1
+          V250_DB_PORT: '3306'
+          V250_DB_NAME: worker_test
+          V250_DB_USER: root
+          V250_DB_PASSWORD: root
+
+      - name: Remove temporary validation inputs from runner workspace
+        if: always()
+        shell: bash
+        run: |
+          rm -rf .validation/scheduler-task-backoff
+          rm -f .github/workflows/temporary-scheduler-task-backoff.yml
+          test ! -e .validation/scheduler-task-backoff
+          test ! -e .github/workflows/temporary-scheduler-task-backoff.yml
