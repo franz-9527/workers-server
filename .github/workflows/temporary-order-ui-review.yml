@@ -48,5 +48,10 @@ jobs:
         if: always()
         run: |
           git rm -r --ignore-unmatch .validation/order-ui .github/workflows/temporary-order-ui-review.yml
-          python3 tools/check-clean-state.py
+          python3 - <<'PY'
+          from pathlib import Path
+          assert not Path('.validation/order-ui').exists()
+          assert not Path('.github/workflows/temporary-order-ui-review.yml').exists()
+          print('Temporary order UI snapshot cleanup verified.')
+          PY
           git diff --cached --check
