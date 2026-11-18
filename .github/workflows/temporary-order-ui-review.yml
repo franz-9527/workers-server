@@ -44,3 +44,9 @@ jobs:
         run: node .validation/order-ui/tools/check-wxml.js --self-test
       - name: Order UI regression contracts
         run: node .validation/order-ui/tools/test-order-ui-regression.js
+      - name: Verify cleanup procedure in isolated worktree
+        if: always()
+        run: |
+          git rm -r --ignore-unmatch .validation/order-ui .github/workflows/temporary-order-ui-review.yml
+          python3 tools/check-clean-state.py
+          git diff --cached --check
