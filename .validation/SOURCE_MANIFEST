@@ -1,5 +1,5 @@
 source_repository=franz-9527/workers
-source_sha=9b00608ca339eb8b962071ff1f9930cc5aa5aa06
+source_sha=6b23a96aa318e98f7a09272f109893a541e56b2f
 php_version=8.3.36
 scope=runtime-log-admin-review-final-regression
 test_policy=workers-server only
