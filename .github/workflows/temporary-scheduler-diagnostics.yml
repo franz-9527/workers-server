@@ -1,0 +1,35 @@
+name: temporary-scheduler-diagnostics
+on:
+  push:
+    branches: [main]
+    paths: ['.validation/**', '.github/workflows/temporary-scheduler-diagnostics.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-scheduler-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:5.7.44
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: scheduler_test }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.3.36', extensions: mbstring, pdo_mysql, coverage: none }
+      - run: php -r 'if(PHP_VERSION!=="8.3.36") exit(1); echo PHP_VERSION,PHP_EOL;'
+      - run: find .validation -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: php .validation/scheduler-diagnostics-test.php
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: scheduler_test
+          DB_USER: root
+          DB_PASSWORD: root
