@@ -34,7 +34,7 @@ jobs:
       - name: PHP syntax
         run: |
           cd .validation/home-announcements
-          for file in             source/server/app/Application/Messaging/AnnouncementQuery.php             source/server/app/Application/Messaging/SettingsRead.php             source/server/app/Infrastructure/Settings/DatabaseAdminConfigurationRepository.php             source/server/app/Domain/Messaging/SettingsValuePolicy.php             source/server/app/Http/Api/Modules/MessagingApiModule.php             source/server/views/admin/settings.php             test.php; do php -l "$file"; done
+          for file in source/server/app/Application/Messaging/AnnouncementQuery.php source/server/app/Application/Messaging/SettingsRead.php source/server/app/Infrastructure/Settings/DatabaseAdminConfigurationRepository.php source/server/app/Domain/Messaging/SettingsValuePolicy.php source/server/app/Http/Api/Modules/MessagingApiModule.php source/server/views/admin/settings.php source/tools/test-message-configuration.php test.php; do php -l "$file"; done
       - name: PHP behavior contract
         run: php .validation/home-announcements/test.php
       - name: JavaScript syntax and loader contract
