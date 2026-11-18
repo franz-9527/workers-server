@@ -29,3 +29,5 @@ commands:
 - node .validation/order-ui/tools/test-order-ui-regression.js
 
 The snapshot is temporary and must be removed after the run; workers-server is not a source or deployment repository.
+
+cleanup_check=enabled
