@@ -1,0 +1,34 @@
+name: temporary-runtime-log-review
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-runtime-log-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-runtime-log-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  runtime-log-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: mbstring
+          coverage: none
+      - name: Verify PHP 8.3.36
+        run: php -r 'if(PHP_VERSION!=="8.3.36") { fwrite(STDERR,PHP_VERSION); exit(1); } echo "PHP ",PHP_VERSION," verified\n";'
+      - name: PHP syntax for isolated snapshot
+        run: find .validation/project/server -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Scheduler task Chinese labels
+        run: php .validation/project/server/tests/v250_scheduler_catalog_contract.php
+      - name: Runtime log cleanup, locking and redaction
+        run: php .validation/project/server/tests/v260_runtime_log_maintenance_contract.php
+      - name: Admin runtime-log interaction and permission contract
+        run: php .validation/project/server/tests/v260_admin_chinese_presentation.php
