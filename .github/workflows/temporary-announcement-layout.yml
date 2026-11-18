@@ -1,0 +1,36 @@
+name: Temporary announcement admin layout validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/announcement-layout/**'
+      - '.github/workflows/temporary-announcement-layout.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-announcement-layout-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - name: Verify exact source blobs
+        run: |
+          cd .validation/announcement-layout
+          tail -n +2 SOURCE_MANIFEST | while read expected path; do
+            actual=$(git hash-object "$path")
+            test "$actual" = "$expected" || { echo "blob mismatch $path $actual != $expected"; exit 1; }
+          done
+      - name: PHP 8.3.36 syntax
+        run: |
+          php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION !== "8.3.36") exit(1);'
+          php -l .validation/announcement-layout/source/server/views/admin/settings.php
+          php -l .validation/announcement-layout/source/tools/test-message-configuration.php
+      - name: Announcement layout contract
+        run: python3 .validation/announcement-layout/check.py
