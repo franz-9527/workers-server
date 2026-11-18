@@ -34,8 +34,8 @@ assertOrder(workerWxml, [
 ], '我的接单')
 
 for (const [label, css] of [['我的下单', userWxss], ['我的接单', workerWxss]]) {
-  const slot = css.match(/\\.subscription-banner-slot\\{([^}]*)\\}/)
-  assert.ok(slot && /margin:14rpx 24rpx 14rpx/.test(slot[1]),
+  const slotRule = (css.split('.subscription-banner-slot{')[1] || '').split('}')[0]
+  assert.ok(slotRule.includes('margin:14rpx 24rpx 14rpx'),
     label + ': notification banner keeps balanced top/bottom and side spacing')
   assert.ok(css.includes('@media(max-width:360px){.subscription-banner-slot{margin-left:18rpx;margin-right:18rpx}}'),
     label + ': narrow screens retain side gutters')
