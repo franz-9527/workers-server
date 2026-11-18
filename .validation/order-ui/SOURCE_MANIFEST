@@ -1,0 +1,34 @@
+source_repo=franz-9527/workers
+source_sha=e4cfa482f1a229b3aa21c6fc220a558698d8e4d6
+scope=minimal mini-program order UI validation snapshot; no app config, credentials, user data, or full mini-program copy
+
+source_files:
+- miniprogram/pages/userOrder/detail.js
+- miniprogram/pages/userOrder/detail.wxml
+- miniprogram/pages/userOrder/detail.wxss
+- miniprogram/utils/CustomerOrderBillingPresentation.js
+- miniprogram/utils/OrderSupportPresentation.js
+- miniprogram/pages/workerOrder/detail.js
+- miniprogram/pages/workerOrder/detail.wxml
+- miniprogram/pages/workerOrder/detail.wxss
+- miniprogram/pages/orderSubmit/index.js
+- miniprogram/utils/OrderApi.js
+- miniprogram/subpackages/support/agreements/index.js
+- miniprogram/subpackages/support/agreements/index.wxml
+- miniprogram/subpackages/support/agreements/index.wxss
+- miniprogram/pages/applogin/applogin.js
+- miniprogram/subpackages/account/workerProfile/index.js
+- tools/test-order-ui-regression.js
+- tools/check-wxml.js
+
+validation_runtime:
+- Node.js 20
+- miniprogram-compiler 0.2.3
+
+commands:
+- node --check each changed JavaScript file and both validation scripts
+- node .validation/order-ui/tools/check-wxml.js .validation/order-ui/miniprogram --compile
+- node .validation/order-ui/tools/check-wxml.js --self-test
+- node .validation/order-ui/tools/test-order-ui-regression.js
+
+The snapshot is temporary and must be removed after the run; workers-server is not a source or deployment repository.
