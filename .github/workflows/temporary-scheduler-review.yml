@@ -24,11 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with: { php-version: '8.3.36', extensions: mbstring, pdo_mysql, coverage: none }
-      - name: Verify PHP 8.3.36 and syntax
+        with:
+          php-version: '8.3.36'
+          extensions: 'mbstring, pdo_mysql'
+          coverage: none
+      - name: Verify PHP 8.3.36 and PDO MySQL
         run: |
           set -euo pipefail
-          php -r 'if(PHP_VERSION!=="8.3.36") exit(1); echo PHP_VERSION,PHP_EOL;'
+          php -r 'if(PHP_VERSION!=="8.3.36" || !extension_loaded("pdo_mysql")) exit(1); echo PHP_VERSION," / pdo_mysql",PHP_EOL;'
           find .validation/project/server -type f -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Scheduler backoff and atomic retention regression
         env:
