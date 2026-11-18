@@ -30,7 +30,7 @@ assert "link: '/subpackages/support/agreements/index'" in home_js
 
 home_wxml=read('miniprogram/pages/index/index.wxml')
 loop=home_wxml.index('<block wx:for="{{Headtips}}"')
-agreement=home_wxml.index('PlatformAgreement.text')
+agreement=home_wxml.index('<swiper-item wx:if="{{PlatformAgreement.enabled && PlatformAgreement.text}}"')
 assert loop>=0 and agreement>loop
 assert 'wx:if="{{PlatformAgreement.enabled && PlatformAgreement.text}}"' in home_wxml
 assert 'class="radius-lg bg-orange light"' in home_wxml
