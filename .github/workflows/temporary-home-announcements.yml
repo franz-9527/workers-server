@@ -41,6 +41,7 @@ jobs:
         run: |
           node --check .validation/home-announcements/source/server/assets/admin.js
           node --check .validation/home-announcements/source/miniprogram/utils/HomeAnnouncementLoader.js
+          node --check .validation/home-announcements/source/tools/test_chat_notice_recovery.js
           node --check .validation/home-announcements/test.js
           node .validation/home-announcements/test.js
       - name: Static integration contract

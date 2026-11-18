@@ -12,3 +12,5 @@ f20bd87b1d56968c528ff1f5d1d65b23cfdd68a5 source/miniprogram/pages/index/index.wx
 50d01bdfaefbe7056e526aca2846e0d5de740520 source/miniprogram/pages/index/index.wxss
 d0f4b8be6f66d0ef30f442e5fb0dd1c79c7e5a61 source/miniprogram/components/order-announcement/index.wxml
 4b737d672cdccb930596d369c99a578dea071e01 source/miniprogram/components/order-announcement/index.wxss
+19d5b654fc416656f41673021e325ac4513d354e source/tools/test-message-configuration.php
+ab4a7512ac027dc330d1771167195fff6f544385 source/tools/test_chat_notice_recovery.js
