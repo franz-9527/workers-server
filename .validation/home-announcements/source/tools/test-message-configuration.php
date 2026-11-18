@@ -38,8 +38,8 @@ $out=$save->save(['_settings_scope'=>'announcement','_settings_group'=>'announce
 ]],9);
 $homeSaved=json_decode(configLastWrite($repo)['announcement.home.items'],true);
 configAssert(count($homeSaved)===3&&$homeSaved[0]['text']==='首页公告 A'&&$homeSaved[1]['enabled']===false&&$homeSaved[2]['link']==='https://example.com/notice','home announcement list normalizes multiple independently editable rows');
-configReject(static function()use($save){$save->save(['_settings_scope'=>'announcement','_settings_group'=>'announcement','settings'=>['announcement.home.items'=>[['enabled'=>'1','text'=>'','link'=>'']]],9);},'必须填写公告文字');
-configReject(static function()use($save){$save->save(['_settings_scope'=>'announcement','_settings_group'=>'announcement','settings'=>['announcement.home.items'=>[['enabled'=>'1','text'=>'公告','link'=>'http://unsafe.test']]],9);},'HTTPS');
+configReject(static function()use($save){$save->save(['_settings_scope'=>'announcement','_settings_group'=>'announcement','settings'=>['announcement.home.items'=>[['enabled'=>'1','text'=>'','link'=>'']]]],9);},'必须填写公告文字');
+configReject(static function()use($save){$save->save(['_settings_scope'=>'announcement','_settings_group'=>'announcement','settings'=>['announcement.home.items'=>[['enabled'=>'1','text'=>'公告','link'=>'http://unsafe.test']]]],9);},'HTTPS');
 $announcementPageKeys=array_column($read->announcementSettings()['settings'],'setting_key');
 configAssert(in_array('announcement.home.items',$announcementPageKeys,true)&&in_array('announcement.order_submit.link',$announcementPageKeys,true)&&in_array('announcement.platform_agreement.text',$announcementPageKeys,true),'announcement page exposes home list, page-specific settings and isolated platform agreement together');
 configAssert(!in_array('announcement.home.text',$announcementPageKeys,true)&&!in_array('announcement.home.enabled',$announcementPageKeys,true),'legacy single home announcement keys are no longer editable');
