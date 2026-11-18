@@ -1,5 +1,0 @@
-source_repository=franz-9527/workers
-source_sha=e148b052e43d2aae45c6a5f35861d94eb831b94f
-php_version=8.3.36
-mysql_version=5.7.44
-files=server/app/Core/Database.php,server/app/Contracts/RuntimeLogRepository.php,server/app/Infrastructure/Persistence/RuntimeLogMaintenance.php,server/app/Infrastructure/Persistence/FileRuntimeLogRepository.php,server/app/Infrastructure/Persistence/DatabaseSchedulerFailureRecorder.php,server/app/Infrastructure/Persistence/DatabaseSchedulerRunMaintenance.php
