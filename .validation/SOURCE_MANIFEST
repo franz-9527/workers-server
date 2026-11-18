@@ -1,5 +1,0 @@
-candidate_base=franz-9527/workers@e148b052e43d2aae45c6a5f35861d94eb831b94f
-candidate_changes=DatabaseSchedulerFailureRecorder,DatabaseSchedulerRunMaintenance,DatabaseChatPolicyMaintenance,RuntimeLogAdminModule,tasks.php,bootstrap.php,docs/宝塔计划任务说明.md
-target_runtime=PHP 8.3.36
-target_database=MySQL 5.7.44
-test_location=workers-server only
