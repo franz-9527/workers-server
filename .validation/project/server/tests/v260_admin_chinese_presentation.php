@@ -65,6 +65,7 @@ cnAssert(strpos($authSource,"if (\$user['role'] === 'super_admin')")!==false && 
 cnAssert(strpos($runtimeViewSource,'data-confirm=')!==false && strpos($runtimeViewSource,'data-loading')!==false,'危险日志操作具备表单级确认和提交中状态');
 cnAssert(strpos($runtimeViewSource,"\$job['job_label']")!==false && strpos($runtimeViewSource,"\$job['job_name']")!==false,'任务筛选使用中文标签但提交稳定内部任务键');
 cnAssert(strpos($tasksViewSource,'SchedulerTaskCatalog::label')!==false && strpos($tasksViewSource,"e(\$row['job_name']")===false,'计划任务历史与失败记录只显示中文名称，不直接展示内部英文键');
+cnAssert(strpos($tasksViewSource,'$jobLabels')===false,'任务失败重试确认文案也不再依赖旧英文任务标签映射');
 cnAssert(strpos($runMaintenanceSource,'SchedulerTaskCatalog::label($jobName)')!==false,'数据库运行摘要统一通过计划任务目录获取中文名称');
 cnAssert(strpos($runtimeCssSource,'.admin-runtime-log-stats')!==false && strpos($runtimeCssSource,'@media (max-width: 640px)')!==false,'运行日志统计和移动端布局有专属样式');
 

@@ -196,7 +196,7 @@ $recentRuns = array_slice($recentRuns, 0, 50);
                             <?php if (isset($taskCatalog[$failureJob])): ?>
                                 <form method="post" action="<?= e(admin_url('tasks.failure.retry', ['id'=>$row['id']])) ?>">
                                     <?= csrf()->input() ?>
-                                    <button class="admin-btn admin-btn--sm" data-confirm="确认立即重试“<?= e($jobLabels[$failureJob] ?? $failureJob) ?>”？系统会重新校验当前业务条件；若问题仍存在，会保留新的错误记录。">
+                                    <button class="admin-btn admin-btn--sm" data-confirm="确认立即重试“<?= e(\WorkerAdmin\Domain\Scheduling\SchedulerTaskCatalog::label($failureJob)) ?>”？系统会重新校验当前业务条件；若问题仍存在，会保留新的错误记录。">
                                         <i class="ri-restart-line"></i> 立即重试
                                     </button>
                                 </form>
