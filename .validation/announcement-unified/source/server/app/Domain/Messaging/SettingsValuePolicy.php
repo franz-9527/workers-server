@@ -235,8 +235,8 @@ final class SettingsValuePolicy
             if($key==='qiniu.prefix.chat'&&(strlen($value)>40||preg_match('#^[A-Za-z0-9_-]{1,40}(/[A-Za-z0-9_-]{1,40}){0,2}$#D',$value)!==1))throw new RuntimeException('聊天分类目录请输入不超过40位的相对目录，仅用字母数字、短横线、下划线和斜线，不含点号。');
             if($key==='qiniu.protocol'&&$value!=='http')throw new RuntimeException('当前版本按运营要求仅允许七牛云 HTTP 回源。');
             if($key==='wecom.webhook_url'&&$value!==''&&!preg_match('#^https://qyapi\.weixin\.qq\.com/cgi-bin/webhook/send\?key=[A-Za-z0-9_-]{16,128}$#',$value))throw new RuntimeException('企业微信群机器人 Webhook 地址格式不正确。');
-            if(preg_match('/^announcement\.[a-z_]+\.text$/',$key)&&mb_strlen($value)>500)throw new RuntimeException('公告文字不能超过 500 个字。');
-            if(preg_match('/^announcement\.[a-z_]+\.link$/',$key)&&$value!==''&&!preg_match('#^(?:/(?:pages|subpackages)/[A-Za-z0-9_./?&=%\#-]+|https://[^\s]+)$#',$value))throw new RuntimeException('公告链接须填写 /pages/ 或 /subpackages/ 开头的小程序页面路径，或 HTTPS 网页地址。');
+            if($key==='announcement.text'&&mb_strlen($value)>500)throw new RuntimeException('公告文字不能超过 500 个字。');
+            if($key==='announcement.link'&&$value!==''&&!preg_match('#^(?:/(?:pages|subpackages)/[A-Za-z0-9_./?&=%\#-]+|https://[^\s]+)$#',$value))throw new RuntimeException('公告链接须填写 /pages/ 或 /subpackages/ 开头的小程序页面路径，或 HTTPS 网页地址。');
             // 2026-08-24：当前图片读写与签名链接均以私有目录为安全边界，禁止后台填入一个代码实际不会使用的任意路径。
             if ($key === 'media.storage_path' && $value !== 'storage/private/uploads') { throw new RuntimeException('当前版本图片私有目录固定为 storage/private/uploads。'); }
             // 2026-08-25：按运营要求密钥直接保存原文，设置页可查看、复制和单独清空。
