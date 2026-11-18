@@ -52,7 +52,11 @@ $adminLayoutSource=(string)file_get_contents(dirname(__DIR__).'/views/layouts/ad
 $authSource=(string)file_get_contents(dirname(__DIR__).'/app/Core/Auth.php');
 $runtimeCssSource=(string)file_get_contents(dirname(__DIR__).'/assets/admin.css');
 $runMaintenanceSource=(string)file_get_contents(dirname(__DIR__).'/app/Infrastructure/Persistence/DatabaseSchedulerRunMaintenance.php');
+$adminKernelSource=(string)file_get_contents(dirname(__DIR__).'/app/Http/Admin/AdminKernel.php');
+$requestGuardSource=(string)file_get_contents(dirname(__DIR__).'/app/Http/Admin/AdminRequestGuard.php');
 cnAssert(strpos($adminLayoutSource,"['runtime-logs', '运行日志', 'settings.manage'")!==false,'运行日志菜单沿用 settings.manage 权限');
+cnAssert(strpos($adminKernelSource,'new RuntimeLogAdminModule($db, $auth, $csrf)')!==false,'运行日志模块已注册到后台路由内核');
+cnAssert(strpos($requestGuardSource,'$this->auth->requireLogin()')!==false && strpos($requestGuardSource,'$this->csrf->verifyRequest()')!==false,'后台入口统一执行登录和 POST CSRF 门禁');
 cnAssert(strpos($runtimeModuleSource,"requirePermission('settings.manage')")!==false,'运行日志所有路由在模块内再次检查权限');
 cnAssert(strpos($runtimeModuleSource,"\$this->csrf->verifyRequest()")!==false,'运行日志写操作再次校验 CSRF');
 cnAssert(strpos($runtimeModuleSource,"header('Allow: POST')")!==false,'拒绝非 POST 写请求时返回 Allow 头');
