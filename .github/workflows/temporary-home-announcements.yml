@@ -1,0 +1,47 @@
+name: Temporary home announcement isolation validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/home-announcements/**'
+      - '.github/workflows/temporary-home-announcements.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-home-announcements-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify runtime and exact source blobs
+        run: |
+          php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION !== "8.3.36") exit(1);'
+          cd .validation/home-announcements
+          tail -n +2 SOURCE_MANIFEST | while read expected path; do
+            actual=$(git hash-object "$path")
+            test "$actual" = "$expected" || { echo "blob mismatch $path $actual != $expected"; exit 1; }
+          done
+      - name: PHP syntax
+        run: |
+          cd .validation/home-announcements
+          for file in             source/server/app/Application/Messaging/AnnouncementQuery.php             source/server/app/Application/Messaging/SettingsRead.php             source/server/app/Infrastructure/Settings/DatabaseAdminConfigurationRepository.php             source/server/app/Domain/Messaging/SettingsValuePolicy.php             source/server/app/Http/Api/Modules/MessagingApiModule.php             source/server/views/admin/settings.php             test.php; do php -l "$file"; done
+      - name: PHP behavior contract
+        run: php .validation/home-announcements/test.php
+      - name: JavaScript syntax and loader contract
+        run: |
+          node --check .validation/home-announcements/source/server/assets/admin.js
+          node --check .validation/home-announcements/source/miniprogram/utils/HomeAnnouncementLoader.js
+          node --check .validation/home-announcements/test.js
+          node .validation/home-announcements/test.js
+      - name: Static integration contract
+        run: python3 .validation/home-announcements/check.py
