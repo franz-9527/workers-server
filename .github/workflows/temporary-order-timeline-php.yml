@@ -1,0 +1,49 @@
+name: Temporary order timeline PHP check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/order-timeline/**'
+      - '.github/workflows/temporary-order-timeline-php.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-order-timeline-php-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  timeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: mbstring
+          coverage: none
+      - name: Verify PHP runtime and syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r 'if (PHP_SAPI !== "cli" || PHP_VERSION !== "8.3.36") { fwrite(STDERR, "Expected PHP CLI 8.3.36, got ".PHP_VERSION."\n"); exit(2); }'
+          php -v
+          php -l .validation/order-timeline/DatabaseOrderDetailRepository.php
+          php -l .validation/order-timeline/test-event-text.php
+      - name: Order timeline Chinese text regression
+        run: php .validation/order-timeline/test-event-text.php
+      - name: Verify temporary snapshot cleanup
+        if: always()
+        run: |
+          git rm -r --ignore-unmatch .validation/order-timeline .github/workflows/temporary-order-timeline-php.yml
+          python3 - <<'PY'
+          from pathlib import Path
+          assert not Path('.validation/order-timeline').exists()
+          assert not Path('.github/workflows/temporary-order-timeline-php.yml').exists()
+          print('Temporary order timeline snapshot cleanup verified.')
+          PY
+          git diff --cached --check
