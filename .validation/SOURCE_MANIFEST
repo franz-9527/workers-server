@@ -1,5 +1,0 @@
-source_repository=franz-9527/workers
-source_sha=0dbe37ef07e2e8e9dd4befa4e079ba0219d24777
-php_version=8.3.36
-scope=runtime-log-admin-review
-test_policy=workers-server only
