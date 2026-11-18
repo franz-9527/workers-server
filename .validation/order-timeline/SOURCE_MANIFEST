@@ -1,9 +1,11 @@
 source_repo=franz-9527/workers
 source_sha=bebf6bf8f46bbc52c7ceeda53328a6349ccb2f8e
-scope=one PHP order-detail repository plus isolated event-text regression script; no database, credentials, user data, or mini-program source
+scope=one PHP order-detail repository and its two required traits plus isolated event-text regression script; no database, credentials, user data, or mini-program source
 
 source_files:
 - server/app/Infrastructure/Persistence/DatabaseOrderDetailRepository.php
+- server/app/Infrastructure/Persistence/OrderDetailSettlementViews.php
+- server/app/Infrastructure/Persistence/OrderDetailFullView.php
 
 test_files:
 - .validation/order-timeline/test-event-text.php
@@ -13,8 +15,7 @@ runtime:
 
 commands:
 - php -v (must be exactly 8.3.36)
-- php -l .validation/order-timeline/DatabaseOrderDetailRepository.php
-- php -l .validation/order-timeline/test-event-text.php
+- php -l each copied PHP file and the regression script
 - php .validation/order-timeline/test-event-text.php
 
 The snapshot and temporary workflow must be removed after the run; workers-server is not a source or deployment repository.

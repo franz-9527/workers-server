@@ -33,6 +33,8 @@ jobs:
           php -r 'if (PHP_SAPI !== "cli" || PHP_VERSION !== "8.3.36") { fwrite(STDERR, "Expected PHP CLI 8.3.36, got ".PHP_VERSION."\n"); exit(2); }'
           php -v
           php -l .validation/order-timeline/DatabaseOrderDetailRepository.php
+          php -l .validation/order-timeline/OrderDetailSettlementViews.php
+          php -l .validation/order-timeline/OrderDetailFullView.php
           php -l .validation/order-timeline/test-event-text.php
       - name: Order timeline Chinese text regression
         run: php .validation/order-timeline/test-event-text.php
