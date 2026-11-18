@@ -2,10 +2,7 @@ name: temporary-scheduler-review
 on:
   push:
     branches: [main]
-    paths:
-      - '.validation/project/**'
-      - '.validation/SOURCE_MANIFEST'
-      - '.github/workflows/temporary-scheduler-review.yml'
+    paths: ['.validation/**', '.github/workflows/temporary-scheduler-review.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,32 +10,25 @@ concurrency:
   group: temporary-scheduler-review-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  scheduler-review:
+  regression:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
       mysql:
         image: mysql:5.7.44
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: worker_test
-        ports:
-          - 3306:3306
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: worker_test }
+        ports: ['3306:3306']
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
           --health-interval=10s --health-timeout=5s --health-retries=12
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3.36'
-          extensions: mbstring, pdo_mysql
-          coverage: none
-      - name: Verify PHP target and syntax
+        with: { php-version: '8.3.36', extensions: mbstring, pdo_mysql, coverage: none }
+      - name: Verify PHP 8.3.36 and syntax
         run: |
           set -euo pipefail
-          php -r 'if(PHP_VERSION!=="8.3.36") { fwrite(STDERR, PHP_VERSION); exit(1); } echo "PHP ".PHP_VERSION." verified
-";'
+          php -r 'if(PHP_VERSION!=="8.3.36") exit(1); echo PHP_VERSION,PHP_EOL;'
           find .validation/project/server -type f -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Scheduler backoff and atomic retention regression
         env:
