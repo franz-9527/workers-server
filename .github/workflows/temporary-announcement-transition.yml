@@ -1,0 +1,35 @@
+name: Temporary announcement transition validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/announcement-transition/**'
+      - '.github/workflows/temporary-announcement-transition.yml'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-announcement-transition-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - name: Verify exact runtime and source
+        run: |
+          php -r 'echo PHP_VERSION, PHP_EOL; if (PHP_VERSION !== "8.3.36") exit(1);'
+          cd .validation/announcement-transition
+          tail -n +2 SOURCE_MANIFEST | while read expected path; do
+            actual=$(git hash-object "$path")
+            test "$actual" = "$expected" || { echo "blob mismatch $path"; exit 1; }
+          done
+      - name: Syntax and migration contract
+        run: |
+          php -l .validation/announcement-transition/source/AnnouncementQuery.php
+          php -l .validation/announcement-transition/test.php
+          php .validation/announcement-transition/test.php
