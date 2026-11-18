@@ -32,6 +32,7 @@ jobs:
           set -euo pipefail
           php -r 'if (PHP_SAPI !== "cli" || PHP_VERSION !== "8.3.36") { fwrite(STDERR, "Expected PHP CLI 8.3.36, got ".PHP_VERSION."\n"); exit(2); }'
           php -v
+          php -l .validation/order-timeline/OrderDetailRepository.php
           php -l .validation/order-timeline/DatabaseOrderDetailRepository.php
           php -l .validation/order-timeline/OrderDetailSettlementViews.php
           php -l .validation/order-timeline/OrderDetailFullView.php
