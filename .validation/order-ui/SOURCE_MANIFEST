@@ -32,3 +32,5 @@ commands:
 - node .validation/order-ui/tools/test-order-ui-regression.js
 
 The snapshot is temporary and must be removed after the run; workers-server is not a source or deployment repository.
+
+trigger_source_sha=e4cfa482f1a229b3aa21c6fc220a558698d8e4d6
