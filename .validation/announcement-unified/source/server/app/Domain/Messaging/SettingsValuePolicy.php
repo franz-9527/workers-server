@@ -197,3 +197,56 @@ final class SettingsValuePolicy
                 }
                 $value = json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
+            if ($key === 'order.auto_preapprove_category_ids') {
+                $decoded = json_decode($value, true);
+                if (!is_array($decoded)) throw new RuntimeException('自动预审类目必须是 JSON 数组。');
+                $ids = array_values(array_unique(array_filter(array_map('intval', $decoded), static function ($id) { return $id > 0; })));
+                if (count($ids) > 50) throw new RuntimeException('自动预审类目最多配置 50 个。');
+                $value = json_encode($ids, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+            if ($key === 'app.timezone' && !in_array($value, \DateTimeZone::listIdentifiers(), true)) { throw new RuntimeException('app.timezone 不是有效时区。'); }
+            if ($key === 'order.id_watermark_text' && (mb_strlen($value) < 2 || mb_strlen($value) > 40)) { throw new RuntimeException('身份证图片用途水印须填写 2 至 40 个文字。'); }
+            // 2026-08-24：在保存页先拦截常见支付配置错误，避免直到用户真正付款时才发现密钥、PEM 或回调地址不可用。
+            if ($key === 'wechat.miniapp_env_version') {
+                $value = ['release'=>'formal','develop'=>'developer'][$value] ?? $value;
+                if (!in_array($value, ['formal','trial','developer'], true)) throw new RuntimeException('小程序消息环境只能选择 formal、trial 或 developer。');
+            }
+            if ($key === 'wechat.miniapp_appid' && $value !== '' && preg_match('/^wx[a-fA-F0-9]{16}$/', $value) !== 1) { throw new RuntimeException('小程序 AppID 格式不正确。'); }
+            if ($key === 'wechat.worker_admin_function' && $value !== '' && preg_match('/^[A-Za-z][A-Za-z0-9_-]{0,63}$/', $value) !== 1) { throw new RuntimeException('师傅管理云函数名称只能包含字母、数字、下划线和短横线，且须以字母开头。'); }
+            if ($key === 'wechat.worker_admin_secret' && $value !== '' && strlen($value) < 32) { throw new RuntimeException('云端管理签名密钥至少需要 32 个字符。'); }
+            if ($key === 'wechat.pay.mchid' && $value !== '' && preg_match('/^\d{8,16}$/', $value) !== 1) { throw new RuntimeException('微信支付商户号应为 8 至 16 位数字。'); }
+            if ($key === 'wechat.pay.api_version' && !in_array($value, ['v2','v3'], true)) { throw new RuntimeException('微信支付接口版本只能选择 v2 或 v3。'); }
+            if ($key === 'wechat.pay.api_v2_key' && $value!=='' && strlen($value) !== 32) { throw new RuntimeException('微信支付 API v2 密钥必须恰好为 32 个字符。'); }
+            if ($key === 'wechat.pay.api_v3_key' && $value!=='' && strlen($value) !== 32) { throw new RuntimeException('微信支付 API v3 密钥必须恰好为 32 个字符。'); }
+            if ($key === 'wechat.pay.merchant_serial_no' && $value !== '' && preg_match('/^[A-Fa-f0-9]{16,64}$/', $value) !== 1) { throw new RuntimeException('商户 API 证书序列号格式不正确。'); }
+            if ($key === 'wechat.pay.platform_cert_serial' && $value !== '' && preg_match('/^[A-Za-z0-9_-]{8,128}$/', $value) !== 1) { throw new RuntimeException('微信支付平台证书序列号或公钥 ID 格式不正确。'); }
+            if ($key === 'wechat.pay.private_key' && $value!=='' && strpos($value, 'BEGIN PRIVATE KEY') === false && strpos($value, 'BEGIN RSA PRIVATE KEY') === false) { throw new RuntimeException('请粘贴完整的商户 API 私钥 PEM。'); }
+            if ($key === 'wechat.pay.platform_certificate' && $value!=='' && strpos($value, 'BEGIN CERTIFICATE') === false && strpos($value, 'BEGIN PUBLIC KEY') === false) { throw new RuntimeException('请粘贴完整的微信支付平台证书或公钥 PEM。'); }
+            if ($key === 'wechat.pay.v2_client_certificate' && $value!=='' && strpos($value, 'BEGIN CERTIFICATE') === false) { throw new RuntimeException('请粘贴完整的 API v2 商户证书 PEM。'); }
+            if ($key === 'wechat.pay.v2_client_key' && $value!=='' && strpos($value, 'BEGIN PRIVATE KEY') === false && strpos($value, 'BEGIN RSA PRIVATE KEY') === false) { throw new RuntimeException('请粘贴完整的 API v2 证书私钥 PEM。'); }
+            if (in_array($key, ['wechat.pay.notify_url','wechat.pay.refund_notify_url'], true) && ($value === '' || filter_var($value, FILTER_VALIDATE_URL) === false || strtolower((string) parse_url($value, PHP_URL_SCHEME)) !== 'https')) { throw new RuntimeException('微信支付回调地址必须是可公网访问的 HTTPS 网址。'); }
+            if ($key === 'media.storage_disk' && !in_array($value,['private_local','qiniu'],true)) { throw new RuntimeException('图片存储驱动只能选择服务器私有目录或七牛云。'); }
+            if($key==='qiniu.access_key'&&$value!==''&&!preg_match('/^[A-Za-z0-9_-]{20,128}$/',$value))throw new RuntimeException('七牛云 AccessKey 格式不正确，请检查是否带有空格、换行或引号。');
+            if($key==='qiniu.secret_key'&&$value!==''&&!preg_match('/^[A-Za-z0-9_-]{20,128}$/',$value))throw new RuntimeException('七牛云 SecretKey 格式不正确，请检查是否带有空格、换行或引号。');
+            if($key==='qiniu.bucket'&&$value!==''&&!preg_match('/^[a-z0-9][a-z0-9_-]{0,62}$/',$value))throw new RuntimeException('七牛云空间名称格式不正确，请填写 Bucket 名，不要填访问域名。');
+            if($key==='qiniu.region'&&!in_array($value,['z0','cn-east-2','z1','z2','na0','as0','ap-northeast-1'],true))throw new RuntimeException('七牛云存储区域值不正确。');
+            if($key==='qiniu.domain'&&$value!==''&&!preg_match('#^(?:https?://)?[A-Za-z0-9.-]+(?::\d+)?$#',$value))throw new RuntimeException('七牛云访问域名格式不正确，请勿填写路径。');
+            if($key==='qiniu.upload_host'&&$value!==''&&!preg_match('#^(?:https?://)?[A-Za-z0-9.-]+(?::\d+)?$#',$value))throw new RuntimeException('七牛云上传域名格式不正确，不要填写路径。');
+            if($key==='qiniu.prefix.chat'&&(strlen($value)>40||preg_match('#^[A-Za-z0-9_-]{1,40}(/[A-Za-z0-9_-]{1,40}){0,2}$#D',$value)!==1))throw new RuntimeException('聊天分类目录请输入不超过40位的相对目录，仅用字母数字、短横线、下划线和斜线，不含点号。');
+            if($key==='qiniu.protocol'&&$value!=='http')throw new RuntimeException('当前版本按运营要求仅允许七牛云 HTTP 回源。');
+            if($key==='wecom.webhook_url'&&$value!==''&&!preg_match('#^https://qyapi\.weixin\.qq\.com/cgi-bin/webhook/send\?key=[A-Za-z0-9_-]{16,128}$#',$value))throw new RuntimeException('企业微信群机器人 Webhook 地址格式不正确。');
+            if(preg_match('/^announcement\.[a-z_]+\.text$/',$key)&&mb_strlen($value)>500)throw new RuntimeException('公告文字不能超过 500 个字。');
+            if(preg_match('/^announcement\.[a-z_]+\.link$/',$key)&&$value!==''&&!preg_match('#^(?:/(?:pages|subpackages)/[A-Za-z0-9_./?&=%\#-]+|https://[^\s]+)$#',$value))throw new RuntimeException('公告链接须填写 /pages/ 或 /subpackages/ 开头的小程序页面路径，或 HTTPS 网页地址。');
+            // 2026-08-24：当前图片读写与签名链接均以私有目录为安全边界，禁止后台填入一个代码实际不会使用的任意路径。
+            if ($key === 'media.storage_path' && $value !== 'storage/private/uploads') { throw new RuntimeException('当前版本图片私有目录固定为 storage/private/uploads。'); }
+            // 2026-08-25：按运营要求密钥直接保存原文，设置页可查看、复制和单独清空。
+            $updates[$key] = $value;
+        }
+        if($group==='measurement'){
+            $defaultDays=(int)($updates['measurement.default_freeze_days']??($known['measurement.default_freeze_days']['setting_value']??15));
+            $maximumDays=(int)($updates['measurement.max_freeze_days']??($known['measurement.max_freeze_days']['setting_value']??30));
+            if($defaultDays>$maximumDays)throw new RuntimeException('测量费默认冻结天数不能超过最长冻结天数。');
+        }
+        return $updates;
+    }
+}
