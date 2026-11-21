@@ -1,0 +1,61 @@
+name: Temporary chat call and release contracts
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-im-1121.yml', '.validation/im-1121/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-im-1121-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'cleanup:')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: .validation/im-1121/workers-server
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source blobs before execution
+        run: |
+          set -eu
+          test "$(cat ../SOURCE_SHA)" = "acd69457b20dee23cae0b12b52618e44a591c1c0"
+          while read -r blob file; do test "$(git hash-object --no-filters "$file")" = "$blob"; done < ../SOURCE_MANIFEST
+          wc -l ../SOURCE_MANIFEST
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Call and incoming identity contracts (simulated clients)
+        run: |
+          node --version
+          node --test --test-reporter=tap tools/test_chat_calls.js
+          node --test --test-reporter=tap --test-name-pattern='incoming call uses|invalidating the ringing' tools/test_chat_notice_recovery.js
+      - name: Release checks with synthetic evidence
+        run: |
+          python3 --version
+          python3 tools/test_check_chat_release_profiles.py
+          python3 tools/test_chat_calls_release.py
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          coverage: none
+      - name: PHP syntax and call resource contracts
+        run: |
+          phpbin="$(command -v php)"
+          "$phpbin" -v
+          test "$("$phpbin" -r 'echo PHP_VERSION;')" = 8.3.36
+          find server -name '*.php' -print0 | xargs -0 -n1 "$phpbin" -l
+          "$phpbin" server/tests/chat_call_resource_contract.php
+          "$phpbin" server/tests/chat_call_verification_bootstrap.php
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: '.validation/im-1121/workers-server/chat/go.mod'
+          cache: false
+      - name: Go wire contract unit tests
+        run: |
+          cd chat
+          go version
+          go test -count=1 -v ./internal/ports
