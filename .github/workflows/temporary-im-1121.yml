@@ -38,18 +38,16 @@ jobs:
           python3 --version
           python3 tools/test_check_chat_release_profiles.py
           python3 tools/test_chat_calls_release.py
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3.36'
-          coverage: none
       - name: PHP syntax and call resource contracts
         run: |
-          phpbin="$(command -v php)"
-          "$phpbin" -v
-          test "$("$phpbin" -r 'echo PHP_VERSION;')" = 8.3.36
-          find server -name '*.php' -print0 | xargs -0 -n1 "$phpbin" -l
-          "$phpbin" server/tests/chat_call_resource_contract.php
-          "$phpbin" server/tests/chat_call_verification_bootstrap.php
+          docker pull php:8.3.36-cli
+          docker run --rm --network none -v "$PWD:/checks/workers-server:ro" -w /checks/workers-server php:8.3.36-cli sh -ec '
+            phpbin="$(command -v php)"
+            "$phpbin" -v
+            test "$("$phpbin" -r "echo PHP_VERSION;")" = 8.3.36
+            find server -name "*.php" -print0 | xargs -0 -n1 "$phpbin" -l
+            "$phpbin" server/tests/chat_call_resource_contract.php
+            "$phpbin" server/tests/chat_call_verification_bootstrap.php'
       - uses: actions/setup-go@v5
         with:
           go-version-file: '.validation/im-1121/workers-server/chat/go.mod'
