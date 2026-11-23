@@ -1,0 +1,43 @@
+name: Feedback inbox regression
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers-server2
+          ref: db4d289bacb27994badf1ea8c8139d042ffdcdfd
+          path: qa-baseline
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: qa-baseline/.validation/chat-current/go.mod
+          cache: false
+      - name: Check out the exact source files under test
+        run: |
+          cat .validation/SOURCE_MANIFEST
+          test "$(git hash-object 'chat/internal/message/support.go')" = '92b6433338c6dfdaa78d316e190d740d118bb68b'
+          test "$(git hash-object 'miniprogram/pages/chatMessages/index.js')" = 'ffbdc54ff5dd8a502e5f975c07e1cb11bfb0726a'
+          test "$(git hash-object 'tools/test_chat_s12_business_entry.js')" = 'f03cac7a3903eee5ad6255e7d7c6c87e320895d2'
+          cp chat/internal/message/support.go qa-baseline/.validation/chat-current/internal/message/support.go
+          cp chat/internal/message/support.go qa-baseline/.validation/recent/chat/internal/message/support.go
+          cp miniprogram/pages/chatMessages/index.js qa-baseline/.validation/recent/miniprogram/pages/chatMessages/index.js
+          cp tools/test_chat_s12_business_entry.js qa-baseline/.validation/recent/tools/test_chat_s12_business_entry.js
+      - name: Mini program syntax and S12 regression
+        run: |
+          node --check miniprogram/pages/chatMessages/index.js
+          node qa-baseline/.validation/recent/tools/test_chat_s12_business_entry.js
+      - name: Go message regression
+        working-directory: qa-baseline/.validation/chat-current
+        run: go test ./internal/message

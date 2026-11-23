@@ -1,3 +1,5 @@
 SOURCE_SHA=34acdf36391ee959edbfb5d50b528564ad6f5b2f
 PREVIOUS_TESTED_SHA=f1477fe94e29cb7df2f1af60cb7cf31b340b0f0a
+QA_BASELINE_REPO=franz-9527/workers-server2
+QA_BASELINE_SHA=db4d289bacb27994badf1ea8c8139d042ffdcdfd
 SCOPE=feedback inbox attention count and miniapp retry regression
