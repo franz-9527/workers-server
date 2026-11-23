@@ -217,7 +217,7 @@ e7322ddcc6fa77c10152ebac3d4eedd01e2af9ab  .validation/chat-current/internal/mess
 a85af77d2a22594210fb5f31448c2bc0fce5094e  .validation/chat-current/internal/message/storage_application.go
 80a16af084963311486af2fb5ed44b2d62634c4e  .validation/chat-current/internal/message/storage_tiering.go
 a51aa3fef4e21e26ad0e2b26c49424d86ed5ebdd  .validation/chat-current/internal/message/support_media.go
-3a10a6219d5bb5e8f907efa7dd7f2799655ca196  .validation/chat-current/internal/message/support.go
+92b6433338c6dfdaa78d316e190d740d118bb68b  .validation/chat-current/internal/message/support.go
 ccc9614968ec2e144da93b23e28298adc9fe8880  .validation/chat-current/internal/message/unread_integration_test.go
 0b2cf2ac8c36d8347d6770981ebc4130b1025e83  .validation/chat-current/internal/message/unread.go
 783e0ddb1ba9505d0ab28ea8c260fa97cc08522b  .validation/chat-current/internal/moderation/av.go
@@ -292,7 +292,7 @@ a317fd77340f515c853ac4f367fdede3771f36d0  .validation/recent/chat/internal/messa
 dc639792461eb19c0ea954b0f255f6e9de44254d  .validation/recent/chat/internal/message/service.go
 e7322ddcc6fa77c10152ebac3d4eedd01e2af9ab  .validation/recent/chat/internal/message/socket.go
 a51aa3fef4e21e26ad0e2b26c49424d86ed5ebdd  .validation/recent/chat/internal/message/support_media.go
-3a10a6219d5bb5e8f907efa7dd7f2799655ca196  .validation/recent/chat/internal/message/support.go
+92b6433338c6dfdaa78d316e190d740d118bb68b  .validation/recent/chat/internal/message/support.go
 0b2cf2ac8c36d8347d6770981ebc4130b1025e83  .validation/recent/chat/internal/message/unread.go
 f3f08bd345385eb2f0c80ace9442918edeb5bc56  .validation/recent/chat/internal/policy/collaboration_test.go
 5500898a1ec42495bb3463dc1805a16b45f57e5a  .validation/recent/chat/internal/policy/collaboration.go
@@ -319,7 +319,7 @@ d457e0b869967fdabd0b36bdaba4f4032890af0a  .validation/recent/miniprogram/app.jso
 f135de5741e702a31d885672fa9fb1dfa0065433  .validation/recent/miniprogram/components/subscription-health-banner/index.js
 81bf7d3fd2df858104c621f75bfc363caf2a9d67  .validation/recent/miniprogram/config/config.js
 2856760792801bf7ca12307419de4f5391e5792f  .validation/recent/miniprogram/custom-tab-bar/index.js
-99acc463917bb10a0515c0dfe7b2d45cc79a72bb  .validation/recent/miniprogram/pages/chatMessages/index.js
+ffbdc54ff5dd8a502e5f975c07e1cb11bfb0726a  .validation/recent/miniprogram/pages/chatMessages/index.js
 8f55c64dc64c59d439948310323919b2880c5a7f  .validation/recent/miniprogram/pages/chatMessages/index.wxml
 e25d68dd8b532ba7fb5c38ce244b5e6cb46fd198  .validation/recent/miniprogram/pages/chatMessages/index.wxss
 93b51edbec37b72b7dbb59e17c739c0d71867fe3  .validation/recent/miniprogram/pages/mine/mine.wxml
@@ -406,4 +406,4 @@ f5db3c20c76065be674aa497f18833f2e43e2702  .validation/recent/server/views/admin/
 73948c8fcdd9f76fadbbe90cfca074a8343cd059  .validation/recent/server/views/admin/users.php
 a2ce6f5c221695b2cdeda97849ea8e83f9400a1e  .validation/recent/tools/test_chat_direct_inbox_merge.js
 37c93eca58dd03874e81c0ad8fb0880652079bd6  .validation/recent/tools/test_chat_release_simulation.php
-4847a604b3513de1c757f509f4e31c55a5ed12aa  .validation/recent/tools/test_chat_s12_business_entry.js
+f03cac7a3903eee5ad6255e7d7c6c87e320895d2  .validation/recent/tools/test_chat_s12_business_entry.js
