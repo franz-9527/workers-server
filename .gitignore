@@ -1,0 +1,27 @@
+# Runtime outputs and local dependencies
+*.log
+*.tmp
+*.pyc
+__pycache__/
+.env
+.env.*
+!.env.example
+vendor/
+node_modules/
+coverage/
+test-results/
+artifacts/
+
+# Temporary validation inputs: add reviewed individual paths explicitly when needed.
+.validation/
+.*-validation/
+.*-snapshot/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Local editor/OS files
+.DS_Store
+.idea/
+.vscode/

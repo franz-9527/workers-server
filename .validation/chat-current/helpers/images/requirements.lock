@@ -1,0 +1,3 @@
+# CPython 3.11 / Linux x86_64. Offline production installation from verified wheels.
+Pillow==13.0.0 --hash=sha256:a625df9a2a5597fa5e5266e01aefc82604bb85d291e3547981e863560d75da6c
+zxing-cpp==3.1.1 --hash=sha256:8a5b32d719a5448f1b2f474e04d2db6ce41cc6973fb5c705d47dbe899361e5f9

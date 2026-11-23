@@ -1,0 +1,71 @@
+name: Feedback inbox regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.validation/**'
+      - '.github/workflows/temporary-feedback-inbox-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: feedback-inbox-regression-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .validation/chat-current/go.mod
+          cache: false
+      - name: Verify source snapshot
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path'), crypto = require('crypto')
+          const manifest = fs.readFileSync('.validation/SOURCE_MANIFEST', 'utf8')
+          if (!manifest.includes('SOURCE_SHA=34acdf36391ee959edbfb5d50b528564ad6f5b2f')) throw Error('Unexpected source SHA')
+          const expected = new Map()
+          for (const line of manifest.split('\n')) {
+            const match = /^([0-9a-f]{40})  (\.validation\/.*)$/.exec(line)
+            if (!match) continue
+            if (expected.has(match[2])) throw Error('Duplicate manifest entry')
+            expected.set(match[2], match[1])
+          }
+          const actual = []
+          function walk(dir) {
+            for (const item of fs.readdirSync(dir, {withFileTypes:true})) {
+              const file = path.posix.join(dir, item.name)
+              if (item.isDirectory()) walk(file)
+              else if (item.isFile()) actual.push(file)
+              else throw Error('Unexpected file type: '+file)
+            }
+          }
+          walk('.validation/chat-current')
+          walk('.validation/recent')
+          if (expected.size !== actual.length || expected.size === 0) throw Error('Snapshot file count mismatch')
+          for (const file of actual) {
+            const content = fs.readFileSync(file)
+            const hash = crypto.createHash('sha1').update(Buffer.from('blob '+content.length+'\0')).update(content).digest('hex')
+            if (expected.get(file) !== hash) throw Error('Snapshot mismatch: '+file)
+          }
+          console.log('Verified snapshot files:', actual.length)
+          NODE
+          test "$(git hash-object .validation/chat-current/internal/message/support.go)" = '92b6433338c6dfdaa78d316e190d740d118bb68b'
+          test "$(git hash-object .validation/recent/chat/internal/message/support.go)" = '92b6433338c6dfdaa78d316e190d740d118bb68b'
+          test "$(git hash-object .validation/recent/miniprogram/pages/chatMessages/index.js)" = 'ffbdc54ff5dd8a502e5f975c07e1cb11bfb0726a'
+          test "$(git hash-object .validation/recent/tools/test_chat_s12_business_entry.js)" = 'f03cac7a3903eee5ad6255e7d7c6c87e320895d2'
+      - name: Mini program syntax and S12 regression
+        run: |
+          node --check .validation/recent/miniprogram/pages/chatMessages/index.js
+          node .validation/recent/tools/test_chat_s12_business_entry.js
+      - name: Go message regression
+        working-directory: .validation/chat-current
+        run: go test ./internal/message

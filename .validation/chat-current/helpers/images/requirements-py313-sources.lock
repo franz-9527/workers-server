@@ -1,0 +1,3 @@
+# Verified source archives for the CentOS 7 / CPython 3.13 compatibility build.
+Pillow==13.0.0 --hash=sha256:cdcd1ba258178f7356d74170c9a81ba4eab6a5d55748bc402a5a2a6fe6be3510
+zxing-cpp==3.1.1 --hash=sha256:1051a521b21a9fe206702ad4186aeb195154e3e1badcd99576d030723f36382b

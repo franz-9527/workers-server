@@ -1,0 +1,126 @@
+<view class="page">
+  <view wx:if="{{error}}" class="hint" role="alert">{{error}}</view>
+  <view wx:if="{{!ready && !error}}" class="hint">正在打开私聊</view>
+  <block wx:if="{{ready && inbox}}">
+    <view class="chat-page-toolbar scene-inbox-toolbar">
+      <view class="chat-toolbar-copy">
+        <view class="chat-toolbar-title">{{filter==='archived'?'已归档私聊':(filter==='hidden'?'已隐藏私聊':'普通私聊')}}</view>
+        <view class="chat-toolbar-sub">{{filter==='active'?'直接沟通与会话管理':(filter==='archived'?'历史私聊会话':'已从普通列表隐藏')}}</view>
+      </view>
+      <button class="chat-icon-button chat-menu-trigger" bindtap="toggleSceneInboxMenu" aria-label="{{showInboxMenu?'收起私聊筛选':'私聊筛选'}}" aria-expanded="{{showInboxMenu}}"><text class="chat-icon chat-icon-tune" aria-hidden="true"></text></button>
+    </view>
+    <view wx:if="{{showInboxMenu}}" class="chat-operation-mask scene-inbox-mask" catchtap="closeSceneInboxMenu">
+      <view class="chat-operation-panel scene-inbox-panel" catchtap="stopSceneOperation" aria-label="私聊筛选">
+        <view class="chat-operation-group">
+          <view class="chat-operation-label">会话状态</view>
+          <view class="chat-operation-grid">
+            <button class="chat-operation-chip {{filter==='active'?'selected':''}}" data-filter="active" bindtap="filter"><text>当前会话</text><text>正常私聊</text></button>
+            <button class="chat-operation-chip {{filter==='archived'?'selected':''}}" data-filter="archived" bindtap="filter"><text>已归档</text><text>历史会话</text></button>
+            <button class="chat-operation-chip {{filter==='hidden'?'selected':''}}" data-filter="hidden" bindtap="filter"><text>已隐藏</text><text>隐藏会话</text></button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{inboxSummaryStale}}" class="scene-inbox-sync-warning">消息摘要暂未更新，关系状态仍可正常查看；下拉可重试。</view>
+    <view class="scene-inbox-list">
+      <view wx:for="{{items}}" wx:key="relationship" class="scene-inbox-row {{item.summary && item.summary.pinned?'is-pinned':''}} {{item.blocked?'is-disabled':''}}" bindtap="open" data-id="{{item.relationship}}" role="button" aria-label="{{item.peer.display_name}}，{{item.summary && item.summary.unreadCount ? item.summary.unreadCount+'条未读消息，' : ''}}{{item.blocked?'暂不可发送':'普通私聊'}}">
+        <view class="scene-inbox-avatar direct">
+          <text class="cuIcon-commentfill"></text>
+          <view wx:if="{{item.summary && item.summary.unreadCount}}" class="scene-inbox-unread">{{item.summary.unreadLabel}}</view>
+        </view>
+        <view class="scene-inbox-body">
+          <view class="scene-inbox-main">
+            <text class="scene-inbox-title">{{item.peer.display_name}}</text>
+            <block wx:for="{{item.peer.roles}}" wx:for-item="role" wx:key="*this"><text wx:if="{{role==='worker' || role==='admin'}}" class="scene-inbox-tag">{{role==='worker'?'师傅':'管理员'}}</text></block>
+            <text wx:if="{{item.summary && item.summary.pinned}}" class="scene-inbox-tag">已置顶</text>
+            <text wx:if="{{item.summary && item.summary.later}}" class="scene-inbox-tag">稍后处理</text>
+          </view>
+          <view class="scene-inbox-preview">{{item.summary && item.summary.lastText ? item.summary.lastText : (item.blocked?'当前暂不可发送消息':item.started?'普通私聊':'尚未发送消息')}}</view>
+        </view>
+        <view class="scene-inbox-meta">
+          <text wx:if="{{item.summary && item.summary.activityLabel}}" class="scene-inbox-clock">{{item.summary.activityLabel}}</text>
+          <text wx:if="{{item.summary && item.summary.unreadCount}}" class="scene-inbox-state attention">未读</text>
+          <text wx:elif="{{item.summary ? item.summary.muted : item.muted}}" class="scene-inbox-state">已静音</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!items.length}}" class="scene-inbox-empty"><view class="scene-inbox-empty-icon"><text class="cuIcon-comment"></text></view><view class="scene-inbox-empty-title">{{filter==='active'?'暂无私聊':(filter==='archived'?'暂无已归档私聊':'暂无已隐藏私聊')}}</view><view class="scene-inbox-empty-desc">{{filter==='active'?'可以从师傅详情直接发起私聊':'切换右上角筛选查看其他会话'}}</view></view>
+    <button wx:if="{{next}}" class="scene-inbox-more" bindtap="more">加载更多会话</button>
+  </block>
+  <block wx:elif="{{ready && entry}}">
+    <view class="chat-page-toolbar scene-toolbar">
+      <view class="chat-toolbar-copy"><view class="chat-toolbar-title">{{entry.peer.display_name}}</view><view class="chat-toolbar-sub">{{sceneMeta}}</view></view>
+      <button class="chat-icon-button chat-menu-trigger" bindtap="toggleSceneSettings" aria-label="{{showSettings?'收起会话设置':'会话设置与关系'}}" aria-expanded="{{showSettings}}"><text class="chat-icon chat-icon-tune" aria-hidden="true"></text></button>
+    </view>
+    <view wx:if="{{showSettings}}" class="chat-operation-mask scene-operation-mask" catchtap="closeSceneSettings">
+      <view class="chat-operation-panel scene-operation-panel" catchtap="stopSceneOperation" aria-label="私聊设置">
+        <view class="chat-operation-group">
+          <view class="chat-operation-label">私聊关系</view>
+          <view wx:if="{{entry.relationship}}" class="chat-operation-list">
+            <button class="chat-operation-item {{entry.blocked_by_me?'':'scene-operation-danger'}}" data-cmd="{{entry.blocked_by_me?'unblock':'block'}}" disabled="{{busy}}" bindtap="transition"><text>{{entry.blocked_by_me?'解除拉黑':'拉黑此用户'}}</text><text>›</text></button>
+          </view>
+        </view>
+        <view wx:if="{{preferences}}" class="chat-operation-group">
+          <view class="chat-operation-label">会话整理</view>
+          <view class="chat-operation-grid">
+            <button class="chat-operation-chip {{preferences.pinned?'selected':''}}" disabled="{{busy}}" data-field="pinned" bindtap="preference"><text>{{preferences.pinned?'已置顶':'置顶'}}</text><text>消息列表靠前</text></button>
+            <button class="chat-operation-chip {{preferences.later?'selected':''}}" disabled="{{busy}}" data-field="later" bindtap="preference"><text>{{preferences.later?'已稍后处理':'稍后处理'}}</text><text>{{preferences.later?'已加入待处理':'稍后再回复'}}</text></button>
+            <button class="chat-operation-chip {{preferences.muted?'selected':''}}" disabled="{{busy}}" data-field="muted" bindtap="preference"><text>{{preferences.muted?'已静音':'静音'}}</text><text>调整提醒</text></button>
+            <button class="chat-operation-chip {{preferences.archived?'selected':''}}" disabled="{{busy}}" data-field="archived" bindtap="preference"><text>{{preferences.archived?'已归档':'归档'}}</text><text>移出常用列表</text></button>
+            <button class="chat-operation-chip {{preferences.hidden?'selected':''}}" disabled="{{busy}}" data-field="hidden" bindtap="preference"><text>{{preferences.hidden?'已隐藏':'隐藏'}}</text><text>从普通列表隐藏</text></button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{entry.blocked}}" class="scene-status-banner is-warning">当前会话暂不可发送。</view>
+    <view wx:elif="{{directState && directState.initiator && !directState.established && directState.new_contact && directState.daily_new_contacts_remaining <= 0}}" class="scene-status-banner is-warning">今日主动联系新联系人次数已用完，明日恢复。</view>
+    <view wx:elif="{{directState && directState.initiator && !directState.established && directState.remaining_messages > 0}}" class="scene-status-banner">对方回复前还可发送 {{directState.remaining_messages}} 条消息<text wx:if="{{directState.new_contact && directState.daily_new_contacts_remaining === 1}}">；今日还可主动联系 1 位新联系人</text>。</view>
+    <view wx:elif="{{directState && directState.initiator && !directState.established}}" class="scene-status-banner">已发送 3 条消息，等待对方回复后可继续发送。</view>
+    <view wx:elif="{{directState && !directState.established}}" class="scene-status-banner">回复一条消息后即可建立正常私聊。</view>
+    <button wx:if="{{earlier}}" class="scene-history-action" bindtap="more">查看更早消息</button>
+    <view wx:for="{{messages}}" wx:key="message_id" id="chat-message-{{item.message_id}}" class="message {{item.own?'own':''}}">
+      <view class="scene-message-avatar-frame" data-message="{{item.message_id}}" catchtap="openUserProfile" role="button" aria-label="查看{{item.author}}资料"><image class="scene-message-avatar" src="{{item.avatarPath}}" mode="aspectFill" aria-hidden="true"/></view>
+      <view class="scene-message-main">
+        <view class="meta">{{item.author}} <text wx:for="{{item.roles}}" wx:for-item="role" wx:key="*this">{{role==='worker'?'师傅':'管理员'}} </text></view>
+        <button wx:if="{{item.reply}}" class="quote-preview" data-message="{{item.message_id}}" disabled="{{item.reply.state !== 'published'}}" bindtap="openQuote"><text class="quote-label">引用</text><text class="quote-text">{{item.quote}}</text></button>
+        <view wx:if="{{item.images.length}}" class="bubble scene-image-bubble">
+          <view class="scene-image-grid {{item.images.length === 1 ? 'is-single' : (item.images.length <= 4 ? 'is-few' : 'is-many')}}">
+            <view wx:for="{{item.images}}" wx:for-item="photo" wx:key="item_id" class="scene-chat-image" data-message="{{item.message_id}}" data-item="{{photo.item_id}}" bindtap="openImage" bindlongpress="messageActions" role="button" aria-label="查看第{{photo.ordinal + 1}}张图片">
+              <image wx:if="{{photo.thumb}}" src="{{photo.thumb}}" mode="aspectFill" lazy-load/>
+              <view wx:else class="scene-image-placeholder"><text>图片</text></view>
+            </view>
+          </view>
+        </view>
+        <button wx:elif="{{item.order}}" class="bubble" size="mini" data-message="{{item.message_id}}" bindtap="openOrder" bindlongpress="messageActions">查看订单 {{item.order.publicNo}}</button>
+        <text wx:else class="bubble" selectable data-message="{{item.message_id}}" bindlongpress="messageActions">{{item.text}}</text>
+      </view>
+    </view>
+    <view wx:if="{{entry.ready}}" class="compose scene-compose">
+      <view wx:if="{{replyTo}}" class="compose-quote"><view class="compose-quote-copy"><text class="compose-quote-label">引用</text><text class="compose-quote-text">{{replyPreview}}</text></view><button class="compose-quote-close" bindtap="clearReply" disabled="{{pending}}" aria-label="取消引用">×</button></view>
+      <view wx:if="{{canSend || pending}}" class="scene-composer-row">
+        <input class="scene-composer-input" type="text" value="{{draft}}" maxlength="2000" disabled="{{busy || pending}}" bindinput="input" bindconfirm="send" confirm-type="send" confirm-hold="{{true}}" placeholder="输入消息" placeholder-class="scene-composer-placeholder" aria-label="消息内容"/>
+        <button wx:if="{{draft || pending}}" class="scene-send" disabled="{{busy || (!pending && !draft)}}" loading="{{busy}}" bindtap="send">{{pending?'核对':'发送'}}</button>
+        <button wx:elif="{{canSend && imagesEnabled}}" class="scene-more" disabled="{{busy}}" bindtap="toggleSceneTools" aria-label="{{showTools?'收起更多功能':'更多功能'}}"><text class="chat-icon {{showTools?'chat-icon-close':'chat-icon-plus'}}" aria-hidden="true"></text></button>
+      </view>
+      <view wx:if="{{showTools && canSend && !pending}}" class="scene-tools">
+        <button wx:if="{{directState && directState.established}}" class="scene-tool" disabled="{{busy}}" bindtap="shareOrder"><view class="scene-tool-icon"><text class="chat-icon chat-icon-order" aria-hidden="true"></text></view><text>订单</text></button>
+        <button wx:if="{{imagesEnabled && !imageState}}" class="scene-tool" disabled="{{busy}}" data-source="album" bindtap="chooseImages"><view class="scene-tool-icon"><text class="chat-icon chat-icon-photo" aria-hidden="true"></text></view><text>照片</text></button>
+        <button wx:if="{{imagesEnabled && !imageState}}" class="scene-tool" disabled="{{busy}}" data-source="camera" bindtap="chooseImages"><view class="scene-tool-icon"><text class="chat-icon chat-icon-camera" aria-hidden="true"></text></view><text>拍摄</text></button>
+      </view>
+      <view wx:if="{{notice}}" class="scene-status" role="status">{{notice}}</view>
+      <button wx:if="{{canForget}}" class="scene-inline-action" bindtap="forget">清除本机待确认记录</button>
+      <view wx:if="{{imageItems.length || imageState}}" class="scene-image-draft">
+        <view class="scene-image-draft-head"><text>{{imageItems.length || 1}} 张图片</text><text>{{imageNotice}}</text></view>
+        <view wx:if="{{imageItems.length}}" class="selection">
+          <image wx:for="{{imageItems}}" wx:key="ordinal" wx:if="{{item.path}}" src="{{item.path}}" mode="aspectFill" />
+        </view>
+        <view wx:if="{{imageState}}" class="scene-image-actions">
+          <button wx:if="{{imagesEnabled || imageState==='unknown'}}" class="scene-image-send" disabled="{{busy}}" bindtap="sendImages">{{imageState==='editing'?'发送图片':imageState==='retryable'?'重试检查':'核对状态'}}</button>
+          <button class="scene-image-cancel" disabled="{{busy}}" bindtap="cancelImages">{{imageState==='editing'?'取消选择':'取消发送'}}</button>
+        </view>
+      </view>
+      <view wx:elif="{{imageNotice}}" class="scene-status" role="status">{{imageNotice}}</view>
+    </view>
+  </block>
+  <view wx:if="{{messageMenu}}" class="message-menu-mask" catchtap="closeMessageMenu"><view class="message-menu is-{{messageMenu.placement}}" style="top:{{messageMenu.top}}px;left:{{messageMenu.left}}px;width:{{messageMenu.width}}px;grid-template-columns:repeat({{messageMenu.columns}},minmax(0,1fr))"><button wx:for="{{messageMenu.actions}}" wx:key="key" class="{{item.tone==='danger'?'is-danger':''}}" data-key="{{item.key}}" catchtap="runMessageAction" aria-label="{{item.label}}"><text class="chat-action-icon chat-action-{{item.icon}}" aria-hidden="true"></text><text class="message-menu-label">{{item.label}}</text></button></view></view>
+</view>
