@@ -47,7 +47,7 @@ jobs:
         run: |
           set -euo pipefail
           docker run -d --name review-mysql -p 127.0.0.1::3306 -e MYSQL_ROOT_PASSWORD="$CHAT_INTEGRATION_ADMIN_PASSWORD" -e MYSQL_ROOT_HOST=% -e MYSQL_DATABASE=redis_review mysql:5.7.44 --log-bin=mysql-bin --server-id=1 --binlog-format=MIXED
-          docker run -d --name review-redis -p 127.0.0.1::6379 redis:8.10.3
+          docker run -d --name review-redis -p 127.0.0.1::6379 redis:8.10.3 redis-server --save '' --appendonly no
           for i in $(seq 1 60); do
             if docker exec review-mysql mysqladmin ping -h127.0.0.1 -p"$CHAT_INTEGRATION_ADMIN_PASSWORD" >/dev/null 2>&1; then break; fi
             sleep 2
@@ -81,7 +81,7 @@ jobs:
           go version
           go mod verify
           go test -race -count=1 -v ./internal/auth
-          (cd internal/dependencies; go test -race -count=1 -v redis.go settings.go fixture_runtime_test.go)
+          (cd internal/dependencies; CHAT_REDIS_RESTART_FIXTURE=review-redis go test -race -count=1 -v redis.go settings.go fixture_runtime_test.go)
           go test -race -count=1 -v ./internal/message
       - name: Stop isolated services
         if: always()
