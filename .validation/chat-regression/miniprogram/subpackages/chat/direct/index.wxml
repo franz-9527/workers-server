@@ -1,0 +1,50 @@
+<view class="page">
+  <view wx:if="{{error}}" class="hint" role="alert">{{error}}</view>
+  <view wx:if="{{!ready && !error}}" class="hint">正在打开私聊</view>
+  <block wx:if="{{ready && inbox}}">
+    <view class="chat-page-toolbar scene-inbox-toolbar">
+      <view class="chat-toolbar-copy">
+        <view class="chat-toolbar-title">{{filter==='archived'?'已归档私聊':(filter==='hidden'?'已隐藏私聊':'普通私聊')}}</view>
+        <view class="chat-toolbar-sub">{{filter==='active'?'直接沟通与会话管理':(filter==='archived'?'历史私聊会话':'已从普通列表隐藏')}}</view>
+      </view>
+      <button class="chat-icon-button chat-menu-trigger" bindtap="toggleSceneInboxMenu" aria-label="{{showInboxMenu?'收起私聊筛选':'私聊筛选'}}" aria-expanded="{{showInboxMenu}}"><text class="chat-icon chat-icon-tune" aria-hidden="true"></text></button>
+    </view>
+    <view wx:if="{{showInboxMenu}}" class="chat-operation-mask scene-inbox-mask" catchtap="closeSceneInboxMenu">
+      <view class="chat-operation-panel scene-inbox-panel" catchtap="stopSceneOperation" aria-label="私聊筛选">
+        <view class="chat-operation-group">
+          <view class="chat-operation-label">会话状态</view>
+          <view class="chat-operation-grid">
+            <button class="chat-operation-chip {{filter==='active'?'selected':''}}" data-filter="active" bindtap="filter"><text>当前会话</text><text>正常私聊</text></button>
+            <button class="chat-operation-chip {{filter==='archived'?'selected':''}}" data-filter="archived" bindtap="filter"><text>已归档</text><text>历史会话</text></button>
+            <button class="chat-operation-chip {{filter==='hidden'?'selected':''}}" data-filter="hidden" bindtap="filter"><text>已隐藏</text><text>隐藏会话</text></button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{inboxSummaryStale}}" class="scene-inbox-sync-warning">消息摘要暂未更新，关系状态仍可正常查看；下拉可重试。</view>
+    <view class="scene-inbox-list">
+      <view wx:for="{{items}}" wx:key="relationship" class="scene-inbox-row {{item.summary && item.summary.pinned?'is-pinned':''}} {{item.blocked?'is-disabled':''}}" bindtap="open" data-id="{{item.relationship}}" role="button" aria-label="{{item.peer.display_name}}，{{item.summary && item.summary.unreadCount ? item.summary.unreadCount+'条未读消息，' : ''}}{{item.blocked?'暂不可发送':'普通私聊'}}">
+        <view class="scene-inbox-avatar direct">
+          <text class="cuIcon-commentfill"></text>
+          <view wx:if="{{item.summary && item.summary.unreadCount}}" class="scene-inbox-unread">{{item.summary.unreadLabel}}</view>
+        </view>
+        <view class="scene-inbox-body">
+          <view class="scene-inbox-main">
+            <text class="scene-inbox-title">{{item.peer.display_name}}</text>
+            <block wx:for="{{item.peer.roles}}" wx:for-item="role" wx:key="*this"><text wx:if="{{role==='worker' || role==='admin'}}" class="scene-inbox-tag">{{role==='worker'?'师傅':'管理员'}}</text></block>
+            <text wx:if="{{item.summary && item.summary.pinned}}" class="scene-inbox-tag">已置顶</text>
+            <text wx:if="{{item.summary && item.summary.later}}" class="scene-inbox-tag">稍后处理</text>
+          </view>
+          <view class="scene-inbox-preview">{{item.summary && item.summary.lastText ? item.summary.lastText : (item.blocked?'当前暂不可发送消息':item.started?'普通私聊':'尚未发送消息')}}</view>
+        </view>
+        <view class="scene-inbox-meta">
+          <text wx:if="{{item.summary && item.summary.activityLabel}}" class="scene-inbox-clock">{{item.summary.activityLabel}}</text>
+          <text wx:if="{{item.summary && item.summary.unreadCount}}" class="scene-inbox-state attention">未读</text>
+          <text wx:elif="{{item.summary ? item.summary.muted : item.muted}}" class="scene-inbox-state">已静音</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{!items.length}}" class="scene-inbox-empty"><view class="scene-inbox-empty-icon"><text class="cuIcon-comment"></text></view><view class="scene-inbox-empty-title">{{filter==='active'?'暂无私聊':(filter==='archived'?'暂无已归档私聊':'暂无已隐藏私聊')}}</view><view class="scene-inbox-empty-desc">{{filter==='active'?'可以从师傅详情直接发起私聊':'切换右上角筛选查看其他会话'}}</view></view>
+    <button wx:if="{{next}}" class="scene-inbox-more" bindtap="more">加载更多会话</button>
+  </block>
+</view>

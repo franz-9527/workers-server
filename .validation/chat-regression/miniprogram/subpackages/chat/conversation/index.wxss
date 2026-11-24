@@ -1,0 +1,261 @@
+@import "../../../style/chat-native.wxss";
+
+/* Native chat owns this viewport. Shared toolbar, icons and menu are imported above.
+   Keep layout definitions here; dark mode changes semantic colors, not dimensions. */
+page{height:100%;overflow:hidden}
+.conversation-page{
+  --cv-bg:#ededed;--cv-toolbar:#f7f7f7;--cv-surface:#fff;--cv-text:#1f2527;--cv-muted:#58656b;--cv-border:#d4d6d6;
+  --cv-own:#bbe7ed;--cv-link:#166b75;--cv-error:#a13e33;--cv-warning-bg:#fff2e9;--cv-warning:#865317;--cv-notice-bg:#e7e9e9;--cv-notice:#515d60;
+  --cv-reference:#f3f6f6;--cv-reference-border:#8aa0a4;--cv-reference-text:#526e75;--cv-send:#007381;
+  height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;background:var(--cv-bg);color:var(--cv-text)
+}
+@media(prefers-color-scheme:dark){
+ .conversation-page{
+  --cv-bg:#111;--cv-toolbar:#1e1e1e;--cv-surface:#2c2c2c;--cv-text:#e8e8e8;--cv-muted:#b2b8bb;--cv-border:#363636;
+  --cv-own:#16464e;--cv-link:#8bdce5;--cv-error:#efa89d;--cv-warning-bg:#372a22;--cv-warning:#f0c995;--cv-notice-bg:#282b2c;--cv-notice:#c4cdcf;
+  --cv-reference:#202728;--cv-reference-border:#71878c;--cv-reference-text:#adc4c9;--cv-send:#007381
+ }
+}
+.conversation-page .conversation-context.chat-page-toolbar{display:flex;align-items:center;gap:12rpx;flex:none;min-height:72rpx;padding:2rpx 20rpx 4rpx 28rpx;background:var(--cv-toolbar);border-bottom:1rpx solid var(--cv-border)}
+.conversation-page .conversation-context-copy{flex:1;min-width:0}
+.conversation-page .conversation-context-sub{font-size:22rpx;color:var(--cv-muted);line-height:1.45;margin:0;overflow-wrap:anywhere}
+.conversation-page .chat-details{flex:0 0 72rpx;width:72rpx;min-width:72rpx;max-width:72rpx;min-height:72rpx;margin:0 0 0 12rpx;padding:0;box-sizing:border-box}
+.conversation-page .chat-operation-mask{top:72rpx}
+.conversation-page .conversation-operation-panel{right:20rpx;max-height:calc(100% - 20rpx);overflow-y:auto}
+.conversation-page .message-scroll{flex:1;height:0;min-height:0;overflow:hidden}
+.conversation-page .message-content{padding:20rpx 24rpx}
+.conversation-page .message-bottom{height:2rpx}
+.conversation-page .conversation-empty{text-align:center;padding:170rpx 20rpx 70rpx;font-size:28rpx;font-weight:600;color:var(--cv-muted);line-height:1.7}
+.conversation-page .conversation-empty text{display:block;margin-bottom:16rpx;color:var(--cv-link);font-size:50rpx}
+.conversation-page .conversation-empty.compact{padding:66rpx 20rpx;font-size:24rpx}
+.conversation-page .conversation-empty.compact text{display:inline;font-size:24rpx;margin-right:14rpx}
+.conversation-page .muted{font-size:24rpx;color:var(--cv-muted);font-weight:400}
+.conversation-page .conversation-status{display:flex;align-items:center;gap:12rpx;min-width:0;box-sizing:border-box;flex:none;padding:4rpx 24rpx;margin:0;min-height:76rpx;border-radius:0;font-size:24rpx;line-height:1.45}
+.conversation-page .conversation-warning{background:var(--cv-warning-bg);color:var(--cv-warning)}
+.conversation-page .conversation-status-copy{flex:1;min-width:0;overflow-wrap:anywhere}
+.conversation-page .retry-button,.conversation-page .notice-close{display:flex;align-items:center;justify-content:center;flex:none;width:auto;min-width:0;min-height:76rpx;margin:0;padding:0 8rpx;background:transparent;border:0;border-radius:0;color:inherit;font-size:24rpx;line-height:1.3;font-weight:500}
+.conversation-page .retry-button::after,.conversation-page .notice-close::after{border:0}
+.conversation-page .retry-button[disabled]{opacity:.65;background:transparent}
+.conversation-page .conversation-action-notice{background:var(--cv-notice-bg);color:var(--cv-notice)}
+.conversation-page .notice-close{min-width:56rpx;font-size:34rpx;font-weight:400}
+.conversation-page .conversation-jump-actions{display:flex;justify-content:flex-end;gap:8rpx;flex:none;padding:4rpx 24rpx}
+.conversation-page .conversation-jump-actions button,.conversation-page .history-button{display:flex;align-items:center;justify-content:center;gap:6rpx;width:auto;min-width:0;min-height:58rpx;margin:0;padding:6rpx 14rpx;line-height:1.4;font-size:23rpx;background:transparent;color:var(--cv-link);border-radius:999rpx}
+.conversation-page .history-button{margin:10rpx auto}
+.conversation-page .conversation-jump-actions button::after,.conversation-page .history-button::after{border:0}
+.conversation-page .conversation-jump-actions button[disabled],.conversation-page .history-button[disabled]{opacity:.5}
+.conversation-page .conversation-safety-tip{display:flex;align-items:flex-start;gap:10rpx;margin:6rpx auto 22rpx;max-width:620rpx;padding:12rpx 16rpx;box-sizing:border-box;border-radius:12rpx;background:#fff1cf;color:#7a5412;font-size:23rpx;line-height:1.55}
+.conversation-page .safety-tip-icon{flex:none;margin-top:2rpx;color:#b27108;font-size:26rpx}
+@media(prefers-color-scheme:dark){.conversation-page .conversation-safety-tip{background:#3a3020;color:#f0c878}.conversation-page .safety-tip-icon{color:#f2b84b}}
+
+/* Rows do not carry a card background; only message bubbles do. */
+.conversation-page .message-item{display:flex;align-items:flex-start;gap:16rpx;width:100%;min-width:0;min-height:80rpx;margin:14rpx 0;padding:0;box-sizing:border-box}
+.conversation-page .message-item.is-mine{flex-direction:row-reverse}
+.conversation-page .message-body{max-width:calc(100% - 96rpx);min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.conversation-page .is-mine .message-body{align-items:flex-end}
+.conversation-page .message-avatar{width:80rpx;height:80rpx;border-radius:10rpx;display:block}
+.conversation-page .message-bubble{position:relative;min-width:0;max-width:100%;padding:18rpx 20rpx;box-sizing:border-box;border-radius:10rpx;background:var(--cv-surface)}
+.conversation-page .message-item:not(.is-mine) .message-bubble:before{content:'';position:absolute;left:-10rpx;top:28rpx;border-top:10rpx solid transparent;border-bottom:10rpx solid transparent;border-right:12rpx solid var(--cv-surface)}
+.conversation-page .is-mine .message-bubble{background:var(--cv-own)}
+.conversation-page .is-mine .message-bubble:before{content:'';position:absolute;right:-10rpx;top:28rpx;border-top:10rpx solid transparent;border-bottom:10rpx solid transparent;border-left:12rpx solid var(--cv-own)}
+.conversation-page .message-text{font-size:32rpx;line-height:1.55;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+.conversation-page .message-sender{font-size:23rpx;line-height:1.5;margin:0 0 6rpx;color:var(--cv-muted);max-width:100%;word-break:break-word}
+.conversation-page .is-mine .message-sender{text-align:right}
+.conversation-page .message-divider{text-align:center;color:var(--cv-muted);font-size:23rpx;line-height:1.5;margin:30rpx 0}
+.conversation-page .is-placeholder .message-bubble{background:transparent;color:var(--cv-muted)}
+.conversation-page .is-placeholder .message-text{font-size:24rpx}
+.conversation-page .is-placeholder .message-bubble:before{display:none}
+.conversation-page .message-receipt,.conversation-page .message-safety-note{max-width:100%;margin-top:6rpx;font-size:23rpx;line-height:1.5;color:var(--cv-muted);overflow-wrap:anywhere}
+.conversation-page .message-receipt{align-self:flex-end;text-align:right;padding:4rpx 0}
+.conversation-page .message-safety-note{color:#706349}
+@media(prefers-color-scheme:dark){.conversation-page .message-safety-note{color:#c4b79b}}
+.conversation-page .attempt-item{min-height:0}
+.conversation-page .attempt-status-line{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:0 12rpx;max-width:100%;min-width:0;font-size:23rpx;line-height:1.5;color:var(--cv-muted);text-align:right;margin-top:6rpx}
+.conversation-page .attempt-status-copy{min-width:0;overflow-wrap:anywhere}
+.conversation-page .attempt-status-line.is-error{color:var(--cv-error)}
+.conversation-page .attempt-status-line button{display:flex;align-items:center;justify-content:center;flex:none;width:auto;min-width:0;min-height:64rpx;padding:0 6rpx;margin:0;background:transparent;color:var(--cv-link);font-size:23rpx;line-height:1.4}
+.conversation-page .attempt-status-line button::after{border:0}
+.conversation-page .shared-order-card{display:flex;flex-direction:column;align-items:flex-start;width:auto;max-width:100%;min-width:0;background:transparent;color:inherit;padding:12rpx;font-size:28rpx;line-height:1.6;text-align:left;white-space:normal;word-break:break-all}
+.conversation-page .shared-order-card text:last-child{font-size:24rpx;color:var(--cv-link)}
+.conversation-page .shared-order-card::after{border:0}
+
+/* Single-line composer: native keyboard and safe area are handled once. */
+.conversation-page .composer{flex:none;margin:0;padding:8rpx 12rpx calc(8rpx + env(safe-area-inset-bottom));background:var(--cv-toolbar);border-top:1rpx solid var(--cv-border)}
+.conversation-page .composer.is-empty{padding:0;border-top:0}
+.conversation-page.keyboard-open .composer:not(.is-empty){padding-bottom:12rpx}
+.conversation-page .composer-row{display:flex;align-items:center;gap:8rpx;min-width:0;width:100%;box-sizing:border-box}
+.conversation-page .composer-input,.conversation-page .voice-hold{flex:1 1 0%;width:0;min-width:0;height:76rpx;min-height:76rpx;max-height:76rpx;line-height:76rpx;box-sizing:border-box;background:var(--cv-surface);color:var(--cv-text);border-radius:10rpx;border:0;outline:0;margin:0}
+.conversation-page .composer-input{padding:0 18rpx;font-size:32rpx;overflow:hidden}
+.conversation-page .composer-placeholder{color:var(--cv-muted)}
+.conversation-page .voice-hold{padding:0 12rpx;font-size:30rpx;font-weight:600}
+.conversation-page .voice-hold::after{border:0}
+.conversation-page .voice-hold.is-recording{background:var(--cv-own)}
+.conversation-page .composer-mode,.conversation-page .composer-more{flex:0 0 76rpx;width:76rpx;min-width:76rpx;max-width:76rpx;height:76rpx;min-height:76rpx;padding:0}
+.conversation-page .composer-mode .chat-icon,.conversation-page .composer-more .chat-icon{width:52rpx;height:52rpx}
+.conversation-page .composer-send{display:flex;align-items:center;justify-content:center;flex:0 0 116rpx;width:116rpx;min-width:116rpx;max-width:116rpx;height:76rpx;box-sizing:border-box;line-height:1;font-size:28rpx;font-weight:500;background:var(--cv-send);color:#fff;border-radius:8rpx}
+.conversation-page .composer-send.is-disabled{opacity:.45}
+.conversation-page .composer-closed{padding:12rpx;text-align:center;color:var(--cv-muted);font-size:24rpx}
+.conversation-page .input-error{font-size:23rpx;line-height:1.5;color:var(--cv-error);padding:4rpx 12rpx 0}
+.conversation-page .draft-hint{font-size:23rpx;line-height:1.5;color:var(--cv-muted);margin-top:10rpx}
+.conversation-page .chat-tools{display:flex;flex-wrap:wrap;gap:0;width:100%;box-sizing:border-box;padding:22rpx 0 8rpx;overflow:hidden;border-top:1rpx solid var(--cv-border);margin-top:10rpx}
+.conversation-page .chat-tool{flex:0 0 25%;width:25%;min-width:0;max-width:25%;box-sizing:border-box;display:flex;align-items:center;justify-content:flex-start;flex-direction:column;gap:12rpx;min-height:160rpx;padding:12rpx 4rpx;margin:0;text-align:center;line-height:1.5;font-size:24rpx;white-space:normal;color:var(--cv-muted)}
+.conversation-page .chat-tool>text{width:100%;white-space:normal;word-break:normal;text-align:center}
+.conversation-page .chat-tool-icon{flex:none;width:100rpx;height:100rpx;box-sizing:border-box;border-radius:20rpx;background:var(--cv-surface);display:flex;align-items:center;justify-content:center}
+.conversation-page .chat-tool .chat-icon{height:52rpx;width:52rpx}
+.conversation-page .chat-tool.is-unavailable{opacity:.42}
+.conversation-page .call-tool-hint{padding:0 12rpx 14rpx;font-size:23rpx;line-height:1.55;color:var(--cv-muted);text-align:center}
+
+/* Reference preview and editing draft use the same compact reference surface. */
+.conversation-page .reference-preview{display:flex;flex-direction:column;align-items:flex-start;gap:2rpx;width:100%;min-width:0;max-width:100%;box-sizing:border-box;white-space:normal;text-align:left;margin:0 0 10rpx;padding:8rpx 12rpx;border-left:3rpx solid var(--cv-reference-border);border-radius:6rpx;background:var(--cv-reference);color:var(--cv-reference-text);overflow:hidden}
+.conversation-page .reference-preview::after,.conversation-page .reedit-source::after{border:0}
+.conversation-page .reference-preview[disabled]{opacity:.68}
+.conversation-page .reference-author{max-width:100%;font-size:22rpx;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conversation-page .reference-text{max-width:100%;font-size:23rpx;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}
+.conversation-page .reedit-source{display:block;width:auto;max-width:100%;white-space:normal;text-align:left;line-height:1.5;margin:0 0 8rpx;padding:6rpx 0;border:0;background:transparent;color:var(--cv-muted);font-size:22rpx;overflow-wrap:anywhere}
+.conversation-page .composer-reference,.conversation-page .composer-reedit{display:flex;align-items:center;gap:10rpx;margin:0 0 8rpx;padding:7rpx 8rpx 7rpx 10rpx;border-left:3rpx solid var(--cv-reference-border);border-radius:8rpx;background:var(--cv-reference);color:var(--cv-reference-text);font-size:23rpx}
+.conversation-page .composer-reference-copy{display:flex;align-items:center;gap:9rpx;flex:1;min-width:0}
+.conversation-page .composer-reference-label{flex:none;font-size:22rpx;font-weight:600;color:var(--cv-muted)}
+.conversation-page .composer-reference-text{flex:1;min-width:0;font-size:23rpx;line-height:1.45;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.conversation-page .composer-reference-close,.conversation-page .composer-reedit button{display:flex;align-items:center;justify-content:center;flex:none;width:auto;min-width:56rpx;min-height:56rpx;margin:0;padding:0 8rpx;background:transparent;color:var(--cv-link);font-size:23rpx;line-height:1.4}
+.conversation-page .composer-reference-close{font-size:34rpx;font-weight:300}
+.conversation-page .composer-reference-close::after,.conversation-page .composer-reedit button::after{border:0}
+.conversation-page .composer-reedit text{flex:1;min-width:0;overflow-wrap:anywhere}
+
+/* One audio/video bubble layout for pending and server-confirmed rows. */
+.conversation-page .av-message-bubble{padding:0 20rpx;max-width:100%}
+.conversation-page .av-card{width:100%;min-width:0;max-width:100%}
+.conversation-page .av-card button{display:flex;align-items:center;gap:12rpx;min-height:76rpx;max-width:100%;min-width:0;padding:8rpx 0;margin:0;background:transparent;color:inherit;font-size:28rpx;line-height:1.5;white-space:normal;text-align:left;box-sizing:border-box}
+.conversation-page .av-card button::after{border:0}
+.conversation-page .av-card .chat-icon{width:36rpx;height:36rpx}
+.conversation-page .av-unheard{color:var(--cv-error);font-size:22rpx;margin-left:8rpx}
+.conversation-page .voice-message-bubble{min-width:0;max-width:100%;box-sizing:border-box}
+.conversation-page .voice-message-bubble .av-card>button{width:100%;white-space:nowrap}
+.conversation-page .av-transcript{display:block;color:var(--cv-muted);font-size:26rpx;line-height:1.4;margin-top:8rpx;padding:12rpx 0 14rpx;border-top:1rpx solid rgba(127,139,143,.35);white-space:pre-wrap;overflow-wrap:anywhere}
+.conversation-page .av-card.is-playing .chat-icon-voice{animation:voice-level 900ms ease-in-out infinite}
+.conversation-page .pending-media-line{position:relative;display:flex;align-items:center;max-width:100%;min-width:0}
+.conversation-page .pending-av-bubble{display:block;min-width:0;max-width:100%}
+.conversation-page .media-retry{position:absolute;left:-52rpx;top:50%;transform:translateY(-50%);z-index:1;display:flex;align-items:center;justify-content:center;background:#d43c3c;color:#fff;font-weight:700;border-radius:50%;width:38rpx;height:38rpx;line-height:38rpx;font-size:28rpx}
+.conversation-page .pending-media-line.has-retry{max-width:calc(100% - 52rpx)}
+.conversation-page .av-viewer{position:fixed;inset:0;background:#111;z-index:2000;display:flex;flex-direction:column;justify-content:center;gap:24rpx;color:#fff;padding:30rpx;box-sizing:border-box}
+.conversation-page .av-viewer video{width:100%;height:65vh}
+.conversation-page .av-viewer button{background:#303030;color:#fff;min-height:88rpx}
+
+/* Small invitation, explicit paid confirmation; no automatic interrupting modal. */
+.conversation-page .sms-nudge-row{display:flex;align-items:center;justify-content:flex-end;gap:8rpx;margin-bottom:-12rpx}
+.conversation-page .sms-nudge-hint{font-size:22rpx;line-height:1.5;color:#4c5c62}
+.conversation-page .sms-nudge-button{display:flex;align-items:center;justify-content:center;background:transparent;padding:0;margin:0;min-width:88rpx;min-height:88rpx}
+.conversation-page .sms-nudge-button::after{border:0}.sms-nudge-button .chat-icon{height:28rpx;width:28rpx}
+.sms-mask{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.48);display:flex;align-items:center;justify-content:center;padding:32rpx}
+.sms-dialog{width:100%;max-width:640rpx;background:#fff;color:#202526;border-radius:20rpx;padding:30rpx;box-sizing:border-box}
+.sms-dialog-title{font-size:34rpx;font-weight:600;margin-bottom:20rpx}.sms-recipient-list{height:300rpx;max-height:32vh;overflow-y:auto}.sms-recipient-list.sms-one{height:100rpx}.sms-recipient-list.sms-two{height:200rpx}
+.sms-recipient text:first-child{flex:1;min-width:0;word-break:break-all}.sms-recipient text:last-child{flex-shrink:0}
+.sms-dialog .sms-recipient{width:100%;min-height:88rpx;display:flex;align-items:center;justify-content:space-between;padding:20rpx 0;margin:0;background:transparent;color:inherit;font-size:30rpx;line-height:1.5;text-align:left;border-bottom:1rpx solid #ddd}
+.sms-dialog button::after{border:0}.sms-dialog .sms-recipient.selected{color:#007381}
+.sms-fee{font-size:28rpx;line-height:1.6;margin-top:20rpx}.sms-dialog-note,.sms-insufficient{font-size:26rpx;line-height:1.65;margin-top:18rpx;color:#59676d}
+.sms-insufficient{color:#9c3030}.sms-dialog-actions{display:flex;gap:20rpx;margin-top:28rpx}
+.sms-dialog-actions button{flex:1;min-height:88rpx;margin:0;padding:20rpx 8rpx;line-height:1.5;font-size:30rpx;background:#ededed;color:#202526;border-radius:10rpx}
+.sms-dialog-actions .sms-confirm{background:#007381;color:#fff}
+@media(prefers-color-scheme:dark){.conversation-page .sms-nudge-hint{color:#c2c8ca}.sms-dialog{background:#202020;color:#eee}.sms-dialog-note{color:#bcc4c7}.sms-insufficient{color:#ffaaa3}.sms-dialog .sms-recipient{border-color:#444}.sms-dialog .sms-recipient.selected{color:#8bdce5}.sms-dialog-actions button{background:#333;color:#eee}.sms-dialog-actions .sms-confirm{background:#007381;color:#fff}}
+
+.voice-record-mask{position:fixed;inset:0;z-index:115;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.voice-record-panel{display:flex;align-items:center;justify-content:center;flex-direction:column;width:340rpx;min-height:280rpx;padding:28rpx 16rpx;box-sizing:border-box;background:rgba(30,30,30,.88);border-radius:18rpx;color:#fff}
+.voice-waveform{display:flex;align-items:center;justify-content:center;height:148rpx;gap:24rpx}.voice-waveform .chat-icon{width:76rpx;height:100rpx;filter:invert(1)}
+.voice-level-bars{height:90rpx;display:flex;align-items:center;gap:7rpx}.voice-level-bars view{width:10rpx;background:#fff;animation:voice-level 900ms ease-in-out infinite;height:26rpx}.voice-level-bars view:nth-child(2){animation-delay:120ms;height:46rpx}.voice-level-bars view:nth-child(3){animation-delay:240ms;height:80rpx}.voice-level-bars view:nth-child(4){animation-delay:360ms;height:60rpx}.voice-level-bars view:nth-child(5){animation-delay:480ms;height:32rpx}
+.voice-record-instruction{font-size:25rpx;line-height:1.6;max-width:100%;padding:6rpx 10rpx;box-sizing:border-box;text-align:center}.voice-record-panel.is-cancel .voice-record-instruction{background:#a24343;border-radius:6rpx}
+.voice-cancel-symbol{font-size:108rpx;height:148rpx;line-height:148rpx}.voice-countdown{font-size:26rpx;line-height:1.5;margin-bottom:6rpx}
+@keyframes voice-level{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
+
+.voice-elapsed{font-size:32rpx;font-variant-numeric:tabular-nums;line-height:1.6}
+
+.conversation-page .message-item.is-recalled{justify-content:center;padding:10rpx 24rpx;margin:4rpx 0;min-height:0}
+.recall-notice{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12rpx;max-width:100%;color:#91999c;font-size:23rpx;line-height:1.6;text-align:center;overflow-wrap:anywhere}
+.recall-notice button{background:transparent;border:0;margin:0;padding:8rpx 4rpx;min-height:44rpx;line-height:1.6;font-size:23rpx;color:#16858f}.recall-notice button::after{border:0}
+
+@media(prefers-color-scheme:dark){.recall-notice{color:#a2abad}.recall-notice button{color:#8bdce5}}
+
+/* Chat image media: edge-to-edge thumbnails, no text bubble or decorative tail. */
+.conversation-page .image-message-bubble,
+.conversation-page .is-mine .image-message-bubble{
+  background:transparent;border:0;box-shadow:none;
+  padding:0;border-radius:0;max-width:100%;
+}
+.conversation-page .message-item:not(.is-mine) .image-message-bubble:before,.conversation-page .message-item.is-mine .image-message-bubble:before{display:none;content:none}
+.conversation-page .image-card{max-width:100%;min-width:0}
+.conversation-page .image-grid{
+  display:grid;grid-template-columns:repeat(2,160rpx);gap:8rpx;
+  margin:0;width:max-content;max-width:100%;
+}
+.conversation-page .image-card-single .image-grid{grid-template-columns:minmax(0,1fr)}
+.conversation-page .chat-image{
+  width:160rpx;height:160rpx;border-radius:12rpx;
+  background:#dce3e5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--cv-muted);font-size:23rpx;
+}
+.conversation-page .chat-image-single{width:320rpx;height:274rpx;max-width:100%;border-radius:14rpx}
+.conversation-page .chat-image image{display:block;width:100%;height:100%}
+.conversation-page .image-expand-action{
+  display:block;width:auto;min-height:58rpx;line-height:1.35;
+  margin:8rpx 0 0;padding:8rpx 12rpx;
+  background:transparent;color:#52767e;
+  font-size:22rpx;text-align:left;border:0;
+}
+.conversation-page .image-expand-action::after{border:0}
+.conversation-page .is-mine .image-expand-action{text-align:right;margin-left:auto}
+
+/* Image drafts are present in both live and test conversations until the sender confirms. */
+.conversation-page .album-attempt{
+  box-sizing:border-box;margin:14rpx 0 14rpx auto;padding:16rpx 18rpx;
+  width:540rpx;max-width:calc(100% - 18rpx);
+  background:#f7fafb;border:1rpx solid #dfe8e9;border-radius:16rpx;
+  color:#38484d;box-shadow:none;
+}
+.album-attempt-heading{display:flex;align-items:center;justify-content:space-between;gap:10rpx}
+.album-attempt-name{font-size:25rpx;font-weight:600}
+.album-attempt-status{min-width:0;max-width:65%;font-size:23rpx;color:#526970;text-align:right;overflow-wrap:anywhere}
+.conversation-page .album-attempt .draft-hint{font-size:21rpx;line-height:1.5;color:#7b8a8e;margin-top:4rpx}
+.conversation-page .album-item{display:flex;align-items:center;flex-wrap:wrap;gap:8rpx;margin:11rpx 0 0;font-size:22rpx}
+.conversation-page .album-item image{flex:none;width:82rpx;height:82rpx;border-radius:9rpx;margin:0}
+.conversation-page .album-item>text{flex:1;min-width:140rpx;color:#5b7076}
+.conversation-page .album-tools{width:100%;display:flex;gap:4rpx;flex-wrap:wrap;padding-left:90rpx;box-sizing:border-box}
+.conversation-page .album-tools button,.conversation-page .album-attempt>button{
+  display:inline-flex;align-items:center;justify-content:center;
+  box-sizing:border-box;min-width:0;min-height:58rpx;line-height:1.25;
+  margin:4rpx 0;padding:10rpx 14rpx;border-radius:10rpx;
+  font-size:23rpx;background:transparent;color:#48636a;
+}
+.conversation-page .album-tools button::after,.conversation-page .album-attempt>button::after{border:0}
+.conversation-page .album-tools button[disabled],.conversation-page .album-attempt>button[disabled]{opacity:.46}
+.conversation-page .album-attempt>.album-send-action{
+  background:#e5f5f5;color:#087983;font-weight:600;min-height:68rpx;
+  margin-top:14rpx;padding:14rpx 20rpx;font-size:24rpx;
+}
+.conversation-page .album-attempt>.album-send-action[disabled]{background:#e8eded;color:#819094}
+
+/* WeChat-like image viewer: swipe images, tap image to close, use the native long-press menu to save. */
+.conversation-page .image-viewer{position:fixed;inset:0;z-index:2000;background:#000;color:#fff;overflow:hidden}
+.conversation-page .image-viewer-swiper,.conversation-page .image-viewer-slide{width:100%;height:100%}
+.conversation-page .image-viewer-slide{display:flex;align-items:center;justify-content:center}
+.conversation-page .image-viewer-slide image{width:100%;height:100%}
+.conversation-page .image-viewer-count{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 20rpx);left:50%;transform:translateX(-50%);min-width:74rpx;padding:7rpx 16rpx;box-sizing:border-box;border-radius:999rpx;background:rgba(0,0,0,.34);color:#e7e7e7;text-align:center;font-size:23rpx;line-height:1.4;pointer-events:none}
+
+
+@media(prefers-color-scheme:dark){
+  .conversation-page .chat-image{background:#353e41}
+  .conversation-page .image-expand-action{color:#91ced5}
+  .conversation-page .album-attempt{background:#20292c;border-color:#34474b;color:#e3edef}
+  .conversation-page .album-attempt-name{color:#e4edee}
+  .conversation-page .album-attempt-status,.conversation-page .album-item>text{color:#b1c2c6}
+  .conversation-page .album-attempt .draft-hint{color:#9dabad}
+  .conversation-page .album-tools button,.conversation-page .album-attempt>button{background:transparent;color:#91cbd3}
+  .conversation-page .album-attempt>.album-send-action{background:#1c4145;color:#b4f0f4}
+  .conversation-page .album-attempt>.album-send-action[disabled]{background:#2b3639;color:#839397}
+}
+
+.conversation-page .call-event{display:flex;align-items:center;gap:14rpx;min-height:44rpx;font-size:30rpx;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
+.conversation-page .call-event .chat-icon{width:34rpx;height:34rpx;flex:0 0 34rpx}
+.chat-peer-online{display:inline-flex;align-items:center;margin-left:14rpx;padding:2rpx 10rpx;border-radius:999rpx;background:#edf6f1;color:#3d7258;font-size:20rpx;font-weight:600;line-height:1.45}
+.message-avatar-frame{position:relative;width:80rpx;height:80rpx;flex:0 0 80rpx;border-radius:10rpx}
+.message-avatar-frame:active{opacity:.68}
+.message-avatar-frame .message-avatar{display:block}
+.chat-new-dot{color:#df3636}
+@media(prefers-color-scheme:dark){.chat-new-dot{color:#ff7373}}
+@media(prefers-color-scheme:dark){.chat-peer-online{background:#24372e;color:#9dd0b3}}
+.conversation-page .message-menu::after{left:var(--menu-arrow-x,50%)}

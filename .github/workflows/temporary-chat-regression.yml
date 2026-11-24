@@ -1,0 +1,55 @@
+name: Temporary unified chat regression
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-chat-regression.yml'
+      - '.validation/chat-regression/**'
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-regression
+  cancel-in-progress: true
+jobs:
+  client-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: .validation/chat-regression
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify frozen source
+        id: verify
+        run: |
+          set -euo pipefail
+          test "$(cat SOURCE_SHA)" = 'b5b7752002d73337d6a5a01d9dfde8406a319ddb'
+          cat SOURCE_MANIFEST SOURCE_MANIFEST_UI | while read -r sha path; do
+            test "$(git hash-object "$path")" = "$sha"
+            echo "verified $path"
+          done
+          node --version
+      - name: Changed client JS syntax
+        if: ${{ steps.verify.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          find miniprogram server -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Shared conversation state machine
+        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
+        run: node --test --test-reporter=spec tools/test_chat_s11.js
+      - name: Media and picker regression
+        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
+        run: node --test --test-reporter=spec tools/test_chat_av.js tools/test_chat_image_archive.js tools/test_chat_media_picker.js tools/test_chat_voice_limit.js
+      - name: Keyboard and Direct entry
+        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
+        run: |
+          status=0
+          node tools/test_chat_conversation_input.js || status=1
+          node tools/test_chat_direct_inbox_merge.js || status=1
+          exit "$status"
