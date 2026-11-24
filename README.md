@@ -46,7 +46,3 @@
 - 清理代码文件使用普通提交保留历史；历史敏感对象移除需另走平台敏感数据清除流程，普通删除提交不代表历史数据已移除。
 
 正式仓库规则入口：[`AI 长期项目治理与代码 Review 规范`](https://github.com/franz-9527/workers/blob/main/docs/AI长期项目治理与代码Review规范.md)、[`GitHub开发与仓库维护手册`](https://github.com/franz-9527/workers/blob/main/docs/GitHub开发与仓库维护手册.md)、[`持续集成与测试执行规范`](https://github.com/franz-9527/workers/blob/main/docs/持续集成与测试执行规范.md)。
-
-## 当前 Redis / MySQL 专项验收
-
-来源：`ee9506eb9bdaca87c3eab39f79452e81da6e5665`。21 个精确源码 blob 由 SOURCE_MANIFEST 校验。仅复制专项必要源文件，另设合成 Go/PHP 夹具，不代表全应用构建或真机验收。运行 PHP 8.3.36、Go 源码 go.mod 版本、真实 MySQL 5.7.44 / Redis 8.10.3；检查 Redis 缓存、限流、环境隔离、故障降级、一次性票据、在线快照、唤醒和沙箱重复清理行更新。临时工作流为 Redis runtime and write amplification regression。
