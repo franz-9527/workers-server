@@ -47,17 +47,6 @@
 
 正式仓库规则入口：[`AI 长期项目治理与代码 Review 规范`](https://github.com/franz-9527/workers/blob/main/docs/AI长期项目治理与代码Review规范.md)、[`GitHub开发与仓库维护手册`](https://github.com/franz-9527/workers/blob/main/docs/GitHub开发与仓库维护手册.md)、[`持续集成与测试执行规范`](https://github.com/franz-9527/workers/blob/main/docs/持续集成与测试执行规范.md)。
 
-## 当前反馈会话回归
+## 当前 Redis / MySQL 专项验收
 
-当前被测源提交为 `franz-9527/workers@34acdf36391ee959edbfb5d50b528564ad6f5b2f`。测试依赖取自旧测试仓固定提交 `db4d289bacb27994badf1ea8c8139d042ffdcdfd`，已迁入本仓库的 `.validation/chat-current/` 和 `.validation/recent/`。其中反馈收件箱 Go 实现、消息首页 JavaScript 和 S12 回归脚本已更新为上述被测源提交的文件。
-
-| 路径 | 用途 |
-| --- | --- |
-| `.validation/SOURCE_MANIFEST` | 来源提交、快照范围、逐文件 Git blob 校验值和验证命令 |
-| `.validation/chat-current/` | Go 消息模块及编译依赖 |
-| `.validation/recent/` | S12 回归脚本及其小程序、PHP、Go 契约输入 |
-| `.github/workflows/temporary-feedback-inbox-regression.yml` | 校验快照后运行 JavaScript 语法、S12 回归和 Go 消息模块测试 |
-
-在 Actions 中选择 **Feedback inbox regression**，通过 **Run workflow** 可手动复测。该工作流使用 Node.js 22，Go 版本读取快照中的 `go.mod`。本次测试入口执行 JavaScript 和 Go 测试，PHP 文件供静态契约断言读取。
-
-临时快照和工作流保留至本轮交接完成。收尾检查脚本用于删除临时输入并暂存清理改动后的检查，当前包含测试快照时会列出待清理文件。
+来源：`ee9506eb9bdaca87c3eab39f79452e81da6e5665`。21 个精确源码 blob 由 SOURCE_MANIFEST 校验。仅复制专项必要源文件，另设合成 Go/PHP 夹具，不代表全应用构建或真机验收。运行 PHP 8.3.36、Go 源码 go.mod 版本、真实 MySQL 5.7.44 / Redis 8.10.3；检查 Redis 缓存、限流、环境隔离、故障降级、一次性票据、在线快照、唤醒和沙箱重复清理行更新。临时工作流为 Redis runtime and write amplification regression。

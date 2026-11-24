@@ -1,0 +1,77 @@
+name: Redis runtime and write amplification regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-redis-runtime-regression.yml'
+      - '.validation/current/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: redis-runtime-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CHAT_INTEGRATION_ADMIN_PASSWORD: mysql-ci-fixture-only
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: .validation/current/chat/go.mod
+          cache: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql,redis
+          coverage: none
+      - name: Verify exact source blob manifest
+        run: |
+          cd .validation/current
+          while read -r sha file; do
+            test "$(git hash-object "$file")" = "$sha" || { echo "Mismatch $file"; exit 1; }
+          done < SOURCE_MANIFEST
+          echo "Source ee9506eb9bdaca87c3eab39f79452e81da6e5665"
+      - name: Start isolated MySQL and Redis
+        run: |
+          set -euo pipefail
+          docker run -d --name review-mysql -p 127.0.0.1::3306 -e MYSQL_ROOT_PASSWORD="$CHAT_INTEGRATION_ADMIN_PASSWORD" -e MYSQL_ROOT_HOST=% -e MYSQL_DATABASE=redis_review mysql:5.7.44 --log-bin=mysql-bin --server-id=1 --binlog-format=MIXED
+          docker run -d --name review-redis -p 127.0.0.1::6379 redis:8.10.3
+          for i in $(seq 1 60); do
+            if docker exec review-mysql mysqladmin ping -h127.0.0.1 -p"$CHAT_INTEGRATION_ADMIN_PASSWORD" >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker exec review-mysql mysql -uroot -p"$CHAT_INTEGRATION_ADMIN_PASSWORD" -Nse 'SELECT VERSION()'
+          docker exec review-redis redis-cli INFO server | tr -d '\r' | grep -x redis_version:8.10.3
+          mysql_port=$(docker port review-mysql 3306/tcp | head -n1 | cut -d: -f2)
+          redis_port=$(docker port review-redis 6379/tcp | head -n1 | cut -d: -f2)
+          echo "MYSQL_PORT=$mysql_port" >> "$GITHUB_ENV"
+          echo "REDIS_PORT=$redis_port" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_MYSQL_ADDR=127.0.0.1:$mysql_port" >> "$GITHUB_ENV"
+          echo "CHAT_INTEGRATION_REDIS_ADDR=127.0.0.1:$redis_port" >> "$GITHUB_ENV"
+      - name: PHP 8.3 lint and real Redis/MySQL fixture
+        working-directory: .validation/current
+        run: |
+          set -euo pipefail
+          php -r 'if(PHP_VERSION!=="8.3.36"||!extension_loaded("redis"))exit(1);echo PHP_VERSION."\n";'
+          find server -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -n fixture.php noext
+          php fixture.php
+      - name: Go exact-source Redis and sandbox cleanup focused race tests
+        working-directory: .validation/current/chat
+        run: |
+          set -euo pipefail
+          go version
+          go mod verify
+          go test -race -count=1 -v ./internal/auth
+          (cd internal/dependencies; go test -race -count=1 -v redis.go settings.go fixture_runtime_test.go)
+          go test -race -count=1 -v ./internal/message
+      - name: Stop isolated services
+        if: always()
+        run: docker rm -f review-mysql review-redis || true
