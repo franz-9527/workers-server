@@ -442,11 +442,11 @@ test('S17 unknown cancellation must resolve original commit before a new selecti
   if(path==='media/cancel')return {client_message_id:data.client_message_id,state:cancellation,message_id:cancellation==='accepted'?'44':undefined}
   return {items:[],has_more:false}
  })
- const client=await f.m.images.stage('9',[{path:'one',size:20},{path:'two',size:20}]);await flush();await f.m.images.send('9',client)
+ const client=await f.m.images.stage('9',[{path:'one',size:20},{path:'two',size:20}]);await flush();await assert.rejects(f.m.images.send('9',client),e=>e.code==='CHAT_NETWORK_ERROR')
  assert.equal(f.m.images.rows.get(client).state,'unknown')
  const next=await f.m.images.revise('9',client,items=>items.pop());assert.equal(next,null);assert.equal(f.m.images.rows.size,1)
  assert.equal(f.m.images.rows.get(client).state,'accepted','late committed result forbids an automatic remaining-image version')
- const second=await f.m.images.stage('9',[{path:'three',size:20},{path:'four',size:20}]);await flush();await f.m.images.send('9',second)
+ const second=await f.m.images.stage('9',[{path:'three',size:20},{path:'four',size:20}]);await flush();await assert.rejects(f.m.images.send('9',second),e=>e.code==='CHAT_NETWORK_ERROR')
  cancellation='canceled';const revised=await f.m.images.revise('9',second,items=>items.pop());assert(revised);assert.equal(f.m.images.rows.get(revised).items.length,1);assert.equal(f.m.images.rows.get(revised).submitted,false)
  f.m.reset()
 })

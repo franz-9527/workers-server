@@ -14,3 +14,4 @@ ba8e6355d416580158672eafea47c12074b07b14  miniprogram/utils/ChatOrderCard.js
 2c7ea9aa55ed14c939c6ede21944e123a57768af  miniprogram/utils/ChatInboxModel.js
 14899255d7be3f01a07c109abcd84fc6de09a4ca  miniprogram/utils/ChatIdentity.js
 7bef7e2076ec1f97ad8cd9c682b6b3f6e9ad208a  miniprogram/utils/ChatPresentation.js
+4d5c2ee55d0fdacfc4a720f5d973701a965b8cae  miniprogram/utils/ChatCallPermissions.js

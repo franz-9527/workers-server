@@ -29,7 +29,7 @@ jobs:
         id: verify
         run: |
           set -euo pipefail
-          test "$(cat SOURCE_SHA)" = 'b5b7752002d73337d6a5a01d9dfde8406a319ddb'
+          test "$(cat SOURCE_SHA)" = 'dc997bb4c4f3c369cb9708f976daa9809bd6f971'
           cat SOURCE_MANIFEST SOURCE_MANIFEST_UI | while read -r sha path; do
             test "$(git hash-object "$path")" = "$sha"
             echo "verified $path"
