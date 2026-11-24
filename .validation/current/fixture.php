@@ -53,8 +53,8 @@ ck($method->invoke($d,$m,1032)===[],'restart invalidates sample');
 echo "PHP targeted runtime fixture complete\n";
 
 $backoff=new \WorkerAdmin\Infrastructure\Scheduling\SchedulerTaskFailureBackoff($db);
-$db->execute("CREATE TABLE scheduler_runs(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,run_uuid CHAR(36) NOT NULL UNIQUE,job_name VARCHAR(64) NOT NULL,status VARCHAR(24) NOT NULL,host_name VARCHAR(128),process_id INT,scanned_count INT NOT NULL DEFAULT 0,success_count INT NOT NULL DEFAULT 0,failure_count INT NOT NULL DEFAULT 0,started_at DATETIME NOT NULL,finished_at DATETIME,error_message TEXT,KEY idx_scheduler_runs_job_time(job_name,started_at)) ENGINE=InnoDB");
-$db->execute("CREATE TABLE scheduled_job_failures(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,job_name VARCHAR(64),business_key VARCHAR(128),business_version INT,next_retry_at DATETIME,resolved_at DATETIME) ENGINE=InnoDB");
+$db->execute("CREATE TABLE scheduler_runs(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,run_uuid CHAR(36) NOT NULL UNIQUE,job_name VARCHAR(64) NOT NULL,status VARCHAR(24) NOT NULL,host_name VARCHAR(128),process_id INT,scanned_count INT NOT NULL DEFAULT 0,success_count INT NOT NULL DEFAULT 0,failure_count INT NOT NULL DEFAULT 0,started_at DATETIME NOT NULL,finished_at DATETIME,error_message TEXT,KEY idx_scheduler_runs_job_time(job_name,started_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+$db->execute("CREATE TABLE scheduled_job_failures(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,job_name VARCHAR(64),business_key VARCHAR(128),business_version INT,next_retry_at DATETIME,resolved_at DATETIME) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 $db->execute("INSERT INTO scheduled_job_failures(job_name,business_key,business_version,next_retry_at) VALUES('fixture','task:fixture',1,'2035-01-01 00:00:00')");
 ck((int)$db->fetchValue("SELECT GET_LOCK('wall_worker_admin_upgrade',0)")===1,'isolated upgrade lock');
 ck((int)$db->fetchValue("SELECT GET_LOCK('worker_order_scheduler_v1',0)")===1,'isolated scheduler lock');
