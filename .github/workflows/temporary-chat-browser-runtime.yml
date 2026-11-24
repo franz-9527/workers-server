@@ -28,7 +28,7 @@ jobs:
       - name: Verify frozen source blobs
         run: |
           set -euo pipefail
-          test "$(cat SOURCE_SHA)" = '5caa53a8e23e276a5ce519fac787510100ddb68f'
+          test "$(cat SOURCE_SHA)" = '57d3d1e7e5fdf1115478cb4bb0b6aed4b2cb15ff'
           while read -r expected path; do
             actual="$(git hash-object "$path")"
             test "$actual" = "$expected"
@@ -44,7 +44,7 @@ jobs:
           node --check server/assets/chat-testing-runtime.js
           grep -q 'CHAT_CHECK_RETRY_LIMIT' server/assets/chat-testing-runtime.js
           grep -q 'CHAT_REVIEW_REQUIRED' server/assets/chat-testing-runtime.js
-          grep -q '重新同步' server/assets/chat-testing-runtime.js
+          grep -q 'resyncing' server/assets/chat-testing-runtime.js
           echo "BUNDLE_GIT_SHA=$(git hash-object server/assets/chat-testing-runtime.js)"
           sha256sum server/assets/chat-testing-runtime.js
           wc -c server/assets/chat-testing-runtime.js
