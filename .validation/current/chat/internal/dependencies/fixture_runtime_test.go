@@ -4,6 +4,7 @@ import (
  "context"
  "os"
  "os/exec"
+ "strings"
  "database/sql"
  "fmt"
  _ "github.com/go-sql-driver/mysql"
@@ -107,14 +108,24 @@ func TestRedisRestartRecovery(t *testing.T) {
  db,e:=sql.Open("mysql",fmt.Sprintf("root:%s@tcp(%s)/redis_review",os.Getenv("CHAT_INTEGRATION_ADMIN_PASSWORD"),mysqlAddr));if e!=nil{t.Fatal(e)};defer db.Close()
  if _,e=db.ExecContext(ctx,"CREATE TABLE fixture_restart_jobs(id INT PRIMARY KEY,state VARCHAR(16)) ENGINE=InnoDB");e!=nil{t.Fatal(e)}
  if _,e=db.ExecContext(ctx,"INSERT INTO fixture_restart_jobs VALUES(1,'queued')");e!=nil{t.Fatal(e)}
- docker:=func(action string){t.Helper();out,e:=exec.CommandContext(ctx,"docker",action,"review-redis").CombinedOutput();if e!=nil{t.Fatalf("docker %s: %s %v",action,out,e)}}
- docker("stop")
+ docker:=func(args ...string)string{t.Helper();out,e:=exec.CommandContext(ctx,"docker",args...).CombinedOutput();if e!=nil{t.Fatalf("docker %v: %s %v",args,out,e)};return strings.TrimSpace(string(out))}
+ before:=docker("port","review-redis","6379/tcp")
+ if before!=addr{t.Fatalf("fixture address mismatch: %s != %s",before,addr)}
+ docker("stop","review-redis")
  serve.publishPresence(ctx)
  if known,_:=worker.accountPresence("12");known{t.Fatal("stopped Redis fabricated known presence")}
  if worker.mediaWake(ctx,"image"){t.Fatal("stopped Redis fabricated wake")}
- docker("start")
- until:=time.Now().Add(10*time.Second)
- for {if b.Ping(ctx).Err()==nil&&a.Ping(ctx).Err()==nil{break};if time.Now().After(until){t.Fatal("same clients failed to reconnect")};time.Sleep(100*time.Millisecond)}
+ docker("start","review-redis")
+ after:=docker("port","review-redis","6379/tcp")
+ t.Logf("Redis published endpoint before=%s after=%s",before,after)
+ if before!=after{t.Fatal("fixture changed Redis endpoint")}
+ until:=time.Now().Add(20*time.Second)
+ for {
+    ea,eb:=a.Ping(ctx).Err(),b.Ping(ctx).Err()
+    if ea==nil&&eb==nil{break}
+    if time.Now().After(until){t.Fatalf("same clients failed to reconnect: serve=%v worker=%v; container ping=%s",ea,eb,docker("exec","review-redis","redis-cli","ping"))}
+    time.Sleep(200*time.Millisecond)
+ }
  if worker.mediaWake(ctx,"image"){t.Fatal("volatile wake unexpectedly survived restart")}
  if known,_:=worker.accountPresence("12");known{t.Fatal("volatile presence unexpectedly survived restart")}
  var state string
