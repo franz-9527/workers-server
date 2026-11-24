@@ -16,3 +16,6 @@ d5c53fd0d6d4b386e995c9f874fcb05c936dbbc7  miniprogram/pages/chatMessages/index.j
 fa4404d1f382f698e9b9e5a45381c51b1f15beb5  tools/test_chat_direct_inbox_merge.js
 af454df289a461475b32c6d0d2c97dd804c4809d  tools/test_chat_media_picker.js
 44819ced301f6bd91e6407ef401b1ededc0f60ac  tools/test_chat_voice_limit.js
+a91fd6f5841f531e235ee3f73e5e98186c2bf72a  tools/check-wxml.js
+6b547b91b98b0955ea1acab0fc158eeb5607cdcb  miniprogram/style/chat-native.wxss
+3e2cbd920e95cb9c54a6daaa2de094a9d5b633e5  miniprogram/subpackages/chat/direct/index.wxss

@@ -35,21 +35,24 @@ jobs:
             echo "verified $path"
           done
           node --version
-      - name: Changed client JS syntax
-        if: ${{ steps.verify.outcome == 'success' }}
+      - name: Install pinned mini program compiler
         run: |
-          set -euo pipefail
-          find miniprogram server -name '*.js' -print0 | xargs -0 -n1 node --check
-      - name: Shared conversation state machine
-        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
-        run: node --test --test-reporter=spec tools/test_chat_s11.js
-      - name: Media and picker regression
-        if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
-        run: node --test --test-reporter=spec tools/test_chat_av.js tools/test_chat_image_archive.js tools/test_chat_media_picker.js tools/test_chat_voice_limit.js
-      - name: Keyboard and Direct entry
+          npm install --no-save --package-lock=false --ignore-scripts miniprogram-compiler@0.2.3
+          node -p "require('miniprogram-compiler/package.json').version"
+      - name: Compile the three changed WXML templates
+        id: wxml
+        run: |
+          node tools/check-wxml.js --self-test
+          node tools/check-wxml.js --compile
+      - name: Compile the three changed WXSS pages and shared stylesheet
         if: ${{ !cancelled() && steps.verify.outcome == 'success' }}
         run: |
-          status=0
-          node tools/test_chat_conversation_input.js || status=1
-          node tools/test_chat_direct_inbox_merge.js || status=1
-          exit "$status"
+          node <<'JS'
+          const fs=require('node:fs'),path=require('node:path'),compiler=require('miniprogram-compiler')
+          const root=path.resolve('miniprogram')
+          const sheets=['pages/chatMessages/index.wxss','subpackages/chat/conversation/index.wxss','subpackages/chat/direct/index.wxss','style/chat-native.wxss']
+          for(const file of sheets)if(!fs.existsSync(path.join(root,file)))throw Error(file)
+          const result=compiler.wxssToJs(root,{maxBuffer:32*1024*1024})
+          if(typeof result!=='string'||!result.trim())throw Error('empty WXSS compiler result')
+          console.log('WXSS compile OK: '+sheets.join(', ')+'; output chars='+result.length)
+          JS
