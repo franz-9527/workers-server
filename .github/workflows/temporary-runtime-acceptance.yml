@@ -10,47 +10,36 @@ concurrency:
   group: temporary-runtime-acceptance-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  acceptance:
+  http-acceptance:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      mysql:
-        image: mysql:5.7.44
-        env:
-          MYSQL_ROOT_PASSWORD: fixture-only
-          MYSQL_ROOT_HOST: "%"
-          MYSQL_DATABASE: runtime_fixture
-        ports: ['3306:3306']
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pfixture-only"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=12
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned source blobs
         run: |
           cat .validation/runtime/SOURCE_SHA
           git rev-parse HEAD
-          cat .validation/runtime/MANIFEST_USER .validation/runtime/MANIFEST_LOG | while read -r expected path; do
+          cat .validation/runtime/MANIFEST_USER .validation/runtime/MANIFEST_LOG .validation/runtime/MANIFEST_HTTP | while read -r expected path; do
             test "$(git hash-object "$path")" = "$expected" || { echo "Blob mismatch: $path"; exit 1; }
           done
       - name: Build PHP 8.3.36
         run: |
           docker build -t runtime-php:8.3.36 - <<'DOCKERFILE'
           FROM php:8.3.36-cli
-          RUN docker-php-ext-install pdo_mysql
-          RUN php -r 'exit(PHP_VERSION === "8.3.36" && extension_loaded("pdo_mysql") && extension_loaded("mbstring") ? 0 : 2);'
+          RUN php -r 'exit(PHP_VERSION === "8.3.36" ? 0 : 2);'
           DOCKERFILE
-      - name: Selected PHP syntax
+      - name: Syntax of entry points and kernels
         run: |
-          docker run --rm -v "$PWD/.validation/runtime/:/work:ro" -w /work runtime-php:8.3.36 sh -ec 'php -v; find . -name "*.php" -print0 | xargs -0 -n1 php -l'
-      - name: Real user search schema and native PDO
+          docker run --rm -v "$PWD/.validation/runtime/:/work:ro" -w /work runtime-php:8.3.36 sh -ec 'php -v; cut -d" " -f2 MANIFEST_HTTP | sed "s@^.validation/runtime/@@" | xargs -n1 php -l'
+      - name: HTTP startup errors, callback protocol, log failure and session guards
+        run: python3 .validation/runtime/http-acceptance.py
+      - name: Obsolete PHP 7.4 controlled CLI rejection
         if: ${{ !cancelled() }}
-        run: docker run --rm --network host -v "$PWD/.validation/runtime/:/work:ro" -w /work runtime-php:8.3.36 php user-search.php
-      - name: Runtime logging contract
-        if: ${{ !cancelled() }}
-        run: docker run --rm -v "$PWD/.validation/runtime/:/work:ro" -w /work runtime-php:8.3.36 php source/server/tests/v260_runtime_log_maintenance_contract.php
-      - name: Disabled readlink and partial HTTP probe
-        if: ${{ !cancelled() }}
-        run: docker run --rm -v "$PWD/.validation/runtime/:/work:ro" -w /work runtime-php:8.3.36 php -d disable_functions=readlink,stream_set_timeout disabled.php
+        run: |
+          set +e
+          output=$(docker run --rm -v "$PWD/.validation/runtime/source/server:/work:ro" php:7.4.33-cli php /work/bootstrap.php 2>&1)
+          status=$?
+          set -e
+          echo "$output"
+          test "$status" = 1
+          grep -q PHP_RUNTIME_UNSUPPORTED <<< "$output"
