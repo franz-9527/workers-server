@@ -62,3 +62,6 @@ jobs:
           node --version
           cd .validation/source
           node tools/test_review_notice_reconciliation.js
+      - name: Cross-scene quota restoration and review name normalization (synthetic fixture)
+        run: |
+          docker run --rm --network host -e QUOTA_CROSS_SCENE_TEST=1 -v "$PWD/.validation/source:/work:ro" -w /work onboarding-php:8.3.36 php cross-scene-quota.php

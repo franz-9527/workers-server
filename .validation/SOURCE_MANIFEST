@@ -45,3 +45,6 @@ c1efeac6c1a415dab30e43bc8ba472444ff8e27b  .validation/source/server/tests/v260_m
 c936d65270e39c3890c7b11c6cb7f01474f9eb73  .validation/source/server/tests/v260_message_outbox_dispatch_policy.php
 c9e455176c4cd537b90a8090bf51e9f473a06354  .validation/source/server/tests/v260_onboarding_notice_mysql.php
 cd99a222325feaf4580478c97f5722d086e58f6c  .validation/source/tools/test_review_notice_reconciliation.js
+df4e72126a749cf16fe3f5c50d27b48bdb954808  .validation/source/server/app/Infrastructure/Messaging/DatabaseChatReminderChannel.php
+0482ee369b93ce4afa40edb4ec2fbadbef84f4cb  .validation/source/server/app/Contracts/ChatReminderChannel.php
+1a13d50c546bd226a6b727b80a6a1af828e33afd  .validation/source/server/app/Infrastructure/Messaging/ChatReminderTemplate.php
