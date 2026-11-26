@@ -14,7 +14,7 @@ install -d -m 0700 -o root -g root "$site/chat/update"
 install -d -m 0700 -o www -g www "$site/storage/private"
 # Use real PHP CLI in the installer, not an emulated version.
 export CHAT_PHP_BIN="$TEST_PHP"
-"$CHAT_PHP_BIN" -r 'exit(PHP_VERSION==="8.3.36"&&extension_loaded("pdo_mysql")?0:2);'
+"$CHAT_PHP_BIN" -r 'exit(PHP_VERSION_ID>=80336&&PHP_VERSION_ID<80400&&extension_loaded("pdo_mysql")?0:2);'
 cp .validation/fixture-bootstrap.php "$site/bootstrap.php"
 printf '<?php return ["app"=>["env"=>"production"]];\n' > "$site/config/installed.php"
 echo '2.8.3' > "$site/VERSION"
