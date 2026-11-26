@@ -1,6 +1,0 @@
-d87e6bd89404be1a934367c9eac2dd644acaf8d8 .validation/runtime/source/server/bootstrap.php
-61c9adadbe4b70811f8af61874e03888f723171c .validation/runtime/source/server/api/index.php
-abe96ca6de1925f3b4e1298b4a9f8eac9d235a94 .validation/runtime/source/server/admin/index.php
-1cd8f9997745354bf37091ef80f2c943ec529b40 .validation/runtime/source/server/app/Http/Admin/Modules/ChatTestingAdminModule.php
-6ed10ab0ff073ead7b21fc34524b1c084a770200 .validation/runtime/source/server/app/Http/Admin/AdminKernel.php
-0f24c3d6b31e82c777b7b86b61e426dafba23ce6 .validation/runtime/source/server/app/Http/Api/ApiKernel.php
