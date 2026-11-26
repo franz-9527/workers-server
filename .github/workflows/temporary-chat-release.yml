@@ -1,0 +1,49 @@
+name: Temporary chat release acceptance
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-chat-release.yml', '.validation/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-release-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  release-fixture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact source blobs
+        run: |
+          cat .validation/SOURCE_SHA
+          git rev-parse HEAD
+          while read -r expected path; do
+            test "$(git hash-object "$path")" = "$expected"
+          done < .validation/SOURCE_MANIFEST
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3.36'
+          extensions: pdo_mysql, sodium
+          coverage: none
+      - name: PHP version and recovery gate
+        run: |
+          php -v
+          php -r 'exit(PHP_VERSION==="8.3.36"?0:2);'
+          php .validation/recovery-test.php
+          find .validation/source -name '*.php' -exec php -l {} \;
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Verify real Go runtime signature implementation
+        run: |
+          go version
+          cd .validation
+          cp source/chat/internal/bootstrap/release.go .
+          GO111MODULE=off go test -v release.go release_test.go
+      - name: Exercise actual deployment scripts with synthetic site and binary
+        run: |
+          for f in .validation/source/chat/deploy/*.sh; do bash -n "$f"; done
+          sudo env TEST_PHP="$(command -v php)" bash .validation/deploy-test.sh

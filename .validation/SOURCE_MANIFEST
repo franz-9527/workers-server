@@ -1,0 +1,9 @@
+26aff8460d8c140d9712ae2f23d8b67c75c14523 .validation/source/chat/deploy/pack-production.sh
+c2b19db3127318dcb0fd1a1a7b73b90f05e414dd .validation/source/chat/deploy/update-production.sh
+e4128de6205e3afc17aac4faeb4bc73089799066 .validation/source/chat/deploy/bt-site.sh
+2681d498b1c08a952183a02bbb481bf030b18b27 .validation/source/chat/deploy/production-runtime.php
+a8196e0f2807469a564955b61ed08ffef467c775 .validation/source/chat/deploy/bt-run.sh
+18d3a3bdeaa68e42c9538e5098097289c2ab079b .validation/source/chat/chat.production.example.json
+193cd8769c0ca6addf27ffa90237ac1bde8ef8ec .validation/source/server/app/Infrastructure/Chat/ChatRecoveryGate.php
+4ae8bdfed7d6a58a15d38f4e336e459e8d7a5f95 .validation/source/server/app/Contracts/ChatRecoveryReadiness.php
+35483bed0048e04e8949d75f560a75704c57c644 .validation/source/chat/internal/bootstrap/release.go
