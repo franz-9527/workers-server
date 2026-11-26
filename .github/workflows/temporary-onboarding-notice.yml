@@ -35,33 +35,27 @@ jobs:
           while read -r expected path; do
             test "$(git hash-object "$path")" = "$expected" || { echo "Blob mismatch: $path"; exit 1; }
           done < .validation/SOURCE_MANIFEST
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3.36'
-          extensions: pdo_mysql, mbstring
-          coverage: none
+      - name: Build exact PHP CLI with PDO MySQL and mbstring
+        run: |
+          docker build -t onboarding-php:8.3.36 - <<'DOCKERFILE'
+          FROM php:8.3.36-cli
+          RUN docker-php-ext-install pdo_mysql
+          RUN php -r 'exit(PHP_VERSION === "8.3.36" && extension_loaded("pdo_mysql") && extension_loaded("mbstring") ? 0 : 2);'
+          DOCKERFILE
       - name: Exact PHP and isolated MySQL versions
         run: |
-          php -v
-          php -r 'exit(PHP_VERSION === "8.3.36" ? 0 : 2);'
-          php -r '$p=new PDO("mysql:host=127.0.0.1;port=3306","root","test-only"); $v=$p->query("SELECT VERSION()")->fetchColumn(); echo $v,PHP_EOL; exit(str_starts_with($v,"5.7.44") ? 0 : 2);'
+          docker run --rm --network host onboarding-php:8.3.36 php -v
+          docker run --rm --network host onboarding-php:8.3.36 php -r 'exit(PHP_VERSION === "8.3.36" ? 0 : 2);'
+          docker run --rm --network host onboarding-php:8.3.36 php -r '$p=new PDO("mysql:host=127.0.0.1;port=3306","root","test-only"); $v=$p->query("SELECT VERSION()")->fetchColumn(); echo $v,PHP_EOL; exit(str_starts_with($v,"5.7.44") ? 0 : 2);'
       - name: PHP syntax of selected source
         run: |
-          find .validation/source -name '*.php' -print0 | xargs -0 -n1 php -l
+          docker run --rm -v "$PWD/.validation/source:/work:ro" -w /work onboarding-php:8.3.36 sh -ec 'find . -name "*.php" -print0 | xargs -0 -n1 php -l'
       - name: Delivery failure and dispatcher policies
-        if: ${{ !cancelled() }}
         run: |
-          cd .validation/source
-          php server/tests/v260_message_delivery_failure_policy.php
-          php server/tests/v260_message_outbox_dispatch_policy.php
+          docker run --rm -v "$PWD/.validation/source:/work:ro" -w /work onboarding-php:8.3.36 sh -ec 'php server/tests/v260_message_delivery_failure_policy.php; php server/tests/v260_message_outbox_dispatch_policy.php'
       - name: Onboarding outbox, receipt, quota, lock and review reconciliation MySQL
-        if: ${{ !cancelled() }}
-        env:
-          ONBOARDING_NOTICE_MYSQL_TEST: '1'
-          V250_DB_PORT: '3306'
         run: |
-          cd .validation/source
-          php server/tests/v260_onboarding_notice_mysql.php
+          docker run --rm --network host -e ONBOARDING_NOTICE_MYSQL_TEST=1 -e V250_DB_PORT=3306 -v "$PWD/.validation/source:/work:ro" -w /work onboarding-php:8.3.36 php server/tests/v260_onboarding_notice_mysql.php
       - name: Review list reconciliation with synthetic API
         if: ${{ !cancelled() }}
         run: |
