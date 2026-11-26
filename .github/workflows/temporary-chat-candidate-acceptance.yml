@@ -1,0 +1,26 @@
+name: Temporary chat candidate acceptance
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-chat-candidate-acceptance.yml']
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-candidate-acceptance
+  cancel-in-progress: true
+jobs:
+  access:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact private candidate (read-only default token)
+        uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers
+          ref: ede64d8cc35f928c123dc3e484a1be19ccf2c1b2
+          persist-credentials: false
+          path: candidate
+      - name: Verify exact candidate
+        run: |
+          test "$(git -C candidate rev-parse HEAD)" = "ede64d8cc35f928c123dc3e484a1be19ccf2c1b2"
+          echo "Exact private source readable in isolated repository"
