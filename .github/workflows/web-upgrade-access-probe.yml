@@ -1,0 +1,20 @@
+name: Web upgrade private source access probe
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/web-upgrade-access-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: franz-9527/workers
+          ref: 818f3634a145759ab53e6bded491e6ce8f265ac9
+          persist-credentials: false
+          fetch-depth: 1
+      - run: test "$(git rev-parse HEAD)" = 818f3634a145759ab53e6bded491e6ce8f265ac9
