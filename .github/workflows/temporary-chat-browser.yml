@@ -1,0 +1,52 @@
+name: Temporary chat browser and media contract
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-chat-browser.yml', '.validation/chat-browser/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-browser
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: .validation/chat-browser
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source
+        run: |
+          set -euo pipefail
+          test "$(cat SOURCE_SHA)" = '8931f26cf297aac56c85c38021e74ecc86bbe110'
+          while read -r expected path; do
+            test "$(git hash-object "$path")" = "$expected"
+            echo "verified $path $expected"
+          done < SOURCE_MANIFEST
+          node --version
+      - name: Browser and media regressions
+        run: |
+          set -euo pipefail
+          find miniprogram server tools -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --test tools/test_chat_browser_context.js tools/test_chat_image_archive.js tools/test_chat_av.js
+      - name: Rebuild browser bundle
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12 spark-md5@3.0.2
+          ./node_modules/.bin/esbuild --version
+          ./node_modules/.bin/esbuild server/assets/chat-testing-client.js --bundle --platform=browser --format=iife --target=es2020 --outfile=server/assets/chat-testing-runtime.js
+          node --check server/assets/chat-testing-runtime.js
+          grep -q 'mediaCurrent' server/assets/chat-testing-runtime.js
+          grep -q 'canAutoRetryText' server/assets/chat-testing-runtime.js
+          echo "BUNDLE_GIT_SHA=$(git hash-object server/assets/chat-testing-runtime.js)"
+          sha256sum server/assets/chat-testing-runtime.js
+          wc -c server/assets/chat-testing-runtime.js
+          base64 -w 12000 server/assets/chat-testing-runtime.js | sed 's/^/BUNDLE64:/'
