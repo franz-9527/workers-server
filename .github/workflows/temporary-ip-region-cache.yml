@@ -1,0 +1,33 @@
+name: Temporary IP region cache contract
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-ip-region-cache.yml', '.validation/ip-region-cache/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-ip-region-cache
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify exact source
+        working-directory: .validation/ip-region-cache
+        run: |
+          set -euo pipefail
+          test "$(cat SOURCE_SHA)" = '41050c8341e6736451213de35e6512173b8144a1'
+          while read -r expected path; do
+            test "$(git hash-object "$path")" = "$expected"
+            echo "verified $path $expected"
+          done < SOURCE_MANIFEST
+      - name: PHP 8.3.36 isolated cache contract
+        working-directory: .validation/ip-region-cache
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/app:ro" -w /app php:8.3.36-cli sh -ec 'php -n -r "if(PHP_VERSION!==\"8.3.36\") exit(1); echo PHP_VERSION.PHP_EOL;"; php -n -l server/app/Contracts/RuntimeAcceleration.php; php -n -l server/app/Infrastructure/Persistence/RedisRuntime.php; php -n tools/test_chat_ip_region_cache.php'
