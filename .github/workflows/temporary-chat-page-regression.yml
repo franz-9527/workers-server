@@ -1,0 +1,39 @@
+name: Temporary chat page regression
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temporary-chat-page-regression.yml', '.validation/chat-pages/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: temporary-chat-page-regression
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: .validation/chat-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact public client snapshot
+        run: |
+          set -euo pipefail
+          test "$(cat SOURCE_SHA)" = '4fe2e0b4aea38572cdced33616c5772e985dcf40'
+          while read -r expected path; do
+            test "$(git hash-object "$path")" = "$expected"
+            echo "verified $path $expected"
+          done < SOURCE_MANIFEST
+          node --version
+      - name: Syntax checks and isolated mocked regression
+        run: |
+          set -euo pipefail
+          find miniprogram tools -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --test tools/test_chat_av.js tools/test_chat_media_picker.js tools/test_chat_direct_inbox_merge.js
