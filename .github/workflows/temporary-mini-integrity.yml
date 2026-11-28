@@ -32,6 +32,6 @@ jobs:
           node tools/check-miniprogram-compiled-integrity.js --self-test
           node -e 'const fs=require("node:fs");fs.mkdirSync("miniprogram/sub/a",{recursive:true});fs.writeFileSync("project.config.json",JSON.stringify({setting:{uglifyFileName:false,ignoreUploadUnusedFiles:false,ignoreDevUnusedFiles:false}}));fs.writeFileSync("miniprogram/app.json",JSON.stringify({pages:[],subpackages:[{root:"sub/a",pages:["index"]}]}));for(const e of ["js","json","wxml","wxss"])fs.writeFileSync("miniprogram/sub/a/index."+e,e==="json"?"{}":"");fs.writeFileSync("miniprogram/sub/a/index.js","const x = require(\u0027./data\u0027)");fs.writeFileSync("miniprogram/sub/a/data.json","{}")'
           node tools/check-miniprogram-package-boundaries.js
-          echo 'require("./missing")' >> miniprogram/sub/a/index.js
+          printf '\nrequire("./missing")\n' >> miniprogram/sub/a/index.js
           if node tools/check-miniprogram-package-boundaries.js > "$RUNNER_TEMP/mini-negative.log" 2>&1; then echo 'Missing module was not blocked'; exit 1; fi
           grep -F 'missing ./missing' "$RUNNER_TEMP/mini-negative.log"
